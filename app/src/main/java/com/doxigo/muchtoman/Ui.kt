@@ -28,6 +28,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -46,6 +49,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -64,21 +68,27 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -231,6 +241,9 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
     var deck by remember { mutableStateOf(false) }
     var report by remember { mutableStateOf(false) }
     var transactionRef by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedObligation by remember { mutableStateOf<InstallmentObligation?>(null) }
+    var addingReservation by remember { mutableStateOf(false) }
+    var categoriesManaged by remember { mutableStateOf(false) }
 
     // One tab, not three booleans. Three could be true at once, and were: every screen was an
     // overlay with its own «بستن», so an overlay opened from an overlay left her somewhere the
@@ -312,13 +325,24 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
             onSmsChange = vm::setSmsEnabled,
             onBankChange = vm::setBankEnabled,
             onLockChange = { on ->
-                // Confirm identity before arming it, so the lock is never switched on by
-                // someone who could not then get back in.
                 if (on) promptUnlock(activity) { vm.setLockEnabled(true) }
                 else vm.setLockEnabled(false)
             },
             onWidgetLockChange = vm::setWidgetLock,
+            onCategoriesManage = { categoriesManaged = true },
             onBack = { settings = false },
+        )
+        return
+    }
+
+    if (categoriesManaged) {
+        BackHandler { categoriesManaged = false }
+        CategoriesScreen(
+            categories = state.ledger.categories,
+            onAdd = vm::addCategory,
+            onEdit = vm::editCategory,
+            onDelete = vm::deleteCategory,
+            onBack = { categoriesManaged = false },
         )
         return
     }
@@ -342,10 +366,13 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
     transactionRef?.let { ref ->
         state.ledger.entries.firstOrNull { it.txn.ref == ref }?.let { entry ->
             BackHandler { transactionRef = null }
+            val existingNote = vm.getNote(entry.txn.ref)
             TransactionScreen(
                 entry = entry,
                 categories = state.ledger.categories,
+                existingNote = existingNote,
                 onCategorise = vm::categorise,
+                onSaveNote = vm::saveNote,
                 onLoadSource = vm::sourceOf,
                 onBack = { transactionRef = null },
             )
@@ -362,6 +389,72 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
             },
             onWorthIt = vm::answerWorthIt,
             onDone = { deck = false },
+        )
+        return
+    }
+
+    selectedObligation?.let { obligation ->
+        BackHandler { selectedObligation = null }
+        val payments = state.obligationPayments[obligation.id] ?: emptyList()
+        ObligationDetailScreen(
+            obligation = obligation,
+            payments = payments,
+            onMarkPaid = { paymentId -> vm.markInstallmentPaid(paymentId) },
+            onPayOffRemaining = { vm.payOffRemaining(obligation.id) },
+            onArchive = { vm.archiveObligation(obligation.id); selectedObligation = null },
+            onBack = { selectedObligation = null },
+        )
+        return
+    }
+
+    // Credit purchase form — opened from the transaction menu.
+    vm.markingCredit?.let { entry ->
+        BackHandler { vm.cancelMarkCredit() }
+        CreditPurchaseForm(
+            entry = entry,
+            onSave = { provider, total, installments, amount, startDate, notes ->
+                vm.saveObligation(
+                    provider = provider,
+                    totalRial = total,
+                    downPaymentRial = kotlin.math.abs(entry.txn.signedRial ?: entry.txn.amountRial ?: 0L),
+                    installmentCount = installments,
+                    installmentRial = amount,
+                    startDate = startDate,
+                    notes = notes,
+                    linkedTxnRef = entry.txn.ref,
+                )
+                vm.cancelMarkCredit()
+            },
+            onDismiss = { vm.cancelMarkCredit() },
+        )
+        return
+    }
+
+    // Link-to-installment picker — opened from the transaction menu.
+    vm.linkingInstallment?.let { entry ->
+        BackHandler { vm.cancelLinkInstallment() }
+        LinkInstallmentPicker(
+            entry = entry,
+            state = state,
+            onLink = { paymentId ->
+                vm.markInstallmentPaid(paymentId, entry.txn.ref)
+                vm.cancelLinkInstallment()
+            },
+            onDismiss = { vm.cancelLinkInstallment() },
+        )
+        return
+    }
+
+    // Add reservation form — opened from home screen button.
+    if (addingReservation) {
+        BackHandler { addingReservation = false }
+        AddReservationForm(
+            categories = state.ledger.categories,
+            onSave = { purpose, amount, categoryId ->
+                vm.saveReservation(purpose, amount * 10, categoryId)
+                addingReservation = false
+            },
+            onDismiss = { addingReservation = false },
         )
         return
     }
@@ -409,11 +502,16 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
       // The tabs that are their own screens. They sit inside the Scaffold rather than
       // returning early, so the bar stays under them and there is always a way out.
       if (tab == Tab.LEDGER) {
+        val activity = LocalContext.current as? FragmentActivity
         TimelineScreen(
             ledger = state.ledger,
+            state = state,
             bottomInset = pad.calculateBottomPadding(),
             onReview = { deck = true },
             onOpen = { transactionRef = it.txn.ref },
+            onMarkCredit = { vm.startMarkCredit(it) },
+            onLinkInstallment = { vm.startLinkInstallment(it) },
+            onExport = { activity?.let { ctx -> vm.exportCsv(ctx) } },
         )
         return@Scaffold
       }
@@ -424,6 +522,7 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
         GoalsScreen(
             goals = state.ledger.goals,
             summary = summary,
+            categories = state.ledger.categories,
             onAdd = vm::addGoal,
             onDelete = vm::deleteGoal,
             bottomInset = pad.calculateBottomPadding(),
@@ -507,6 +606,37 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
                     Box(Modifier.padding(edge).padding(top = Space.l)) {
                         UpdateNote(release, onLater = { vm.dismissUpdate(release.name) })
                     }
+                }
+            }
+
+            // Obligations card — always rendered; shows empty state when no data.
+            item(key = "obligations") {
+                ObligationsCard(
+                    state = state,
+                    modifier = Modifier.padding(edge).padding(top = Space.l),
+                    onOpenObligation = { selectedObligation = it },
+                )
+            }
+
+            // Reservations card — always rendered; shows empty state when no data.
+            item(key = "reservations") {
+                ReservationsCard(
+                    state = state,
+                    modifier = Modifier.padding(edge).padding(top = Space.l),
+                    onRelease = vm::releaseReservation,
+                    onDelete = vm::deleteReservation,
+                )
+            }
+
+            // Add reservation button — always shown on home screen.
+            item(key = "add_reservation") {
+                OutlinedButton(
+                    onClick = { addingReservation = true },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = Space.xl).padding(top = Space.l),
+                ) {
+                    Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(Space.s))
+                    Text("افزودن رزرو")
                 }
             }
 
@@ -874,6 +1004,35 @@ internal fun HeroField(
                 color = Hero.muted,
                 modifier = Modifier.padding(top = Space.xs),
             )
+
+            // Show "available to spend" when there are active installment obligations.
+            if (state.committedRial > 0) {
+                Spacer(Modifier.height(Space.s))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "قابل خرج:",
+                        fontSize = 13.sp,
+                        color = Hero.muted,
+                    )
+                    Spacer(Modifier.width(Space.xs))
+                    Text(
+                        "${faNumber(state.availableToman)} تومان",
+                        fontSize = 14.sp,
+                        fontFamily = ModamFigures,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Hero.strong,
+                    )
+                }
+                // Warn when available balance is low relative to the bank balance.
+                if (state.bankToman > 0 && state.availableToman < state.bankToman * 0.2) {
+                    Spacer(Modifier.height(Space.xs))
+                    Text(
+                        "موجودی قابل خرج کمتر از ۲۰٪ کل موجودی است",
+                        fontSize = 11.sp,
+                        color = Color(0xFFFFB74D),
+                    )
+                }
+            }
 
             // The month band is خانه's door to the report, so the field only needs a standalone
             // link when there is no band — a first month with nothing recorded in it yet.
@@ -1330,6 +1489,305 @@ private fun UpdateNote(release: Release, onLater: () -> Unit) {
             onClose = { open = false },
             onLater = { open = false; onLater() },
         )
+    }
+}
+
+/**
+ * A collapsible card showing active installment obligations.
+ * Always rendered on the home screen; shows an empty state when there are no obligations.
+ */
+@Composable
+private fun ObligationsCard(
+    state: UiState,
+    modifier: Modifier = Modifier,
+    onOpenObligation: (InstallmentObligation) -> Unit = {},
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val obligations = state.obligations.filter { !it.archived }
+
+    if (obligations.isEmpty()) {
+        Card(
+            shape = RoundedCornerShape(Radius.card),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
+            modifier = modifier.fillMaxWidth(),
+        ) {
+            Text(
+                "اقساط فعالی نیست",
+                modifier = Modifier.padding(horizontal = Space.l, vertical = Space.m),
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            )
+        }
+        return
+    }
+
+    val totalRemaining = obligations.sumOf { ob ->
+        val paid = state.obligationPayments[ob.id]?.count { it.paidDate != null } ?: 0
+        val unpaidCount = ob.installmentCount - paid
+        unpaidCount.toLong() * ob.installmentRial
+    }
+
+    Card(
+        onClick = { expanded = !expanded },
+        shape = RoundedCornerShape(Radius.card),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        ),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(horizontal = Space.l, vertical = Space.m)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "اقساط فعال",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    "${faNumber(obligations.size.toDouble())} مورد",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                )
+            }
+            Spacer(Modifier.height(Space.xs))
+            Text(
+                "باقیمانده: ${faNumber(totalRemaining / 10.0)} تومان",
+                fontSize = 14.sp,
+                fontFamily = ModamFigures,
+                fontWeight = FontWeight.SemiBold,
+            )
+
+            if (expanded) {
+                Spacer(Modifier.height(Space.m))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(Modifier.height(Space.m))
+                obligations.forEach { ob ->
+                    val paid = state.obligationPayments[ob.id]?.count { it.paidDate != null } ?: 0
+                    val remaining = (ob.installmentCount - paid).toLong() * ob.installmentRial
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { onOpenObligation(ob) }
+                            .padding(vertical = Space.xs),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                ob.provider.ifBlank { "اقساط" },
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                            Text(
+                                "${paid}/${ob.installmentCount} قسط پرداخت شده",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            )
+                        }
+                        Text(
+                            "${faNumber(remaining / 10.0)}",
+                            fontSize = 14.sp,
+                            fontFamily = ModamFigures,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * A card showing active fund reservations.
+ * Always rendered on the home screen; shows an empty state when there are no reservations.
+ */
+@Composable
+private fun ReservationsCard(
+    state: UiState,
+    modifier: Modifier = Modifier,
+    onRelease: (String) -> Unit,
+    onDelete: (String) -> Unit,
+) {
+    val reservations = state.reservations.filter { !it.released }
+
+    if (reservations.isEmpty()) {
+        Card(
+            shape = RoundedCornerShape(Radius.card),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            ),
+            modifier = modifier.fillMaxWidth(),
+        ) {
+            Text(
+                "رزرو فعالی نیست",
+                modifier = Modifier.padding(horizontal = Space.l, vertical = Space.m),
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            )
+        }
+        return
+    }
+
+    val totalReserved = reservations.sumOf { it.amountRial }
+
+    Card(
+        shape = RoundedCornerShape(Radius.card),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        ),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(horizontal = Space.l, vertical = Space.m)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    "رزروها",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    "${faNumber(reservations.size.toDouble())} مورد",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                )
+            }
+            Spacer(Modifier.height(Space.xs))
+            Text(
+                "مجموع رزرو: ${faNumber(totalReserved / 10.0)} تومان",
+                fontSize = 14.sp,
+                fontFamily = ModamFigures,
+                fontWeight = FontWeight.SemiBold,
+            )
+
+            reservations.forEach { reservation ->
+                Spacer(Modifier.height(Space.s))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Spacer(Modifier.height(Space.s))
+                Row(
+                    Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            reservation.purpose,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
+                        if (reservation.categoryId != null) {
+                            Text(
+                                state.ledger.categories.firstOrNull { it.id == reservation.categoryId }?.nameFa ?: "",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            )
+                        }
+                    }
+                    Text(
+                        "${faNumber(reservation.amountRial / 10.0)}",
+                        fontSize = 14.sp,
+                        fontFamily = ModamFigures,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(Modifier.width(Space.s))
+                    TextButton(onClick = { onRelease(reservation.id) }) {
+                        Text("آزاد", fontSize = 12.sp)
+                    }
+                    TextButton(onClick = { onDelete(reservation.id) }) {
+                        Text("حذف", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Bottom sheet form for adding a new fund reservation.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddReservationForm(
+    categories: List<Category>,
+    onSave: (purpose: String, amount: Long, categoryId: String?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var purpose by remember { mutableStateOf("") }
+    var amountText by remember { mutableStateOf("") }
+    var selectedCategoryId by remember { mutableStateOf<String?>(null) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Space.l)
+                .padding(bottom = Space.xl),
+        ) {
+            Text(
+                "افزودن رزرو",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier.padding(bottom = Space.l),
+            )
+
+            OutlinedTextField(
+                value = purpose,
+                onValueChange = { purpose = it },
+                label = { Text("هدف رزرو") },
+                modifier = Modifier.fillMaxWidth().padding(bottom = Space.m),
+                singleLine = true,
+            )
+
+            OutlinedTextField(
+                value = amountText,
+                onValueChange = { amountText = it.filter { c -> c.isDigit() || c == ',' } },
+                label = { Text("مبلغ (تومان)") },
+                modifier = Modifier.fillMaxWidth().padding(bottom = Space.m),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+            )
+
+            Text(
+                "دسته‌بندی (اختیاری)",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = Space.s),
+            )
+
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(Space.s),
+                modifier = Modifier.padding(bottom = Space.l),
+            ) {
+                categories.filter { it.kind == CategoryKind.EXPENSE }.forEach { category ->
+                    FilterChip(
+                        selected = category.id == selectedCategoryId,
+                        onClick = {
+                            selectedCategoryId = if (category.id == selectedCategoryId) null else category.id
+                        },
+                        label = { Text(category.nameFa, fontSize = 12.sp) },
+                    )
+                }
+            }
+
+            Button(
+                onClick = {
+                    val amount = amountText.replace(",", "").toLongOrNull() ?: return@Button
+                    if (purpose.isBlank() || amount <= 0) return@Button
+                    onSave(purpose, amount, selectedCategoryId)
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("ذخیره")
+            }
+        }
     }
 }
 
@@ -2455,6 +2913,201 @@ private fun PickTypeSheet(
     }
 }
 
+// ──────────────────────── category management ────────────────────────
+
+@Composable
+fun CategoriesScreen(
+    categories: List<Category>,
+    onAdd: (String, String) -> Unit,
+    onEdit: (String, String) -> Unit,
+    onDelete: (String) -> Unit,
+    onBack: () -> Unit,
+) {
+    var adding by remember { mutableStateOf(false) }
+    var editingCategory by remember { mutableStateOf<Category?>(null) }
+    var deletingCategory by remember { mutableStateOf<Category?>(null) }
+    var newName by remember { mutableStateOf("") }
+    var selectedKind by remember { mutableStateOf(CategoryKind.EXPENSE) }
+
+    Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .systemBarsPadding()
+                .imePadding(),
+        ) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Space.xl, vertical = Space.m),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "بازگشت")
+                }
+                Text(
+                    "دسته‌بندی‌ها",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = { adding = true; newName = ""; selectedKind = CategoryKind.EXPENSE }) {
+                    Icon(Icons.Rounded.Add, contentDescription = "افزودن")
+                }
+            }
+
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = Space.xxl),
+            ) {
+                items(categories, key = { it.id }) { category ->
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = Space.xl, vertical = Space.s),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        CategoryIcon(
+                            category.nameFa,
+                            MaterialTheme.colorScheme.onSurfaceVariant,
+                            size = 20.dp,
+                            stroke = 1.6.dp,
+                        )
+                        Spacer(Modifier.width(Space.m))
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                category.nameFa,
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                            Text(
+                                when (category.kind) {
+                                    CategoryKind.EXPENSE -> "خرج"
+                                    CategoryKind.INCOME -> "درآمد"
+                                    else -> "انتقال"
+                                },
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        if (!category.builtin) {
+                            IconButton(onClick = { editingCategory = category; newName = category.nameFa }) {
+                                Icon(
+                                    Icons.Rounded.Edit,
+                                    contentDescription = "ویرایش",
+                                    modifier = Modifier.size(18.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            IconButton(onClick = { deletingCategory = category }) {
+                                Icon(
+                                    Icons.Rounded.Delete,
+                                    contentDescription = "حذف",
+                                    modifier = Modifier.size(18.dp),
+                                    tint = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Add category dialog
+    if (adding) {
+        AlertDialog(
+            onDismissRequest = { adding = false },
+            title = { Text("دسته‌بندی تازه") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = newName,
+                        onValueChange = { newName = it.take(30) },
+                        label = { Text("نام") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(Space.m))
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(Space.s),
+                    ) {
+                        listOf(CategoryKind.EXPENSE to "خرج", CategoryKind.INCOME to "درآمد").forEach { (kind, label) ->
+                            FilterChip(
+                                selected = selectedKind == kind,
+                                onClick = { selectedKind = kind },
+                                label = { Text(label) },
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (newName.isNotBlank()) {
+                            onAdd(newName, selectedKind)
+                            adding = false
+                        }
+                    },
+                ) { Text("افزودن") }
+            },
+            dismissButton = {
+                TextButton(onClick = { adding = false }) { Text("لغو") }
+            },
+        )
+    }
+
+    // Edit category dialog
+    editingCategory?.let { cat ->
+        AlertDialog(
+            onDismissRequest = { editingCategory = null },
+            title = { Text("ویرایش دسته‌بندی") },
+            text = {
+                OutlinedTextField(
+                    value = newName,
+                    onValueChange = { newName = it.take(30) },
+                    label = { Text("نام") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        if (newName.isNotBlank()) {
+                            onEdit(cat.id, newName)
+                            editingCategory = null
+                        }
+                    },
+                ) { Text("ذخیره") }
+            },
+            dismissButton = {
+                TextButton(onClick = { editingCategory = null }) { Text("لغو") }
+            },
+        )
+    }
+
+    // Delete confirmation dialog
+    deletingCategory?.let { cat ->
+        AlertDialog(
+            onDismissRequest = { deletingCategory = null },
+            title = { Text("حذف دسته‌بندی") },
+            text = { Text("آیا از حذف «${cat.nameFa}» مطمئنید؟") },
+            confirmButton = {
+                TextButton(
+                    onClick = { onDelete(cat.id); deletingCategory = null },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                ) { Text("حذف") }
+            },
+            dismissButton = {
+                TextButton(onClick = { deletingCategory = null }) { Text("لغو") }
+            },
+        )
+    }
+}
+
 @Composable
 private fun PickRow(type: AssetType, already: Boolean, onClick: () -> Unit) {
     Row(
@@ -2689,6 +3342,7 @@ internal fun BankLogo(bank: String, size: Dp = 32.dp) {
         Bank.PARSIAN -> R.drawable.ic_bank_parsian
         Bank.MELLAT -> R.drawable.ic_bank_mellat
         Bank.MELLI -> R.drawable.ic_bank_melli
+        Bank.MASKAN -> R.drawable.ic_bank_maskan
         Bank.OTHER -> null
     }
 
@@ -3415,6 +4069,425 @@ private fun EditSheet(
             }
 
             Spacer(Modifier.height(Space.l))
+        }
+    }
+}
+
+/**
+ * Full detail screen for an installment obligation.
+ * Shows provider, totals, and the complete payment schedule.
+ */
+@Composable
+fun ObligationDetailScreen(
+    obligation: InstallmentObligation,
+    payments: List<InstallmentPayment>,
+    onMarkPaid: (String) -> Unit,
+    onPayOffRemaining: (String) -> Unit,
+    onArchive: (String) -> Unit,
+    onBack: () -> Unit,
+) {
+    val paidCount = payments.count { it.paidDate != null }
+    val allPaid = paidCount == obligation.installmentCount
+    val totalRemaining = (obligation.installmentCount - paidCount).toLong() * obligation.installmentRial
+
+    Surface(
+        color = MaterialTheme.colorScheme.background,
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .verticalScroll(rememberScrollState()),
+        ) {
+            // Header
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = Space.l, vertical = Space.m),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "بازگشت")
+                }
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        obligation.provider.ifBlank { "اقساط" },
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                    )
+                    Text(
+                        "${paidCount}/${obligation.installmentCount} قسط پرداخت شده",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            // Summary card
+            Card(
+                shape = RoundedCornerShape(Radius.card),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                ),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = Space.l),
+            ) {
+                Column(Modifier.padding(Space.l)) {
+                    DetailRow("قیمت کل", "${faNumber(obligation.totalRial / 10.0)} تومان")
+                    DetailRow("پیش پرداخت", "${faNumber(obligation.downPaymentRial / 10.0)} تومان")
+                    DetailRow("هر قسط", "${faNumber(obligation.installmentRial / 10.0)} تومان")
+                    Spacer(Modifier.height(Space.s))
+                    HorizontalDivider()
+                    Spacer(Modifier.height(Space.s))
+                    DetailRow(
+                        "باقیمانده",
+                        "${faNumber(totalRemaining / 10.0)} تومان",
+                        bold = true,
+                    )
+                }
+            }
+
+            if (obligation.notes.isNotBlank()) {
+                Text(
+                    obligation.notes,
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = Space.l, vertical = Space.m),
+                )
+            }
+
+            // Actions
+            if (!allPaid) {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = Space.l, vertical = Space.s),
+                    horizontalArrangement = Arrangement.spacedBy(Space.m),
+                ) {
+                    Button(
+                        onClick = { onPayOffRemaining(obligation.id) },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text("تسویه کل باقیمانده")
+                    }
+                }
+            } else {
+                Button(
+                    onClick = { onArchive(obligation.id) },
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = Space.l, vertical = Space.s),
+                ) {
+                    Text("بایگانی")
+                }
+            }
+
+            // Payment schedule
+            Text(
+                " برنامه پرداخت",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = Space.l, vertical = Space.m),
+            )
+
+            Card(
+                shape = RoundedCornerShape(Radius.card),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                ),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = Space.l),
+            ) {
+                Column {
+                    payments.sortedBy { it.installmentNumber }.forEach { payment ->
+                        val isPaid = payment.paidDate != null
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable(enabled = !isPaid) { onMarkPaid(payment.id) }
+                                .padding(horizontal = Space.l, vertical = Space.m),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            // Status indicator
+                            Box(
+                                Modifier
+                                    .size(8.dp)
+                                    .clip(CircleShape)
+                                    .background(if (isPaid) Color(0xFF2E9E5B) else MaterialTheme.colorScheme.outline),
+                            )
+                            Spacer(Modifier.width(Space.m))
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    "قسط ${faNumber(payment.installmentNumber.toDouble())}",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                                Text(
+                                    formatDate(payment.dueDate),
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            Text(
+                                "${faNumber(payment.amountRial / 10.0)}",
+                                fontSize = 14.sp,
+                                fontFamily = ModamFigures,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isPaid) Color(0xFF2E9E5B) else MaterialTheme.colorScheme.onBackground,
+                            )
+                            if (!isPaid) {
+                                Spacer(Modifier.width(Space.s))
+                                Text(
+                                    "پرداخت",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(Space.xl))
+        }
+    }
+}
+
+@Composable
+private fun DetailRow(label: String, value: String, bold: Boolean = false) {
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = Space.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            label,
+            fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            value,
+            fontSize = 14.sp,
+            fontFamily = ModamFigures,
+            fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
+        )
+    }
+}
+
+private fun formatDate(millis: Long): String {
+    val jalali = jalaliOf(millis)
+    return "${jalali.year}/${jalali.month}/${jalali.day}"
+}
+
+/**
+ * Bottom sheet form for marking a transaction as a credit/installment purchase.
+ * Pre-fills the down payment from the transaction amount.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CreditPurchaseForm(
+    entry: LedgerEntry,
+    onSave: (provider: String, total: Long, installments: Int, amount: Long, startDate: Long, notes: String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val downPayment = kotlin.math.abs(entry.txn.signedRial ?: entry.txn.amountRial ?: 0L)
+    var provider by remember { mutableStateOf("") }
+    var totalText by remember { mutableStateOf("") }
+    var installmentsText by remember { mutableStateOf("") }
+    var amountText by remember { mutableStateOf("") }
+    var notes by remember { mutableStateOf("") }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Space.l)
+                .padding(bottom = Space.xl),
+        ) {
+            Text(
+                "ثبت خرید اعتباری",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier.padding(bottom = Space.l),
+            )
+
+            Text(
+                "پیش پرداخت: ${faNumber(downPayment / 10.0)} تومان",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = Space.m),
+            )
+
+            // Provider name
+            OutlinedTextField(
+                value = provider,
+                onValueChange = { provider = it },
+                label = { Text("نام فروشگاه / ارائه‌دهنده") },
+                modifier = Modifier.fillMaxWidth().padding(bottom = Space.m),
+                singleLine = true,
+            )
+
+            // Total price
+            OutlinedTextField(
+                value = totalText,
+                onValueChange = { totalText = it.filter { c -> c.isDigit() || c == ',' } },
+                label = { Text("قیمت کل (ریال)") },
+                modifier = Modifier.fillMaxWidth().padding(bottom = Space.m),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+            )
+
+            // Number of installments
+            OutlinedTextField(
+                value = installmentsText,
+                onValueChange = { installmentsText = it.filter { c -> c.isDigit() } },
+                label = { Text("تعداد اقساط") },
+                modifier = Modifier.fillMaxWidth().padding(bottom = Space.m),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+            )
+
+            // Installment amount
+            OutlinedTextField(
+                value = amountText,
+                onValueChange = { amountText = it.filter { c -> c.isDigit() || c == ',' } },
+                label = { Text("مبلغ هر قسط (ریال)") },
+                modifier = Modifier.fillMaxWidth().padding(bottom = Space.m),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+            )
+
+            // Notes
+            OutlinedTextField(
+                value = notes,
+                onValueChange = { notes = it },
+                label = { Text("یادداشت (اختیاری)") },
+                modifier = Modifier.fillMaxWidth().padding(bottom = Space.l),
+                maxLines = 2,
+            )
+
+            Button(
+                onClick = {
+                    val t = totalText.replace(",", "").toLongOrNull()
+                    val i = installmentsText.toIntOrNull()
+                    val a = amountText.replace(",", "").toLongOrNull()
+                    if (t != null && i != null && a != null && t > 0 && i > 0 && a > 0) {
+                        onSave(provider, t, i, a, System.currentTimeMillis(), notes)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("ذخیره")
+            }
+        }
+    }
+}
+
+/**
+ * Bottom sheet for linking a transaction to an unpaid installment.
+ * Shows matching installments (same amount, close date) first.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LinkInstallmentPicker(
+    entry: LedgerEntry,
+    state: UiState,
+    onLink: (paymentId: String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val txnAmount = kotlin.math.abs(entry.txn.signedRial ?: entry.txn.amountRial ?: 0L)
+    val txnDate = entry.txn.at
+
+    // Find unpaid installments that match the amount (exact) and are within ±30 days.
+    val candidates = state.obligationPayments.values.flatten()
+        .filter { it.paidDate == null && it.amountRial == txnAmount }
+        .sortedBy { kotlin.math.abs(it.dueDate - txnDate) }
+
+    // Also show all unpaid installments if no exact match.
+    val allUnpaid = state.obligationPayments.values.flatten()
+        .filter { it.paidDate == null }
+        .sortedBy { it.dueDate }
+
+    val displayList = if (candidates.isNotEmpty()) candidates else allUnpaid
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Space.l)
+                .padding(bottom = Space.xl),
+        ) {
+            Text(
+                "پیوند به قسط",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier.padding(bottom = Space.s),
+            )
+            Text(
+                "مبلغ تراکنش: ${faNumber(txnAmount / 10.0)} تومان",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = Space.m),
+            )
+
+            if (displayList.isEmpty()) {
+                Text(
+                    "قسط بدون پرداختی با این مبلغ یافت نشد",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = Space.l),
+                )
+            } else {
+                if (candidates.isNotEmpty()) {
+                    Text(
+                        "تطبیق دقیق:",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(bottom = Space.s),
+                    )
+                }
+                displayList.forEach { payment ->
+                    // Find the obligation name.
+                    val obName = state.obligations.firstOrNull { it.id == payment.obligationId }
+                        ?.provider?.ifBlank { "اقساط" } ?: "اقساط"
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { onLink(payment.id) }
+                            .padding(vertical = Space.m),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                obName,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium,
+                            )
+                            Text(
+                                "قسط ${faNumber(payment.installmentNumber.toDouble())} — ${formatDate(payment.dueDate)}",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Text(
+                            "${faNumber(payment.amountRial / 10.0)}",
+                            fontSize = 14.sp,
+                            fontFamily = ModamFigures,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Spacer(Modifier.width(Space.s))
+                        Text(
+                            "انتخاب",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                }
+            }
         }
     }
 }

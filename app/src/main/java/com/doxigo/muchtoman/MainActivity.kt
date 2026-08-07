@@ -1,16 +1,21 @@
 package com.doxigo.muchtoman
 
 import android.app.Application
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.content.FileProvider
 import androidx.room.withTransaction
+import java.io.File
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.fragment.app.FragmentActivity
@@ -29,7 +34,9 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 
@@ -73,6 +80,8 @@ class AppVm(app: Application) : AndroidViewModel(app) {
 
     private var ledgerJob: Job? = null
     private var familySyncJob: Job? = null
+    /** Serialises obligation/reservation state refreshes so rapid taps don't race. */
+    private val ledgerMutex = Mutex()
 
     init {
         refresh()
@@ -439,6 +448,10 @@ class AppVm(app: Application) : AndroidViewModel(app) {
 
         _state.update { it.copy(ledger = ledgerView(derived, durable)) }
 
+        // Load obligations, payments and reservations so the home screen cards appear on
+        // cold start, not only after a family-sync session or an explicit user action.
+        refreshObligations(durable)
+
         // Only a disagreement about the *same* evidence is worth a line. The backfill reaches
         // thirteen months back while the fold only ever saw what arrived after its watermark,
         // so the ledger routinely knows about messages the fold never read — and then the two
@@ -681,7 +694,11 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             runCatching { syncNow(durable, derived, session) }
                 .onSuccess { result ->
                     if (result.received > 0) derive(durable, derived, extraLookup(store.extraBankNumbers))
-                    _state.update { it.copy(ledger = ledgerView(derived, durable)) }
+        _state.update { it.copy(ledger = ledgerView(derived, durable)) }
+
+        // Load obligations and reservations for the home screen.
+        refreshObligations(durable)
+
                     refreshFamily(
                         session,
                         // faNumber, not the Int: interpolated straight in, these were the only
@@ -698,7 +715,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun addGoal(name: String, targetRial: Long) {
+    fun addGoal(name: String, targetRial: Long, kind: String = GoalKind.SAVE) {
         val app = getApplication<Application>()
         viewModelScope.launch(Dispatchers.Default) {
             val durable = DurableDb.get(app)
@@ -709,7 +726,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                         id = uuid7(now),
                         nameFa = name.take(40),
                         targetRial = targetRial,
-                        kind = GoalKind.SAVE,
+                        kind = kind,
                         period = GoalPeriod.ONCE,
                         startsOn = jalaliMonthStart(tehranDay(now)),
                         createdAt = now,
@@ -744,6 +761,279 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 )
                 _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable)) }
             }.onFailure { android.util.Log.w("muchtoman", "worthIt failed: $it") }
+        }
+    }
+
+    // ──────────────────────── transaction notes ────────────────────────
+
+    /** Get the note for a transaction from the decisions table. */
+    fun getNote(ref: String): String {
+        return _state.value.ledger.notes[ref].orEmpty()
+    }
+
+    /** Save a note for a transaction. */
+    fun saveNote(entry: LedgerEntry, note: String) {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            val durable = DurableDb.get(app)
+            val derived = DerivedDb.get(app)
+            runCatching {
+                val now = System.currentTimeMillis()
+                val existing = durable.decisions().forRef(entry.txn.ref)
+                    .firstOrNull { it.kind == DecisionKind.NOTE }
+                val id = existing?.id ?: uuid7(now)
+                durable.decisions().put(
+                    TxnDecision(
+                        id = id,
+                        ref = entry.txn.ref,
+                        kind = DecisionKind.NOTE,
+                        value = note.ifBlank { null },
+                        createdAt = existing?.createdAt ?: now,
+                        updatedAt = now,
+                    )
+                )
+                // Update the notes map in state so getNote returns the new value immediately.
+                _state.update {
+                    it.copy(ledger = it.ledger.copy(
+                        notes = it.ledger.notes + (entry.txn.ref to note),
+                    ))
+                }
+                _state.update { it.copy(ledger = ledgerView(derived, durable)) }
+            }.onFailure { android.util.Log.w("muchtoman", "saveNote failed: $it") }
+        }
+    }
+
+    // ──────────────────────── category management ────────────────────────
+
+    /** Create a new user-defined category. */
+    fun addCategory(nameFa: String, kind: String) {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            val durable = DurableDb.get(app)
+            val now = System.currentTimeMillis()
+            val maxSort = durable.categories().all().maxOfOrNull { it.sort } ?: 0
+            val id = "cat_user_${uuid7(now)}"
+            runCatching {
+                durable.categories().put(
+                    Category(
+                        id = id,
+                        nameFa = nameFa.trim().take(30),
+                        kind = kind,
+                        sort = maxSort + 10,
+                        builtin = false,
+                        updatedAt = now,
+                    )
+                )
+                _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable)) }
+            }.onFailure { android.util.Log.w("muchtoman", "addCategory failed: $it") }
+        }
+    }
+
+    /** Rename a user-created category. Builtin categories cannot be renamed. */
+    fun editCategory(id: String, newNameFa: String) {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            val durable = DurableDb.get(app)
+            val now = System.currentTimeMillis()
+            runCatching {
+                val existing = durable.categories().get(id) ?: return@runCatching
+                if (existing.builtin) return@runCatching
+                durable.categories().put(
+                    existing.copy(nameFa = newNameFa.trim().take(30), updatedAt = now)
+                )
+                _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable)) }
+            }.onFailure { android.util.Log.w("muchtoman", "editCategory failed: $it") }
+        }
+    }
+
+    /** Archive a user-created category. Builtin categories cannot be deleted. */
+    fun deleteCategory(id: String) {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            val durable = DurableDb.get(app)
+            val now = System.currentTimeMillis()
+            runCatching {
+                val existing = durable.categories().get(id) ?: return@runCatching
+                if (existing.builtin) return@runCatching
+                durable.categories().archive(id, now)
+                _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable)) }
+            }.onFailure { android.util.Log.w("muchtoman", "deleteCategory failed: $it") }
+        }
+    }
+
+    // ──────────────────────── installment obligations ────────────────────────
+
+    /** The entry currently being marked as a credit purchase, or null. */
+    var markingCredit: LedgerEntry? by mutableStateOf(null)
+        private set
+
+    /** The entry currently being linked to an installment, or null. */
+    var linkingInstallment: LedgerEntry? by mutableStateOf(null)
+        private set
+
+    fun startMarkCredit(entry: LedgerEntry) { markingCredit = entry }
+    fun cancelMarkCredit() { markingCredit = null }
+
+    fun startLinkInstallment(entry: LedgerEntry) { linkingInstallment = entry }
+    fun cancelLinkInstallment() { linkingInstallment = null }
+
+    /**
+     * Save a new installment obligation and its payment schedule.
+     * If [linkedTxnRef] is non-empty, the obligation is linked to that transaction.
+     */
+    fun saveObligation(
+        provider: String,
+        totalRial: Long,
+        downPaymentRial: Long,
+        installmentCount: Int,
+        installmentRial: Long,
+        startDate: Long,
+        notes: String,
+        linkedTxnRef: String,
+    ) {
+        android.util.Log.i("muchtoman", "saveObligation: provider=$provider, total=$totalRial, installments=$installmentCount, amount=$installmentRial")
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            val durable = DurableDb.get(app)
+            val now = System.currentTimeMillis()
+            val id = uuid7(now)
+            val (obligation, payments) = buildObligation(
+                id, provider, totalRial, downPaymentRial, installmentCount,
+                installmentRial, startDate, notes, linkedTxnRef, now,
+            )
+            runCatching {
+                durable.obligations().put(obligation)
+                durable.installmentPayments().putAll(payments)
+                refreshObligations(durable)
+                android.util.Log.i("muchtoman", "saveObligation: saved successfully, id=$id")
+            }.onFailure { android.util.Log.w("muchtoman", "saveObligation failed: $it") }
+        }
+    }
+
+    /** Mark an installment as paid, optionally linking it to a bank transaction. */
+    fun markInstallmentPaid(paymentId: String, txnRef: String = "") {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            val durable = DurableDb.get(app)
+            val now = System.currentTimeMillis()
+            runCatching {
+                durable.installmentPayments().markPaid(paymentId, now, txnRef)
+                refreshObligations(durable)
+            }.onFailure { android.util.Log.w("muchtoman", "markInstallmentPaid failed: $it") }
+        }
+    }
+
+    /** Pay off all remaining installments of an obligation at once. */
+    fun payOffRemaining(obligationId: String) {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            val durable = DurableDb.get(app)
+            val now = System.currentTimeMillis()
+            runCatching {
+                durable.installmentPayments().markAllPaid(obligationId, now)
+                refreshObligations(durable)
+            }.onFailure { android.util.Log.w("muchtoman", "payOffRemaining failed: $it") }
+        }
+    }
+
+    /** Archive a completed obligation. */
+    fun archiveObligation(obligationId: String) {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            val durable = DurableDb.get(app)
+            val now = System.currentTimeMillis()
+            runCatching {
+                durable.obligations().archive(obligationId, now)
+                refreshObligations(durable)
+            }.onFailure { android.util.Log.w("muchtoman", "archiveObligation failed: $it") }
+        }
+    }
+
+    private suspend fun refreshObligations(durable: DurableDb) = ledgerMutex.withLock {
+        val obligations = durable.obligations().active()
+        val payments = mutableMapOf<String, List<InstallmentPayment>>()
+        for (ob in obligations) {
+            payments[ob.id] = durable.installmentPayments().forObligation(ob.id)
+        }
+        val reservations = durable.reservations().active()
+        _state.update { it.copy(obligations = obligations, obligationPayments = payments, reservations = reservations) }
+    }
+
+    // ──────────────────────── fund reservations ────────────────────────
+
+    fun saveReservation(purpose: String, amountRial: Long, categoryId: String?) {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            val durable = DurableDb.get(app)
+            val now = System.currentTimeMillis()
+            val id = uuid7(now)
+            runCatching {
+                durable.reservations().put(
+                    Reservation(id, purpose, amountRial, categoryId, now, now)
+                )
+                refreshObligations(durable)
+            }.onFailure { android.util.Log.w("muchtoman", "saveReservation failed: $it") }
+        }
+    }
+
+    fun releaseReservation(id: String) {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            val durable = DurableDb.get(app)
+            val now = System.currentTimeMillis()
+            runCatching {
+                durable.reservations().release(id, now)
+                refreshObligations(durable)
+            }.onFailure { android.util.Log.w("muchtoman", "releaseReservation failed: $it") }
+        }
+    }
+
+    fun deleteReservation(id: String) {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            val durable = DurableDb.get(app)
+            runCatching {
+                durable.reservations().delete(id)
+                refreshObligations(durable)
+            }.onFailure { android.util.Log.w("muchtoman", "deleteReservation failed: $it") }
+        }
+    }
+
+    // ──────────────────────── CSV export ────────────────────────
+
+    /** Export ledger entries to CSV and share via Android intent. */
+    fun exportCsv(context: Context) {
+        viewModelScope.launch(Dispatchers.Default) {
+            runCatching {
+                val entries = _state.value.ledger.entries.filterNot { it.duplicate }
+                val csv = buildString {
+                    appendLine("تاریخ,مبلغ,جهت,دسته‌بندی,فروشگاه,بانک,یادداشت")
+                    for (entry in entries) {
+                        val txn = entry.txn
+                        val date = jalaliOf(txn.at).let { "${it.year}/${it.month}/${it.day}" }
+                        val amount = txn.signedRial ?: txn.amountRial ?: 0L
+                        val direction = when (txn.direction) {
+                            "in" -> "واریز"
+                            "out" -> "برداشت"
+                            else -> "نامشخص"
+                        }
+                        val category = entry.categoryFa
+                        val merchant = txn.merchant.replace(",", " ")
+                        val bank = bankNameOf(txn.bank)
+                        val note = "" // Notes could be loaded from decisions if needed
+                        appendLine("$date,$amount,$direction,$category,$merchant,$bank,$note")
+                    }
+                }
+                val file = File(context.cacheDir, "muchtoman_ledger.csv")
+                file.writeText(csv)
+                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                val intent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/csv"
+                    putExtra(Intent.EXTRA_STREAM, uri)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                context.startActivity(Intent.createChooser(intent, "خروجی CSV"))
+            }.onFailure { android.util.Log.w("muchtoman", "exportCsv failed: $it") }
         }
     }
 
@@ -1004,6 +1294,9 @@ data class UiState(
     val tse: TseSnapshot = TseSnapshot(),
     val ledger: LedgerView = LedgerView(),
     val family: FamilyState = FamilyState(),
+    val obligations: List<InstallmentObligation> = emptyList(),
+    val obligationPayments: Map<String, List<InstallmentPayment>> = emptyMap(),
+    val reservations: List<Reservation> = emptyList(),
 ) {
     val coins: List<Coin> get() = rates.coins
 
@@ -1043,6 +1336,28 @@ data class UiState(
 
     /** The tracked balances as one figure, minus the banks she switched off. */
     val bankToman: Double get() = bankTotal(bankAccounts, disabledBanks)
+
+    /**
+     * Committed money: the sum of unpaid installments across all active obligations,
+     * plus active reservations. Whole Rial, like everything else in the financial model.
+     */
+    val committedRial: Long by lazy {
+        val installmentCommitted = obligations.filter { !it.archived }.sumOf { obligation ->
+            val paid = obligationPayments[obligation.id]?.count { it.paidDate != null } ?: 0
+            val unpaidCount = obligation.installmentCount - paid
+            unpaidCount.toLong() * obligation.installmentRial
+        }
+        val reservationCommitted = reservations.filter { !it.released }.sumOf { it.amountRial }
+        installmentCommitted + reservationCommitted
+    }
+
+    /**
+     * Available to spend: bank balance minus money committed to future installment payments.
+     * In Toman, derived from [bankToman] and [committedRial].
+     */
+    val availableToman: Double by lazy {
+        bankToman - committedRial / 10.0
+    }
 
     /** True while any tracked balance is a guess rather than something a bank stated. */
     val bankUnsure: Boolean

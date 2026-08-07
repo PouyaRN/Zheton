@@ -25,7 +25,7 @@ import androidx.room.withTransaction
 // 2: implausible figures are dropped rather than saturating Long. Bumping this is the whole
 // mechanism — the next launch rebuilds every transaction from the stored messages, offline,
 // with no inbox read and no permission, and every correction and anchor stays exactly put.
-const val PARSER_VERSION = 2
+const val PARSER_VERSION = 3
 
 private const val META_PARSER_VER = "parser_ver"
 private const val META_DERIVED_AT = "derived_at"
@@ -217,10 +217,80 @@ const val MAX_PLAUSIBLE_RIAL = 100_000_000_000_000L // 10 trillion Toman
 private fun plausible(rial: Long?): Boolean =
     rial == null || (rial in -MAX_PLAUSIBLE_RIAL..MAX_PLAUSIBLE_RIAL)
 
-fun parseToRows(source: SmsSource, extra: Map<String, Bank>): List<Txn> {
+// ─────────────────────── merchant-hint correlation ───────────────────────
+
+internal data class PendingHint(
+    val bank: String,
+    val amountRial: Long,
+    val merchant: String,
+    val at: Long,
+)
+
+private const val HINT_TTL_MS = 10 * 60 * 1000L // 10 minutes
+
+/**
+ * Scan all sources for Maskan hint messages and build the pending-hint buffer. Hints are
+ * identified by body shape, not by sender — the sender gate already ran at ingest time.
+ * Runs once before the main parse pass.
+ */
+private fun scanHints(
+    sources: List<SmsSource>,
+    extra: Map<String, Bank>,
+): MutableMap<String, MutableList<PendingHint>> {
+    val buffer = mutableMapOf<String, MutableList<PendingHint>>()
+    for (source in sources) {
+        if (!isMaskanHint(source.body)) continue
+        val bank = bankOf(source.sender, extra)?.name ?: continue
+        val read = parseBankSms(source.sender, source.body, source.at, extra) ?: continue
+        if (read.amountRial == null) continue
+        val merchant = merchantInHint(source.body)
+        if (merchant.isEmpty()) continue
+        buffer.getOrPut(bank) { mutableListOf() }
+            .add(PendingHint(bank, read.amountRial, merchant, source.at))
+    }
+    return buffer
+}
+
+/**
+ * Find the closest preceding hint for this transaction. Consumes (deletes) the match so it
+ * cannot be reused. Returns empty string when no unambiguous match exists.
+ */
+private fun consumeHint(
+    bank: String,
+    amountRial: Long?,
+    at: Long,
+    buffer: MutableMap<String, MutableList<PendingHint>>,
+): String {
+    if (amountRial == null) return ""
+    val candidates = buffer[bank] ?: return ""
+    val match = candidates
+        .filter { it.amountRial == amountRial && it.at <= at && (at - it.at) <= HINT_TTL_MS }
+        .minByOrNull { at - it.at }
+    if (match != null) {
+        candidates.remove(match)
+        return match.merchant
+    }
+    return ""
+}
+
+internal fun parseToRows(
+    source: SmsSource,
+    extra: Map<String, Bank>,
+    hintBuffer: MutableMap<String, MutableList<PendingHint>> = mutableMapOf(),
+): List<Txn> {
+    // If this is a Maskan hint, it was already scanned into the buffer — skip it entirely so
+    // it never produces a ledger entry.
+    if (isMaskanHint(source.body)) return emptyList()
+
     val read = parseBankSms(source.sender, source.body, source.at, extra) ?: return emptyList()
     if (!plausible(read.amountRial) || !plausible(read.balanceRial)) return emptyList()
     val direction = read.delta?.let { if (it > 0) "in" else "out" }
+
+    // Enrich merchant from hint buffer when the parser found none on its own.
+    val enrichedMerchant = read.merchant.ifEmpty {
+        consumeHint(read.bank.name, read.amountRial, source.at, hintBuffer)
+    }
+
     return listOf(
         Txn(
             ref = refOf(source.srcHash, 0),
@@ -237,8 +307,8 @@ fun parseToRows(source: SmsSource, extra: Map<String, Bank>): List<Txn> {
             feeRial = read.feeRial,
             mask = read.mask,
             instrument = read.instrument.name.lowercase(),
-            merchant = read.merchant,
-            merchantNorm = merchantNorm(read.merchant),
+            merchant = enrichedMerchant,
+            merchantNorm = merchantNorm(enrichedMerchant),
             refNo = read.refNo,
             printedAt = read.printedAt,
             channel = read.channel.name.lowercase(),
@@ -342,9 +412,13 @@ suspend fun derive(
         derived.classes().deleteAll()
         derived.links().deleteAll()
 
+        // Scan for merchant hints (Maskan purchase-initiation messages) before the main pass.
+        // The buffer is consumed as debits are matched, so stale hints never accumulate.
+        val hintBuffer = scanHints(sources, extra)
+
         val all = mutableListOf<Txn>()
         for (chunk in sources.chunked(500)) {
-            val rows = chunk.flatMap { parseToRows(it, extra) }
+            val rows = chunk.flatMap { parseToRows(it, extra, hintBuffer) }
             derived.txn().insertAll(rows)
             all += rows
             written += rows.size
@@ -423,6 +497,8 @@ data class LedgerView(
     val goals: List<GoalProgress> = emptyList(),
     /** ref → yes | no | needed, for the ones she has answered. */
     val worthIt: Map<String, String> = emptyMap(),
+    /** ref → note text, for the ones she has written a note for. */
+    val notes: Map<String, String> = emptyMap(),
     val ready: Boolean = false,
 ) {
     /** Only what she actually has to answer, biggest first, and never more than a week's worth. */
@@ -481,9 +557,12 @@ suspend fun ledgerView(derived: DerivedDb, durable: DurableDb, limit: Int = 300)
     val answers = durable.decisions().ofKind(DecisionKind.WORTH_IT)
         .mapNotNull { d -> d.value?.let { d.ref to it } }
         .toMap()
+    val notes = durable.decisions().ofKind(DecisionKind.NOTE)
+        .mapNotNull { d -> d.value?.let { d.ref to it } }
+        .toMap()
     val today = tehranDay(System.currentTimeMillis())
     val goals = durable.goals().active().map { goalProgress(it, ledger.entries, today) }
-    return LedgerView(ledger.entries, ledger.categories, goals, answers, ready = true)
+    return LedgerView(ledger.entries, ledger.categories, goals, answers, notes, ready = true)
 }
 
 /**

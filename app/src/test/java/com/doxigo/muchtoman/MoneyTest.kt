@@ -807,7 +807,8 @@ class MoneyTest {
         assertEquals(-50_000_000.0, m.delta!!, 0.01)    // 500,000,000 ریال, out
         assertTrue(!m.inferred)
         // The date on the last line is digits and a dash; it is not an account number.
-        assertEquals("", m.mask)
+        // The labeled account after حساب is now captured.
+        assertEquals("7591126460", m.mask)
         val accounts = applyBankSms(emptyList(), m)
         assertEquals(14_028_518.7, bankTotal(accounts, emptySet()), 0.01)
     }

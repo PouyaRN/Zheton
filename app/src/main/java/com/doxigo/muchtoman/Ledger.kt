@@ -36,9 +36,10 @@ import androidx.sqlite.execSQL
         SmsSource::class, DurableMeta::class, BalanceAnchor::class,
         Category::class, Rule::class, TxnDecision::class, LinkDecision::class,
         ManualTxn::class, Goal::class, FamilyMember::class, FamilyTxn::class,
-        SyncPublication::class,
+        SyncPublication::class, InstallmentObligation::class, InstallmentPayment::class,
+        Reservation::class,
     ],
-    version = 6,
+    version = 8,
     exportSchema = true,
 )
 abstract class DurableDb : RoomDatabase() {
@@ -54,6 +55,9 @@ abstract class DurableDb : RoomDatabase() {
     abstract fun familyMembers(): FamilyMemberDao
     abstract fun familyTxns(): FamilyTxnDao
     abstract fun syncPublications(): SyncPublicationDao
+    abstract fun obligations(): InstallmentObligationDao
+    abstract fun installmentPayments(): InstallmentPaymentDao
+    abstract fun reservations(): ReservationDao
 
     companion object {
         @Volatile private var instance: DurableDb? = null
@@ -208,6 +212,66 @@ abstract class DurableDb : RoomDatabase() {
             }
         }
 
+        /** Installment/credit-purchase tracking — manual entry, bank-independent. */
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `installment_obligation` (" +
+                        "`id` TEXT NOT NULL, `provider` TEXT NOT NULL, " +
+                        "`total_rial` INTEGER NOT NULL, `down_payment_rial` INTEGER NOT NULL, " +
+                        "`installment_count` INTEGER NOT NULL, `installment_rial` INTEGER NOT NULL, " +
+                        "`start_date` INTEGER NOT NULL, `notes` TEXT NOT NULL, " +
+                        "`linked_txn_ref` TEXT NOT NULL, " +
+                        "`created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, " +
+                        "`archived` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_installment_obligation_archived` " +
+                        "ON `installment_obligation` (`archived`)"
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_installment_obligation_created_at` " +
+                        "ON `installment_obligation` (`created_at`)"
+                )
+                connection.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `installment_payment` (" +
+                        "`id` TEXT NOT NULL, `obligation_id` TEXT NOT NULL, " +
+                        "`installment_number` INTEGER NOT NULL, `due_date` INTEGER NOT NULL, " +
+                        "`amount_rial` INTEGER NOT NULL, `paid_date` INTEGER, " +
+                        "`linked_txn_ref` TEXT NOT NULL, PRIMARY KEY(`id`))"
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_installment_payment_obligation_id` " +
+                        "ON `installment_payment` (`obligation_id`)"
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_installment_payment_obligation_id_paid_date` " +
+                        "ON `installment_payment` (`obligation_id`, `paid_date`)"
+                )
+            }
+        }
+
+        /** Fund reservations — money set aside for a purpose. */
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `reservation` (" +
+                        "`id` TEXT NOT NULL, `purpose` TEXT NOT NULL, " +
+                        "`amount_rial` INTEGER NOT NULL, `category_id` TEXT, " +
+                        "`created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, " +
+                        "`released` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_reservation_released` " +
+                        "ON `reservation` (`released`)"
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_reservation_created_at` " +
+                        "ON `reservation` (`created_at`)"
+                )
+            }
+        }
+
         fun get(context: Context): DurableDb = instance ?: synchronized(this) {
             instance ?: Room
                 .databaseBuilder(context.applicationContext, DurableDb::class.java, "durable.db")
@@ -216,7 +280,7 @@ abstract class DurableDb : RoomDatabase() {
                 // copy of messages her inbox may no longer have.
                 .addMigrations(
                     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
-                    MIGRATION_5_6,
+                    MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8,
                 )
                 .build()
                 .also { instance = it }

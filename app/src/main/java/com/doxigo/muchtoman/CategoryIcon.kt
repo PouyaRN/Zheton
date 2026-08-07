@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 enum class CategoryGlyph {
     BASKET, CUP, BUS, RECEIPT, CROSS, TAG, NOTE, PERCENT, TRAY, SWAP,
     STACK, PLANE, GIFT, BLOOM, SHIRT, MUSIC, HOUSE, PERSON, LEND, PAYBACK,
+    FLAME, SHIELD, BOOK, PAW, STAR, CYCLE, CHIP, WRENCH, MAP,
     DOTS,
 }
 
@@ -59,6 +60,15 @@ fun categoryGlyph(nameFa: String): CategoryGlyph = when (nameFa) {
     "پس‌گرفتن قرض" -> CategoryGlyph.PAYBACK
     "برداشت نقدی" -> CategoryGlyph.NOTE
     "کارمزد" -> CategoryGlyph.PERCENT
+    "بنزین و سوخت" -> CategoryGlyph.FLAME
+    "بیمه" -> CategoryGlyph.SHIELD
+    "آموزش" -> CategoryGlyph.BOOK
+    "حیوانات خانگی" -> CategoryGlyph.PAW
+    "سرگرمی" -> CategoryGlyph.STAR
+    "اشتراک" -> CategoryGlyph.CYCLE
+    "لوازم الکترونیکی" -> CategoryGlyph.CHIP
+    "تعمیرات" -> CategoryGlyph.WRENCH
+    "سفر" -> CategoryGlyph.MAP
     "درآمد" -> CategoryGlyph.TRAY
     "انتقال بین حساب‌ها" -> CategoryGlyph.SWAP
     else -> CategoryGlyph.DOTS
@@ -420,6 +430,156 @@ private fun DrawScope.drawGlyph(glyph: CategoryGlyph, tint: Color, stroke: Dp) {
                 tint,
                 style = ink,
             )
+        }
+        // A flame: for fuel/gas.
+        CategoryGlyph.FLAME -> {
+            drawPath(
+                Path().apply {
+                    moveTo(w * 0.5f, h * 0.08f)
+                    quadraticTo(w * 0.72f, h * 0.32f, w * 0.68f, h * 0.6f)
+                    quadraticTo(w * 0.64f, h * 0.84f, w * 0.5f, h * 0.88f)
+                    quadraticTo(w * 0.36f, h * 0.84f, w * 0.32f, h * 0.6f)
+                    quadraticTo(w * 0.28f, h * 0.32f, w * 0.5f, h * 0.08f)
+                    close()
+                },
+                tint,
+                style = ink,
+            )
+        }
+        // A shield: for insurance.
+        CategoryGlyph.SHIELD -> {
+            drawPath(
+                Path().apply {
+                    moveTo(w * 0.5f, h * 0.08f)
+                    lineTo(w * 0.88f, h * 0.24f)
+                    lineTo(w * 0.88f, h * 0.52f)
+                    quadraticTo(w * 0.88f, h * 0.8f, w * 0.5f, h * 0.92f)
+                    quadraticTo(w * 0.12f, h * 0.8f, w * 0.12f, h * 0.52f)
+                    lineTo(w * 0.12f, h * 0.24f)
+                    close()
+                },
+                tint,
+                style = ink,
+            )
+        }
+        // A book: for education.
+        CategoryGlyph.BOOK -> {
+            drawPath(
+                Path().apply {
+                    moveTo(w * 0.5f, h * 0.12f)
+                    lineTo(w * 0.5f, h * 0.88f)
+                },
+                tint,
+                style = ink,
+            )
+            drawPath(
+                Path().apply {
+                    moveTo(w * 0.5f, h * 0.12f)
+                    quadraticTo(w * 0.28f, h * 0.16f, w * 0.12f, h * 0.24f)
+                    lineTo(w * 0.12f, h * 0.84f)
+                    quadraticTo(w * 0.28f, h * 0.76f, w * 0.5f, h * 0.88f)
+                },
+                tint,
+                style = ink,
+            )
+            drawPath(
+                Path().apply {
+                    moveTo(w * 0.5f, h * 0.12f)
+                    quadraticTo(w * 0.72f, h * 0.16f, w * 0.88f, h * 0.24f)
+                    lineTo(w * 0.88f, h * 0.84f)
+                    quadraticTo(w * 0.72f, h * 0.76f, w * 0.5f, h * 0.88f)
+                },
+                tint,
+                style = ink,
+            )
+        }
+        // A paw print: for pets.
+        CategoryGlyph.PAW -> {
+            drawCircle(tint, w * 0.1f, Offset(w * 0.32f, h * 0.28f))
+            drawCircle(tint, w * 0.1f, Offset(w * 0.68f, h * 0.28f))
+            drawCircle(tint, w * 0.08f, Offset(w * 0.2f, h * 0.52f))
+            drawCircle(tint, w * 0.08f, Offset(w * 0.8f, h * 0.52f))
+            drawCircle(tint, w * 0.16f, Offset(w * 0.5f, h * 0.68f))
+        }
+        // A star: for entertainment.
+        CategoryGlyph.STAR -> {
+            drawPath(
+                Path().apply {
+                    moveTo(w * 0.5f, h * 0.08f)
+                    lineTo(w * 0.62f, h * 0.36f)
+                    lineTo(w * 0.92f, h * 0.36f)
+                    lineTo(w * 0.68f, h * 0.56f)
+                    lineTo(w * 0.78f, h * 0.88f)
+                    lineTo(w * 0.5f, h * 0.68f)
+                    lineTo(w * 0.22f, h * 0.88f)
+                    lineTo(w * 0.32f, h * 0.56f)
+                    lineTo(w * 0.08f, h * 0.36f)
+                    lineTo(w * 0.38f, h * 0.36f)
+                    close()
+                },
+                tint,
+                style = ink,
+            )
+        }
+        // A circular arrow: for subscriptions/recurring.
+        CategoryGlyph.CYCLE -> {
+            drawArc(
+                tint, startAngle = -30f, sweepAngle = 300f, useCenter = false,
+                topLeft = Offset(w * 0.12f, h * 0.12f),
+                size = Size(w * 0.76f, h * 0.76f),
+                style = ink,
+            )
+            drawPath(
+                Path().apply {
+                    moveTo(w * 0.72f, h * 0.16f)
+                    lineTo(w * 0.88f, h * 0.28f)
+                    lineTo(w * 0.72f, h * 0.36f)
+                },
+                tint,
+                style = ink,
+            )
+        }
+        // A chip/circuit: for electronics.
+        CategoryGlyph.CHIP -> {
+            drawRect(tint, Offset(w * 0.28f, h * 0.28f), Size(w * 0.44f, h * 0.44f), style = ink)
+            for (x in listOf(0.28f, 0.5f, 0.72f)) {
+                drawLine(tint, Offset(w * x, h * 0.28f), Offset(w * x, h * 0.12f), strokeWidth = stroke.toPx())
+                drawLine(tint, Offset(w * x, h * 0.72f), Offset(w * x, h * 0.88f), strokeWidth = stroke.toPx())
+            }
+            for (y in listOf(0.28f, 0.5f, 0.72f)) {
+                drawLine(tint, Offset(w * 0.28f, h * y), Offset(w * 0.12f, h * y), strokeWidth = stroke.toPx())
+                drawLine(tint, Offset(w * 0.72f, h * y), Offset(w * 0.88f, h * y), strokeWidth = stroke.toPx())
+            }
+        }
+        // A wrench: for repairs.
+        CategoryGlyph.WRENCH -> {
+            drawPath(
+                Path().apply {
+                    moveTo(w * 0.28f, h * 0.72f)
+                    lineTo(w * 0.72f, h * 0.28f)
+                    quadraticTo(w * 0.84f, h * 0.16f, w * 0.92f, h * 0.24f)
+                    quadraticTo(w * 0.84f, h * 0.32f, w * 0.72f, h * 0.28f)
+                },
+                tint,
+                style = ink,
+            )
+            drawCircle(tint, w * 0.18f, Offset(w * 0.22f, h * 0.78f), style = ink)
+        }
+        // A map pin: for travel.
+        CategoryGlyph.MAP -> {
+            drawPath(
+                Path().apply {
+                    moveTo(w * 0.5f, h * 0.88f)
+                    quadraticTo(w * 0.2f, h * 0.56f, w * 0.2f, h * 0.36f)
+                    quadraticTo(w * 0.2f, h * 0.12f, w * 0.5f, h * 0.12f)
+                    quadraticTo(w * 0.8f, h * 0.12f, w * 0.8f, h * 0.36f)
+                    quadraticTo(w * 0.8f, h * 0.56f, w * 0.5f, h * 0.88f)
+                    close()
+                },
+                tint,
+                style = ink,
+            )
+            drawCircle(tint, w * 0.12f, Offset(w * 0.5f, h * 0.36f))
         }
         // Nothing known yet. Three dots say «unset» without the alarm a «؟» carries.
         CategoryGlyph.DOTS -> {

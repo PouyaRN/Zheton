@@ -2,8 +2,11 @@ package com.doxigo.muchtoman
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -17,6 +20,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -54,12 +58,15 @@ import kotlin.math.roundToLong
 fun GoalsScreen(
     goals: List<GoalProgress>,
     summary: WorthItSummary,
-    onAdd: (String, Long) -> Unit,
+    categories: List<Category>,
+    onAdd: (String, Long, String) -> Unit,
     onDelete: (String) -> Unit,
     bottomInset: androidx.compose.ui.unit.Dp,
 ) {
     var name by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
+    var isCap by remember { mutableStateOf(false) }
+    var selectedCategoryId by remember { mutableStateOf<String?>(null) }
     val targetRial = remember(amount) {
         parseAmount(amount)
             ?.takeIf { it > 0.0 && it <= Long.MAX_VALUE / 10.0 }
@@ -107,10 +114,54 @@ fun GoalsScreen(
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Spacer(Modifier.height(Space.s))
+
+            // Goal type selector
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Space.m),
+            ) {
+                FilterChip(
+                    selected = !isCap,
+                    onClick = { isCap = false; selectedCategoryId = null },
+                    label = { Text("پس‌انداز") },
+                    modifier = Modifier.weight(1f),
+                )
+                FilterChip(
+                    selected = isCap,
+                    onClick = { isCap = true },
+                    label = { Text("سقف هزینه") },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+
+            if (isCap) {
+                Spacer(Modifier.height(Space.s))
+                Text(
+                    "دسته‌بندی",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = Space.xs),
+                )
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(Space.s),
+                ) {
+                    categories.filter { it.kind == "expense" }.forEach { category ->
+                        FilterChip(
+                            selected = category.id == selectedCategoryId,
+                            onClick = {
+                                selectedCategoryId = if (category.id == selectedCategoryId) null else category.id
+                            },
+                            label = { Text(category.nameFa, fontSize = 12.sp) },
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(Space.s))
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("هدفت چیه؟") },
+                label = { Text(if (isCap) "نام سقف (مثلاً: رستوران)" else "هدفت چیه؟") },
                 singleLine = true,
                 shape = RoundedCornerShape(Radius.field),
                 modifier = Modifier.fillMaxWidth(),
@@ -136,10 +187,15 @@ fun GoalsScreen(
                 onClick = {
                     val rial = targetRial ?: return@Button
                     if (name.isBlank()) return@Button
-                    onAdd(name.trim(), rial)
-                    name = ""; amount = ""
+                    val kind = if (isCap) GoalKind.CAP else GoalKind.SAVE
+                    val goalName = if (isCap && selectedCategoryId != null) {
+                        val catName = categories.firstOrNull { it.id == selectedCategoryId }?.nameFa ?: ""
+                        "$name ($catName)"
+                    } else name.trim()
+                    onAdd(goalName, rial, kind)
+                    name = ""; amount = ""; selectedCategoryId = null
                 },
-                enabled = name.isNotBlank() && targetRial != null,
+                enabled = name.isNotBlank() && targetRial != null && (!isCap || selectedCategoryId != null),
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("ذخیره هدف") }
 

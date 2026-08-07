@@ -28,6 +28,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
@@ -36,10 +38,21 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Clear
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -92,18 +105,34 @@ private fun faYear(year: Int): String = buildString {
 @Composable
 fun TimelineScreen(
     ledger: LedgerView,
+    state: UiState,
     bottomInset: androidx.compose.ui.unit.Dp,
     onReview: () -> Unit,
     onOpen: (LedgerEntry) -> Unit,
+    onMarkCredit: (LedgerEntry) -> Unit,
+    onLinkInstallment: (LedgerEntry) -> Unit,
+    onExport: () -> Unit,
 ) {
     val today = remember { tehranDay(System.currentTimeMillis()) }
     val visible = ledger.entries.filterNot { it.duplicate }
-    val grouped = remember(visible) { visible.groupBy { it.txn.day }.toSortedMap(compareByDescending { it }) }
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedCategoryId by remember { mutableStateOf<String?>(null) }
+
+    val filtered = remember(visible, searchQuery, selectedCategoryId) {
+        visible.filter { entry ->
+            val matchesSearch = searchQuery.isBlank() ||
+                entry.txn.merchant.contains(searchQuery, ignoreCase = true) ||
+                entry.categoryFa.contains(searchQuery, ignoreCase = true) ||
+                (entry.txn.amountRial?.let { faNumber(it / 10.0).contains(searchQuery) } == true)
+            val matchesCategory = selectedCategoryId == null || entry.categoryId == selectedCategoryId
+            matchesSearch && matchesCategory
+        }
+    }
+
+    val grouped = remember(filtered) { filtered.groupBy { it.txn.day }.toSortedMap(compareByDescending { it }) }
     val waiting = ledger.review.size
 
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
-        // statusBars only: the tab bar below owns the bottom, and taking systemBars here
-        // would leave a gap the width of the navigation bar above it.
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
             Row(
                 Modifier.fillMaxWidth().padding(horizontal = Space.xl, vertical = Space.m),
@@ -117,23 +146,78 @@ fun TimelineScreen(
                     modifier = Modifier.semantics { heading() },
                 )
                 Spacer(Modifier.weight(1f))
+                IconButton(onClick = onExport) {
+                    Icon(Icons.Rounded.Share, contentDescription = "خروجی CSV")
+                }
                 if (waiting > 0) ReviewPill(waiting, onReview)
             }
 
-            if (visible.isEmpty()) {
-                EmptyLedger()
+            // Search bar
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = Space.xl),
+                placeholder = { Text("جستجو...") },
+                leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
+                trailingIcon = {
+                    if (searchQuery.isNotBlank()) {
+                        IconButton(onClick = { searchQuery = "" }) {
+                            Icon(Icons.Rounded.Clear, contentDescription = "پاک کردن")
+                        }
+                    }
+                },
+                singleLine = true,
+            )
+
+            // Category filter chips
+            if (ledger.categories.isNotEmpty()) {
+                LazyRow(
+                    modifier = Modifier.padding(vertical = Space.s),
+                    contentPadding = PaddingValues(horizontal = Space.xl),
+                    horizontalArrangement = Arrangement.spacedBy(Space.s),
+                ) {
+                    item {
+                        FilterChip(
+                            selected = selectedCategoryId == null,
+                            onClick = { selectedCategoryId = null },
+                            label = { Text("همه", fontSize = 12.sp) },
+                        )
+                    }
+                    items(ledger.categories.filter { it.kind != "transfer" }) { category ->
+                        FilterChip(
+                            selected = category.id == selectedCategoryId,
+                            onClick = {
+                                selectedCategoryId = if (category.id == selectedCategoryId) null else category.id
+                            },
+                            label = { Text(category.nameFa, fontSize = 12.sp) },
+                        )
+                    }
+                }
+            }
+
+            if (filtered.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize().padding(Space.xl),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        "موردی یافت نشد",
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 return@Column
             }
 
             LazyColumn(
                 Modifier.fillMaxSize(),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                contentPadding = PaddingValues(
                     start = Space.xl, end = Space.xl, bottom = bottomInset + Space.l,
                 ),
             ) {
                 for ((day, rows) in grouped) {
                     item(key = "day-$day") {
-                        DayBand(day, today, rows, onOpen)
+                        DayBand(day, today, rows, state, onOpen, onMarkCredit, onLinkInstallment)
                     }
                 }
             }
@@ -155,7 +239,10 @@ private fun DayBand(
     day: Long,
     today: Long,
     rows: List<LedgerEntry>,
+    state: UiState,
     onOpen: (LedgerEntry) -> Unit,
+    onMarkCredit: (LedgerEntry) -> Unit,
+    onLinkInstallment: (LedgerEntry) -> Unit,
 ) {
     // Transfers move money between her own accounts. Counting them would show a day that only
     // shuffled funds as a day she earned or spent, which is the whole reason they are struck
@@ -194,7 +281,7 @@ private fun DayBand(
             .background(MaterialTheme.colorScheme.surfaceVariant),
     ) {
         rows.forEach { entry ->
-            TimelineRow(entry, onClick = { onOpen(entry) })
+            TimelineRow(entry, state, onClick = { onOpen(entry) }, onMarkCredit, onLinkInstallment)
         }
     }
 }
@@ -229,7 +316,13 @@ private fun ReviewPill(waiting: Int, onReview: () -> Unit) {
 }
 
 @Composable
-private fun TimelineRow(entry: LedgerEntry, onClick: () -> Unit) {
+private fun TimelineRow(
+    entry: LedgerEntry,
+    state: UiState,
+    onClick: () -> Unit,
+    onMarkCredit: (LedgerEntry) -> Unit,
+    onLinkInstallment: (LedgerEntry) -> Unit,
+) {
     val txn = entry.txn
     val incoming = txn.direction == "in"
     val tone = when {
@@ -237,11 +330,15 @@ private fun TimelineRow(entry: LedgerEntry, onClick: () -> Unit) {
         incoming -> Color(0xFF2E9E5B)
         else -> MaterialTheme.colorScheme.onBackground
     }
+    var menuOpen by remember { mutableStateOf(false) }
+    val isCreditLinked = state.obligations.any { it.linkedTxnRef == txn.ref }
+    val hasUnpaidInstallments = state.obligationPayments.values.any { payments ->
+        payments.any { it.paidDate == null }
+    }
+
     Row(
         Modifier
             .fillMaxWidth()
-            // No clip of its own: the band above owns the corners, and a row that rounded its
-            // own would cut a notch out of the object it sits inside.
             .clickable(role = Role.Button, onClick = onClick)
             .padding(vertical = Space.m, horizontal = Space.l),
         verticalAlignment = Alignment.CenterVertically,
@@ -255,10 +352,19 @@ private fun TimelineRow(entry: LedgerEntry, onClick: () -> Unit) {
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
             )
+            // Show the note subtitle when a note exists.
+            val note = state.ledger.notes[txn.ref]
+            if (!note.isNullOrBlank()) {
+                Text(
+                    note,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 val categoryFa = if (entry.transfer) "انتقال بین حساب‌ها" else entry.categoryFa
-                // Same mark as the grid she chose it in. A hundred rows of grey 12sp are read by
-                // the shape at the start of the line long before the word is.
                 CategoryIcon(
                     categoryFa,
                     MaterialTheme.colorScheme.onSurfaceVariant,
@@ -282,13 +388,10 @@ private fun TimelineRow(entry: LedgerEntry, onClick: () -> Unit) {
                 }
                 if (entry.needsReview && !entry.transfer) {
                     Spacer(Modifier.width(Space.xs))
-                    // A dot, not a warning. Nothing here is wrong; something is merely unconfirmed.
                     Box(
                         Modifier
                             .size(6.dp)
                             .clip(RoundedCornerShape(3.dp))
-                            // Not `tertiary`: in dark theme that is the same green income is
-                            // already speaking in, so every unconfirmed row read as a deposit.
                             .background(MaterialTheme.colorScheme.primary),
                     )
                 }
@@ -308,6 +411,34 @@ private fun TimelineRow(entry: LedgerEntry, onClick: () -> Unit) {
                 fontSize = 12.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+
+        // Three-dot action menu — only for debit transactions with meaningful actions.
+        if (!entry.transfer && (txn.direction == "out" || txn.direction == null)) {
+            Box {
+                IconButton(onClick = { menuOpen = true }, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        Icons.Rounded.MoreVert,
+                        contentDescription = "عملیات",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    if (!isCreditLinked && rial != null && rial < 0) {
+                        DropdownMenuItem(
+                            text = { Text("ثبت به عنوان خرید اعتباری") },
+                            onClick = { menuOpen = false; onMarkCredit(entry) },
+                        )
+                    }
+                    if (hasUnpaidInstallments && rial != null && rial < 0) {
+                        DropdownMenuItem(
+                            text = { Text("پیوند به قسط") },
+                            onClick = { menuOpen = false; onLinkInstallment(entry) },
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -340,7 +471,9 @@ internal fun bankNameOf(bank: String): String =
 fun TransactionScreen(
     entry: LedgerEntry,
     categories: List<Category>,
+    existingNote: String,
     onCategorise: (LedgerEntry, String, Boolean) -> Unit,
+    onSaveNote: (LedgerEntry, String) -> Unit,
     onLoadSource: suspend (LedgerEntry) -> String,
     onBack: () -> Unit,
 ) {
@@ -349,6 +482,7 @@ fun TransactionScreen(
     var learnSimilar by rememberSaveable(txn.ref) { mutableStateOf(false) }
     var chosen by remember(txn.ref) { mutableStateOf(entry.categoryId) }
     var source by remember(txn.ref) { mutableStateOf<String?>(null) }
+    var noteText by remember(txn.ref) { mutableStateOf(existingNote) }
 
     LaunchedEffect(txn.ref) { source = onLoadSource(entry) }
     LaunchedEffect(entry.categoryId) { chosen = entry.categoryId }
@@ -462,6 +596,33 @@ fun TransactionScreen(
                                 onCategorise(entry, category.id, learnSimilar)
                             },
                         )
+                    }
+                }
+            }
+
+            item(key = "notes") {
+                Column(gutter) {
+                    Spacer(Modifier.height(Space.xxl))
+                    Text(
+                        "یادداشت",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    Spacer(Modifier.height(Space.m))
+                    OutlinedTextField(
+                        value = noteText,
+                        onValueChange = { noteText = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("یادداشت خود را بنویسید...") },
+                        maxLines = 3,
+                    )
+                    Spacer(Modifier.height(Space.s))
+                    if (noteText != existingNote) {
+                        TextButton(onClick = { onSaveNote(entry, noteText) }) {
+                            Text("ذخیره یادداشت")
+                        }
                     }
                 }
             }

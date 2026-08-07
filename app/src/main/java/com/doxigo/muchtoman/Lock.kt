@@ -33,6 +33,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -197,6 +198,7 @@ fun SettingsScreen(
     onBankChange: (String, Boolean) -> Unit,
     onLockChange: (Boolean) -> Unit,
     onWidgetLockChange: (Boolean) -> Unit,
+    onCategoriesManage: () -> Unit,
     onBack: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -377,6 +379,44 @@ fun SettingsScreen(
                     lineHeight = 20.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = Space.m, start = Space.xs, end = Space.xs),
+                )
+            }
+
+            SectionLabel("دسته‌بندی‌ها")
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(Radius.group))
+                    .clickable { onCategoriesManage() }
+                    .padding(horizontal = Space.l, vertical = Space.l),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                    contentAlignment = Alignment.Center,
+                ) { Text("🏷️", fontSize = 20.sp) }
+                Column(Modifier.padding(horizontal = Space.m).weight(1f)) {
+                    Text(
+                        "مدیریت دسته‌بندی‌ها",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        "ساخت، ویرایش و حذف دسته‌بندی‌ها",
+                        fontSize = 13.sp,
+                        lineHeight = 20.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp),
                 )
             }
 

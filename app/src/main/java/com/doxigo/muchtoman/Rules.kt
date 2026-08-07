@@ -83,7 +83,16 @@ val BUILTIN_CATEGORIES: List<Category> = listOf(
 
     Category(CAT_CASH, nameFa = "برداشت نقدی", kind = CategoryKind.EXPENSE, sort = 160, builtin = true),
     Category(CAT_FEES, nameFa = "کارمزد", kind = CategoryKind.EXPENSE, sort = 170, builtin = true),
-    Category(CAT_INCOME, nameFa = "درآمد", kind = CategoryKind.INCOME, sort = 180, builtin = true),
+    Category("cat_fuel", nameFa = "بنزین و سوخت", kind = CategoryKind.EXPENSE, sort = 175, builtin = true),
+    Category("cat_insurance", nameFa = "بیمه", kind = CategoryKind.EXPENSE, sort = 185, builtin = true),
+    Category("cat_education", nameFa = "آموزش", kind = CategoryKind.EXPENSE, sort = 195, builtin = true),
+    Category("cat_pets", nameFa = "حیوانات خانگی", kind = CategoryKind.EXPENSE, sort = 205, builtin = true),
+    Category("cat_entertainment", nameFa = "سرگرمی", kind = CategoryKind.EXPENSE, sort = 215, builtin = true),
+    Category("cat_subscriptions", nameFa = "اشتراک", kind = CategoryKind.EXPENSE, sort = 225, builtin = true),
+    Category("cat_electronics", nameFa = "لوازم الکترونیکی", kind = CategoryKind.EXPENSE, sort = 235, builtin = true),
+    Category("cat_repair", nameFa = "تعمیرات", kind = CategoryKind.EXPENSE, sort = 245, builtin = true),
+    Category("cat_travel", nameFa = "سفر", kind = CategoryKind.EXPENSE, sort = 255, builtin = true),
+    Category(CAT_INCOME, nameFa = "درآمد", kind = CategoryKind.INCOME, sort = 300, builtin = true),
     // «پس‌گرفتن», not «پس‌دادن»: the ledger is hers, and on money coming in she is the one
     // getting it back — the other side is who gave it. Sorted beside درآمد because the picker
     // shows it on the same rows: the ones where money arrived.
@@ -344,6 +353,9 @@ interface CategoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun putAll(rows: List<Category>)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun put(row: Category)
+
     @Query("SELECT * FROM category WHERE archived = 0 ORDER BY sort, name_fa")
     suspend fun all(): List<Category>
 
@@ -352,6 +364,9 @@ interface CategoryDao {
 
     @Query("SELECT COUNT(*) FROM category")
     suspend fun count(): Int
+
+    @Query("UPDATE category SET archived = 1, updated_at = :updatedAt WHERE id = :id")
+    suspend fun archive(id: String, updatedAt: Long)
 }
 
 @Dao

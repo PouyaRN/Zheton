@@ -52,6 +52,7 @@ enum class Bank(val fa: String, val numbers: List<String>) {
     // 6219, 6104, 6037. Four digits is shorter than any mobile line, so each matches itself.
     MELLAT("بانک ملت", listOf("Bank Mellat", "6104")),
     MELLI("بانک ملی ایران", listOf("6037")),
+    MASKAN("بانک مسکن", listOf("Bank Maskan", "MaskanBank", "Maskan Bank")),
 
     /**
      * Never produced by reading a message. It is only what a balance saved by an older build
@@ -181,6 +182,8 @@ private fun normalise(s: String) = s
     .replace('ك', 'ک')
     .replace("\u200c", "")   // ZWNJ
     .replace('\u00a0', ' ')  // non-breaking space
+    .replace("\u200e", "")   // LRM
+    .replace("\u200f", "")   // RLM
     .lowercase()
 
 /**
@@ -315,6 +318,28 @@ private fun accountIn(text: String): String =
         // longer than any date, so length is what tells them apart.
         ?: DASHED.findAll(text).map { it.value }.firstOrNull { digitsIn(it) >= 10 }.orEmpty()
 
+private val ACCOUNT_LABEL = listOf("حساب", "شماره حساب")
+
+/**
+ * An account number printed on its own line, labeled with حساب. Only fires when [accountIn]
+ * found nothing, so masked and dashed patterns always win. The label must start the line —
+ * "مانده حساب: 561,311,672" is a balance, not an account.
+ */
+private fun labeledAccount(text: String): String {
+    for (label in ACCOUNT_LABEL) {
+        for (line in text.lines()) {
+            val trimmed = line.trim()
+            if (!trimmed.startsWith(label)) continue
+            val after = trimmed.substring(label.length)
+                .trimStart(' ', ':', '،', '\n', ' ')
+            val m = Regex("[0-9۰-۹٠-٩]{8,16}").find(after) ?: continue
+            if (m.value.contains('*') || m.value.contains('-')) continue
+            return m.value
+        }
+    }
+    return ""
+}
+
 /**
  * Read one message, or decline it.
  *
@@ -355,8 +380,12 @@ fun parseBankSms(
     }
     if (delta == null && balance == null) return null
 
-    val mask = accountIn(text)
+    val mask = accountIn(text).ifEmpty { labeledAccount(text) }
     val extras = enrich(text, body, fallback)
+    // Maskan prints dates as MMDD-HH:MM without a slash — the general regex misses them.
+    val printedAt = extras.printedAt.ifEmpty {
+        if (bank == Bank.MASKAN) maskanDate(body) else ""
+    }
     val sms = BankSms(
         bank = bank,
         sender = sender.trim(),
@@ -375,7 +404,7 @@ fun parseBankSms(
         feeRial = extras.feeRial,
         merchant = extras.merchant,
         refNo = extras.refNo,
-        printedAt = extras.printedAt,
+        printedAt = printedAt,
         channel = extras.channel,
         instrument = instrumentOf(mask),
         unitPrinted = when (amount?.divisor) {
@@ -527,6 +556,58 @@ internal fun enrich(normalised: String, rawBody: String, fallback: Double): Extr
     feeRial = feeIn(normalised, fallback),
 )
 
+// ─────────────────────── Maskan merchant-hint ───────────────────────
+
+/**
+ * A Maskan purchase-initiation message: carries the merchant name and a one-time password,
+ * but no balance. The real debit confirmation follows separately.
+ *
+ * Strict: only matches the exact shape — خرید + مبلغ + رمز + no مانده — not every no-balance
+ * Maskan message (e.g. انتقال has no مبلغ or رمز).
+ */
+internal fun isMaskanHint(body: String): Boolean {
+    val text = normalise(body)
+    return text.contains("خرید") &&
+        text.contains("مبلغ") &&
+        text.contains("رمز") &&
+        !text.contains("مانده")
+}
+
+/**
+ * Extract the merchant name from a Maskan hint: the first non-keyword, non-numeric line
+ * after "خرید". Returns empty when the shape is unexpected.
+ */
+internal fun merchantInHint(body: String): String {
+    val text = normalise(body)
+    val keywords = setOf("بانک", "خرید", "مبلغ", "رمز", "مانده", "موجودی", "حساب")
+    val lines = text.lines().map { it.trim() }.filter { it.isNotEmpty() }
+    val buyIdx = lines.indexOfFirst { it.contains("خرید") }
+    if (buyIdx < 0) return ""
+    for (i in buyIdx + 1 until lines.size) {
+        val line = lines[i]
+        if (keywords.any { line.startsWith(it) }) continue
+        // Skip lines that are purely numeric (amounts, OTPs)
+        if (Regex("[0-9۰-۹٠-٩]").containsMatchIn(line) &&
+            !Regex("[^0-9۰-۹٠-٩,، ]").containsMatchIn(line)) continue
+        if (line.length >= 2) return line
+    }
+    return ""
+}
+
+/**
+ * Maskan prints dates as MMDD-HH:MM without a slash (e.g. "0516-14:06"). The general
+ * [PRINTED_AT] regex requires a slash or dot between date parts, so this is handled here as
+ * a Maskan-specific fallback.
+ */
+private val MASKAN_DATE = Regex(
+    "(?<![0-9۰-۹٠-٩])" +
+        "[0-9۰-۹٠-٩]{4}[ _-][0-9۰-۹٠-٩]{1,2}:[0-9۰-۹٠-٩]{2}" +
+        "(?![0-9۰-۹٠-٩])"
+)
+
+private fun maskanDate(body: String): String =
+    MASKAN_DATE.find(body)?.value?.trim().orEmpty()
+
 /** Words that mark a مانده as an operator's bundle — data, minutes, credit — not money at a bank. */
 private val OPERATOR_WORDS = listOf("اینترنت", "بسته", "گیگ", "مکالمه", "شارژ")
 
@@ -556,7 +637,11 @@ fun isIgnoredBankSms(sender: String, body: String): Boolean {
 fun looksLikeBankSms(body: String): Boolean {
     val text = normalise(body)
     val f = figureAfter(text, BALANCE_WORDS, veto = NOT_A_BALANCE + OPERATOR_WORDS)
-    return f != null && f.value >= 100_000
+    if (f != null && f.value >= 100_000) return true
+    // Also fire on "مبلغ" (amount) ≥ 1M — this catches Maskan hint messages that carry an
+    // amount and merchant name but no balance, enabling the suggestion card for unknown senders.
+    val a = figureAfter(text, AMOUNT_WORDS, veto = NOT_A_BALANCE + OPERATOR_WORDS)
+    return a != null && a.value >= 1_000_000
 }
 
 /**
