@@ -1009,12 +1009,12 @@ class MoneyTest {
             BankAccount("KHAVARMIANEH", balance = 300_000_000.0, updatedAt = 5, anchored = true),
         )
         val kept = collapseAccounts(stored)
-        // ملت is that later joiner: it has a number now, so its row stays rather than
-        // vanishing — and one real message from that number replaces the −۹۱۶ میلیارد outright.
-        assertEquals(listOf("MELLAT", "SAMAN", "KHAVARMIANEH"), kept.map { it.bank })
+        // ملت and تجارت are later joiners: they have enum entries now, so their rows stay
+        // rather than vanishing — and real messages from their numbers replace old figures.
+        assertEquals(listOf("MELLAT", "TEJARAT", "SAMAN", "KHAVARMIANEH"), kept.map { it.bank })
         assertTrue(kept.none { it.bankFa == Bank.OTHER.fa })
         val fixed = applyBankSms(kept, parseBankSms("Bank Mellat", "مانده140,285,187", 10L)!!)
-        assertEquals(360_101_049.6, bankTotal(fixed, emptySet()), 0.01)
+        assertEquals(53_012_360_101_049.6, bankTotal(fixed, emptySet()), 0.01)
     }
 
     @Test

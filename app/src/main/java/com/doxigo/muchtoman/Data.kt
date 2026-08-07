@@ -472,9 +472,9 @@ internal fun InputStream.readUtf8Limited(maxBytes: Int): String {
  * rebuild every balance with the parser as it now stands. **Bump this whenever parsing changes,
  * or the fix ships to a phone that will never re-read the messages it applies to.**
  */
-// 11: the actual 90000258 thread proves it belongs to Blu, not Khavarmianeh. Rebuild every
-// balance because messages from that sender were previously skipped or assigned to the wrong bank.
-private const val SMS_SCHEMA = 11
+// 12: added Bank Sepah and Bank Tejarat with parser changes (group payment override,
+// OTP filter, explicit transaction-type direction). Re-read all SMS to re-parse with new logic.
+private const val SMS_SCHEMA = 12
 
 class Store(context: Context) {
     private val prefs = context.getSharedPreferences("muchtoman", Context.MODE_PRIVATE)

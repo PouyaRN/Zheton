@@ -53,6 +53,8 @@ enum class Bank(val fa: String, val numbers: List<String>) {
     MELLAT("بانک ملت", listOf("Bank Mellat", "6104")),
     MELLI("بانک ملی ایران", listOf("6037")),
     MASKAN("بانک مسکن", listOf("Bank Maskan", "MaskanBank", "Maskan Bank")),
+    SEPAH("بانک سپه", listOf("6715000")),
+    TEJARAT("بانک تجارت", listOf("TejaratBank")),
 
     /**
      * Never produced by reading a message. It is only what a balance saved by an older build
@@ -356,6 +358,14 @@ fun parseBankSms(
 ): BankSms? {
     val bank = bankOf(sender, extra) ?: return null
 
+    // Tejarat OTP/confirmation messages contain رمز (OTP code) but no مانده (balance).
+    // They describe the same transaction as the balance-bearing message and must not create
+    // a duplicate ledger entry.
+    if (bank == Bank.TEJARAT) {
+        val norm = normalise(body)
+        if (norm.contains("رمز") && !norm.contains("مانده")) return null
+    }
+
     val text = normalise(body)
     val fallback = fallbackDivisor(text)
 
@@ -366,8 +376,26 @@ fun parseBankSms(
 
     // Direction decides the sign, so a message that states no direction states no delta —
     // guessing one is how a deposit becomes a withdrawal.
-    val deposit = IN_WORDS.any { text.contains(it) }
-    val withdrawal = OUT_WORDS.any { text.contains(it) }
+    var deposit = IN_WORDS.any { text.contains(it) }
+    var withdrawal = OUT_WORDS.any { text.contains(it) }
+
+    // Sepah group payments: "پرداخت گروهي" + "واريز گروهي" is an incoming transfer, not an
+    // outgoing payment. The compound phrase must override the generic پرداخت keyword.
+    if (bank == Bank.SEPAH && text.contains("پرداخت گروهی") && text.contains("واریز گروهی")) {
+        deposit = true; withdrawal = false
+    }
+
+    // Tejarat labels each transaction with "نوع تراکنش:" — use it for direction when present,
+    // since the generic keyword matching can misclassify compound labels like "بازپرداخت/واريز".
+    if (bank == Bank.TEJARAT) {
+        val typeLabel = text.substringAfter("نوع تراکنش:", "").trim().take(60)
+        if (typeLabel.isNotEmpty()) {
+            deposit = typeLabel.contains("بازپرداخت") || typeLabel.contains("واریز")
+            withdrawal = typeLabel.contains("خرید") || typeLabel.contains("انتقال") ||
+                typeLabel.contains("برداشت")
+        }
+    }
+
     val amount = figureAfter(text, AMOUNT_WORDS)
         ?: figureAfter(text, IN_WORDS.takeIf { deposit } ?: emptyList())
         ?: figureAfter(text, OUT_WORDS.takeIf { withdrawal } ?: emptyList())

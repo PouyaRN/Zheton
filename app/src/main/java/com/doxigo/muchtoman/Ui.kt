@@ -3343,6 +3343,8 @@ internal fun BankLogo(bank: String, size: Dp = 32.dp) {
         Bank.MELLAT -> R.drawable.ic_bank_mellat
         Bank.MELLI -> R.drawable.ic_bank_melli
         Bank.MASKAN -> R.drawable.ic_bank_maskan
+        Bank.SEPAH -> R.drawable.ic_bank_sepah
+        Bank.TEJARAT -> R.drawable.ic_bank_tejarat
         Bank.OTHER -> null
     }
 
