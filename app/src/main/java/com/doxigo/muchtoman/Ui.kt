@@ -329,7 +329,7 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
                 else vm.setLockEnabled(false)
             },
             onWidgetLockChange = vm::setWidgetLock,
-            onCategoriesManage = { categoriesManaged = true },
+            onCategoriesManage = { settings = false; categoriesManaged = true },
             onBack = { settings = false },
         )
         return
