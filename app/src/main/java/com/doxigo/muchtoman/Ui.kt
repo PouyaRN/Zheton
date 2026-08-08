@@ -366,7 +366,9 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
     }
 
     transactionRef?.let { ref ->
-        state.ledger.entries.firstOrNull { it.txn.ref == ref }?.let { entry ->
+        val entry = state.ledger.entries.firstOrNull { it.txn.ref == ref }
+            ?: state.ledger.hiddenEntries.firstOrNull { it.txn.ref == ref }
+        entry?.let { entry ->
             BackHandler { transactionRef = null }
             val existingNote = vm.getNote(entry.txn.ref)
             TransactionScreen(
@@ -377,6 +379,9 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
                 onCategorise = vm::categorise,
                 onSaveNote = vm::saveNote,
                 onPinMerchant = { norm, display -> vm.pinMerchantAlias(norm, display) },
+                onSetDirection = { e, direction -> vm.setTransactionDirection(e, direction) },
+                onHide = { e, hidden -> vm.setTransactionHidden(e, hidden) },
+                onUnpinCategory = vm::unpinCategory,
                 onLoadSource = vm::sourceOf,
                 onBack = { transactionRef = null },
             )
@@ -518,6 +523,8 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
             onLinkInstallment = { vm.startLinkInstallment(it) },
             onExport = { activity?.let { ctx -> vm.exportCsv(ctx) } },
             onBulkCategorise = vm::bulkCategorise,
+            onHide = { entry, hidden -> vm.setTransactionHidden(entry, hidden) },
+            onToggleShowHidden = { vm.setShowHidden(!state.showHidden) },
         )
         return@Scaffold
       }

@@ -579,6 +579,11 @@ class Store(context: Context) {
         get() = read("hiddenCategories", emptySet())
         set(v) = write("hiddenCategories", v)
 
+    /** Whether the timeline shows rows she has hidden, struck through, for restore. */
+    var showHidden: Boolean
+        get() = prefs.getBoolean("showHidden", false)
+        set(v) { prefs.edit().putBoolean("showHidden", v).apply() }
+
     /**
      * Messages already folded in. Counting one twice invents money, so this is checked before
      * anything is applied — and it is keyed by content, not by the inbox row id, which a

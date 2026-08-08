@@ -208,6 +208,26 @@ fun applyMerchantAliases(rows: List<Txn>, aliases: Map<String, String>): List<Tx
     else rows.map { row -> aliases[row.merchantNorm]?.let { row.copy(merchant = it) } ?: row }
 
 /**
+ * Apply the direction she pinned to a transaction.
+ *
+ * Flipping «deposit read as withdrawal» back to its truth signs the movement the same way the
+ * parser would have if it had read the direction right the first time: [Txn.direction] and
+ * [Txn.signedRial] reverse, [Txn.amountRial] keeps its magnitude, and the stated balance is
+ * untouched. Rows without a direction decision — and a decision with no direction — pass
+ * straight through.
+ */
+fun applyDirectionOverride(rows: List<Txn>, directions: Map<String, String>): List<Txn> =
+    if (directions.isEmpty()) rows
+    else rows.map { row ->
+        val pinned = directions[row.ref] ?: return@map row
+        when (pinned) {
+            "in" -> row.copy(direction = "in", signedRial = row.amountRial?.let { it })
+            "out" -> row.copy(direction = "out", signedRial = row.amountRial?.let { -it })
+            else -> row
+        }
+    }
+
+/**
  * One stored message, read into transaction rows.
  *
  * A list because a single message can in principle describe more than one movement; today it
@@ -419,6 +439,13 @@ suspend fun derive(
     val aliases = durable.merchantAliases().all()
         .filter { it.displayName.isNotBlank() }
         .associate { it.sourceNorm to it.displayName }
+    // A direction she pinned overrides the parser's reading. Applied after parse, before the
+    // row is stored, so it flows into classification, links and balances exactly as if the
+    // parser had originally read it that way.
+    val directions = durable.decisions().ofKind(DecisionKind.DIRECTION)
+        .filter { it.active }
+        .mapNotNull { d -> d.value?.let { d.ref to it } }
+        .toMap()
 
     var written = 0
     derived.withTransaction {
@@ -432,7 +459,10 @@ suspend fun derive(
 
         val all = mutableListOf<Txn>()
         for (chunk in sources.chunked(500)) {
-            val rows = applyMerchantAliases(chunk.flatMap { parseToRows(it, extra, hintBuffer) }, aliases)
+            val rows = applyMerchantAliases(
+                applyDirectionOverride(chunk.flatMap { parseToRows(it, extra, hintBuffer) }, directions),
+                aliases,
+            )
             derived.txn().insertAll(rows)
             all += rows
             written += rows.size
@@ -499,6 +529,8 @@ data class LedgerEntry(
     val duplicate: Boolean,
     /** Both legs of a settled transfer. Counted in neither income nor spending. */
     val transfer: Boolean,
+    /** She hid it from this ledger; visible only under the reveal toggle, restore-able. */
+    val hidden: Boolean = false,
     val ownerMemberId: String = "",
     val ownerName: String = "",
     val categoryEditorName: String = "",
@@ -514,6 +546,10 @@ data class LedgerView(
     /** ref → note text, for the ones she has written a note for. */
     val notes: Map<String, String> = emptyMap(),
     val ready: Boolean = false,
+    /** Rows she hid, for the reveal toggle; struck through and restore-able. */
+    val hiddenEntries: List<LedgerEntry> = emptyList(),
+    /** How many transactions are hidden (not in [entries] unless revealed). */
+    val hiddenCount: Int = 0,
 ) {
     /** Only what she actually has to answer, biggest first, and never more than a week's worth. */
     val review: List<LedgerEntry> by lazy {
@@ -530,13 +566,20 @@ data class LedgerView(
 const val DECK_CAP = 12
 
 data class LedgerEntries(
+    /** The live ledger — hidden rows do not appear here at all. */
     val entries: List<LedgerEntry>,
-    val categories: List<Category>,
-    val categoryDecisions: Map<String, TxnDecision>,
+    /** Rows she hid, for the reveal toggle. Striking them through is the UI's business. */
+    val hiddenEntries: List<LedgerEntry> = emptyList(),
+    val categories: List<Category> = emptyList(),
+    val categoryDecisions: Map<String, TxnDecision> = emptyMap(),
 )
 
-suspend fun ledgerEntries(derived: DerivedDb, durable: DurableDb, limit: Int = 300): LedgerEntries {
-    val transactions = derived.txn().newest(limit)
+suspend fun ledgerEntries(
+    derived: DerivedDb,
+    durable: DurableDb,
+    limit: Int = 300,
+): LedgerEntries {
+    val transactions = derived.txn().newest(limit + MAX_HIDDEN_SLACK)
     val categories = durable.categories().all()
     val names = categories.associate { it.id to it.nameFa }
     val members = durable.familyMembers().all().associateBy { it.id }
@@ -544,9 +587,9 @@ suspend fun ledgerEntries(derived: DerivedDb, durable: DurableDb, limit: Int = 3
     val categoryDecisions = durable.decisions().ofKind(DecisionKind.CATEGORY).associateBy { it.ref }
     val links = derived.links().all()
     val classes = derived.classes().all().associateBy { it.ref }
-    val hidden = hiddenRefs(links)
+    val hidden = hiddenRefs(durable)
     val transfers = transferRefs(links)
-    val entries = transactions.map { txn ->
+    val built = transactions.map { txn ->
         val filed = classes[txn.ref]
         val ownerMemberId = txn.ownerMemberId.ifBlank { currentMemberId }
         val categoryEditorId = categoryDecisions[txn.ref]?.memberId.orEmpty()
@@ -556,17 +599,29 @@ suspend fun ledgerEntries(derived: DerivedDb, durable: DurableDb, limit: Int = 3
             categoryFa = names[filed?.categoryId] ?: "دسته‌بندی نشده",
             confidence = filed?.confidence ?: Confidence.NONE,
             needsReview = filed?.needsReview ?: true,
-            duplicate = txn.ref in hidden,
+            duplicate = txn.ref in hiddenRefs(links),
             transfer = txn.ref in transfers,
+            hidden = txn.ref in hidden,
             ownerMemberId = ownerMemberId,
             ownerName = members[ownerMemberId]?.name.orEmpty(),
             categoryEditorName = members[categoryEditorId]?.name.orEmpty(),
         )
     }
-    return LedgerEntries(entries, categories, categoryDecisions)
+    val (hiddenEntries, visible) = built.partition { it.hidden }
+    return LedgerEntries(visible.take(limit), hiddenEntries.take(limit), categories, categoryDecisions)
 }
 
-suspend fun ledgerView(derived: DerivedDb, durable: DurableDb, limit: Int = 300): LedgerView {
+/**
+ * How much slack the timeline allows above its visible budget, so the reveal toggle can still
+ * find a hidden row that fell off the bottom of the newest-N window.
+ */
+private const val MAX_HIDDEN_SLACK = 200
+
+suspend fun ledgerView(
+    derived: DerivedDb,
+    durable: DurableDb,
+    limit: Int = 300,
+): LedgerView {
     val ledger = ledgerEntries(derived, durable, limit)
     val answers = durable.decisions().ofKind(DecisionKind.WORTH_IT)
         .mapNotNull { d -> d.value?.let { d.ref to it } }
@@ -576,7 +631,11 @@ suspend fun ledgerView(derived: DerivedDb, durable: DurableDb, limit: Int = 300)
         .toMap()
     val today = tehranDay(System.currentTimeMillis())
     val goals = durable.goals().active().map { goalProgress(it, ledger.entries, today) }
-    return LedgerView(ledger.entries, ledger.categories, goals, answers, notes, ready = true)
+    return LedgerView(
+        ledger.entries, ledger.categories, goals, answers, notes,
+        ready = true, hiddenCount = ledger.hiddenEntries.size,
+        hiddenEntries = ledger.hiddenEntries,
+    )
 }
 
 /**
@@ -630,12 +689,25 @@ fun deriveBalance(
 suspend fun balanceOf(derived: DerivedDb, durable: DurableDb, accountId: String): DerivedBalance? =
     deriveBalance(
         accountId,
-        derived.txn().forAccount(accountId),
+        derived.txn().forAccount(accountId).filterNot { it.ref in hiddenRefs(durable) },
         durable.anchors().newest(accountId),
     )
 
-/** Every account the ledger knows about, with what it holds. */
+/** The refs she has hidden from the ledger, from durable decisions. Restore = delete decision. */
+suspend fun hiddenRefs(durable: DurableDb): Set<String> =
+    durable.decisions().ofKind(DecisionKind.HIDE)
+        .filter { it.active }
+        .map { it.ref }
+        .toSet()
+
+/**
+ * Every account the ledger knows about, with what it holds.
+ *
+ * Hidden transactions are money she decided never happened, so they leave the balance too —
+ * the stated balance still binds, only the sums the hide would have moved are dropped.
+ */
 suspend fun allBalances(derived: DerivedDb, durable: DurableDb): List<DerivedBalance> {
+    val hidden = hiddenRefs(durable)
     val fromTransactions = derived.txn().accountIds()
     val anchors = durable.anchors().all()
         .groupBy { it.accountId }
@@ -643,7 +715,11 @@ suspend fun allBalances(derived: DerivedDb, durable: DurableDb): List<DerivedBal
     val fromAnchors = anchors.keys
     return (fromTransactions + fromAnchors).distinct()
         .mapNotNull { accountId ->
-            deriveBalance(accountId, derived.txn().forAccount(accountId), anchors[accountId])
+            deriveBalance(
+                accountId,
+                derived.txn().forAccount(accountId).filterNot { it.ref in hidden },
+                anchors[accountId],
+            )
         }
 }
 

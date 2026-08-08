@@ -121,9 +121,16 @@ fun TimelineScreen(
     onLinkInstallment: (LedgerEntry) -> Unit,
     onExport: () -> Unit,
     onBulkCategorise: (List<LedgerEntry>, String) -> Unit = { _, _ -> },
+    onHide: (LedgerEntry, Boolean) -> Unit = { _, _ -> },
+    onToggleShowHidden: () -> Unit = {},
 ) {
     val today = remember { tehranDay(System.currentTimeMillis()) }
-    val visible = ledger.entries.filterNot { it.duplicate }
+    // Without the reveal, hidden rows leave the ledger entirely; with it, they come back
+    // struck through and tapping one restores it.
+    val visible = remember(ledger.entries, ledger.hiddenEntries, state.showHidden) {
+        val base = ledger.entries.filterNot { it.duplicate }
+        if (state.showHidden) base + ledger.hiddenEntries else base
+    }
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategoryId by remember { mutableStateOf<String?>(null) }
     // Selection mode. A long press (or the select button in the search row) enters it; rows
@@ -214,6 +221,18 @@ TextButton(onClick = {
                         Icon(Icons.Rounded.Share, contentDescription = "خروجی CSV")
                     }
                     if (waiting > 0) ReviewPill(waiting, onReview)
+                    if (state.ledger.hiddenCount > 0 && !selecting) {
+                        FilterChip(
+                            selected = state.showHidden,
+                            onClick = onToggleShowHidden,
+                            label = {
+                                Text(
+                                    if (state.showHidden) "مخفی‌ها" else "پنهان‌شده (${state.ledger.hiddenCount})",
+                                    fontSize = 12.sp,
+                                )
+                            },
+                        )
+                    }
                 }
             }
 
@@ -303,6 +322,7 @@ TextButton(onClick = {
                                 selected = setOf(ref)
                             },
                             onOpen = onOpen,
+                            onHide = onHide,
                             onMarkCredit = onMarkCredit,
                             onLinkInstallment = onLinkInstallment,
                         )
@@ -422,13 +442,15 @@ private fun DayBand(
     onSelect: (String) -> Unit = {},
     onEnterSelection: (String) -> Unit = {},
     onOpen: (LedgerEntry) -> Unit,
+    onHide: (LedgerEntry, Boolean) -> Unit = { _, _ -> },
     onMarkCredit: (LedgerEntry) -> Unit,
     onLinkInstallment: (LedgerEntry) -> Unit,
 ) {
     // Transfers move money between her own accounts. Counting them would show a day that only
     // shuffled funds as a day she earned or spent, which is the whole reason they are struck
-    // through in the rows below.
-    val net = rows.filterNot { it.transfer }.sumOf { it.txn.signedRial ?: 0L }
+    // through in the rows below. Hidden rows have been deleted from her ledger — they count
+    // in neither the day's figure nor anything else.
+    val net = rows.filterNot { it.transfer || it.hidden }.sumOf { it.txn.signedRial ?: 0L }
     Row(
         Modifier
             .fillMaxWidth()
@@ -469,7 +491,10 @@ private fun DayBand(
                 selected = entry.txn.ref in selected,
                 onSelect = { onSelect(entry.txn.ref) },
                 onEnterSelection = { onEnterSelection(entry.txn.ref) },
-                onClick = { onOpen(entry) },
+                onClick = {
+                    if (entry.hidden) onHide(entry, false) else onOpen(entry)
+                },
+                onHide = onHide,
                 onMarkCredit = onMarkCredit,
                 onLinkInstallment = onLinkInstallment,
             )
@@ -515,6 +540,7 @@ private fun TimelineRow(
     onSelect: () -> Unit = {},
     onEnterSelection: () -> Unit = {},
     onClick: () -> Unit,
+    onHide: (LedgerEntry, Boolean) -> Unit = { _, _ -> },
     onMarkCredit: (LedgerEntry) -> Unit,
     onLinkInstallment: (LedgerEntry) -> Unit,
 ) {
@@ -574,7 +600,8 @@ private fun TimelineRow(
                     if (txn.sourceKind == "manual") "مورد دستی" else bankNameOf(txn.bank)
                 },
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = if (entry.hidden) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onBackground,
+                textDecoration = if (entry.hidden) TextDecoration.LineThrough else null,
                 maxLines = 1,
             )
             // Show the note subtitle when a note exists.
@@ -701,6 +728,9 @@ fun TransactionScreen(
     onCategorise: (LedgerEntry, String, Boolean) -> Unit,
     onSaveNote: (LedgerEntry, String) -> Unit,
     onPinMerchant: (String, String) -> Unit = { _, _ -> },
+    onSetDirection: (LedgerEntry, String?) -> Unit = { _, _ -> },
+    onHide: (LedgerEntry, Boolean) -> Unit = { _, _ -> },
+    onUnpinCategory: (LedgerEntry) -> Unit = {},
     onLoadSource: suspend (LedgerEntry) -> String,
     onBack: () -> Unit,
 ) {
@@ -712,6 +742,7 @@ fun TransactionScreen(
     var noteText by remember(txn.ref) { mutableStateOf(existingNote) }
     var merchantText by remember(txn.ref) { mutableStateOf(txn.merchant) }
     var merchantDirty by remember(txn.ref) { mutableStateOf(false) }
+    var categoryDirty by remember(txn.ref) { mutableStateOf(false) }
 
     LaunchedEffect(txn.ref) { source = onLoadSource(entry) }
     LaunchedEffect(entry.categoryId) { chosen = entry.categoryId }
@@ -888,6 +919,64 @@ fun TransactionScreen(
                         TextButton(onClick = { onSaveNote(entry, noteText) }) {
                             Text("ذخیره یادداشت")
                         }
+                    }
+                }
+            }
+
+            item(key = "corrections") {
+                Column(gutter) {
+                    Spacer(Modifier.height(Space.xxl))
+                    Text(
+                        "اصلاح",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    Spacer(Modifier.height(Space.m))
+
+                    // Direction — the manual fix for «deposit read as withdrawal».
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(Radius.card))
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .padding(horizontal = Space.l, vertical = Space.m),
+                    ) {
+                        Text("جهت مبلغ", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.height(Space.s))
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(Space.s),
+                        ) {
+                            FilterChip(
+                                selected = incoming,
+                                onClick = { onSetDirection(entry, "in") },
+                                label = { Text("دریافتی", fontSize = 12.sp) },
+                            )
+                            FilterChip(
+                                selected = !incoming,
+                                onClick = { onSetDirection(entry, "out") },
+                                label = { Text("پرداختی", fontSize = 12.sp) },
+                            )
+                            if (entry.categoryId != CAT_UNCATEGORISED) {
+                                FilterChip(
+                                    selected = false,
+                                    onClick = { onUnpinCategory(entry) },
+                                    label = { Text("بازگشت به خودکار", fontSize = 12.sp) },
+                                )
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(Space.s))
+                    Text(
+                        "تغییر جهت، دسته‌ها و جمع کل را هماهنگ اصلاح می‌کند.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(Space.s))
+                    TextButton(onClick = { onHide(entry, true) }) {
+                        Text("پنهان کردن از دفتر", color = MaterialTheme.colorScheme.error)
                     }
                 }
             }

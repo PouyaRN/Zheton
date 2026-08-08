@@ -73,6 +73,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             bankAccounts = store.bankAccounts,
             disabledBanks = store.disabledBanks,
             hiddenCategories = store.hiddenCategories,
+            showHidden = store.showHidden,
             strangeSenders = store.strangeSenders,
             dismissedUpdate = store.dismissedUpdate,
         )
@@ -599,6 +600,108 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
             }.onFailure { android.util.Log.w("muchtoman", "bulk categorise failed: $it") }
+        }
+    }
+
+    /**
+     * Hide a transaction from the ledger, or bring it back.
+     *
+     * A durable HIDE decision is the tombstone: visible = deleted row, hidden = live row. The
+     * transaction's derived rows stay in place (restore must not need a re-read), the ledger
+     * view and the balances both read the hide set. This is the manual fix for a wrong entry —
+     * the Maskan double count, a transaction that was never hers.
+     */
+    fun setTransactionHidden(entry: LedgerEntry, hidden: Boolean) {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            runCatching {
+                val durable = DurableDb.get(app)
+                val derived = DerivedDb.get(app)
+                val session = loadSession(durable)
+                val now = System.currentTimeMillis()
+                val ref = entry.txn.ref
+                val existing = durable.decisions().forRef(ref).firstOrNull { it.kind == DecisionKind.HIDE }
+                durable.decisions().put(
+                    TxnDecision(
+                        id = existing?.id ?: uuid7(now),
+                        ref = ref,
+                        kind = DecisionKind.HIDE,
+                        value = "1",
+                        createdAt = existing?.createdAt ?: now,
+                        updatedAt = now,
+                        deleted = !hidden,
+                        memberId = session?.member.orEmpty(),
+                        familyRef = entry.txn.familyRef.ifBlank { "" },
+                    )
+                )
+                _state.update { it.copy(ledger = ledgerView(derived, durable)) }
+                recomputeAccountBalancesFromLedger()
+                requestFamilySync(silent = true)
+            }.onFailure { android.util.Log.w("muchtoman", "hide transaction failed: $it") }
+        }
+    }
+
+    /**
+     * Pin a transaction to a direction, or return it to the parser's reading.
+     *
+     * Flipping the parse of «deposit read as withdrawal» reverses the sign; the recompute moves
+     * the total. The category stays put — changing which way money went is not permission to
+     * silently re-file it. Unpin (null) restores the parser's direction.
+     */
+    fun setTransactionDirection(entry: LedgerEntry, direction: String?) {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            runCatching {
+                val durable = DurableDb.get(app)
+                val derived = DerivedDb.get(app)
+                val session = loadSession(durable)
+                val now = System.currentTimeMillis()
+                val ref = entry.txn.ref
+                val existing = durable.decisions().forRef(ref).firstOrNull { it.kind == DecisionKind.DIRECTION }
+                durable.decisions().put(
+                    TxnDecision(
+                        id = existing?.id ?: uuid7(now),
+                        ref = ref,
+                        kind = DecisionKind.DIRECTION,
+                        value = direction,
+                        createdAt = existing?.createdAt ?: now,
+                        updatedAt = now,
+                        deleted = direction == null,
+                        memberId = session?.member.orEmpty(),
+                        familyRef = entry.txn.familyRef.ifBlank { "" },
+                    )
+                )
+                derive(durable, derived, extraLookup(store.extraBankNumbers))
+                _state.update { it.copy(ledger = ledgerView(derived, durable)) }
+                recomputeAccountBalancesFromLedger()
+                requestFamilySync(silent = true)
+            }.onFailure { android.util.Log.w("muchtoman", "direction change failed: $it") }
+        }
+    }
+
+    /**
+     * Return a transaction to rule-based classification: mark the pinned category decision
+     * deleted, so the next re-derive files it however the rules do.
+     */
+    fun unpinCategory(entry: LedgerEntry) {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            runCatching {
+                val durable = DurableDb.get(app)
+                val derived = DerivedDb.get(app)
+                val session = loadSession(durable)
+                val now = System.currentTimeMillis()
+                val existing = durable.decisions().forRef(entry.txn.ref)
+                    .firstOrNull { it.kind == DecisionKind.CATEGORY }
+                if (existing != null) {
+                    durable.decisions().put(
+                        existing.copy(deleted = true, updatedAt = now, memberId = session?.member.orEmpty())
+                    )
+                }
+                derive(durable, derived, extraLookup(store.extraBankNumbers))
+                _state.update { it.copy(ledger = ledgerView(derived, durable)) }
+                requestFamilySync(silent = true)
+            }.onFailure { android.util.Log.w("muchtoman", "unpin category failed: $it") }
         }
     }
 
@@ -1289,7 +1392,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         recordSnapshot()
     }
 
-    /**
+/**
      * Hide or restore a built-in category in every picker and filter. The row itself stays —
      * builtins are structural — only the offering leaves. Existing transactions keep the name.
      */
@@ -1297,6 +1400,12 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         val next = if (hidden) store.hiddenCategories + id else store.hiddenCategories - id
         store.hiddenCategories = next
         _state.update { it.copy(hiddenCategories = next) }
+    }
+
+    /** Show or hide the struck-through rows the timeline keeps for her own deletable mistakes. */
+    fun setShowHidden(on: Boolean) {
+        store.showHidden = on
+        _state.update { it.copy(showHidden = on) }
     }
 
     /** She tells us what an account really holds; everything read after it builds on that. */
@@ -1398,6 +1507,7 @@ data class UiState(
     val bankAccounts: List<BankAccount> = emptyList(),
     val disabledBanks: Set<String> = emptySet(),
     val hiddenCategories: Set<String> = emptySet(),
+    val showHidden: Boolean = false,
     val strangeSenders: List<StrangeSender> = emptyList(),
     val refreshingWallets: Set<String> = emptySet(),
     val walletErrors: Map<String, String> = emptyMap(),

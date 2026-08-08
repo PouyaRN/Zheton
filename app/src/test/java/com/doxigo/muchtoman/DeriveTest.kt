@@ -203,4 +203,42 @@ class DeriveTest {
         assertTrue(applyMerchantAliases(rows, emptyMap()) === rows)
     }
 
+    @Test
+    fun `a direction pin reverses the sign and keeps the amount and balance`() {
+        val rows = listOf(
+            // Read as out by the parser (deposit read as withdrawal — the historical bug).
+            txn(at = 1, signed = -45_000_000, balance = 100_000_000).copy(
+                merchant = "واریز", merchantNorm = merchantNorm("واریز"),
+            ),
+            txn(at = 2, signed = 9_000_000).copy(merchant = "رفاه"),
+        )
+        val directions = mapOf(rows[0].ref to "in")
+        val flipped = applyDirectionOverride(rows, directions)
+
+        assertEquals("in", flipped[0].direction)
+        assertEquals(45_000_000L, flipped[0].signedRial)
+        assertEquals(45_000_000L, flipped[0].amountRial)
+        // The stated balance is the bank's own arithmetic — untouched by a direction pin.
+        assertEquals(100_000_000L, flipped[0].balanceRial)
+        // Rows the pin never pointed at pass through byte for byte.
+        assertEquals(rows[1], flipped[1])
+    }
+
+    @Test
+    fun `an out pin makes an incoming row outgoing`() {
+        val rows = listOf(txn(at = 1, signed = 5_000_000))
+        val flipped = applyDirectionOverride(rows, mapOf(rows[0].ref to "out"))
+        assertEquals("out", flipped[0].direction)
+        assertEquals(-5_000_000L, flipped[0].signedRial)
+    }
+
+    @Test
+    fun `a missing or null direction pin leaves the row alone`() {
+        val rows = listOf(txn(at = 1, signed = -5_000_000))
+        val noPin = applyDirectionOverride(rows, emptyMap())
+        assertEquals(rows, noPin)
+        val nullPin = applyDirectionOverride(rows, mapOf(rows[0].ref to "whatever"))
+        assertEquals(rows, nullPin)
+    }
+
 }

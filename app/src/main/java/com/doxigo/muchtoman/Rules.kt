@@ -321,7 +321,15 @@ object DecisionKind {
     const val WORTH_IT = "worth_it"
     const val ACCOUNT = "account"
     const val EXCLUDE = "exclude"
+    const val DIRECTION = "direction"
 }
+
+/**
+ * The refs a decision points at. A decision is active when it exists; unhiding (or unpinning)
+ * marks it deleted rather than removing the row, so the tombstone survives sync.
+ */
+internal val TxnDecision.active: Boolean
+    get() = !deleted
 
 /**
  * One answer she gave about one transaction.
