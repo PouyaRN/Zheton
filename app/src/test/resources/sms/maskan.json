@@ -105,6 +105,18 @@
         "unitPrinted": "none",
         "inferred": false
       }
+    },
+    {
+      "id": "maskan-card-to-card-otp",
+      "sender": "Bank Maskan",
+      "at": 1,
+      "body": [
+        "انتقال",
+        "مبلغ 200,000,000",
+        "رمز 078123"
+      ],
+      "why": "The reported double-count: a card-to-card transfer sends an authorization SMS (انتقال + مبلغ + رمز, no مانده) before the send-confirmation (انتقال + مبلغ + مانده). Both contained انتقال, so the old parser made two ledger entries of one movement. The global OTP rule must drop this half of the pair.",
+      "expect": null
     }
   ]
 }

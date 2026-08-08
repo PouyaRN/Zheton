@@ -156,6 +156,19 @@ class ClassifyTest {
         assertEquals(BUILTIN_CATEGORIES.size - 2, categoryChoices(BUILTIN_CATEGORIES, null).size)
     }
 
+    @Test
+    fun `a hidden built-in leaves the picker but keeps its place in the name lookup`() {
+        val hidden = setOf("cat_groceries", "cat_health")
+        val offered = categoryChoices(BUILTIN_CATEGORIES, null, hidden).map { it.nameFa }
+        assertTrue("خواربار" !in offered)
+        assertTrue("سلامت" !in offered)
+        assertTrue("رستوران و کافه" in offered)
+        // The row itself still exists (builtins are structural) — only the offering leaves.
+        assertTrue(BUILTIN_CATEGORIES.any { it.id == "cat_groceries" })
+        // Nothing hidden, nothing different from before.
+        assertEquals(BUILTIN_CATEGORIES.size - 2, categoryChoices(BUILTIN_CATEGORIES, null).size)
+    }
+
     // ─────────────────────────── links ───────────────────────────
 
     @Test

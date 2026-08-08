@@ -35,11 +35,11 @@ import androidx.sqlite.execSQL
     entities = [
         SmsSource::class, DurableMeta::class, BalanceAnchor::class,
         Category::class, Rule::class, TxnDecision::class, LinkDecision::class,
-        ManualTxn::class, Goal::class, FamilyMember::class, FamilyTxn::class,
+        ManualTxn::class, MerchantAlias::class, Goal::class, FamilyMember::class, FamilyTxn::class,
         SyncPublication::class, InstallmentObligation::class, InstallmentPayment::class,
         Reservation::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = true,
 )
 abstract class DurableDb : RoomDatabase() {
@@ -51,6 +51,7 @@ abstract class DurableDb : RoomDatabase() {
     abstract fun decisions(): TxnDecisionDao
     abstract fun linkDecisions(): LinkDecisionDao
     abstract fun manual(): ManualTxnDao
+    abstract fun merchantAliases(): MerchantAliasDao
     abstract fun goals(): GoalDao
     abstract fun familyMembers(): FamilyMemberDao
     abstract fun familyTxns(): FamilyTxnDao
@@ -272,6 +273,22 @@ abstract class DurableDb : RoomDatabase() {
             }
         }
 
+        /** Merchant name overrides she pinned to a source name. */
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(connection: SQLiteConnection) {
+                connection.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `merchant_alias` (" +
+                        "`source_norm` TEXT NOT NULL, `display_name` TEXT NOT NULL, " +
+                        "`created_at` INTEGER NOT NULL, `updated_at` INTEGER NOT NULL, " +
+                        "PRIMARY KEY(`source_norm`))"
+                )
+                connection.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_merchant_alias_updated_at` " +
+                        "ON `merchant_alias` (`updated_at`)"
+                )
+            }
+        }
+
         fun get(context: Context): DurableDb = instance ?: synchronized(this) {
             instance ?: Room
                 .databaseBuilder(context.applicationContext, DurableDb::class.java, "durable.db")
@@ -280,7 +297,7 @@ abstract class DurableDb : RoomDatabase() {
                 // copy of messages her inbox may no longer have.
                 .addMigrations(
                     MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5,
-                    MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8,
+                    MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9,
                 )
                 .build()
                 .also { instance = it }
@@ -332,6 +349,23 @@ data class ManualTxn(
     @ColumnInfo(name = "created_at") val createdAt: Long,
     @ColumnInfo(name = "updated_at") val updatedAt: Long,
     val deleted: Boolean = false,
+)
+
+/**
+ * A name she pinned to a merchant source.
+ *
+ * Keyed by the normalized source merchant — the string the parser found in the SMS — and
+ * applied at derive time over the parser's own name, for every transaction that came from that
+ * source. Display and search only: classification rules, links and reports keep keying off the
+ * source name, so pinning «شاپرک» to «سوپرمارکت رفاه» renames the timeline without quietly
+ * changing what a chain's worth of transactions classified as.
+ */
+@Entity(tableName = "merchant_alias", indices = [Index("updated_at")])
+data class MerchantAlias(
+    @PrimaryKey @ColumnInfo(name = "source_norm") val sourceNorm: String,
+    @ColumnInfo(name = "display_name") val displayName: String,
+    @ColumnInfo(name = "created_at") val createdAt: Long,
+    @ColumnInfo(name = "updated_at") val updatedAt: Long,
 )
 
 /** A person in the family. Names and sharing status are encrypted before synchronization. */
@@ -514,6 +548,15 @@ interface DurableMetaDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun put(row: DurableMeta)
+}
+
+@Dao
+interface MerchantAliasDao {
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun put(row: MerchantAlias)
+
+    @Query("SELECT * FROM merchant_alias")
+    suspend fun all(): List<MerchantAlias>
 }
 
 /** How far back the first ingest reaches, in Jalali months. */

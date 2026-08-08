@@ -1,5 +1,7 @@
 package com.doxigo.muchtoman
 
+import androidx.activity.compose.BackHandler
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -8,6 +10,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
@@ -43,6 +47,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -52,6 +58,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Clear
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -112,11 +120,17 @@ fun TimelineScreen(
     onMarkCredit: (LedgerEntry) -> Unit,
     onLinkInstallment: (LedgerEntry) -> Unit,
     onExport: () -> Unit,
+    onBulkCategorise: (List<LedgerEntry>, String) -> Unit = { _, _ -> },
 ) {
     val today = remember { tehranDay(System.currentTimeMillis()) }
     val visible = ledger.entries.filterNot { it.duplicate }
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategoryId by remember { mutableStateOf<String?>(null) }
+    // Selection mode. A long press (or the select button in the search row) enters it; rows
+    // then carry a checkbox, the header becomes a batch bar, and "select all" fills the
+    // current filter result. Selected refs are tracked here so bulk actions can consume them.
+    var selecting by remember { mutableStateOf(false) }
+    var selected by remember { mutableStateOf(setOf<String>()) }
 
     val filtered = remember(visible, searchQuery, selectedCategoryId) {
         visible.filter { entry ->
@@ -132,24 +146,75 @@ fun TimelineScreen(
     val grouped = remember(filtered) { filtered.groupBy { it.txn.day }.toSortedMap(compareByDescending { it }) }
     val waiting = ledger.review.size
 
+    // Back exits selection mode before it ever leaves the timeline.
+    if (selecting) {
+        BackHandler {
+            selecting = false
+            selected = emptySet()
+        }
+    }
+
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
-            Row(
-                Modifier.fillMaxWidth().padding(horizontal = Space.xl, vertical = Space.m),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    "دفتر",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.semantics { heading() },
-                )
-                Spacer(Modifier.weight(1f))
-                IconButton(onClick = onExport) {
-                    Icon(Icons.Rounded.Share, contentDescription = "خروجی CSV")
+            if (selecting) {
+                // The batch bar replaces the header while selecting.
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = Space.xl, vertical = Space.m),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(onClick = {
+                        selecting = false
+                        selected = emptySet()
+                    }) {
+                        Icon(
+                            Icons.Rounded.Close,
+                            contentDescription = "خروج از انتخاب",
+                            tint = MaterialTheme.colorScheme.onBackground,
+                        )
+                    }
+                    Text(
+                        if (selected.isEmpty()) "هیچ‌کدام انتخاب نشده" else "${selected.size} انتخاب شده",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.weight(1f),
+                    )
+TextButton(onClick = {
+        // Grouped by day, and the day bands only ever hold the `filtered` rows (duplicates
+        // excluded). The slug is counted once; no double counting.
+        selected = if (selected.size == grouped.values.flatten().size && grouped.isNotEmpty()) {
+            emptySet()
+        } else {
+            grouped.values.flatten().map { it.txn.ref }.toSet()
+        }
+    }) {
+        Text(if (selected.size == grouped.values.flatten().size && grouped.isNotEmpty()) "برداشتن همه" else "انتخاب همه")
+    }
                 }
-                if (waiting > 0) ReviewPill(waiting, onReview)
+            } else {
+                Row(
+                    Modifier.fillMaxWidth().padding(horizontal = Space.xl, vertical = Space.m),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "دفتر",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    Spacer(Modifier.weight(1f))
+                    TextButton(onClick = {
+                        selecting = true
+                        selected = emptySet()
+                    }) {
+                        Text("انتخاب", fontSize = 14.sp)
+                    }
+                    IconButton(onClick = onExport) {
+                        Icon(Icons.Rounded.Share, contentDescription = "خروجی CSV")
+                    }
+                    if (waiting > 0) ReviewPill(waiting, onReview)
+                }
             }
 
             // Search bar
@@ -160,7 +225,13 @@ fun TimelineScreen(
                 placeholder = { Text("جستجو...") },
                 leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
                 trailingIcon = {
-                    if (searchQuery.isNotBlank()) {
+                    if (selecting) {
+                        // In selection mode the search bar also carries the "select" entry and
+                        // acts as the batch entry point.
+                        IconButton(onClick = { selecting = false; selected = emptySet() }) {
+                            Icon(Icons.Rounded.Clear, contentDescription = "پاک کردن")
+                        }
+                    } else if (searchQuery.isNotBlank()) {
                         IconButton(onClick = { searchQuery = "" }) {
                             Icon(Icons.Rounded.Clear, contentDescription = "پاک کردن")
                         }
@@ -183,7 +254,7 @@ fun TimelineScreen(
                             label = { Text("همه", fontSize = 12.sp) },
                         )
                     }
-                    items(ledger.categories.filter { it.kind != "transfer" }) { category ->
+                    items(ledger.categories.filter { it.kind != "transfer" && it.id !in state.hiddenCategories }) { category ->
                         FilterChip(
                             selected = category.id == selectedCategoryId,
                             onClick = {
@@ -210,18 +281,124 @@ fun TimelineScreen(
             }
 
             LazyColumn(
-                Modifier.fillMaxSize(),
+                Modifier.fillMaxSize().weight(1f),
                 contentPadding = PaddingValues(
-                    start = Space.xl, end = Space.xl, bottom = bottomInset + Space.l,
+                    start = Space.xl, end = Space.xl, bottom = Space.l,
                 ),
             ) {
                 for ((day, rows) in grouped) {
                     item(key = "day-$day") {
-                        DayBand(day, today, rows, state, onOpen, onMarkCredit, onLinkInstallment)
+                        DayBand(
+                            day = day,
+                            today = today,
+                            rows = rows,
+                            state = state,
+                            selecting = selecting,
+                            selected = selected,
+                            onSelect = { ref ->
+                                selected = if (ref in selected) selected - ref else selected + ref
+                            },
+                            onEnterSelection = { ref ->
+                                selecting = true
+                                selected = setOf(ref)
+                            },
+                            onOpen = onOpen,
+                            onMarkCredit = onMarkCredit,
+                            onLinkInstallment = onLinkInstallment,
+                        )
                     }
                 }
             }
+
+            // The batch action bar: appears only while something is selected. Category filing is
+            // the first bulk action; the same refs are what later bulk hide/delete will consume.
+            if (selecting && selected.isNotEmpty()) {
+                val rows = filtered.filter { it.txn.ref in selected }
+                BatchActionBar(
+                    selectedRefs = selected,
+                    categories = ledger.categories,
+                    hiddenCategories = state.hiddenCategories,
+                    onPickCategory = { categoryId ->
+                        if (rows.isNotEmpty()) onBulkCategorise(rows, categoryId)
+                        selecting = false
+                        selected = emptySet()
+                    },
+                    onCancel = {
+                        selecting = false
+                        selected = emptySet()
+                    },
+                )
+            }
         }
+    }
+}
+
+/**
+ * The bottom bar while transactions are selected. One action today (pick a category); the refs
+ * are the seam the rest of the bulk suite hangs off.
+ */
+@Composable
+private fun BatchActionBar(
+    selectedRefs: Set<String>,
+    categories: List<Category>,
+    hiddenCategories: Set<String>,
+    onPickCategory: (String) -> Unit,
+    onCancel: () -> Unit,
+) {
+    var showCategoryPicker by remember { mutableStateOf(false) }
+    Surface(tonalElevation = 3.dp, shadowElevation = 4.dp) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = Space.xl, vertical = Space.s),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Space.s),
+        ) {
+            Text(
+                "${selectedRefs.size} مورد انتخاب شده",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = onCancel) { Text("لغو") }
+            Button(onClick = { showCategoryPicker = true }) { Text("دسته‌بندی") }
+        }
+    }
+    if (showCategoryPicker) {
+        AlertDialog(
+            onDismissRequest = { showCategoryPicker = false },
+            title = { Text("انتخاب دسته") },
+            text = {
+                LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
+                    items(categoryChoices(categories, null, hiddenCategories), key = { it.id }) { category ->
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showCategoryPicker = false
+                                    onPickCategory(category.id)
+                                }
+                                .padding(vertical = Space.s, horizontal = Space.xs),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            CategoryIcon(
+                                category.nameFa,
+                                MaterialTheme.colorScheme.onSurfaceVariant,
+                                size = 18.dp,
+                                stroke = 1.4.dp,
+                            )
+                            Spacer(Modifier.width(Space.m))
+                            Text(category.nameFa, fontSize = 14.sp)
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showCategoryPicker = false }) { Text("انصراف") }
+            },
+        )
     }
 }
 
@@ -240,6 +417,10 @@ private fun DayBand(
     today: Long,
     rows: List<LedgerEntry>,
     state: UiState,
+    selecting: Boolean = false,
+    selected: Set<String> = emptySet(),
+    onSelect: (String) -> Unit = {},
+    onEnterSelection: (String) -> Unit = {},
     onOpen: (LedgerEntry) -> Unit,
     onMarkCredit: (LedgerEntry) -> Unit,
     onLinkInstallment: (LedgerEntry) -> Unit,
@@ -281,7 +462,17 @@ private fun DayBand(
             .background(MaterialTheme.colorScheme.surfaceVariant),
     ) {
         rows.forEach { entry ->
-            TimelineRow(entry, state, onClick = { onOpen(entry) }, onMarkCredit, onLinkInstallment)
+            TimelineRow(
+                entry = entry,
+                state = state,
+                selecting = selecting,
+                selected = entry.txn.ref in selected,
+                onSelect = { onSelect(entry.txn.ref) },
+                onEnterSelection = { onEnterSelection(entry.txn.ref) },
+                onClick = { onOpen(entry) },
+                onMarkCredit = onMarkCredit,
+                onLinkInstallment = onLinkInstallment,
+            )
         }
     }
 }
@@ -319,6 +510,10 @@ private fun ReviewPill(waiting: Int, onReview: () -> Unit) {
 private fun TimelineRow(
     entry: LedgerEntry,
     state: UiState,
+    selecting: Boolean = false,
+    selected: Boolean = false,
+    onSelect: () -> Unit = {},
+    onEnterSelection: () -> Unit = {},
     onClick: () -> Unit,
     onMarkCredit: (LedgerEntry) -> Unit,
     onLinkInstallment: (LedgerEntry) -> Unit,
@@ -339,10 +534,40 @@ private fun TimelineRow(
     Row(
         Modifier
             .fillMaxWidth()
-            .clickable(role = Role.Button, onClick = onClick)
+            .combinedClickable(
+                onClick = { if (selecting) onSelect() else onClick() },
+                onLongClick = {
+                    if (selecting) onSelect()
+                    else onEnterSelection()
+                },
+            )
             .padding(vertical = Space.m, horizontal = Space.l),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (selecting) {
+            // The check cell. A raw Box, not Checkbox: the core icon set ships no check box,
+            // and drawing one keeps the tint in step with the row's own figure colour.
+            Box(
+                Modifier
+                    .size(22.dp)
+                    .clip(RoundedCornerShape(5.dp))
+                    .then(
+                        if (selected) Modifier.background(MaterialTheme.colorScheme.primary)
+                        else Modifier.border(1.5.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(5.dp))
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (selected) {
+                    Icon(
+                        Icons.Rounded.Check,
+                        contentDescription = "انتخاب شده",
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(14.dp),
+                    )
+                }
+            }
+            Spacer(Modifier.width(Space.s))
+        }
         Column(Modifier.weight(1f)) {
             Text(
                 txn.merchant.ifBlank {
@@ -471,9 +696,11 @@ internal fun bankNameOf(bank: String): String =
 fun TransactionScreen(
     entry: LedgerEntry,
     categories: List<Category>,
+    hiddenCategories: Set<String> = emptySet(),
     existingNote: String,
     onCategorise: (LedgerEntry, String, Boolean) -> Unit,
     onSaveNote: (LedgerEntry, String) -> Unit,
+    onPinMerchant: (String, String) -> Unit = { _, _ -> },
     onLoadSource: suspend (LedgerEntry) -> String,
     onBack: () -> Unit,
 ) {
@@ -483,6 +710,8 @@ fun TransactionScreen(
     var chosen by remember(txn.ref) { mutableStateOf(entry.categoryId) }
     var source by remember(txn.ref) { mutableStateOf<String?>(null) }
     var noteText by remember(txn.ref) { mutableStateOf(existingNote) }
+    var merchantText by remember(txn.ref) { mutableStateOf(txn.merchant) }
+    var merchantDirty by remember(txn.ref) { mutableStateOf(false) }
 
     LaunchedEffect(txn.ref) { source = onLoadSource(entry) }
     LaunchedEffect(entry.categoryId) { chosen = entry.categoryId }
@@ -503,7 +732,7 @@ fun TransactionScreen(
         txn.balanceRial?.let { add("مانده بعد از تراکنش" to bidi("${faCompact(tomanOf(it))} تومان")) }
         txn.feeRial?.takeIf { it > 0 }?.let { add("کارمزد" to bidi("${faCompact(tomanOf(it))} تومان")) }
     }
-    val choices = categoryChoices(categories, txn.direction)
+    val choices = categoryChoices(categories, txn.direction, hiddenCategories)
 
     // The hero bleeds to both edges and under the status bar, so the gutter belongs to the
     // items rather than to the list.
@@ -595,6 +824,42 @@ fun TransactionScreen(
                                 chosen = category.id
                                 onCategorise(entry, category.id, learnSimilar)
                             },
+                        )
+                    }
+                }
+            }
+
+            if (txn.merchantNorm.isNotBlank()) {
+                item(key = "merchant_alias") {
+                    Column(gutter) {
+                        Spacer(Modifier.height(Space.xxl))
+                        Text(
+                            "نام فروشگاه",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.semantics { heading() },
+                        )
+                        Spacer(Modifier.height(Space.m))
+                        OutlinedTextField(
+                            value = merchantText,
+                            onValueChange = { merchantText = it.take(40); merchantDirty = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            placeholder = { Text(txn.merchant.ifBlank { "نام فروشگاه..." }) },
+                            maxLines = 2,
+                        )
+                        Spacer(Modifier.height(Space.s))
+                        if (merchantDirty && merchantText != txn.merchant) {
+                            TextButton(onClick = { onPinMerchant(txn.merchantNorm, merchantText) }) {
+                                Text("ذخیره نام")
+                            }
+                        }
+                        Text(
+                            // The alias renames everywhere this source appears, past and future.
+                            // merchantNorm stays the source string so classification is untouched.
+                            "تغییر نام برای همه تراکنش‌هایی که همین نام را دارند اعمال می‌شود.",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -879,6 +1144,7 @@ private fun DetailRow(label: String, value: String) {
 @Composable
 fun ReviewDeck(
     ledger: LedgerView,
+    hiddenCategories: Set<String> = emptySet(),
     onDecide: (LedgerEntry, String, Boolean) -> Unit,
     onWorthIt: (LedgerEntry, String) -> Unit,
     onDone: () -> Unit,
@@ -966,7 +1232,7 @@ fun ReviewDeck(
                 return@Column
             }
 
-            val choices = categoryChoices(ledger.categories, entry.txn.direction)
+            val choices = categoryChoices(ledger.categories, entry.txn.direction, hiddenCategories)
             // The question and the choices scroll; the answers do not. Only the grid can grow
             // past a short screen, and an answer she has to go looking for is one she will not
             // give.

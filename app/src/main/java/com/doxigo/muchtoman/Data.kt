@@ -480,17 +480,15 @@ class Store(context: Context) {
     private val prefs = context.getSharedPreferences("muchtoman", Context.MODE_PRIVATE)
 
     init {
-        // extraBankNumbers survives on purpose: those are her own statements about her banks,
-        // not something a parser computed.
+        // A version bump no longer deletes anything. Older builds erased the fold (bank
+        // balances, the seen-message index and the scan watermark) on a schema change, which
+        // could lose figures a re-read can never rebuild — hand-typed anchors, or messages
+        // already pruned from the phone's inbox. Hand-typed anchors now live in the durable
+        // store via migrateAnchorsFromPrefs, and the ledger re-derives from durable messages;
+        // the fold is just a cache of the same reading, so wiping it bought nothing.
+        // The marker itself is kept so the Store can still observe that a re-parse happened.
         if (prefs.getInt("smsSchema", 0) != SMS_SCHEMA) {
-            prefs.edit()
-                .remove("bankAccounts")
-                .remove("seenSms")
-                .remove("smsScannedTo")
-                .remove("unknownSenders")
-                .remove("strangers")
-                .putInt("smsSchema", SMS_SCHEMA)
-                .apply()
+            prefs.edit().putInt("smsSchema", SMS_SCHEMA).apply()
         }
     }
 
@@ -571,6 +569,15 @@ class Store(context: Context) {
     var disabledBanks: Set<String>
         get() = read("disabledBanks", emptySet())
         set(v) = write("disabledBanks", v)
+
+    /**
+     * Built-in categories she never uses. The rows stay (builtins are structural — seed puts
+     * them back on every launch), only the offering goes: pickers, chips and filters to leave
+     * them out. Transactions already classified into one keep showing its name.
+     */
+    var hiddenCategories: Set<String>
+        get() = read("hiddenCategories", emptySet())
+        set(v) = write("hiddenCategories", v)
 
     /**
      * Messages already folded in. Counting one twice invents money, so this is checked before

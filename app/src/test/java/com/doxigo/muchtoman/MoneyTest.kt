@@ -1163,4 +1163,44 @@ class MoneyTest {
         val c = changeOver(mapOf(50L to 0.0), today = 100, windowDays = 30, current = 12.0)!!
         assertNull(c.percent)
     }
+
+    // ────────────────────────── correction recompute ──────────────────────────
+
+    @Test
+    fun `reconcile adopts the corrected ledger figure when it is at least as new as the fold`() {
+        val fold = listOf(
+            BankAccount(bank = "MELLAT", balance = 100.0, updatedAt = 5, anchored = true),
+            BankAccount(bank = "SAMAN", balance = 200.0, updatedAt = 9, anchored = true),
+        )
+        // The corrected ledger moved MELLAT's balance (a direction flip), same time as the
+        // fold — the tie goes to the ledger. SAMAN is newer in the fold, so it is kept.
+        val balances = listOf(
+            DerivedBalance(accountId = "MELLAT", rial = 3000, at = 5, anchored = true),
+            DerivedBalance(accountId = "SAMAN", rial = 9999, at = 8, anchored = true),
+        )
+        val next = reconcileBalances(fold, balances)
+        assertEquals(300.0, next.first { it.bank == "MELLAT" }.balance, 0.01)
+        assertEquals(200.0, next.first { it.bank == "SAMAN" }.balance, 0.01)
+    }
+
+    @Test
+    fun `reconcile never clobbers a hand typed balance newer than any ledger figure`() {
+        val fold = listOf(
+            BankAccount(bank = "MELLAT", balance = 555.0, updatedAt = 50, anchored = true),
+        )
+        val balances = listOf(
+            DerivedBalance(accountId = "MELLAT", rial = 3000, at = 5, anchored = true),
+        )
+        val next = reconcileBalances(fold, balances)
+        assertEquals(555.0, next.single().balance, 0.01)
+    }
+
+    @Test
+    fun `reconcile keeps accounts the ledger knows nothing about`() {
+        val fold = listOf(
+            BankAccount(bank = "PARSIAN", balance = 42.0, updatedAt = 5, anchored = true),
+        )
+        val next = reconcileBalances(fold, emptyList())
+        assertEquals(42.0, next.single().balance, 0.01)
+    }
 }

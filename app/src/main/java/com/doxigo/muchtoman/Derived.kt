@@ -197,6 +197,17 @@ fun merchantNorm(merchant: String): String =
     merchant.trim().replace(WHITESPACE, " ")
 
 /**
+ * Apply the merchant name she pinned to a source string.
+ *
+ * Display only, and deliberately so: [Txn.merchantNorm] stays the source name — classification
+ * rules, links and reports key off it — so renaming «شاپرک» to «سوپرمارکت رفاه» changes the
+ * words on the timeline without quietly re-classifying the chain.
+ */
+fun applyMerchantAliases(rows: List<Txn>, aliases: Map<String, String>): List<Txn> =
+    if (aliases.isEmpty()) rows
+    else rows.map { row -> aliases[row.merchantNorm]?.let { row.copy(merchant = it) } ?: row }
+
+/**
  * One stored message, read into transaction rows.
  *
  * A list because a single message can in principle describe more than one movement; today it
@@ -405,6 +416,9 @@ suspend fun derive(
     val pinned = durable.decisions().ofKind(DecisionKind.CATEGORY).associate { it.ref to it.value }
     val rules = durable.rules().active()
     val verdicts = durable.linkDecisions().all()
+    val aliases = durable.merchantAliases().all()
+        .filter { it.displayName.isNotBlank() }
+        .associate { it.sourceNorm to it.displayName }
 
     var written = 0
     derived.withTransaction {
@@ -418,7 +432,7 @@ suspend fun derive(
 
         val all = mutableListOf<Txn>()
         for (chunk in sources.chunked(500)) {
-            val rows = chunk.flatMap { parseToRows(it, extra, hintBuffer) }
+            val rows = applyMerchantAliases(chunk.flatMap { parseToRows(it, extra, hintBuffer) }, aliases)
             derived.txn().insertAll(rows)
             all += rows
             written += rows.size
@@ -631,4 +645,35 @@ suspend fun allBalances(derived: DerivedDb, durable: DurableDb): List<DerivedBal
         .mapNotNull { accountId ->
             deriveBalance(accountId, derived.txn().forAccount(accountId), anchors[accountId])
         }
+}
+
+/**
+ * Fold the corrected ledger back over the persisted fold.
+ *
+ * A manual correction (direction flip, hide, delete) re-derives the ledger, and [DerivedBalance]
+ * reflects the correction. This merges those figures back into the fold so the Home total and
+ * the per-account sheet agree with what the corrections say.
+ *
+ * The rule that avoids clobbering her own numbers: the ledger figure is adopted only when it is
+ * at least as new as the fold's (≥, so a tie goes to the ledger — the one the correction just
+ * wrote), or when the fold had no figure for the account yet. A hand-typed balance she set
+ * *after* the last message is newer than anything the ledger can produce and is left alone.
+ * Accounts the ledger knows nothing about are untouched (a panic balance entered for a bank that
+ * never messages again must not vanish on a rebuild).
+ */
+fun reconcileBalances(
+    fold: List<BankAccount>,
+    balances: List<DerivedBalance>,
+    now: Long = System.currentTimeMillis(),
+): List<BankAccount> {
+    val byKey = balances.associateBy { it.accountId }
+    return fold.map { account ->
+        val balance = byKey[account.bank] ?: return@map account
+        if (balance.at < account.updatedAt) return@map account
+        account.copy(
+            balance = balance.rial / 10.0,
+            updatedAt = balance.at,
+            inferred = !balance.anchored && account.balance != balance.rial / 10.0,
+        )
+    }.let { collapsed -> collapseAccounts(collapsed) }
 }

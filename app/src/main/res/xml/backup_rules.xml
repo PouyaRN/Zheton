@@ -1,12 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+    Backup the durable database — every message, decision, note, category and anchor — plus the
+    preferences that hold her own figures (name, theme, holdings, bank balances, rate cache).
+
+    The disposable ledger database and all build-generated state are left out: a restore does
+    not need them, the app re-derives them from the durable messages on first launch, and a
+    stale one would prove nothing about the version that never ran.
+
+    Preferences are treated as one unit even though some of them are refreshable caches
+    (rates, stocks): a cache item backed up only means it loads stale once and refreshes,
+    while any figure of hers excluded because it sits in the same file would be a lost one.
+-->
 <full-backup-content>
-    <exclude domain="root" path="." />
-    <exclude domain="file" path="." />
-    <exclude domain="database" path="." />
-    <exclude domain="sharedpref" path="." />
-    <exclude domain="external" path="." />
-    <exclude domain="device_root" path="." />
-    <exclude domain="device_file" path="." />
-    <exclude domain="device_database" path="." />
-    <exclude domain="device_sharedpref" path="." />
+    <include domain="database" path="durable.db" />
+    <include domain="database" path="durable.db-wal" />
+    <include domain="database" path="durable.db-shm" />
+    <include domain="sharedpref" path="muchtoman.xml" />
 </full-backup-content>

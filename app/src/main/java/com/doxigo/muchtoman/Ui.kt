@@ -339,9 +339,11 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
         BackHandler { categoriesManaged = false }
         CategoriesScreen(
             categories = state.ledger.categories,
+            hiddenCategories = state.hiddenCategories,
             onAdd = vm::addCategory,
             onEdit = vm::editCategory,
             onDelete = vm::deleteCategory,
+            onToggleHidden = vm::setCategoryHidden,
             onBack = { categoriesManaged = false },
         )
         return
@@ -370,9 +372,11 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
             TransactionScreen(
                 entry = entry,
                 categories = state.ledger.categories,
+                hiddenCategories = state.hiddenCategories,
                 existingNote = existingNote,
                 onCategorise = vm::categorise,
                 onSaveNote = vm::saveNote,
+                onPinMerchant = { norm, display -> vm.pinMerchantAlias(norm, display) },
                 onLoadSource = vm::sourceOf,
                 onBack = { transactionRef = null },
             )
@@ -384,6 +388,7 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
         BackHandler { deck = false }
         ReviewDeck(
             ledger = state.ledger,
+            hiddenCategories = state.hiddenCategories,
             onDecide = { entry, categoryId, always ->
                 vm.categorise(entry, categoryId, always)
             },
@@ -512,6 +517,7 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
             onMarkCredit = { vm.startMarkCredit(it) },
             onLinkInstallment = { vm.startLinkInstallment(it) },
             onExport = { activity?.let { ctx -> vm.exportCsv(ctx) } },
+            onBulkCategorise = vm::bulkCategorise,
         )
         return@Scaffold
       }
@@ -2918,9 +2924,11 @@ private fun PickTypeSheet(
 @Composable
 fun CategoriesScreen(
     categories: List<Category>,
+    hiddenCategories: Set<String> = emptySet(),
     onAdd: (String, String) -> Unit,
     onEdit: (String, String) -> Unit,
     onDelete: (String) -> Unit,
+    onToggleHidden: (String, Boolean) -> Unit,
     onBack: () -> Unit,
 ) {
     var adding by remember { mutableStateOf(false) }
@@ -3005,6 +3013,18 @@ fun CategoriesScreen(
                                     contentDescription = "حذف",
                                     modifier = Modifier.size(18.dp),
                                     tint = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        } else {
+                            val hidden = category.id in hiddenCategories
+                            TextButton(
+                                onClick = { onToggleHidden(category.id, !hidden) },
+                                contentPadding = PaddingValues(horizontal = Space.s),
+                            ) {
+                                Text(
+                                    if (hidden) "نمایش" else "پنهان",
+                                    fontSize = 11.sp,
+                                    color = if (hidden) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                         }

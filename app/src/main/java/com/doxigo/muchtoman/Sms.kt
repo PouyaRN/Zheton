@@ -358,15 +358,20 @@ fun parseBankSms(
 ): BankSms? {
     val bank = bankOf(sender, extra) ?: return null
 
-    // Tejarat OTP/confirmation messages contain رمز (OTP code) but no مانده (balance).
-    // They describe the same transaction as the balance-bearing message and must not create
-    // a duplicate ledger entry.
-    if (bank == Bank.TEJARAT) {
-        val norm = normalise(body)
-        if (norm.contains("رمز") && !norm.contains("مانده")) return null
-    }
-
+    // OTP/confirmation messages carry a one-time code — a standalone "رمز" followed by the digits
+    // of the code — and no stated balance (مانده). They are the authorization half of a pair:
+    // the Bank Maskan card-to-card case where the «انتقال» authorization SMS and the
+    // «انتقال» send-confirmation were both read as the same movement and it was counted twice.
+    // (Bank-agnostic: the shape differs only in which bank prints it.)
+    //
+    // The one exception is the Maskan merchant hint: the purchase-initiation SMS
+    // (خرید + مبلغ + رمز) still parses so its merchant can be attached to the debit
+    // confirmation that follows, and the ledger path already refuses to make it a row of its
+    // own. Another bank's identical shape (e.g. a Tejarat purchase OTP) gets no such leeway —
+    // nothing correlates its merchant, so it is dropped like every other OTP.
     val text = normalise(body)
+    val isMaskanHintBody = isMaskanHint(body)
+    if (hasOtpCode(text) && !text.contains("مانده") && !(isMaskanHintBody && bank == Bank.MASKAN)) return null
     val fallback = fallbackDivisor(text)
 
     // Zero is allowed here and nowhere else: an emptied account really does have a balance of
@@ -599,6 +604,27 @@ internal fun isMaskanHint(body: String): Boolean {
         text.contains("مبلغ") &&
         text.contains("رمز") &&
         !text.contains("مانده")
+}
+
+/**
+ * True when a message is the authorization half of a transaction: a standalone «رمز»
+ * (one-time code word) followed by the digits of the code.
+ *
+ * A substring match would be wrong — «کارمزد» contains رمز, so every fee-based debit SMS
+ * would be dropped as an OTP. The word must stand alone (the character before it is not a
+ * letter, so «کارمزد» fails) and a code digit must follow within the next forty characters.
+ */
+private fun hasOtpCode(text: String): Boolean {
+    var from = 0
+    while (true) {
+        val at = text.indexOf("رمز", from)
+        if (at < 0) return false
+        from = at + 1
+        val before = if (at == 0) ' ' else text[at - 1]
+        if (before.isLetter()) continue
+        val tail = text.substring(at + 2, minOf(text.length, at + 2 + 40))
+        if (Regex("[0-9۰-۹٠-٩]").containsMatchIn(tail)) return true
+    }
 }
 
 /**

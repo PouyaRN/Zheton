@@ -177,4 +177,30 @@ class DeriveTest {
         }
     }
 
+    @Test
+    fun `a merchant alias renames the display but never the source key`() {
+        val rows = listOf(
+            txn(at = 1, signed = -5_000_000).copy(
+                merchant = "شاپرک", merchantNorm = merchantNorm("شاپرک"),
+            ),
+            txn(at = 2, signed = -9_000_000).copy(
+                merchant = "رفاه", merchantNorm = merchantNorm("رفاه"),
+            ),
+        )
+        val aliases = mapOf(merchantNorm("شاپرک") to "سوپرمارکت رفاه")
+        val renamed = applyMerchantAliases(rows, aliases)
+
+        assertEquals("سوپرمارکت رفاه", renamed[0].merchant)
+        assertEquals(merchantNorm("شاپرک"), renamed[0].merchantNorm)  // source unchanged
+        assertEquals("رفاه", renamed[1].merchant)                     // untouched
+        // Amounts never move — a rename is words only.
+        assertEquals(-5_000_000L, renamed[0].signedRial)
+    }
+
+    @Test
+    fun `an empty alias map leaves every row untouched`() {
+        val rows = listOf(txn(at = 1, signed = -5_000_000).copy(merchant = "شاپرک"))
+        assertTrue(applyMerchantAliases(rows, emptyMap()) === rows)
+    }
+
 }

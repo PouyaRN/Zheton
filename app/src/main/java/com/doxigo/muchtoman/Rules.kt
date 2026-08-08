@@ -112,9 +112,13 @@ val BUILTIN_CATEGORIES: List<Category> = listOf(
  * everything — that is the honest answer to «which way did this go», and guessing here would file
  * money on the wrong side of the report.
  */
-fun categoryChoices(categories: List<Category>, direction: String?): List<Category> =
+fun categoryChoices(
+    categories: List<Category>,
+    direction: String?,
+    hidden: Set<String> = emptySet(),
+): List<Category> =
     categories.filter {
-        it.id != CAT_UNCATEGORISED && when (direction) {
+        it.id != CAT_UNCATEGORISED && it.id !in hidden && when (direction) {
             "in" -> it.kind == CategoryKind.INCOME
             "out" -> it.kind == CategoryKind.EXPENSE
             else -> it.kind != CategoryKind.TRANSFER

@@ -72,6 +72,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             smsEnabled = store.smsEnabled,
             bankAccounts = store.bankAccounts,
             disabledBanks = store.disabledBanks,
+            hiddenCategories = store.hiddenCategories,
             strangeSenders = store.strangeSenders,
             dismissedUpdate = store.dismissedUpdate,
         )
@@ -527,6 +528,77 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 _state.update { it.copy(ledger = ledgerView(derived, durable)) }
                 requestFamilySync(silent = true)
             }.onFailure { android.util.Log.w("muchtoman", "categorise failed: $it") }
+        }
+    }
+
+    /**
+     * Pin a name to one merchant source — the string the parser actually found.
+     *
+     * Every transaction whose parsed merchant normalises to [sourceNorm] shows [display] from
+     * now on, in the timeline and in search. Classification, links and reports keep keying off
+     * the source name; only the words on the screen change. An empty display unpins.
+     */
+    fun pinMerchantAlias(sourceNorm: String, displayName: String) {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            runCatching {
+                val durable = DurableDb.get(app)
+                val derived = DerivedDb.get(app)
+                val now = System.currentTimeMillis()
+                if (displayName.isBlank()) {
+                    durable.merchantAliases().put(MerchantAlias(sourceNorm, "", now, now))
+                } else {
+                    durable.merchantAliases().put(MerchantAlias(sourceNorm, displayName, now, now))
+                }
+                derive(durable, derived, extraLookup(store.extraBankNumbers))
+                _state.update { it.copy(ledger = ledgerView(derived, durable)) }
+            }.onFailure { android.util.Log.w("muchtoman", "pin merchant alias failed: $it") }
+        }
+    }
+
+    /**
+     * One category across many transactions at once. The always-teach switch stays off on
+     * purpose: bulk is a cleanup pass over what already happened, not a declaration about the
+     * future. Reuse [categorise]'s own path, so links, sync and rules behave exactly as if she
+     * had tapped each row.
+     */
+    fun bulkCategorise(entries: List<LedgerEntry>, categoryId: String) {
+        if (entries.isEmpty()) return
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            runCatching {
+                val durable = DurableDb.get(app)
+                val derived = DerivedDb.get(app)
+                val session = loadSession(durable)
+                val now = System.currentTimeMillis()
+                val refs = entries.map { it.txn.ref }
+                val existing = durable.decisions().all()
+                    .filter { it.ref in refs && it.kind == DecisionKind.CATEGORY }
+                durable.withTransaction {
+                    // In-product transacts supersede every older answer, including sync's.
+                    existing.forEach { old -> durable.decisions().put(old.copy(deleted = true, updatedAt = now)) }
+                    for (entry in entries) {
+                        durable.decisions().put(
+                            TxnDecision(
+                                id = uuid7(now),
+                                ref = entry.txn.ref,
+                                kind = DecisionKind.CATEGORY,
+                                value = categoryId,
+                                createdAt = now,
+                                updatedAt = now,
+                                memberId = session?.member.orEmpty(),
+                                familyRef = entry.txn.familyRef.ifBlank {
+                                    session?.let { familyTxnId(it.member, entry.txn.ref) }.orEmpty()
+                                },
+                            )
+                        )
+                    }
+                }
+                derive(durable, derived, extraLookup(store.extraBankNumbers))
+                _state.update { it.copy(ledger = ledgerView(derived, durable)) }
+                recomputeAccountBalancesFromLedger()
+                requestFamilySync(silent = true)
+            }.onFailure { android.util.Log.w("muchtoman", "bulk categorise failed: $it") }
         }
     }
 
@@ -1062,6 +1134,11 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             val key = smsKey(m.from, m.body, m.at)
             if (key in seen || legacySmsKey(m.body, m.at) in seen || key in fresh) continue
             val parsed = parseBankSms(m.from, m.body, m.at, extra)
+            // A Maskan purchase-initiation message (خرید + مبلغ + رمز) must not move the fold:
+            // it is the authorization half of a pair and would double-count the movement that
+            // the debit confirmation that follows already books. parseBankSms keeps reading it
+            // so the ledger can harvest its merchant; here it is simply skipped.
+            if (isMaskanHint(m.body)) continue
             if (parsed == null) {
                 // Skipped, and normally that is the end of it. The one silence worth
                 // breaking: a message that names one of HER banks from a number the list
@@ -1212,6 +1289,16 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         recordSnapshot()
     }
 
+    /**
+     * Hide or restore a built-in category in every picker and filter. The row itself stays —
+     * builtins are structural — only the offering leaves. Existing transactions keep the name.
+     */
+    fun setCategoryHidden(id: String, hidden: Boolean) {
+        val next = if (hidden) store.hiddenCategories + id else store.hiddenCategories - id
+        store.hiddenCategories = next
+        _state.update { it.copy(hiddenCategories = next) }
+    }
+
     /** She tells us what an account really holds; everything read after it builds on that. */
     fun setBankBalance(key: String, balance: Double) {
         restartScan {
@@ -1233,6 +1320,29 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             store.bankAccounts = next
             _state.update { it.copy(bankAccounts = next) }
             recordSnapshot()
+        }
+    }
+
+    /**
+     * Recompute the persisted fold from the corrected ledger.
+     *
+     * Every manual correction (direction flip, hide, delete, merchant) must land in the Home
+     * total and the per-bank sheet, not just in the timeline. Corrections write a durable
+     * decision and re-derive the ledger; this folds the derived balances back over the
+     * persisted accounts, adopting the corrected figure when it is at least as new as the
+     * fold's and leaving a newer hand-typed balance alone (see [reconcileBalances]).
+     */
+    fun recomputeAccountBalancesFromLedger() {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            runCatching {
+                val durable = DurableDb.get(app)
+                val derived = DerivedDb.get(app)
+                val next = reconcileBalances(store.bankAccounts, allBalances(derived, durable))
+                store.bankAccounts = next
+                _state.update { it.copy(bankAccounts = next) }
+                recordSnapshot()
+            }.onFailure { android.util.Log.w("muchtoman", "recompute balances failed: $it") }
         }
     }
 
@@ -1287,6 +1397,7 @@ data class UiState(
     val smsEnabled: Boolean = false,
     val bankAccounts: List<BankAccount> = emptyList(),
     val disabledBanks: Set<String> = emptySet(),
+    val hiddenCategories: Set<String> = emptySet(),
     val strangeSenders: List<StrangeSender> = emptyList(),
     val refreshingWallets: Set<String> = emptySet(),
     val walletErrors: Map<String, String> = emptyMap(),
