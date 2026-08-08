@@ -33,6 +33,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
@@ -705,6 +706,214 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** How long a permanent delete waits before it becomes irreversible. */
+    private val pendingDeleteWindowMs = 10_000L
+    @Volatile private var pendingDeleteJob: kotlinx.coroutines.Job? = null
+    @Volatile private var pendingDeleteRefs: List<Pair<String, String>> = emptyList() // ref to srcHash/manualId
+
+    /**
+     * Permanent delete, with an undo window.
+     *
+     * The durable source row and every decision attached to the transaction are the removal
+     * candidates. For SMS-derived rows the message itself leaves the durable store — a re-read
+     * from the inbox would re-add it, so the fold's seen-set is deliberately left alone and the
+     * watermark is not rewound: re-deriving from what remains cannot resurrect what is gone.
+     * A snackbar holds the door open about ten seconds; nothing is touched until the window
+     * closes, and Undo simply cancels the pending job.
+     */
+    fun deletePermanently(entries: List<LedgerEntry>) {
+        if (entries.isEmpty()) return
+        val app = getApplication<Application>()
+        pendingDeleteJob?.cancel()
+        pendingDeleteRefs = entries.map { entry ->
+            val txn = entry.txn
+            if (txn.sourceKind == "manual") {
+                txn.ref to "m:${txn.ref.removePrefix("m:")}"
+            } else {
+                txn.ref to "s:${txn.srcHash}:"
+            }
+        }
+        _state.update {
+            it.copy(
+                pendingUndo = PendingUndo(
+                    count = pendingDeleteRefs.size,
+                    label = if (pendingDeleteRefs.size == 1) "این مورد حذف می‌شود" else "${pendingDeleteRefs.size} مورد حذف می‌شود",
+                    dueAt = System.currentTimeMillis() + pendingDeleteWindowMs,
+                )
+            )
+        }
+        pendingDeleteJob = viewModelScope.launch(Dispatchers.Default) {
+            delay(pendingDeleteWindowMs)
+            val plan = pendingDeleteRefs
+            if (plan.isEmpty()) return@launch
+            runCatching {
+                val durable = DurableDb.get(app)
+                val derived = DerivedDb.get(app)
+                durable.withTransaction {
+                    for ((ref, key) in plan) {
+                        durable.decisions().deleteForRef(ref, "$key%")
+                        when {
+                            key.startsWith("s:") ->
+                                durable.smsSource().deleteOne(key.removePrefix("s:"))
+                            else ->
+                                durable.manual().tombstone(key.removePrefix("m:"))
+                        }
+                    }
+                }
+                derive(durable, derived, extraLookup(store.extraBankNumbers))
+                _state.update { it.copy(ledger = ledgerView(derived, durable), pendingUndo = null) }
+                recomputeAccountBalancesFromLedger()
+                requestFamilySync(silent = true)
+            }.onFailure { android.util.Log.w("muchtoman", "permanent delete failed: $it") }
+        }
+    }
+
+    /** Cancel an in-flight permanent delete before it becomes irreversible. */
+    fun undoPermanentDelete() {
+        pendingDeleteJob?.cancel()
+        pendingDeleteRefs = emptyList()
+        _state.update { it.copy(pendingUndo = null) }
+    }
+
+    // ─────────────────────────── bulk actions ───────────────────────────
+
+    /** Batch "Hide"/"Restore" writes the hide decision for every selected row at once. */
+    fun bulkHide(entries: List<LedgerEntry>, hidden: Boolean) {
+        if (entries.isEmpty()) return
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            runCatching {
+                val durable = DurableDb.get(app)
+                val derived = DerivedDb.get(app)
+                val session = loadSession(durable)
+                val now = System.currentTimeMillis()
+                durable.withTransaction {
+                    for (entry in entries) {
+                        val ref = entry.txn.ref
+                        val existing = durable.decisions().forRef(ref).firstOrNull { it.kind == DecisionKind.HIDE }
+                        durable.decisions().put(
+                            TxnDecision(
+                                id = existing?.id ?: uuid7(now),
+                                ref = ref,
+                                kind = DecisionKind.HIDE,
+                                value = "1",
+                                createdAt = existing?.createdAt ?: now,
+                                updatedAt = now,
+                                deleted = !hidden,
+                                memberId = session?.member.orEmpty(),
+                                familyRef = entry.txn.familyRef.ifBlank { "" },
+                            )
+                        )
+                    }
+                }
+                _state.update { it.copy(ledger = ledgerView(derived, durable)) }
+                recomputeAccountBalancesFromLedger()
+                requestFamilySync(silent = true)
+            }.onFailure { android.util.Log.w("muchtoman", "bulk hide failed: $it") }
+        }
+    }
+
+    /** Batch "Flip direction" toggles the direction decision for every selected row at once. */
+    fun bulkFlipDirection(entries: List<LedgerEntry>) {
+        if (entries.isEmpty()) return
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            runCatching {
+                val durable = DurableDb.get(app)
+                val derived = DerivedDb.get(app)
+                val session = loadSession(durable)
+                val now = System.currentTimeMillis()
+                durable.withTransaction {
+                    for (entry in entries) {
+                        val ref = entry.txn.ref
+                        val existing = durable.decisions().forRef(ref).firstOrNull { it.kind == DecisionKind.DIRECTION }
+                        val current = if (existing?.active == true) existing.value else entry.txn.direction
+                        val flipped = if (current == "in") "out" else "in"
+                        durable.decisions().put(
+                            TxnDecision(
+                                id = existing?.id ?: uuid7(now),
+                                ref = ref,
+                                kind = DecisionKind.DIRECTION,
+                                value = flipped,
+                                createdAt = existing?.createdAt ?: now,
+                                updatedAt = now,
+                                deleted = false,
+                                memberId = session?.member.orEmpty(),
+                                familyRef = entry.txn.familyRef.ifBlank { "" },
+                            )
+                        )
+                    }
+                }
+                derive(durable, derived, extraLookup(store.extraBankNumbers))
+                _state.update { it.copy(ledger = ledgerView(derived, durable)) }
+                recomputeAccountBalancesFromLedger()
+                requestFamilySync(silent = true)
+            }.onFailure { android.util.Log.w("muchtoman", "bulk flip failed: $it") }
+        }
+    }
+
+    /**
+     * Batch "Delete" — a single undo window over every selected row (ticket 13). Uses the same
+     * pending-delete mechanism as a one-at-a-time permanent delete.
+     */
+    fun bulkDelete(entries: List<LedgerEntry>) = deletePermanently(entries)
+
+    // ─────────────────────────── category delete ───────────────────────────
+
+    /**
+     * Delete a category, deciding what happens to the transactions inside it.
+     *
+     * Empty categories leave with no prompt. A category holding transactions offers «انتقال
+     * به…» (move every filing to a target category) — the only path where deleting cannot
+     * orphan rows. Rules that filed into the dying category are retired with it.
+     */
+    fun deleteCategory(categoryId: String, targetId: String?) {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            runCatching {
+                val durable = DurableDb.get(app)
+                val derived = DerivedDb.get(app)
+                val now = System.currentTimeMillis()
+                val category = durable.categories().get(categoryId) ?: return@runCatching
+                if (category.builtin) return@runCatching
+                if (targetId != null && targetId != categoryId) {
+                    // Move everything currently filed under it. Both the pinned transactions and
+                    // the ones a rule filed must land in the target, so every ref the derived
+                    // ledger shows in the dying category gets a fresh category decision —
+                    // rules are about to retire with the category, and a decision beats a rule.
+                    val session = loadSession(durable)
+                    val moves = derived.classes().all().filter { it.categoryId == categoryId }
+                    durable.withTransaction {
+                        for (row in moves) {
+                            val ref = row.ref
+                            val existing = durable.decisions().forRef(ref).firstOrNull { it.kind == DecisionKind.CATEGORY }
+                            durable.decisions().put(
+                                TxnDecision(
+                                    id = existing?.id ?: uuid7(now),
+                                    ref = ref,
+                                    kind = DecisionKind.CATEGORY,
+                                    value = targetId,
+                                    createdAt = existing?.createdAt ?: now,
+                                    updatedAt = now,
+                                    deleted = false,
+                                    memberId = session?.member.orEmpty(),
+                                    familyRef = "",
+                                )
+                            )
+                        }
+                    }
+                }
+                // Rules that filed into the dying category retire with it — no rule may pin
+                // rows to a category that no longer exists.
+                durable.rules().deleteForCategory(categoryId, now)
+                durable.categories().archive(categoryId, now)
+                derive(durable, derived, extraLookup(store.extraBankNumbers))
+                _state.update { it.copy(ledger = ledgerView(derived, durable)) }
+                requestFamilySync(silent = true)
+            }.onFailure { android.util.Log.w("muchtoman", "deleteCategory failed: $it") }
+        }
+    }
+
     /** Where the household's ledger syncs. Same host as the PWA it serves, so one origin. */
     private val syncBase = BuildConfig.SYNC_URL
 
@@ -1018,21 +1227,6 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 )
                 _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable)) }
             }.onFailure { android.util.Log.w("muchtoman", "editCategory failed: $it") }
-        }
-    }
-
-    /** Archive a user-created category. Builtin categories cannot be deleted. */
-    fun deleteCategory(id: String) {
-        val app = getApplication<Application>()
-        viewModelScope.launch(Dispatchers.Default) {
-            val durable = DurableDb.get(app)
-            val now = System.currentTimeMillis()
-            runCatching {
-                val existing = durable.categories().get(id) ?: return@runCatching
-                if (existing.builtin) return@runCatching
-                durable.categories().archive(id, now)
-                _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable)) }
-            }.onFailure { android.util.Log.w("muchtoman", "deleteCategory failed: $it") }
         }
     }
 
@@ -1508,6 +1702,8 @@ data class UiState(
     val disabledBanks: Set<String> = emptySet(),
     val hiddenCategories: Set<String> = emptySet(),
     val showHidden: Boolean = false,
+    /** A pending permanent delete waiting out its undo window: label + size + when it fires. */
+    val pendingUndo: PendingUndo? = null,
     val strangeSenders: List<StrangeSender> = emptyList(),
     val refreshingWallets: Set<String> = emptySet(),
     val walletErrors: Map<String, String> = emptyMap(),
@@ -1592,6 +1788,19 @@ data class UiState(
     /** Reads both of the above, so as a get() it paid for both of them again every time. */
     val totals: Totals by lazy { computeTotals(listHoldings, effective) }
 }
+
+/**
+ * A permanent delete waiting out its undo window.
+ *
+ * [count] is how many transactions the tap covers; when the window elapses with no undo, the
+ * durable source rows and every decision attached to them go for good. UI renders this as a
+ * snackbar-style bar with an "undo" action.
+ */
+data class PendingUndo(
+    val count: Int,
+    val label: String,
+    val dueAt: Long,
+)
 
 // FragmentActivity, not ComponentActivity: androidx.biometric's BiometricPrompt requires it.
 class MainActivity : FragmentActivity() {

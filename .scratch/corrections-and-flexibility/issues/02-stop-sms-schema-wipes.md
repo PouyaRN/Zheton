@@ -4,7 +4,7 @@
 
 **Blocked by:** None — can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The SMS-schema change no longer clears account balances, seen-SMS hashes, or the scan watermark
 - [ ] Hand-typed balance anchors are stored in a place that survives any fold rebuild

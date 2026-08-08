@@ -4,7 +4,7 @@
 
 **Blocked by:** 05 (recompute, so the total follows the flip).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] A durable direction decision overrides the parsed direction and sign for that transaction
 - [ ] The visible amount sign and category choices update to match the chosen direction

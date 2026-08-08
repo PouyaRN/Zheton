@@ -4,7 +4,7 @@
 
 **Blocked by:** 05 (recompute — hiding must change the visible totals).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] A durable hide decision is written when the user deletes a transaction
 - [ ] Hidden rows are excluded from the timeline, reports, and totals; totals update per the recompute (05)

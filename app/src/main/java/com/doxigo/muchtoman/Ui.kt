@@ -92,6 +92,10 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -245,6 +249,19 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
     var addingReservation by remember { mutableStateOf(false) }
     var categoriesManaged by remember { mutableStateOf(false) }
 
+    // The permanent-delete undo door. One host, and the window's lifetime rides on the state
+    // itself: when it nulls (the window elapsed or she hit Undo) the snackbar just leaves.
+val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(state.pendingUndo) {
+        val pending = state.pendingUndo ?: return@LaunchedEffect
+        val result = snackbarHostState.showSnackbar(
+            message = pending.label,
+            actionLabel = "بازگردانی",
+            duration = SnackbarDuration.Long,
+        )
+        if (result == SnackbarResult.ActionPerformed) vm.undoPermanentDelete()
+    }
+
     // One tab, not three booleans. Three could be true at once, and were: every screen was an
     // overlay with its own «بستن», so an overlay opened from an overlay left her somewhere the
     // only way out of was the system back button. A single value cannot represent that state.
@@ -340,9 +357,10 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
         CategoriesScreen(
             categories = state.ledger.categories,
             hiddenCategories = state.hiddenCategories,
+            categoryCounts = state.ledger.categoryCounts,
             onAdd = vm::addCategory,
             onEdit = vm::editCategory,
-            onDelete = vm::deleteCategory,
+            onDelete = { categoryId, targetId -> vm.deleteCategory(categoryId, targetId) },
             onToggleHidden = vm::setCategoryHidden,
             onBack = { categoriesManaged = false },
         )
@@ -382,6 +400,7 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
                 onSetDirection = { e, direction -> vm.setTransactionDirection(e, direction) },
                 onHide = { e, hidden -> vm.setTransactionHidden(e, hidden) },
                 onUnpinCategory = vm::unpinCategory,
+                onDeletePermanently = { e -> vm.deletePermanently(listOf(e)) },
                 onLoadSource = vm::sourceOf,
                 onBack = { transactionRef = null },
             )
@@ -491,6 +510,9 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
         // Scaffold must not hold the content down below it. Every child that needs the inset
         // takes it itself — the field with statusBarsPadding, the bar below with its own.
         contentWindowInsets = WindowInsets(0),
+        snackbarHost = {
+            SnackbarHost(snackbarHostState)
+        },
         bottomBar = {
             // A full-width «اضافه کردن دارایی» used to sit above this, and the + in the field
             // already opens the same picker on this tab. Two buttons for one action, one of
@@ -523,6 +545,9 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
             onLinkInstallment = { vm.startLinkInstallment(it) },
             onExport = { activity?.let { ctx -> vm.exportCsv(ctx) } },
             onBulkCategorise = vm::bulkCategorise,
+            onBulkHide = vm::bulkHide,
+            onBulkFlip = vm::bulkFlipDirection,
+            onBulkDelete = vm::bulkDelete,
             onHide = { entry, hidden -> vm.setTransactionHidden(entry, hidden) },
             onToggleShowHidden = { vm.setShowHidden(!state.showHidden) },
         )
@@ -2932,9 +2957,11 @@ private fun PickTypeSheet(
 fun CategoriesScreen(
     categories: List<Category>,
     hiddenCategories: Set<String> = emptySet(),
+    categoryCounts: Map<String, Int> = emptyMap(),
     onAdd: (String, String) -> Unit,
     onEdit: (String, String) -> Unit,
-    onDelete: (String) -> Unit,
+    /** (category id, target id) — target null deletes outright (only when empty is safe). */
+    onDelete: (String, String?) -> Unit,
     onToggleHidden: (String, Boolean) -> Unit,
     onBack: () -> Unit,
 ) {
@@ -3116,22 +3143,80 @@ fun CategoriesScreen(
         )
     }
 
-    // Delete confirmation dialog
+    // Delete confirmation dialog. Empty categories delete outright; a category with
+    // transactions must say where they go before it may die, so nothing is orphaned.
     deletingCategory?.let { cat ->
-        AlertDialog(
-            onDismissRequest = { deletingCategory = null },
-            title = { Text("حذف دسته‌بندی") },
-            text = { Text("آیا از حذف «${cat.nameFa}» مطمئنید؟") },
-            confirmButton = {
-                TextButton(
-                    onClick = { onDelete(cat.id); deletingCategory = null },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                ) { Text("حذف") }
-            },
-            dismissButton = {
-                TextButton(onClick = { deletingCategory = null }) { Text("لغو") }
-            },
-        )
+        val count = categoryCounts[cat.id] ?: 0
+        if (count == 0) {
+            AlertDialog(
+                onDismissRequest = { deletingCategory = null },
+                title = { Text("حذف دسته‌بندی") },
+                text = { Text("«${cat.nameFa}» خالی است و حذف می‌شود.") },
+                confirmButton = {
+                    TextButton(
+                        onClick = { onDelete(cat.id, null); deletingCategory = null },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    ) { Text("حذف") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { deletingCategory = null }) { Text("لغو") }
+                },
+            )
+        } else {
+            var targetId by remember(cat.id) { mutableStateOf<String?>(null) }
+            AlertDialog(
+                onDismissRequest = { deletingCategory = null },
+                title = { Text("انتقال تراکنش‌های «${cat.nameFa}»") },
+                text = {
+                    Column {
+                        Text(
+                            "${faNumber(count.toDouble())} تراکنش در این دسته هست. قبل از حذف باید به دسته دیگری بروند.",
+                            fontSize = 13.sp,
+                            lineHeight = 20.sp,
+                        )
+                        Spacer(Modifier.height(Space.m))
+                        LazyColumn(Modifier.heightIn(max = 220.dp)) {
+                            items(categories.filter { it.id != cat.id }, key = { it.id }) { target ->
+                                Row(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(Radius.field))
+                                        .background(
+                                            if (target.id == targetId) MaterialTheme.colorScheme.primaryContainer
+                                            else Color.Transparent
+                                        )
+                                        .clickable { targetId = target.id }
+                                        .padding(Space.m),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    CategoryIcon(
+                                        target.nameFa,
+                                        MaterialTheme.colorScheme.onSurfaceVariant,
+                                        size = 18.dp,
+                                        stroke = 1.4.dp,
+                                    )
+                                    Spacer(Modifier.width(Space.m))
+                                    Text(target.nameFa, fontSize = 14.sp)
+                                }
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        enabled = targetId != null,
+                        onClick = {
+                            targetId?.let { onDelete(cat.id, it) }
+                            deletingCategory = null
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    ) { Text("انتقال و حذف") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { deletingCategory = null }) { Text("لغو") }
+                },
+            )
+        }
     }
 }
 

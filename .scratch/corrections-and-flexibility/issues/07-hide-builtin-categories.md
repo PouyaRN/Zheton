@@ -4,7 +4,7 @@
 
 **Blocked by:** None — can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] A durable hidden-builtin list suppresses built-ins from category pickers, chips, and filters app-wide
 - [ ] Existing transactions in a hidden built-in keep their classification and display name

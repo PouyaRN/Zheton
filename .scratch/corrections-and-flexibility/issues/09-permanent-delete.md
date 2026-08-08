@@ -4,7 +4,7 @@
 
 **Blocked by:** 08 (hide is the safe default this escalates from).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] A "Delete permanently" action exists in the transaction detail (separate from Hide)
 - [ ] It shows a snackbar with an undo action for about 10 seconds

@@ -49,6 +49,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -121,6 +122,9 @@ fun TimelineScreen(
     onLinkInstallment: (LedgerEntry) -> Unit,
     onExport: () -> Unit,
     onBulkCategorise: (List<LedgerEntry>, String) -> Unit = { _, _ -> },
+    onBulkHide: (List<LedgerEntry>, Boolean) -> Unit = { _, _ -> },
+    onBulkFlip: (List<LedgerEntry>) -> Unit = {},
+    onBulkDelete: (List<LedgerEntry>) -> Unit = {},
     onHide: (LedgerEntry, Boolean) -> Unit = { _, _ -> },
     onToggleShowHidden: () -> Unit = {},
 ) {
@@ -343,6 +347,21 @@ TextButton(onClick = {
                         selecting = false
                         selected = emptySet()
                     },
+                    onHide = {
+                        onBulkHide(rows, true)
+                        selecting = false
+                        selected = emptySet()
+                    },
+                    onFlip = {
+                        onBulkFlip(rows)
+                        selecting = false
+                        selected = emptySet()
+                    },
+                    onDelete = {
+                        onBulkDelete(rows)
+                        selecting = false
+                        selected = emptySet()
+                    },
                     onCancel = {
                         selecting = false
                         selected = emptySet()
@@ -354,8 +373,8 @@ TextButton(onClick = {
 }
 
 /**
- * The bottom bar while transactions are selected. One action today (pick a category); the refs
- * are the seam the rest of the bulk suite hangs off.
+ * The bottom bar while transactions are selected: category filing, hide, flip direction, and
+ * permanent delete — each over every selected row, with one confirmation/undo each.
  */
 @Composable
 private fun BatchActionBar(
@@ -363,9 +382,14 @@ private fun BatchActionBar(
     categories: List<Category>,
     hiddenCategories: Set<String>,
     onPickCategory: (String) -> Unit,
+    /** The count shown before a bulk action applies it — ticket 12/13 confirmations. */
+    onHide: () -> Unit,
+    onFlip: () -> Unit,
+    onDelete: () -> Unit,
     onCancel: () -> Unit,
 ) {
     var showCategoryPicker by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
     Surface(tonalElevation = 3.dp, shadowElevation = 4.dp) {
         Row(
             Modifier
@@ -381,14 +405,34 @@ private fun BatchActionBar(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f),
             )
-            TextButton(onClick = onCancel) { Text("لغو") }
-            Button(onClick = { showCategoryPicker = true }) { Text("دسته‌بندی") }
+            TextButton(onClick = onCancel) { Text("لغو", fontSize = 12.sp) }
+        }
+        // A second row of actions keeps the bar from turning into a keyboard of buttons.
+        // Three actions plus the count would crowd one line; the actions read better than the
+        // count and deserve the width.
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = Space.xl, vertical = Space.s),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Space.s),
+        ) {
+            TextButton(onClick = { showCategoryPicker = true }) { Text("دسته‌بندی", fontSize = 13.sp) }
+            TextButton(onClick = onHide) { Text("پنهان", fontSize = 13.sp) }
+            TextButton(onClick = onFlip) { Text("جابجایی جهت", fontSize = 13.sp) }
+            TextButton(
+                onClick = { showDeleteConfirm = true },
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            ) { Text("حذف", fontSize = 13.sp) }
         }
     }
     if (showCategoryPicker) {
         AlertDialog(
             onDismissRequest = { showCategoryPicker = false },
-            title = { Text("انتخاب دسته") },
+            title = {
+                Text("دسته‌بندی ${selectedRefs.size} مورد")
+            },
             text = {
                 LazyColumn(modifier = Modifier.heightIn(max = 320.dp)) {
                     items(categoryChoices(categories, null, hiddenCategories), key = { it.id }) { category ->
@@ -417,6 +461,27 @@ private fun BatchActionBar(
             confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { showCategoryPicker = false }) { Text("انصراف") }
+            },
+        )
+    }
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("حذف دائمی ${selectedRefs.size} مورد") },
+            text = {
+                Text(
+                    "پیام‌های اصلی و همهٔ تصمیم‌ها برای این ${selectedRefs.size} مورد پاک می‌شوند. " +
+                        "ده ثانیه فرصت تعویض داری."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { showDeleteConfirm = false; onDelete() },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                ) { Text("حذف") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("انصراف") }
             },
         )
     }
@@ -731,6 +796,7 @@ fun TransactionScreen(
     onSetDirection: (LedgerEntry, String?) -> Unit = { _, _ -> },
     onHide: (LedgerEntry, Boolean) -> Unit = { _, _ -> },
     onUnpinCategory: (LedgerEntry) -> Unit = {},
+    onDeletePermanently: (LedgerEntry) -> Unit = {},
     onLoadSource: suspend (LedgerEntry) -> String,
     onBack: () -> Unit,
 ) {
@@ -743,6 +809,7 @@ fun TransactionScreen(
     var merchantText by remember(txn.ref) { mutableStateOf(txn.merchant) }
     var merchantDirty by remember(txn.ref) { mutableStateOf(false) }
     var categoryDirty by remember(txn.ref) { mutableStateOf(false) }
+    var confirmDelete by remember(txn.ref) { mutableStateOf(false) }
 
     LaunchedEffect(txn.ref) { source = onLoadSource(entry) }
     LaunchedEffect(entry.categoryId) { chosen = entry.categoryId }
@@ -978,6 +1045,14 @@ fun TransactionScreen(
                     TextButton(onClick = { onHide(entry, true) }) {
                         Text("پنهان کردن از دفتر", color = MaterialTheme.colorScheme.error)
                     }
+                    TextButton(onClick = { confirmDelete = true }) {
+                        Text("حذف دائمی", color = MaterialTheme.colorScheme.error)
+                    }
+                    Text(
+                        "حذف دائمی پیام اصلی را هم پاک می‌کند؛ ده ثانیه فرصت تعویض داری.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
 
@@ -1033,6 +1108,28 @@ fun TransactionScreen(
                     }
                 }
             }
+        }
+
+        if (confirmDelete) {
+            AlertDialog(
+                onDismissRequest = { confirmDelete = false },
+                title = { Text("حذف دائمی") },
+                text = {
+                    Text(
+                        "این تراکنش و پیام اصلیش برای همیشه حذف می‌شوند و از پیامک‌های قبلی هم برنمی‌گردند. " +
+                            "تا ده ثانیه می‌توانی تعویض کنی."
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = { confirmDelete = false; onDeletePermanently(entry) },
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                    ) { Text("حذف") }
+                },
+                dismissButton = {
+                    TextButton(onClick = { confirmDelete = false }) { Text("لغو") }
+                },
+            )
         }
     }
 }

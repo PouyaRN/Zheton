@@ -4,7 +4,7 @@
 
 **Blocked by:** None — can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Android backup is enabled (`allowBackup`) with rules that include the durable database and user decisions
 - [ ] Fold caches and volatile state are excluded from backup

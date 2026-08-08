@@ -4,7 +4,7 @@
 
 **Blocked by:** None — can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Long-press (and/or a select button) enters selection mode
 - [ ] Checkboxes appear on timeline rows while in selection mode; the batch bar replaces header actions

@@ -4,7 +4,7 @@
 
 **Blocked by:** 06 (selection mode).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] After selecting rows (and "select all matches"), a category picker assigns that category to all selected transactions
 - [ ] Each selected transaction's category decision is written durably; pinned categories are replaced

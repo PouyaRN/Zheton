@@ -4,7 +4,7 @@
 
 **Blocked by:** None beyond the correction layer (05 recompute is not needed for display-only changes, but consistency with the correction stack applies).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] A durable merchant override replaces the parsed merchant for display and search
 - [ ] The override is not treated as a rule/classifier input

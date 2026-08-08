@@ -4,7 +4,7 @@
 
 **Blocked by:** the existing category CRUD (add/rename/archive) and 07 (hide built-ins) — plus the individual path can reuse the selection/search flow, so it benefits from 06.
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Deleting an empty category: removed with no prompt
 - [ ] Deleting a category with transactions: dialog offers «انتقال به…» (move all to a chosen target) or «یکبهیک» (choose individually)

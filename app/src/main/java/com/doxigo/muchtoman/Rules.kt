@@ -397,6 +397,10 @@ interface RuleDao {
 
     @Query("SELECT * FROM rule WHERE origin_ref = :ref AND deleted = 0")
     suspend fun madeFrom(ref: String): List<Rule>
+
+    /** Delete a category out from under the rules: every rule that filed into it retires. */
+    @Query("UPDATE rule SET deleted = 1, updated_at = :now WHERE category_id = :categoryId AND deleted = 0")
+    suspend fun deleteForCategory(categoryId: String, now: Long): Int
 }
 
 @Dao
@@ -412,6 +416,10 @@ interface TxnDecisionDao {
 
     @Query("SELECT * FROM txn_decision WHERE kind = :kind AND deleted = 0")
     suspend fun ofKind(kind: String): List<TxnDecision>
+
+    /** Permanent delete: destroy the decisions for a source and everything pointed at it. */
+    @Query("DELETE FROM txn_decision WHERE ref = :ref OR ref LIKE :refPrefix")
+    suspend fun deleteForRef(ref: String, refPrefix: String): Int
 }
 
 @Dao

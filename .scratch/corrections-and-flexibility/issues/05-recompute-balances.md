@@ -4,7 +4,7 @@
 
 **Blocked by:** None — can start immediately (shared mechanism; the correction tickets below consume it).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] A single recompute entry point derives balances from the corrected ledger and updates both the fold and UI state
 - [ ] Hand-typed balances with no SMS source are preserved, never overwritten

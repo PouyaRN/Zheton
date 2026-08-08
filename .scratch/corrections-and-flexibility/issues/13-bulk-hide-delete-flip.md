@@ -4,7 +4,7 @@
 
 **Blocked by:** 06 (selection), 08 (hide), 09 (permanent delete), 10 (direction override).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Batch "Hide" writes the hide decision for every selected row
 - [ ] Batch "Delete" deletes every selected row with a single undo window (09)

@@ -417,6 +417,10 @@ interface ManualTxnDao {
 
     @Query("SELECT COUNT(*) FROM manual_txn WHERE deleted = 0")
     suspend fun count(): Int
+
+    /** Permanent delete: tombstone the row so a re-derive never brings the transaction back. */
+    @Query("UPDATE manual_txn SET deleted = 1 WHERE id = :id")
+    suspend fun tombstone(id: String): Int
 }
 
 @Dao
@@ -528,6 +532,10 @@ interface SmsSourceDao {
 
     @Query("DELETE FROM sms_source WHERE at < :before")
     suspend fun deleteBefore(before: Long): Int
+
+    /** Permanent: remove one source row for good. Undo happens *before* this runs. */
+    @Query("DELETE FROM sms_source WHERE src_hash = :srcHash")
+    suspend fun deleteOne(srcHash: String): Int
 
     /**
      * The backstop against a pathological inbox. `LIMIT -1 OFFSET n` is the only way to say

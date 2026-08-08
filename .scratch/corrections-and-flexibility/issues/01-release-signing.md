@@ -4,7 +4,7 @@
 
 **Blocked by:** None — can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] A stable release keystore and its properties file exist and are wired into the build (gitignored, never committed)
 - [ ] `assembleRelease` produces a signed APK and `versionCode` is bumped for each release

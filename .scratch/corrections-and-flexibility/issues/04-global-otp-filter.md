@@ -4,7 +4,7 @@
 
 **Blocked by:** None — can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The Tejarat-only ignore-rule (رمز without مانده) applies to every bank in the parser
 - [ ] Sender recognition is unchanged — filtered OTP messages are silently skipped, not surfaced as unknown senders

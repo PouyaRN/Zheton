@@ -550,6 +550,8 @@ data class LedgerView(
     val hiddenEntries: List<LedgerEntry> = emptyList(),
     /** How many transactions are hidden (not in [entries] unless revealed). */
     val hiddenCount: Int = 0,
+    /** How many transactions sit in each category — the number a delete must not orphan. */
+    val categoryCounts: Map<String, Int> = emptyMap(),
 ) {
     /** Only what she actually has to answer, biggest first, and never more than a week's worth. */
     val review: List<LedgerEntry> by lazy {
@@ -572,6 +574,8 @@ data class LedgerEntries(
     val hiddenEntries: List<LedgerEntry> = emptyList(),
     val categories: List<Category> = emptyList(),
     val categoryDecisions: Map<String, TxnDecision> = emptyMap(),
+    /** How many transactions sit in each category — the number a delete must not orphan. */
+    val categoryCounts: Map<String, Int> = emptyMap(),
 )
 
 suspend fun ledgerEntries(
@@ -608,7 +612,10 @@ suspend fun ledgerEntries(
         )
     }
     val (hiddenEntries, visible) = built.partition { it.hidden }
-    return LedgerEntries(visible.take(limit), hiddenEntries.take(limit), categories, categoryDecisions)
+    val categoryCounts = classes.values
+        .groupingBy { it.categoryId }
+        .eachCount()
+    return LedgerEntries(visible.take(limit), hiddenEntries.take(limit), categories, categoryDecisions, categoryCounts)
 }
 
 /**
@@ -635,6 +642,7 @@ suspend fun ledgerView(
         ledger.entries, ledger.categories, goals, answers, notes,
         ready = true, hiddenCount = ledger.hiddenEntries.size,
         hiddenEntries = ledger.hiddenEntries,
+        categoryCounts = ledger.categoryCounts,
     )
 }
 
