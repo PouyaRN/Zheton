@@ -1,0 +1,87 @@
+package com.doxigo.muchtoman
+
+/**
+ * The timeline filter: a list of AND-composed tokens — field + operator + value.
+ *
+ * Pure and unit-testable — no DB, no ViewModel, no Compose. The sheet UI builds these, the
+ * timeline consumes `matchesFilter` on its loaded rows, and the whole-ledger path (ticket 06)
+ * runs the same predicate.
+ */
+enum class FilterField(val fa: String) {
+    MERCHANT("فروشگاه"),
+    CATEGORY("دسته"),
+    BANK("بانک"),
+    DIRECTION("جهت"),
+    AMOUNT("مبلغ"),
+    DATE("تاریخ"),
+}
+
+enum class FilterOp(val fa: String) {
+    CONTAINS("شامل"),
+    NOT_CONTAINS("بدون"),
+    EQUALS("برابر"),
+    NOT_EQUALS("نابرابر"),
+    GTE("از"),
+    LTE("تا"),
+}
+
+data class FilterToken(
+    val field: FilterField,
+    val op: FilterOp,
+    val value: String,
+)
+
+/** Stable UI key, not data-dependent ordering. */
+fun FilterToken.stableKey(): String = "${field}_${op}_$value"
+
+/** True when every token matches the row. An empty filter keeps everything. */
+fun matchesFilter(entry: LedgerEntry, tokens: List<FilterToken>): Boolean =
+    tokens.all { matchesToken(entry, it) }
+
+fun matchesToken(entry: LedgerEntry, t: FilterToken): Boolean {
+    val txn = entry.txn
+    return when (t.field) {
+        FilterField.MERCHANT ->
+            stringToken(txn.merchant.ifBlank { txn.merchantNorm }, t)
+        FilterField.CATEGORY -> when (t.op) {
+            FilterOp.EQUALS -> entry.categoryId == t.value
+            FilterOp.NOT_EQUALS -> entry.categoryId != t.value
+            else -> stringToken(entry.categoryFa, t)
+        }
+        FilterField.BANK -> when (t.op) {
+            FilterOp.EQUALS -> txn.bank == t.value
+            FilterOp.NOT_EQUALS -> txn.bank != t.value
+            else -> stringToken(bankNameOf(txn.bank), t)
+        }
+        FilterField.DIRECTION -> {
+            val current = txn.direction ?: ""
+            when (t.op) {
+                FilterOp.EQUALS, FilterOp.CONTAINS -> current == t.value
+                FilterOp.NOT_EQUALS, FilterOp.NOT_CONTAINS -> current != t.value
+                FilterOp.GTE, FilterOp.LTE -> false
+            }
+        }
+        FilterField.AMOUNT -> numberToken(txn.amountRial, t)
+        FilterField.DATE -> numberToken(txn.day, t)
+    }
+}
+
+private fun stringToken(hay: String, t: FilterToken): Boolean {
+    val needle = t.value.trim()
+    if (needle.isEmpty()) return true
+    val hit = hay.trim().contains(needle, ignoreCase = true)
+    return if (t.op == FilterOp.NOT_CONTAINS) !hit else hit
+}
+
+private fun numberToken(value: Long?, t: FilterToken): Boolean {
+    val v = value ?: return false
+    val parsed = t.value.trim().replace(",", "").toLongOrNull() ?: return false
+    return when (t.op) {
+        FilterOp.GTE -> v >= parsed
+        FilterOp.LTE -> v <= parsed
+        FilterOp.EQUALS -> v == parsed
+        FilterOp.NOT_EQUALS -> v != parsed
+        FilterOp.CONTAINS -> t.value.contains(v.toString())
+        FilterOp.NOT_CONTAINS -> !t.value.contains(v.toString())
+    }
+}

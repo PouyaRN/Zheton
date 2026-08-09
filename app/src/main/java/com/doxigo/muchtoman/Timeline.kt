@@ -57,6 +57,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.Close
@@ -144,20 +148,25 @@ fun TimelineScreen(
     }
     var searchQuery by remember { mutableStateOf("") }
     var selectedCategoryId by remember { mutableStateOf<String?>(null) }
+    // The structured filter sheet (ticket 04+). Tokens AND together on top of the search bar
+    // and the category chips. Editing the filter clears any in-progress selection, because the
+    // batch bar must describe a set that is still in front of the user.
+    var filterTokens by remember { mutableStateOf(listOf<FilterToken>()) }
+    var showFilter by remember { mutableStateOf(false) }
     // Selection mode. A long press (or the select button in the search row) enters it; rows
     // then carry a checkbox, the header becomes a batch bar, and "select all" fills the
     // current filter result. Selected refs are tracked here so bulk actions can consume them.
     var selecting by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf(setOf<String>()) }
 
-    val filtered = remember(visible, searchQuery, selectedCategoryId) {
+    val filtered = remember(visible, searchQuery, selectedCategoryId, filterTokens) {
         visible.filter { entry ->
             val matchesSearch = searchQuery.isBlank() ||
                 entry.txn.merchant.contains(searchQuery, ignoreCase = true) ||
                 entry.categoryFa.contains(searchQuery, ignoreCase = true) ||
                 (entry.txn.amountRial?.let { faNumber(it / 10.0).contains(searchQuery) } == true)
             val matchesCategory = selectedCategoryId == null || entry.categoryId == selectedCategoryId
-            matchesSearch && matchesCategory
+            matchesSearch && matchesCategory && matchesFilter(entry, filterTokens)
         }
     }
 
@@ -247,28 +256,53 @@ TextButton(onClick = {
                 }
             }
 
-            // Search bar
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = Space.xl),
-                placeholder = { Text("جستجو...") },
-                leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
-                trailingIcon = {
-                    if (selecting) {
-                        // In selection mode the search bar also carries the "select" entry and
-                        // acts as the batch entry point.
-                        IconButton(onClick = { selecting = false; selected = emptySet() }) {
-                            Icon(Icons.Rounded.Clear, contentDescription = "پاک کردن")
+            // Search bar — plus the filter sheet entry. The button carries the active-token
+            // count so a filter that is narrowing the list is visible at a glance.
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = Space.xl),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("جستجو...") },
+                    leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
+                    trailingIcon = {
+                        if (searchQuery.isNotBlank()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(Icons.Rounded.Clear, contentDescription = "پاک کردن")
+                            }
                         }
-                    } else if (searchQuery.isNotBlank()) {
-                        IconButton(onClick = { searchQuery = "" }) {
-                            Icon(Icons.Rounded.Clear, contentDescription = "پاک کردن")
-                        }
+                    },
+                    singleLine = true,
+                )
+                TextButton(onClick = {
+                    showFilter = !showFilter
+                    if (showFilter) {
+                        selecting = false
+                        selected = emptySet()
                     }
-                },
-                singleLine = true,
-            )
+                }) {
+                    Text(
+                        if (filterTokens.isEmpty()) "فیلتر" else "فیلتر (${filterTokens.size})",
+                        fontSize = 13.sp,
+                    )
+                }
+            }
+
+            if (showFilter) {
+                FilterSheet(
+                    tokens = filterTokens,
+                    categories = ledger.categories,
+                    onApply = { tokens ->
+                        filterTokens = tokens
+                        selecting = false
+                        selected = emptySet()
+                    },
+                    onDismiss = { showFilter = false },
+                )
+            }
 
             // Category filter chips
             if (ledger.categories.isNotEmpty()) {
@@ -347,6 +381,7 @@ TextButton(onClick = {
                 val rows = filtered.filter { it.txn.ref in selected }
                 BatchActionBar(
                     selectedRefs = selected,
+                    matchCount = filtered.size,
                     categories = ledger.categories,
                     hiddenCategories = state.hiddenCategories,
                     onPickCategory = { categoryId ->
@@ -380,12 +415,161 @@ TextButton(onClick = {
 }
 
 /**
+ * The structured filter editor (ticket 04). A list of tokens — each a field+operator+value row —
+ * AND-composed, with a live token count in the header. Tokens for merchant/bank/category match
+ * substrings; amount and date take ranges; direction picks in/out.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FilterSheet(
+    tokens: List<FilterToken>,
+    categories: List<Category>,
+    onApply: (List<FilterToken>) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var draft by remember(tokens) { mutableStateOf(tokens) }
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(horizontal = Space.xl, vertical = Space.m),
+        ) {
+            Text("فیلتر دفتر", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(Space.xs))
+            Text(
+                "شرط‌ها به هم اضافه می‌شوند؛ برای «اسنپ» بدون «اسنپپی» دو شرط بزن.",
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(Space.m))
+
+            LazyColumn(Modifier.heightIn(max = 320.dp)) {
+                items(draft, key = { it.stableKey() }) { token ->
+                    FilterTokenRow(
+                        token = token,
+                        categories = categories,
+                        onChanged = { updated ->
+                            draft = draft.map { if (it.stableKey() == token.stableKey()) updated else it }
+                        },
+                        onRemove = { draft = draft.filterNot { it.stableKey() == token.stableKey() } },
+                    )
+                    Spacer(Modifier.height(Space.s))
+                }
+            }
+
+            Row(Modifier.fillMaxWidth()) {
+                TextButton(onClick = {
+                    draft = draft + FilterToken(FilterField.MERCHANT, FilterOp.CONTAINS, "")
+                }) {
+                    Text("+ افزودن شرط", fontSize = 13.sp)
+                }
+                Spacer(Modifier.weight(1f))
+                TextButton(onClick = { draft = emptyList() }) { Text("پاک کردن", fontSize = 13.sp) }
+            }
+            Spacer(Modifier.height(Space.s))
+            Button(
+                onClick = { onApply(draft) },
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("اعمال فیلتر", fontSize = 14.sp) }
+        }
+    }
+}
+
+@Composable
+private fun FilterTokenRow(
+    token: FilterToken,
+    categories: List<Category>,
+    onChanged: (FilterToken) -> Unit,
+    onRemove: () -> Unit,
+) {
+    var fieldMenu by remember { mutableStateOf(false) }
+    var opMenu by remember { mutableStateOf(false) }
+    var value by remember { mutableStateOf(token.value) }
+
+    LaunchedEffect(token) { value = token.value }
+
+    // Field select: the tokens keep a canonical lowercase id, the label merges with the
+    // operator text for a single readable line.
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Radius.field))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(Space.s),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+Box {
+            OutlinedButton(onClick = { fieldMenu = true }, contentPadding = PaddingValues(horizontal = Space.s)) {
+                Text(token.field.fa, fontSize = 13.sp)
+            }
+            DropdownMenu(expanded = fieldMenu, onDismissRequest = { fieldMenu = false }) {
+                FilterField.entries.forEach { field ->
+                    DropdownMenuItem(
+                        text = { Text(field.fa, fontSize = 13.sp) },
+                        onClick = {
+                            fieldMenu = false
+                            onChanged(token.copy(field = field))
+                        },
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.width(Space.xs))
+        Box {
+            OutlinedButton(onClick = { opMenu = true }, contentPadding = PaddingValues(horizontal = Space.s)) {
+                Text(token.op.fa, fontSize = 13.sp)
+            }
+            DropdownMenu(expanded = opMenu, onDismissRequest = { opMenu = false }) {
+                FilterOp.entries.forEach { op ->
+                    DropdownMenuItem(
+                        text = { Text(op.fa, fontSize = 13.sp) },
+                        onClick = {
+                            opMenu = false
+                            onChanged(token.copy(op = op))
+                        },
+                    )
+                }
+            }
+        }
+        Spacer(Modifier.width(Space.xs))
+        OutlinedTextField(
+            value = value,
+            onValueChange = {
+                value = it
+                onChanged(token.copy(value = it))
+            },
+            modifier = Modifier.weight(1f),
+            placeholder = { Text(placeholderFor(token.field), fontSize = 12.sp) },
+            singleLine = true,
+            textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
+        )
+        Spacer(Modifier.width(Space.xs))
+        TextButton(onClick = onRemove) {
+            Text("حذف", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
+        }
+    }
+}
+
+/** The value placeholder that matches each filter field. */
+private fun placeholderFor(field: FilterField): String = when (field) {
+    FilterField.MERCHANT -> "مثلا اسنپ"
+    FilterField.CATEGORY -> "نام دسته"
+    FilterField.BANK -> "نام بانک"
+    FilterField.DIRECTION -> "دریافتی / پرداختی"
+    FilterField.AMOUNT -> "مبلغ (تومان)"
+    FilterField.DATE -> "تاریخ"
+}
+
+/**
  * The bottom bar while transactions are selected: category filing, hide, flip direction, and
  * permanent delete — each over every selected row, with one confirmation/undo each.
  */
 @Composable
 private fun BatchActionBar(
     selectedRefs: Set<String>,
+    /** How many rows the current filter matches — the batch bar shows it under the selection. */
+    matchCount: Int,
     categories: List<Category>,
     hiddenCategories: Set<String>,
     onPickCategory: (String) -> Unit,
@@ -397,6 +581,8 @@ private fun BatchActionBar(
 ) {
     var showCategoryPicker by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showHideConfirm by remember { mutableStateOf(false) }
+    var showFlipConfirm by remember { mutableStateOf(false) }
     Surface(tonalElevation = 3.dp, shadowElevation = 4.dp) {
         Row(
             Modifier
@@ -406,12 +592,20 @@ private fun BatchActionBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.s),
         ) {
-            Text(
-                "${selectedRefs.size} مورد انتخاب شده",
-                fontSize = 13.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f),
-            )
+            Column(Modifier.weight(1f)) {
+                Text(
+                    "${selectedRefs.size} مورد انتخاب شده",
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (matchCount != selectedRefs.size) {
+                    Text(
+                        "فیلتر با $matchCount مورد مطابقت دارد؛ «انتخاب همه» همهٔ آن‌ها را برمی‌دارد.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
             TextButton(onClick = onCancel) { Text("لغو", fontSize = 12.sp) }
         }
         // A second row of actions keeps the bar from turning into a keyboard of buttons.
@@ -426,8 +620,8 @@ private fun BatchActionBar(
             horizontalArrangement = Arrangement.spacedBy(Space.s),
         ) {
             TextButton(onClick = { showCategoryPicker = true }) { Text("دسته‌بندی", fontSize = 13.sp) }
-            TextButton(onClick = onHide) { Text("پنهان", fontSize = 13.sp) }
-            TextButton(onClick = onFlip) { Text("جابجایی جهت", fontSize = 13.sp) }
+            TextButton(onClick = { showHideConfirm = true }) { Text("پنهان", fontSize = 13.sp) }
+            TextButton(onClick = { showFlipConfirm = true }) { Text("جابجایی جهت", fontSize = 13.sp) }
             TextButton(
                 onClick = { showDeleteConfirm = true },
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
@@ -489,6 +683,38 @@ private fun BatchActionBar(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) { Text("انصراف") }
+            },
+        )
+    }
+    if (showHideConfirm) {
+        AlertDialog(
+            onDismissRequest = { showHideConfirm = false },
+            title = { Text("پنهان کردن ${selectedRefs.size} مورد") },
+            text = { Text("این ${selectedRefs.size} مورد دیگر در دفتر نمی‌آیند؛ با کلید مخفی‌ها می‌توانی آن‌ها را دوباره ببینی.") },
+            confirmButton = {
+                TextButton(
+                    onClick = { showHideConfirm = false; onHide() },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+                ) { Text("پنهان") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showHideConfirm = false }) { Text("انصراف") }
+            },
+        )
+    }
+    if (showFlipConfirm) {
+        AlertDialog(
+            onDismissRequest = { showFlipConfirm = false },
+            title = { Text("جابجایی جهت ${selectedRefs.size} مورد") },
+            text = { Text("جهت این ${selectedRefs.size} مورد برعکس می‌شود (دریافتی ↔ پرداختی).") },
+            confirmButton = {
+                TextButton(
+                    onClick = { showFlipConfirm = false; onFlip() },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+                ) { Text("جابجایی") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showFlipConfirm = false }) { Text("انصراف") }
             },
         )
     }

@@ -4,7 +4,7 @@
 
 **Blocked by:** none — builds on the existing search field, selection mode, and batch bar.
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Tapping the search field opens a filter sheet; choosing tokens narrows the timeline live.
 - [ ] All tokens are AND-combined; a token can be removed or edited without rebuilding the whole query from scratch.
