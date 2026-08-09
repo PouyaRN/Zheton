@@ -107,10 +107,13 @@ fun goalProgress(goal: Goal, entries: List<LedgerEntry>, today: Long, categories
                 // Merchant scope: count all spending at this merchant identity.
                 goal.scopeMerchantNorm != null ->
                     rows.filter { it.txn.day >= from && it.txn.merchantNorm == goal.scopeMerchantNorm }
-                // Category scope: count the category AND all its children.
+                // Category scope: count the category AND all descendants recursively.
                 goal.categoryId != null -> {
-                    val children = categories.filter { it.parentId == goal.categoryId }.map { it.id }
-                    val catIds = setOf(goal.categoryId) + children
+                    fun descendants(parentId: String): List<String> {
+                        val kids = categories.filter { it.parentId == parentId }.map { it.id }
+                        return kids + kids.flatMap { descendants(it) }
+                    }
+                    val catIds = setOf(goal.categoryId) + descendants(goal.categoryId)
                     rows.filter { it.txn.day >= from && it.categoryId in catIds }
                 }
                 // No scope: count nothing (graceful degradation).

@@ -525,7 +525,6 @@ val snackbarHostState = remember { SnackbarHostState() }
                 .filter { it.txn.direction == "out" && it.txn.merchantNorm.isNotBlank() }
                 .map { it.txn.merchantNorm }
                 .distinct()
-                .take(20)
         }
         GoalsScreen(
             goals = state.ledger.goals,
@@ -546,7 +545,6 @@ val snackbarHostState = remember { SnackbarHostState() }
             history = state.history,
             current = state.totals.toman,
             composition = composition,
-            bottomInset = pad.calculateBottomPadding(),
         )
         return@Scaffold
       }

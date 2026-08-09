@@ -223,7 +223,7 @@ fun GoalsScreen(
                     onAdd(goalName, rial, kind, if (isCap) selectedCategoryId else null, if (isCap) selectedMerchantNorm else null)
                     name = ""; amount = ""; selectedCategoryId = null; selectedMerchantNorm = null
                 },
-                enabled = name.isNotBlank() && targetRial != null && (!isCap || selectedCategoryId != null),
+                enabled = name.isNotBlank() && targetRial != null && (!isCap || selectedCategoryId != null || selectedMerchantNorm != null),
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("ذخیره هدف") }
 
