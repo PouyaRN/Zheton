@@ -1,6 +1,6 @@
 # Spec: Corrections That Stick — durable deletes & hides, and undo for bulk actions
 
-**Status:** ready-for-agent
+**Status:** done
 
 ## Problem Statement
 

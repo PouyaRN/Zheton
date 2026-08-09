@@ -584,6 +584,40 @@ const val SOURCE_HARD_CAP = 50_000
 
 private const val SOURCE_SCANNED_TO = "source_scanned_to"
 
+/**
+ * Durable tombstones for permanently deleted messages (spec 16).
+ *
+ * The delete path removes the `sms_source` row and its decisions, then records the message's
+ * [srcHash] here — in the same transaction — so nothing about a resurrectable identity is lost.
+ * Ingest, the fold, and any future re-entry path listen here first: a hash in this set means
+ * "this message is gone for good", and the row must not be re-inserted even if the inbox
+ * delivers the same bytes again after a rewind or a re-auth.
+ *
+ * Shape is a set of hashes (one per line), deliberately not a timestamp map — pruning history
+ * is out of scope for v1.
+ */
+const val PERMANENTLY_DELETED = "permanently_deleted"
+
+/** Read the durable tombstone set. Missing key and empty file are the same empty set. */
+fun deletedSourceHashes(value: String?): Set<String> =
+    value?.split('\n')?.filter(String::isNotBlank)?.toSet().orEmpty()
+
+/**
+ * Recover the message a transaction ref points at. Refs are `s:<srcHash>:<seq>`, so the whole
+ * message identity — the thing ingest deduplicates by — is the span between the first two colons.
+ * The pure essence of the skip seam: from a ref set to the hashes the fold must not re-admit.
+ */
+fun srcHashOfRef(ref: String): String? {
+    if (!ref.startsWith("s:")) return null
+    val rest = ref.removePrefix("s:")
+    val end = rest.indexOf(':')
+    return (if (end < 0) rest else rest.substring(0, end)).takeIf { it.isNotBlank() }
+}
+
+/** The one seam every re-entry path consults: tombstoned hashes ∪ hashes behind HIDE refs. */
+fun sourceSkips(hiddenRefs: Set<String>, tombstones: Set<String> = emptySet()): Set<String> =
+    tombstones + hiddenRefs.mapNotNull(::srcHashOfRef)
+
 /** The oldest message the ledger will reach for, as an epoch millisecond. */
 fun sourceHorizon(now: Long): Long =
     tehranDayStart(jalaliMonthsBack(tehranDay(now), SOURCE_HORIZON_MONTHS))
@@ -672,6 +706,9 @@ suspend fun ingestBankSms(
     val messages = readSmsInbox(context, since)
     if (messages.isEmpty()) return 0
 
+    // Permanently deleted messages never come back, whatever the inbox says later (spec 16).
+    val tombstones = deletedSourceHashes(db.meta().get(PERMANENTLY_DELETED))
+
     var stored = 0
     // Chunked so a kill part way through a thirteen-month backfill resumes at the last chunk
     // boundary rather than starting again: the rows and the watermark move in one transaction,
@@ -679,8 +716,10 @@ suspend fun ingestBankSms(
     for (chunk in messages.chunked(500)) {
         val rows = chunk.mapNotNull { m ->
             if (bankOf(m.from, extra) == null) return@mapNotNull null
+            val hash = srcHash(m.from, m.body, m.at)
+            if (hash in tombstones) return@mapNotNull null
             SmsSource(
-                srcHash = srcHash(m.from, m.body, m.at),
+                srcHash = hash,
                 sender = m.from,
                 addrKey = srcAddrKeyV1(m.from),
                 body = m.body,

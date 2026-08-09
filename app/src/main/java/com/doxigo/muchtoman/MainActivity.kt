@@ -807,150 +807,180 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** How long a permanent delete waits before it becomes irreversible. */
-    private val pendingDeleteWindowMs = 10_000L
-    @Volatile private var pendingDeleteJob: kotlinx.coroutines.Job? = null
-    @Volatile private var pendingDeleteRefs: List<Pair<String, String>> = emptyList() // ref to srcHash/manualId
+    /** How long a batch action waits before it becomes irreversible. */
+    private val pendingBatchWindowMs = 10_000L
+    @Volatile private var pendingBatchJob: kotlinx.coroutines.Job? = null
+    @Volatile private var pendingBatch: PendingBatch? = null
 
-    /**
-     * Permanent delete, with an undo window.
-     *
-     * The durable source row and every decision attached to the transaction are the removal
-     * candidates. For SMS-derived rows the message itself leaves the durable store — a re-read
-     * from the inbox would re-add it, so the fold's seen-set is deliberately left alone and the
-     * watermark is not rewound: re-deriving from what remains cannot resurrect what is gone.
-     * A snackbar holds the door open about ten seconds; nothing is touched until the window
-     * closes, and Undo simply cancels the pending job.
-     */
-    fun deletePermanently(entries: List<LedgerEntry>) {
-        if (entries.isEmpty()) return
-        val app = getApplication<Application>()
-        pendingDeleteJob?.cancel()
-        pendingDeleteRefs = entries.map { entry ->
-            val txn = entry.txn
-            if (txn.sourceKind == "manual") {
-                txn.ref to "m:${txn.ref.removePrefix("m:")}"
-            } else {
-                txn.ref to "s:${txn.srcHash}:"
-            }
-        }
+    private enum class PendingKind { DELETE, HIDE, FLIP }
+
+    private class PendingBatch(
+        val kind: PendingKind,
+        val entries: List<LedgerEntry>,
+        /** For HIDE: true hides, false restores. Meaningless (and ignored) for the other kinds. */
+        val hidden: Boolean = false,
+    ) {
+        /** The key pattern every decision of this source shares — SMS refs are `s:<hash>:<seq>`. */
+        fun keyOf(txn: com.doxigo.muchtoman.Txn): String =
+            if (txn.sourceKind == "manual") "m:${txn.ref.removePrefix("m:")}"
+            else "s:${txn.srcHash}:"
+    }
+
+    /** Schedule one batch with the shared undo door: nothing is written until the window closes. */
+    private fun scheduleBatch(batch: PendingBatch, label: String) {
+        pendingBatchJobCancel()
+        pendingBatch = batch
         _state.update {
             it.copy(
                 pendingUndo = PendingUndo(
-                    count = pendingDeleteRefs.size,
-                    label = if (pendingDeleteRefs.size == 1) "این مورد حذف می‌شود" else "${pendingDeleteRefs.size} مورد حذف می‌شود",
-                    dueAt = System.currentTimeMillis() + pendingDeleteWindowMs,
+                    count = batch.entries.size,
+                    label = label,
+                    dueAt = System.currentTimeMillis() + pendingBatchWindowMs,
                 )
             )
         }
-        pendingDeleteJob = viewModelScope.launch(Dispatchers.Default) {
-            delay(pendingDeleteWindowMs)
-            val plan = pendingDeleteRefs
-            if (plan.isEmpty()) return@launch
-            runCatching {
-                val durable = DurableDb.get(app)
-                val derived = DerivedDb.get(app)
-                durable.withTransaction {
-                    for ((ref, key) in plan) {
-                        durable.decisions().deleteForRef(ref, "$key%")
-                        when {
-                            key.startsWith("s:") ->
-                                durable.smsSource().deleteOne(key.removePrefix("s:"))
-                            else ->
-                                durable.manual().tombstone(key.removePrefix("m:"))
-                        }
-                    }
-                }
-                derive(durable, derived, extraLookup(store.extraBankNumbers))
-                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit()), pendingUndo = null) }
-                recomputeAccountBalancesFromLedger()
-                requestFamilySync(silent = true)
-            }.onFailure { android.util.Log.w("muchtoman", "permanent delete failed: $it") }
+        pendingBatchJob = viewModelScope.launch(Dispatchers.Default) {
+            delay(pendingBatchWindowMs)
+            val settled = pendingBatch ?: return@launch
+            pendingBatch = null
+            commitBatch(settled)
         }
     }
 
-    /** Cancel an in-flight permanent delete before it becomes irreversible. */
-    fun undoPermanentDelete() {
-        pendingDeleteJob?.cancel()
-        pendingDeleteRefs = emptyList()
+    private fun pendingBatchJobCancel() {
+        pendingBatchJob?.cancel()
+    }
+
+    /** Undo = "the batch never ran". The window closed without a commit, so nothing to invert. */
+    fun undoPendingBatch() {
+        pendingBatchJobCancel()
+        pendingBatch = null
         _state.update { it.copy(pendingUndo = null) }
     }
 
-    // ─────────────────────────── bulk actions ───────────────────────────
-
-    /** Batch "Hide"/"Restore" writes the hide decision for every selected row at once. */
-    fun bulkHide(entries: List<LedgerEntry>, hidden: Boolean) {
-        if (entries.isEmpty()) return
+    /** The one-and-only commit: placement varies by kind, dedupe and post-steps are shared. */
+    private suspend fun commitBatch(batch: PendingBatch) {
         val app = getApplication<Application>()
-        viewModelScope.launch(Dispatchers.Default) {
-            runCatching {
-                val durable = DurableDb.get(app)
-                val derived = DerivedDb.get(app)
-                val session = loadSession(durable)
-                val now = System.currentTimeMillis()
-                durable.withTransaction {
-                    for (entry in entries) {
-                        val ref = entry.txn.ref
-                        val existing = durable.decisions().forRef(ref).firstOrNull { it.kind == DecisionKind.HIDE }
-                        durable.decisions().put(
-                            TxnDecision(
-                                id = existing?.id ?: uuid7(now),
-                                ref = ref,
-                                kind = DecisionKind.HIDE,
-                                value = "1",
-                                createdAt = existing?.createdAt ?: now,
-                                updatedAt = now,
-                                deleted = !hidden,
-                                memberId = session?.member.orEmpty(),
-                                familyRef = entry.txn.familyRef.ifBlank { "" },
+        runCatching {
+            val durable = DurableDb.get(app)
+            val derived = DerivedDb.get(app)
+            val session = loadSession(durable)
+            val now = System.currentTimeMillis()
+            durable.withTransaction {
+                when (batch.kind) {
+                    PendingKind.DELETE -> {
+                        val tombstones = deletedSourceHashes(durable.meta().get(PERMANENTLY_DELETED))
+                            .toMutableSet()
+                        for (entry in batch.entries) {
+                            val txn = entry.txn
+                            durable.decisions().deleteForRef(txn.ref, batch.keyOf(txn) + "%")
+                            if (txn.sourceKind == "manual") {
+                                durable.manual().tombstone(txn.ref.removePrefix("m:"))
+                            } else {
+                                durable.smsSource().deleteOne(txn.srcHash)
+                                tombstones += txn.srcHash
+                            }
+                        }
+                        // The tombstone outlives the message: a rewind or a restored inbox could
+                        // deliver the same bytes again — this is what keeps them gone (spec 16).
+                        if (tombstones.isNotEmpty()) {
+                            durable.meta().put(
+                                DurableMeta(PERMANENTLY_DELETED, tombstones.sorted().joinToString("\n"))
                             )
-                        )
+                        }
+                    }
+                    PendingKind.HIDE -> {
+                        for (entry in batch.entries) {
+                            val ref = entry.txn.ref
+                            val existing = durable.decisions().forRef(ref)
+                                .firstOrNull { it.kind == DecisionKind.HIDE }
+                            durable.decisions().put(
+                                TxnDecision(
+                                    id = existing?.id ?: uuid7(now),
+                                    ref = ref,
+                                    kind = DecisionKind.HIDE,
+                                    value = "1",
+                                    createdAt = existing?.createdAt ?: now,
+                                    updatedAt = now,
+                                    deleted = !batch.hidden,
+                                    memberId = session?.member.orEmpty(),
+                                    familyRef = entry.txn.familyRef.ifBlank { "" },
+                                )
+                            )
+                        }
+                    }
+                    PendingKind.FLIP -> {
+                        for (entry in batch.entries) {
+                            val ref = entry.txn.ref
+                            val existing = durable.decisions().forRef(ref)
+                                .firstOrNull { it.kind == DecisionKind.DIRECTION }
+                            val current = if (existing?.active == true) existing.value else entry.txn.direction
+                            val flipped = if (current == "in") "out" else "in"
+                            durable.decisions().put(
+                                TxnDecision(
+                                    id = existing?.id ?: uuid7(now),
+                                    ref = ref,
+                                    kind = DecisionKind.DIRECTION,
+                                    value = flipped,
+                                    createdAt = existing?.createdAt ?: now,
+                                    updatedAt = now,
+                                    deleted = false,
+                                    memberId = session?.member.orEmpty(),
+                                    familyRef = entry.txn.familyRef.ifBlank { "" },
+                                )
+                            )
+                        }
                     }
                 }
-                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
-                recomputeAccountBalancesFromLedger()
-                requestFamilySync(silent = true)
-            }.onFailure { android.util.Log.w("muchtoman", "bulk hide failed: $it") }
-        }
+            }
+            derive(durable, derived, extraLookup(store.extraBankNumbers))
+            _state.update {
+                it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit()), pendingUndo = null)
+            }
+            recomputeAccountBalancesFromLedger()
+            requestFamilySync(silent = true)
+        }.onFailure { android.util.Log.w("muchtoman", "batch ${batch.kind} failed: $it") }
     }
 
-    /** Batch "Flip direction" toggles the direction decision for every selected row at once. */
+    /**
+     * Permanent delete, with an undo window (spec 16).
+     *
+     * Nothing is touched until the window closes — not the durable source row, not the
+     * decisions, not the tombstone. Undo cancels the batch; the same "deleted forever" guard is
+     * the tombstone written only by the commit.
+     */
+    fun deletePermanently(entries: List<LedgerEntry>) {
+        if (entries.isEmpty()) return
+        scheduleBatch(
+            PendingBatch(PendingKind.DELETE, entries, hidden = false),
+            label = if (entries.size == 1) "این مورد حذف می‌شود" else "${entries.size} مورد حذف می‌شود",
+        )
+    }
+
+    /** Cancel an in-flight batch before it becomes irreversible. */
+    fun undoPermanentDelete() = undoPendingBatch()
+
+    // ─────────────────────────── bulk actions ───────────────────────────
+
+    /** Batch "Hide"/"Restore" hides the selected rows under the same undo door as delete (spec 16). */
+    fun bulkHide(entries: List<LedgerEntry>, hidden: Boolean) {
+        if (entries.isEmpty()) return
+        scheduleBatch(
+            PendingBatch(PendingKind.HIDE, entries, hidden),
+            label = if (entries.size == 1)
+                (if (hidden) "این مورد پنهان می‌شود" else "این مورد برمی‌گردد")
+            else
+                (if (hidden) "${entries.size} مورد پنهان می‌شود" else "${entries.size} مورد برمی‌گردد"),
+        )
+    }
+
+    /** Batch "Flip direction" reverses every selected row once, under the same undo door. */
     fun bulkFlipDirection(entries: List<LedgerEntry>) {
         if (entries.isEmpty()) return
-        val app = getApplication<Application>()
-        viewModelScope.launch(Dispatchers.Default) {
-            runCatching {
-                val durable = DurableDb.get(app)
-                val derived = DerivedDb.get(app)
-                val session = loadSession(durable)
-                val now = System.currentTimeMillis()
-                durable.withTransaction {
-                    for (entry in entries) {
-                        val ref = entry.txn.ref
-                        val existing = durable.decisions().forRef(ref).firstOrNull { it.kind == DecisionKind.DIRECTION }
-                        val current = if (existing?.active == true) existing.value else entry.txn.direction
-                        val flipped = if (current == "in") "out" else "in"
-                        durable.decisions().put(
-                            TxnDecision(
-                                id = existing?.id ?: uuid7(now),
-                                ref = ref,
-                                kind = DecisionKind.DIRECTION,
-                                value = flipped,
-                                createdAt = existing?.createdAt ?: now,
-                                updatedAt = now,
-                                deleted = false,
-                                memberId = session?.member.orEmpty(),
-                                familyRef = entry.txn.familyRef.ifBlank { "" },
-                            )
-                        )
-                    }
-                }
-                derive(durable, derived, extraLookup(store.extraBankNumbers))
-                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
-                recomputeAccountBalancesFromLedger()
-                requestFamilySync(silent = true)
-            }.onFailure { android.util.Log.w("muchtoman", "bulk flip failed: $it") }
-        }
+        scheduleBatch(
+            PendingBatch(PendingKind.FLIP, entries, hidden = false),
+            label = if (entries.size == 1) "جهت این مورد می‌چرخد" else "جهت ${entries.size} مورد می‌چرخد",
+        )
     }
 
     /**
@@ -1609,12 +1639,19 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             DurableDb.get(getApplication()).smsSource().bodyOf(entry.txn.srcHash).orEmpty()
         }.getOrDefault("")
 
-    /** The scan itself. Separate so [restartScan] can run it in the coroutine it already owns. */
+/** The scan itself. Separate so [restartScan] can run it in the coroutine it already owns. */
     private suspend fun runScan(app: Application) {
         val extra = extraLookup(store.extraBankNumbers)
 
         val messages = readSmsInbox(app, store.smsScannedTo)
         if (messages.isEmpty()) return
+
+        // Corrections stick on this path too (spec 16): the fold is an input consumer of the
+        // same durable facts the ledger reads — a message she permanently deleted, or one she
+        // hid, must not re-enter the accounts even if the inbox serves the same bytes again.
+        // One skip set, derived before the loop, queried once per message.
+        val durable = DurableDb.get(app)
+        val foldSkips = sourceSkips(hiddenRefs(durable), deletedSourceHashes(durable.meta().get(PERMANENTLY_DELETED)))
 
         // Re-keyed through senderKey on the way in: the key function has changed once
         // already (whitespace collapse), and a dismissal stored under an old key must
@@ -1627,6 +1664,11 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         for (m in messages) {
             val key = smsKey(m.from, m.body, m.at)
             if (key in seen || legacySmsKey(m.body, m.at) in seen || key in fresh) continue
+            // Dealt with, permanently: mark it seen so an identical future re-read stays silent.
+            if (foldSkips.isNotEmpty() && srcHash(m.from, m.body, m.at) in foldSkips) {
+                fresh += key
+                continue
+            }
             val parsed = parseBankSms(m.from, m.body, m.at, extra)
             // A Maskan purchase-initiation message (خرید + مبلغ + رمز) must not move the fold:
             // it is the authorization half of a pair and would double-count the movement that
