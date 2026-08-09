@@ -4,7 +4,7 @@
 
 **Blocked by:** none — the parser code and the corpus are self-contained.
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] A message with both «برداشت: 10,009,000» and «مبلغ 10,000,000» records amount 10,009,000 (rate, header reading), not the tail figure.
 - [ ] Bank Melli «خریا اینترنتی: <amount>±» messages (using the «مقدار» tail) record the header amount.

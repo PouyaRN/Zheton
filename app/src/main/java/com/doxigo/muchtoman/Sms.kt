@@ -401,9 +401,22 @@ fun parseBankSms(
         }
     }
 
-    val amount = figureAfter(text, AMOUNT_WORDS)
-        ?: figureAfter(text, IN_WORDS.takeIf { deposit } ?: emptyList())
+    // A fused message can carry a transaction header AND an OTP tail in one body — Tejarat's
+    // receipt+رمز message, Melli's purchase+رمز pair. The tail holder is an amount figure after
+    // «مبلغ/ماق», but it is the price the *authorization* names; the bank's own header figure is
+    // the booked movement, fee included. «برداشت: 10,009,000 ریال» plus «مبلغ 10,000,000 رمز»
+    // must record 10,009,000, or every such message understates the movement by the fee.
+    //
+    // The OTP guard has already decided this body is a statement (it contains مانده, otherwise
+    // parseBankSms would have returned null). So a header figure is the whole truth here; the
+    // AMOUNT_WORDS «مبلغ/مقدار» reading is only used when no header figure exists at all.
+    val headerAmount = figureAfter(text, IN_WORDS.takeIf { deposit } ?: emptyList())
         ?: figureAfter(text, OUT_WORDS.takeIf { withdrawal } ?: emptyList())
+    val amount = if (hasOtpCode(text)) {
+        headerAmount ?: figureAfter(text, AMOUNT_WORDS)
+    } else {
+        figureAfter(text, AMOUNT_WORDS) ?: headerAmount
+    }
     val moved = amount?.let { it.value / (it.divisor ?: fallback) }
     val delta = when {
         moved == null -> null

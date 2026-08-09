@@ -123,17 +123,61 @@ function rialOf(figure: { value: number; divisor: number | null }, fallback: num
   return Math.round(figure.value * (10 / (figure.divisor ?? fallback)));
 }
 
+/**
+ * True when a message is the authorization half of a transaction: a standalone «رمز»
+ * (one-time code word) followed by the digits of the code. Mirrored from the Android parser so
+ * the shared corpus keeps both sides in agreement. «کارمزد» is not a code because a letter
+ * precedes its رمز.
+ */
+function hasOtpCode(text: string): boolean {
+  let from = 0;
+  while (from < text.length) {
+    const at = text.indexOf('رمز', from);
+    if (at < 0) return false;
+    const before = at === 0 ? ' ' : text[at - 1];
+    if (!/\p{L}/u.test(before)) {
+      const tail = text.slice(at + 2, at + 2 + 40);
+      if (/[0-9۰-۹٠-٩]/.test(tail)) return true;
+    }
+    from = at + 1;
+  }
+  return false;
+}
+
 export function parsePasted(body: string): Pasted {
   const text = normalise(body);
   const fallback = fallbackDivisor(text);
 
   const balance = figureAfter(text, BALANCE_WORDS, { allowZero: true, veto: NOT_A_BALANCE });
-  const deposit = IN_WORDS.some((w) => text.includes(w));
-  const withdrawal = OUT_WORDS.some((w) => text.includes(w));
-  const amount =
-    figureAfter(text, AMOUNT_WORDS) ??
+  let deposit = IN_WORDS.some((w) => text.includes(w));
+  let withdrawal = OUT_WORDS.some((w) => text.includes(w));
+
+  // Sepah group payments: «پرداخت گروهی» + «واریز گروهی» is an incoming transfer, not an
+  // outgoing payment. The compound phrase must override the generic پرداخت keyword.
+  if (text.includes('پرداخت گروهی') && text.includes('واریز گروهی')) {
+    deposit = true;
+    withdrawal = false;
+  }
+
+  // Tejarat labels each transaction with «نوع تراکنش:» — use it for direction when present,
+  // since the generic keywords misclassify compound labels like «بازپرداخت/واريز».
+  const typeLabel = text.split('نوع تراکنش:').slice(1).join('نوع تراکنش:').trim().slice(0, 60);
+  if (typeLabel.length > 0) {
+    deposit = typeLabel.includes('بازپرداخت') || typeLabel.includes('واریز');
+    withdrawal =
+      typeLabel.includes('خرید') || typeLabel.includes('انتقال') || typeLabel.includes('برداشت');
+  }
+
+  // A fused message carries the transaction header AND the authorization tail — «برداشت:
+  // 10,009,000» plus «مبلغ 10,000,000 رمز». The header figure is the booked movement; the
+  // tail is what the OTP names. Prefer the header when an OTP is present, like the Android
+  // parser does; otherwise keep AMOUNT_WORDS first (some banks print the figure under مبلغ).
+  const headerAmount =
     (deposit ? figureAfter(text, IN_WORDS) : null) ??
     (withdrawal ? figureAfter(text, OUT_WORDS) : null);
+  const amount = hasOtpCode(text)
+    ? headerAmount ?? figureAfter(text, AMOUNT_WORDS)
+    : figureAfter(text, AMOUNT_WORDS) ?? headerAmount;
 
   // Both or neither means the message did not say which way the money went, and guessing is how
   // a deposit becomes a withdrawal.
