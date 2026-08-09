@@ -63,7 +63,7 @@ enum class Tab(val fa: String) {
     LEDGER("دفتر"),
     GOALS("هدف‌ها"),
     ASSETS("دارایی"),
-    COMPANION("خانواده"),
+    REPORTS("گزارش‌ها"),
 }
 
 /**
@@ -74,8 +74,7 @@ enum class Tab(val fa: String) {
  * for a list of one, and the four screens the other entries lead to are simply never reachable.
  *
  * Every `tab = …` in the app has to go through a member of this list, or the lite build can be
- * navigated somewhere it has no way out of. There is exactly one such assignment that could
- * ([Tab.COMPANION], from a pairing deep link), and it is guarded at the source.
+ * navigated somewhere it has no way out of.
  */
 val tabs: List<Tab> = if (BuildConfig.LITE) listOf(Tab.ASSETS) else Tab.entries
 
@@ -183,7 +182,7 @@ private fun DrawScope.drawTabIcon(tab: Tab, tint: Color) {
             Tab.LEDGER -> drawLedger(tint)
             Tab.GOALS -> drawGoals(tint)
             Tab.ASSETS -> drawAssets(tint)
-            Tab.COMPANION -> drawCompanion(tint)
+            Tab.REPORTS -> drawReports(tint)
         }
     }
 }
@@ -329,18 +328,21 @@ private fun DrawScope.drawAssets(tint: Color) {
  * misread as a face — there is only one eye — and it cannot be misread as *copy*, which is the
  * whole reason the two cards had to go.
  */
-private fun DrawScope.drawCompanion(tint: Color) {
+private fun DrawScope.drawReports(tint: Color) {
     val w = size.width
     val h = size.height
-    drawCircle(tint, w * 0.2f, Offset(w * 0.5f, h * 0.26f), style = pen())
-    drawArc(
-        color = tint,
-        startAngle = 180f,
-        sweepAngle = 180f,
-        useCenter = false,
-        topLeft = Offset(w * 0.08f, h * 0.56f),
-        // Only the top half of the box is swept, so a tall box draws a shallow curve.
-        size = Size(w * 0.84f, h * 0.8f),
-        style = pen(),
-    )
+    // Three vertical bars, ascending left to right — the simplest chart glyph.
+    val barWidth = w * 0.2f
+    val gap = w * 0.08f
+    val baseY = h * 0.85f
+    val bars = listOf(h * 0.35f, h * 0.55f, h * 0.75f)
+    bars.forEachIndexed { i, barH ->
+        drawRoundRect(
+            color = tint,
+            topLeft = Offset(w * 0.12f + i * (barWidth + gap), baseY - barH),
+            size = Size(barWidth, barH),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(w * 0.06f, w * 0.06f),
+            style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round),
+        )
+    }
 }

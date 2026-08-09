@@ -637,7 +637,7 @@ suspend fun ledgerView(
         .mapNotNull { d -> d.value?.let { d.ref to it } }
         .toMap()
     val today = tehranDay(System.currentTimeMillis())
-    val goals = durable.goals().active().map { goalProgress(it, ledger.entries, today) }
+    val goals = durable.goals().active().map { goalProgress(it, ledger.entries, today, ledger.categories) }
     return LedgerView(
         ledger.entries, ledger.categories, goals, answers, notes,
         ready = true, hiddenCount = ledger.hiddenEntries.size,

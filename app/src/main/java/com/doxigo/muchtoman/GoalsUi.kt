@@ -57,9 +57,8 @@ import kotlin.math.roundToLong
 @Composable
 fun GoalsScreen(
     goals: List<GoalProgress>,
-    summary: WorthItSummary,
     categories: List<Category>,
-    onAdd: (String, Long, String) -> Unit,
+    onAdd: (String, Long, String, String?) -> Unit,
     onDelete: (String) -> Unit,
     bottomInset: androidx.compose.ui.unit.Dp,
 ) {
@@ -192,17 +191,13 @@ fun GoalsScreen(
                         val catName = categories.firstOrNull { it.id == selectedCategoryId }?.nameFa ?: ""
                         "$name ($catName)"
                     } else name.trim()
-                    onAdd(goalName, rial, kind)
+                    onAdd(goalName, rial, kind, if (isCap) selectedCategoryId else null)
                     name = ""; amount = ""; selectedCategoryId = null
                 },
                 enabled = name.isNotBlank() && targetRial != null && (!isCap || selectedCategoryId != null),
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("ذخیره هدف") }
 
-            if (summary.total > 0) {
-                Spacer(Modifier.height(Space.xxl))
-                WorthItSummaryCard(summary)
-            }
             Spacer(Modifier.height(Space.huge))
         }
     }
@@ -271,101 +266,3 @@ private fun GoalCard(progress: GoalProgress, onDelete: () -> Unit) {
     }
 }
 
-@Composable
-private fun WorthItSummaryCard(summary: WorthItSummary) {
-    Panel {
-        Text(
-            "به نظر خودت",
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Spacer(Modifier.height(Space.s))
-        WorthItRow("ارزش داشت", summary.worth, Color(0xFF2E9E5B))
-        WorthItRow("لازم بود", summary.needed, MaterialTheme.colorScheme.onSurfaceVariant)
-        WorthItRow("ارزش نداشت", summary.regretted, MaterialTheme.colorScheme.primary)
-        if (summary.regretted > 0) {
-            Spacer(Modifier.height(Space.s))
-            Text(
-                // The whole reason for asking: "spend less" is advice nobody can act on.
-                "این خرج‌ها رو می‌شه کم کرد، بدون اینکه چیزی از دست بدی.",
-                fontSize = 13.sp,
-                lineHeight = 22.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun WorthItRow(label: String, rial: Long, tone: Color) {
-    Row(Modifier.fillMaxWidth().padding(vertical = Space.xs), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface)
-        Text(
-            bidi(faCompact(tomanOf(rial))),
-            style = figureStyle(tone, FontWeight.Bold),
-            fontSize = 15.sp,
-        )
-    }
-}
-
-/**
- * The weekly question, asked about at most two large discretionary purchases.
- *
- * Never about rent, bills, fees or cash — "was it worth it" is not a question about the
- * electricity bill, and asking it would read as the app being smug.
- */
-@Composable
-fun WorthItCard(entry: LedgerEntry, onAnswer: (String) -> Unit, modifier: Modifier = Modifier) {
-    Panel(modifier) {
-        Text(
-            faDay(entry.txn.day),
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(Space.xs))
-        Text(
-            entry.txn.merchant.ifBlank { entry.categoryFa },
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        entry.txn.amountRial?.let {
-            Spacer(Modifier.height(Space.xs))
-            Text(
-                bidi(faCompact(tomanOf(it)) + " تومان"),
-                style = figureStyle(MaterialTheme.colorScheme.onSurface, FontWeight.ExtraBold),
-                fontSize = 24.sp,
-            )
-        }
-        Spacer(Modifier.height(Space.l))
-        Text(
-            "ارزش داشت؟",
-            fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-        Spacer(Modifier.height(Space.s))
-        Row(Modifier.fillMaxWidth()) {
-            Answer("آره", Modifier.weight(1f)) { onAnswer(WorthIt.YES) }
-            Answer("لازم بود", Modifier.weight(1f)) { onAnswer(WorthIt.NEEDED) }
-            Answer("نه", Modifier.weight(1f)) { onAnswer(WorthIt.NO) }
-        }
-    }
-}
-
-@Composable
-private fun Answer(label: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    Text(
-        label,
-        textAlign = TextAlign.Center,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.onSurface,
-        modifier = modifier
-            .padding(horizontal = Space.xs)
-            .clip(RoundedCornerShape(Radius.pill))
-            .background(MaterialTheme.colorScheme.surface)
-            .clickable(role = Role.Button, onClick = onClick)
-            // 44dp minimum: this is answered one-handed or it is not answered.
-            .height(48.dp)
-            .padding(vertical = Space.m),
-    )
-}

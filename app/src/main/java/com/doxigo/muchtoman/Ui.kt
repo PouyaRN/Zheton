@@ -242,7 +242,6 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
     var editing by remember { mutableStateOf<Editing?>(null) }
     var settings by remember { mutableStateOf(false) }
     var banks by remember { mutableStateOf(false) }
-    var deck by remember { mutableStateOf(false) }
     var report by remember { mutableStateOf(false) }
     var transactionRef by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedObligation by remember { mutableStateOf<InstallmentObligation?>(null) }
@@ -269,13 +268,6 @@ val snackbarHostState = remember { SnackbarHostState() }
     // one tab it has is where it opens.
     var tab by rememberSaveable { mutableStateOf(tabs.first()) }
     val portfolio = tab == Tab.ASSETS
-
-    LaunchedEffect(state.family.pendingPairing) {
-        // A pairing link can still arrive at the lite build — the intent filter is in the shared
-        // manifest — and sending it to a tab that edition does not have would strand her on a
-        // screen with no bar to leave by.
-        if (Tab.COMPANION in tabs && state.family.pendingPairing != null) tab = Tab.COMPANION
-    }
 
     // Leaving the app re-arms the lock, so coming back asks again — and coming back also
     // refetches rates if the ones on screen are older than the Worker's cache window.
@@ -304,8 +296,8 @@ val snackbarHostState = remember { SnackbarHostState() }
     }
     // The tabs that start at the paper rather than at the field, plus every pushed screen.
     val paperUnderStatusBar = !state.locked && (
-        settings || deck || report || transactionRef != null ||
-            tab == Tab.LEDGER || tab == Tab.GOALS || tab == Tab.COMPANION ||
+        settings || report || transactionRef != null ||
+            tab == Tab.LEDGER || tab == Tab.GOALS || tab == Tab.REPORTS ||
             !heroUnderStatusBar
         )
     val lightScheme = MaterialTheme.colorScheme.background.luminance() > 0.5f
@@ -408,20 +400,6 @@ val snackbarHostState = remember { SnackbarHostState() }
         }
     }
 
-    if (deck) {
-        BackHandler { deck = false }
-        ReviewDeck(
-            ledger = state.ledger,
-            hiddenCategories = state.hiddenCategories,
-            onDecide = { entry, categoryId, always ->
-                vm.categorise(entry, categoryId, always)
-            },
-            onWorthIt = vm::answerWorthIt,
-            onDone = { deck = false },
-        )
-        return
-    }
-
     selectedObligation?.let { obligation ->
         BackHandler { selectedObligation = null }
         val payments = state.obligationPayments[obligation.id] ?: emptyList()
@@ -520,7 +498,7 @@ val snackbarHostState = remember { SnackbarHostState() }
             if (tabs.size > 1) {
                 TabBar(
                     selected = tab,
-                    ledgerBadge = state.ledger.review.size,
+                    ledgerBadge = 0,
                     onSelect = { tab = it },
                 )
             } else {
@@ -539,7 +517,6 @@ val snackbarHostState = remember { SnackbarHostState() }
             ledger = state.ledger,
             state = state,
             bottomInset = pad.calculateBottomPadding(),
-            onReview = { deck = true },
             onOpen = { transactionRef = it.txn.ref },
             onMarkCredit = { vm.startMarkCredit(it) },
             onLinkInstallment = { vm.startLinkInstallment(it) },
@@ -557,12 +534,8 @@ val snackbarHostState = remember { SnackbarHostState() }
         return@Scaffold
       }
       if (tab == Tab.GOALS) {
-        val summary = remember(state.ledger) {
-            worthItSummary(state.ledger.entries, state.ledger.worthIt)
-        }
         GoalsScreen(
             goals = state.ledger.goals,
-            summary = summary,
             categories = state.ledger.categories,
             onAdd = vm::addGoal,
             onDelete = vm::deleteGoal,
@@ -570,25 +543,9 @@ val snackbarHostState = remember { SnackbarHostState() }
         )
         return@Scaffold
       }
-      if (tab == Tab.COMPANION) {
-        CompanionScreen(
-            state = state.family,
-            suggestedName = state.name,
-            onStart = vm::startFamily,
-            onJoin = vm::joinFamily,
-            onNameChange = vm::setFamilyName,
-            onShareSmsChange = vm::setFamilySmsSharing,
-            bankAccounts = state.bankAccounts,
-            onBankPublishChange = vm::setFamilyBankPublish,
-            onInvite = vm::inviteDevice,
-            onSync = vm::syncFamily,
-            onWelcomeAck = vm::ackFamilyWelcome,
-            onRemoveMember = vm::removeFamilyMember,
-            contributions = remember(state.ledger.entries) {
-                state.ledger.entries.filterNot { it.duplicate }
-                    .groupingBy { it.ownerMemberId }
-                    .eachCount()
-            },
+      if (tab == Tab.REPORTS) {
+        ReportsTab(
+            ledger = state.ledger,
             bottomInset = pad.calculateBottomPadding(),
         )
         return@Scaffold

@@ -1283,44 +1283,18 @@ class AppVm(app: Application) : AndroidViewModel(app) {
 
     fun syncFamily() = requestFamilySync(silent = false)
 
-    private fun requestFamilySync(silent: Boolean) {
-        if (familySyncJob?.isActive == true) return
-        val app = getApplication<Application>()
-        if (!silent) _state.update { it.copy(family = it.family.copy(working = true, error = null)) }
-        familySyncJob = viewModelScope.launch(Dispatchers.Default) {
-            ledgerJob?.join()
-            val durable = DurableDb.get(app)
-            val derived = DerivedDb.get(app)
-            val session = loadSession(durable) ?: return@launch if (!silent) refreshFamily(null) else Unit
-            runCatching { syncNow(durable, derived, session) }
-                .onSuccess { result ->
-                    if (result.received > 0) derive(durable, derived, extraLookup(store.extraBankNumbers))
-        _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
+    /**
+     * Family sync is dormant: the sync store, worker, and PWA remain in the repo unshipped.
+     * This no-op preserves call sites without breaking anything.
+     */
+    private fun requestFamilySync(silent: Boolean) { /* dormant — no-op */ }
 
-        // Load obligations and reservations for the home screen.
-        refreshObligations(durable)
-
-                    refreshFamily(
-                        session,
-                        // faNumber, not the Int: interpolated straight in, these were the only
-                        // Latin digits anywhere in the app.
-                        note = "${faNumber(result.sent.toDouble())} مورد فرستادیم، " +
-                            "${faNumber(result.received.toDouble())} مورد گرفتیم.",
-                    )
-                }
-                .onFailure {
-                    android.util.Log.w("muchtoman", "sync failed: $it")
-                    if (silent) refreshFamily(session)
-                    else refreshFamily(session, error = "اتصال نشد. تغییرات روی گوشی محفوظ موند.")
-                }
-        }
-    }
-
-    fun addGoal(name: String, targetRial: Long, kind: String = GoalKind.SAVE) {
+    fun addGoal(name: String, targetRial: Long, kind: String = GoalKind.SAVE, categoryId: String? = null) {
         val app = getApplication<Application>()
         viewModelScope.launch(Dispatchers.Default) {
             val durable = DurableDb.get(app)
             val now = System.currentTimeMillis()
+            val period = if (kind == GoalKind.CAP) GoalPeriod.MONTH else GoalPeriod.ONCE
             runCatching {
                 durable.goals().put(
                     Goal(
@@ -1328,7 +1302,8 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                         nameFa = name.take(40),
                         targetRial = targetRial,
                         kind = kind,
-                        period = GoalPeriod.ONCE,
+                        categoryId = categoryId,
+                        period = period,
                         startsOn = jalaliMonthStart(tehranDay(now)),
                         createdAt = now,
                         updatedAt = now,

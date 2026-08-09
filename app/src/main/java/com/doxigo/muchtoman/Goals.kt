@@ -78,20 +78,34 @@ data class GoalProgress(
     val done: Boolean,
     /** Null for a goal with no end. */
     val daysLeft: Int?,
+    /**
+     * Pace estimate for caps: the Jalali day-of-month by which the cap will be exceeded at
+     * the current daily rate. Null when the cap is not on track to be exceeded this month,
+     * or when there is no spending yet.
+     */
+    val paceDay: Int? = null,
 ) {
     val cap: Boolean get() = goal.kind == GoalKind.CAP
 }
 
 /**
  * A savings goal counts what was kept — income minus spending since it started, transfers left
- * out of both. A cap counts what has been spent in its category this Jalali month.
+ * out of both. A cap counts what has been spent in its category (and all children) this Jalali
+ * month, reading the whole stored ledger.
  */
-fun goalProgress(goal: Goal, entries: List<LedgerEntry>, today: Long): GoalProgress {
+fun goalProgress(goal: Goal, entries: List<LedgerEntry>, today: Long, categories: List<Category> = emptyList()): GoalProgress {
     val rows = spendable(entries)
     val current = when (goal.kind) {
         GoalKind.CAP -> {
             val from = jalaliMonthStart(today)
-            rows.filter { it.txn.day >= from && it.categoryId == goal.categoryId }
+            // A parent category cap counts the parent AND all its children.
+            val catIds = if (goal.categoryId != null) {
+                val children = categories.filter { it.parentId == goal.categoryId }.map { it.id }
+                setOf(goal.categoryId) + children
+            } else emptySet()
+            // No scope → don't count anything (graceful degradation, not a catch-all).
+            if (catIds.isEmpty()) 0L
+            else rows.filter { it.txn.day >= from && it.categoryId in catIds }
                 .sumOf { -(it.txn.signedRial ?: 0L).coerceAtMost(0L) }
         }
         else -> rows.filter { it.txn.day >= goal.startsOn }.sumOf { it.txn.signedRial ?: 0L }
@@ -101,15 +115,28 @@ fun goalProgress(goal: Goal, entries: List<LedgerEntry>, today: Long): GoalProgr
     } else {
         0f
     }
+    // Pace estimate: at the current daily rate, which Jalali day will the cap be exceeded?
+    // Only shown once usage passes ~80% of the cap.
+    val paceDay = if (goal.kind == GoalKind.CAP && goal.targetRial > 0 && share >= 0.8f && current > 0) {
+        val from = jalaliMonthStart(today)
+        val dayOfMonth = jalaliOf(today).day
+        val dailyRate = current.toDouble() / dayOfMonth.coerceAtLeast(1)
+        if (dailyRate > 0) {
+            val daysToCap = ((goal.targetRial - current).toDouble() / dailyRate).toInt()
+            val estimatedDay = dayOfMonth + daysToCap
+            if (estimatedDay in 1..31) estimatedDay else null
+        } else null
+    } else null
+
     return GoalProgress(
         goal = goal,
         currentRial = if (goal.kind == GoalKind.CAP) current else current.coerceAtLeast(0L),
         targetRial = goal.targetRial,
         underWater = goal.kind != GoalKind.CAP && current < 0,
         share = share,
-        // A cap is met by NOT reaching it, which is the opposite test and easy to get backwards.
         done = if (goal.kind == GoalKind.CAP) current <= goal.targetRial else current >= goal.targetRial,
         daysLeft = goal.endsOn?.let { (it - today).toInt() },
+        paceDay = paceDay,
     )
 }
 

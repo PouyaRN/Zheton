@@ -32,8 +32,12 @@ data class FilterToken(
     val value: String,
 )
 
-/** Stable UI key, not data-dependent ordering. */
-fun FilterToken.stableKey(): String = "${field}_${op}_$value"
+/**
+ * Position-stable UI key for the LazyColumn row: field + op + index. Intentionally excludes
+ * value so a keystroke never changes the key and the row stays alive under the user's cursor.
+ * (Renamed from stableKey — index-based keys shift when earlier rows are removed.)
+ */
+fun FilterToken.positionKey(index: Int): String = "${field}_${op}_$index"
 
 /** True when every token matches the row. An empty filter keeps everything. */
 fun matchesFilter(entry: LedgerEntry, tokens: List<FilterToken>): Boolean =

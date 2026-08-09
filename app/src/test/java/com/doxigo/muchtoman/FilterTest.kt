@@ -1,10 +1,34 @@
 package com.doxigo.muchtoman
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FilterTest {
+
+    // ── stableKey: the keyboard-focus seam ───────────────────────────
+
+    @Test
+    fun `stable key is invariant under value change`() {
+        val base = FilterToken(FilterField.MERCHANT, FilterOp.NOT_CONTAINS, "")
+        val afterTyping = base.copy(value = "اسنپی")
+        // same field + op + index ⇒ same key, regardless of value
+        assertEquals(base.positionKey(0), afterTyping.positionKey(0))
+    }
+
+    @Test
+    fun `stable key differs across rows but not within a row at different values`() {
+        val row0 = FilterToken(FilterField.MERCHANT, FilterOp.CONTAINS, "")
+        val row1 = FilterToken(FilterField.CATEGORY, FilterOp.EQUALS, "cat_food")
+        val row0typed = row0.copy(value = "hello")
+        // different fields ⇒ different keys
+        assertTrue(row0.positionKey(0) != row1.positionKey(1))
+        // same row, different value ⇒ same key
+        assertEquals(row0.positionKey(0), row0typed.positionKey(0))
+        // same field+op, different index ⇒ different keys
+        assertTrue(row0.positionKey(0) != row0.positionKey(1))
+    }
 
     private fun row(
         merchant: String = "اسنپ",

@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -34,7 +35,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -61,6 +62,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.Close
@@ -127,7 +129,6 @@ fun TimelineScreen(
     ledger: LedgerView,
     state: UiState,
     bottomInset: androidx.compose.ui.unit.Dp,
-    onReview: () -> Unit,
     onOpen: (LedgerEntry) -> Unit,
     onMarkCredit: (LedgerEntry) -> Unit,
     onLinkInstallment: (LedgerEntry) -> Unit,
@@ -175,7 +176,6 @@ fun TimelineScreen(
     }
 
     val grouped = remember(filtered) { filtered.groupBy { it.txn.day }.toSortedMap(compareByDescending { it }) }
-    val waiting = ledger.review.size
 
     // Back exits selection mode before it ever leaves the timeline.
     if (selecting) {
@@ -248,7 +248,6 @@ TextButton(onClick = {
                     IconButton(onClick = onExport) {
                         Icon(Icons.Rounded.Share, contentDescription = "خروجی CSV")
                     }
-                    if (waiting > 0) ReviewPill(waiting, onReview)
                     if (state.ledger.hiddenCount > 0 && !selecting) {
                         FilterChip(
                             selected = state.showHidden,
@@ -446,10 +445,12 @@ private fun FilterSheet(
     onDismiss: () -> Unit,
 ) {
     var draft by remember(tokens) { mutableStateOf(tokens) }
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Column(
             Modifier
                 .fillMaxWidth()
+                .imePadding()
                 .navigationBarsPadding()
                 .padding(horizontal = Space.xl, vertical = Space.m),
         ) {
@@ -463,14 +464,14 @@ private fun FilterSheet(
             Spacer(Modifier.height(Space.m))
 
             LazyColumn(Modifier.heightIn(max = 320.dp)) {
-                items(draft, key = { it.stableKey() }) { token ->
+                itemsIndexed(draft, key = { idx, token -> token.positionKey(idx) }) { idx, token ->
                     FilterTokenRow(
                         token = token,
                         categories = categories,
                         onChanged = { updated ->
-                            draft = draft.map { if (it.stableKey() == token.stableKey()) updated else it }
+                            draft = draft.mapIndexed { i, t -> if (i == idx) updated else t }
                         },
-                        onRemove = { draft = draft.filterNot { it.stableKey() == token.stableKey() } },
+                        onRemove = { draft = draft.filterIndexed { i, _ -> i != idx } },
                     )
                     Spacer(Modifier.height(Space.s))
                 }
@@ -582,9 +583,10 @@ private fun placeholderFor(field: FilterField): String = when (field) {
 }
 
 /**
- * The bottom bar while transactions are selected: category filing, hide, flip direction, and
- * permanent delete — each over every selected row, with one confirmation/undo each.
+ * The bottom bar while transactions are selected: count, "عملیات" opens the batch sheet, and
+ * cancel. Confirmations stay in-dialog; the sheet is the entry point only.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BatchActionBar(
     selectedRefs: Set<String>,
@@ -593,16 +595,14 @@ private fun BatchActionBar(
     categories: List<Category>,
     hiddenCategories: Set<String>,
     onPickCategory: (String) -> Unit,
-    /** The count shown before a bulk action applies it — ticket 12/13 confirmations. */
     onHide: () -> Unit,
     onFlip: () -> Unit,
     onDelete: () -> Unit,
-    /** Bulk note: the typed value, or blank to clear (tombstone) on every selected row. */
     onNote: (String) -> Unit,
-    /** Bulk merchant display: blank unpins the alias back to the parser's name. */
     onMerchant: (String) -> Unit,
     onCancel: () -> Unit,
 ) {
+    var showActionsSheet by remember { mutableStateOf(false) }
     var showCategoryPicker by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showHideConfirm by remember { mutableStateOf(false) }
@@ -611,6 +611,7 @@ private fun BatchActionBar(
     var showMerchantDialog by remember { mutableStateOf(false) }
     var noteValue by remember { mutableStateOf("") }
     var merchantValue by remember { mutableStateOf("") }
+
     Surface(tonalElevation = 3.dp, shadowElevation = 4.dp) {
         Row(
             Modifier
@@ -634,27 +635,70 @@ private fun BatchActionBar(
                     )
                 }
             }
+            Button(onClick = { showActionsSheet = true }) {
+                Text("عملیات", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            }
             TextButton(onClick = onCancel) { Text("لغو", fontSize = 12.sp) }
         }
-        // A second row of actions keeps the bar from turning into a keyboard of buttons.
-        // Three actions plus the count would crowd one line; the actions read better than the
-        // count and deserve the width.
-        FlowRow(
-            modifier = Modifier
-                .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(horizontal = Space.xl, vertical = Space.s),
-            horizontalArrangement = Arrangement.spacedBy(Space.xs),
-        ) {
-            TextButton(onClick = { showCategoryPicker = true }) { Text("دسته‌بندی", fontSize = 13.sp) }
-            TextButton(onClick = { showHideConfirm = true }) { Text("پنهان", fontSize = 13.sp) }
-            TextButton(onClick = { showFlipConfirm = true }) { Text("جابجایی جهت", fontSize = 13.sp) }
-            TextButton(
-                onClick = { showDeleteConfirm = true },
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-            ) { Text("حذف", fontSize = 13.sp) }
-            TextButton(onClick = { noteValue = ""; showNoteDialog = true }) { Text("یادداشت", fontSize = 13.sp) }
-            TextButton(onClick = { merchantValue = ""; showMerchantDialog = true }) { Text("فروشگاه", fontSize = 13.sp) }
+    }
+
+    if (showActionsSheet) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(onDismissRequest = { showActionsSheet = false }, sheetState = sheetState) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = Space.xl, vertical = Space.m),
+            ) {
+                Text(
+                    "${selectedRefs.size} مورد انتخاب شده",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+                Spacer(Modifier.height(Space.m))
+
+                // دستهبندی — first, with emphasis
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(Radius.field))
+                        .clickable { showActionsSheet = false; showCategoryPicker = true },
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                ) {
+                    Text(
+                        "دسته‌بندی",
+                        modifier = Modifier.padding(Space.m),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Spacer(Modifier.height(Space.s))
+
+                // Remaining actions
+                listOf(
+                    "یادداشت" to { noteValue = ""; showActionsSheet = false; showNoteDialog = true },
+                    "فروشگاه" to { merchantValue = ""; showActionsSheet = false; showMerchantDialog = true },
+                    "پنهان" to { showActionsSheet = false; showHideConfirm = true },
+                    "جابجایی جهت" to { showActionsSheet = false; showFlipConfirm = true },
+                ).forEach { (label, action) ->
+                    TextButton(
+                        onClick = action,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(label, fontSize = 15.sp, modifier = Modifier.fillMaxWidth())
+                    }
+                }
+                TextButton(
+                    onClick = { showActionsSheet = false; showDeleteConfirm = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                ) {
+                    Text("حذف", fontSize = 15.sp, modifier = Modifier.fillMaxWidth())
+                }
+                Spacer(Modifier.height(Space.s))
+            }
         }
     }
     if (showNoteDialog) {
@@ -886,35 +930,6 @@ private fun DayBand(
     }
 }
 
-/**
- * The one thing asking for her, on the title line rather than across the page.
- *
- * It was a full-width card, and a card is what the app uses for something to read — so the only
- * control on the screen was wearing the costume of content, taking a whole band of the scroll to
- * say what the tab bar already says with a badge. A pill in the empty half of the title line
- * says it in the app's own «this one» gold, names its action instead of describing a state, and
- * gives the day bands the top of the list back.
- */
-@Composable
-private fun ReviewPill(waiting: Int, onReview: () -> Unit) {
-    Box(
-        Modifier
-            .clip(RoundedCornerShape(Radius.pill))
-            .background(MaterialTheme.colorScheme.primary)
-            .clickable(role = Role.Button, onClick = onReview)
-            .heightIn(min = 48.dp)
-            .padding(horizontal = Space.l),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            "مرور ${faNumber(waiting.toDouble())} مورد",
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onPrimary,
-        )
-    }
-}
-
 @Composable
 private fun TimelineRow(
     entry: LedgerEntry,
@@ -1020,15 +1035,6 @@ private fun TimelineRow(
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-                if (entry.needsReview && !entry.transfer) {
-                    Spacer(Modifier.width(Space.xs))
-                    Box(
-                        Modifier
-                            .size(6.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(MaterialTheme.colorScheme.primary),
                     )
                 }
             }
@@ -1705,227 +1711,6 @@ private fun DetailRow(label: String, value: String) {
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1.4f),
-        )
-    }
-}
-
-/**
- * The exception deck.
- *
- * One card at a time, three answers, and «همیشه» is the one that matters — it is the difference
- * between an app that asks the same question every month and one that learns. «حالا نه» writes
- * nothing at all, on purpose: skipping must cost her nothing and must not be recorded as an
- * opinion she does not have.
- */
-@Composable
-fun ReviewDeck(
-    ledger: LedgerView,
-    hiddenCategories: Set<String> = emptySet(),
-    onDecide: (LedgerEntry, String, Boolean) -> Unit,
-    onWorthIt: (LedgerEntry, String) -> Unit,
-    onDone: () -> Unit,
-) {
-    var index by remember { mutableStateOf(0) }
-    var skipped by remember { mutableStateOf(setOf<String>()) }
-    val pending = ledger.review.filterNot { it.txn.ref in skipped }
-    val entry = pending.getOrNull(index.coerceAtMost(pending.lastIndex.coerceAtLeast(0)))
-
-    // The picked category, cleared whenever the deck moves on: the two answers below are about
-    // the card on screen, and carrying a highlight onto the next one would offer to file a
-    // transaction she has not looked at yet.
-    var picked by remember(entry?.txn?.ref) { mutableStateOf<String?>(null) }
-
-    Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize()) {
-            if (entry != null) {
-                TransactionHero(
-                    entry = entry,
-                    incoming = entry.txn.direction == "in",
-                    onBack = onDone,
-                    backLabel = "بستن",
-                    note = "${faNumber((index + 1).toDouble())} از ${faNumber(pending.size.toDouble())}",
-                )
-            }
-
-            Column(
-                Modifier
-                    .fillMaxSize()
-                    .then(if (entry == null) Modifier.systemBarsPadding() else Modifier)
-                    .padding(horizontal = Space.xl),
-            ) {
-            if (entry == null) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "مرور هفتگی",
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.semantics { heading() },
-                    )
-                    Spacer(Modifier.weight(1f))
-                    TextButton(onClick = onDone) { Text("بستن") }
-                }
-            }
-
-            if (entry == null) {
-                // The exceptions are done, so the one optional question gets asked — at most
-                // two a week, and only about something large she chose to buy. Asked here
-                // rather than mixed into the deck because it is not a correction: nothing is
-                // wrong with these, and she is not obliged to have an opinion.
-                val asking = remember(ledger) {
-                    worthItCandidates(
-                        ledger.entries,
-                        ledger.worthIt.keys,
-                        tehranDay(System.currentTimeMillis()),
-                        largeSpendThreshold(ledger.entries),
-                    )
-                }
-                Spacer(Modifier.height(Space.l))
-                if (asking.isEmpty()) {
-                    Column(
-                        Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(
-                            "همه‌چی بررسی شد",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onBackground,
-                        )
-                        Spacer(Modifier.height(Space.s))
-                        Text(
-                            "دیگه چیزی نمونده.",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                } else {
-                    for (candidate in asking) {
-                        WorthItCard(candidate, onAnswer = { onWorthIt(candidate, it) })
-                        Spacer(Modifier.height(Space.m))
-                    }
-                    TextButton(onClick = onDone) { Text("بعداً") }
-                }
-                return@Column
-            }
-
-            val choices = categoryChoices(ledger.categories, entry.txn.direction, hiddenCategories)
-            // The question and the choices scroll; the answers do not. Only the grid can grow
-            // past a short screen, and an answer she has to go looking for is one she will not
-            // give.
-            Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState())) {
-                Spacer(Modifier.height(Space.xxl))
-                Text(
-                    // «خرج» on money that arrived is the question asking her to agree with
-                    // something untrue before she has answered it.
-                    when (entry.txn.direction) {
-                        "in" -> "این واریز رو چی حساب کنم؟"
-                        "out" -> "این خرج رو چی حساب کنم؟"
-                        else -> "این تراکنش رو چی حساب کنم؟"
-                    },
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    modifier = Modifier.semantics { heading() },
-                )
-                Spacer(Modifier.height(Space.m))
-                FlowRow(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(Space.s),
-                    verticalArrangement = Arrangement.spacedBy(Space.s),
-                ) {
-                    choices.forEach { category ->
-                        CategoryChip(
-                            category = category,
-                            selected = category.id == picked,
-                            onClick = { picked = category.id },
-                            selectedLabel = "انتخاب‌شده",
-                        )
-                    }
-                }
-                Spacer(Modifier.height(Space.l))
-            }
-
-            // Three answers, in one block at the foot of the screen, weighted the way they
-            // actually differ. «همیشه» means she is never asked this again, which is the
-            // entire point of the product, so it is the filled one. «فعلاً نه» writes nothing
-            // at all — but it was a bare text button stranded below a screen of empty space,
-            // which made the cheapest answer the hardest one to find. It belongs with the
-            // other two: skipping must cost her nothing, including the cost of hunting for it.
-            //
-            // The two that commit need a category to commit, so they arrive with one.
-            Column(Modifier.fillMaxWidth().padding(bottom = Space.m).navigationBarsPadding()) {
-                AnimatedVisibility(
-                    visible = picked != null,
-                    enter = expandVertically(tween(Motion.medium, easing = Motion.enter)) +
-                        fadeIn(tween(Motion.medium)),
-                    exit = shrinkVertically(tween(Motion.fast, easing = Motion.exit)) +
-                        fadeOut(tween(Motion.fast)),
-                ) {
-                    Column {
-                        DeckAnswer(
-                            label = "از این به بعد هم همین دسته",
-                            weight = AnswerWeight.PRIMARY,
-                            onClick = {
-                                picked?.let { onDecide(entry, it, true) }
-                                index = 0
-                            },
-                        )
-                        Spacer(Modifier.height(Space.s))
-                        DeckAnswer(
-                            label = "فقط همین یکی",
-                            weight = AnswerWeight.SECONDARY,
-                            onClick = {
-                                picked?.let { onDecide(entry, it, false) }
-                                index = 0
-                            },
-                        )
-                        Spacer(Modifier.height(Space.s))
-                    }
-                }
-                DeckAnswer(
-                    label = "فعلاً نه",
-                    weight = AnswerWeight.QUIET,
-                    onClick = { skipped = skipped + entry.txn.ref },
-                )
-            }
-            }
-        }
-    }
-}
-
-/** How much of an answer it is: two of these write something, and one deliberately does not. */
-private enum class AnswerWeight { PRIMARY, SECONDARY, QUIET }
-
-/** One of the three answers at the foot of the deck. */
-@Composable
-private fun DeckAnswer(label: String, weight: AnswerWeight, onClick: () -> Unit) {
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.pill))
-            .background(
-                when (weight) {
-                    AnswerWeight.PRIMARY -> MaterialTheme.colorScheme.primary
-                    AnswerWeight.SECONDARY -> MaterialTheme.colorScheme.surfaceVariant
-                    // Not a surface of its own: it is the answer that changes nothing, and a
-                    // filled shape would promise it does.
-                    AnswerWeight.QUIET -> Color.Transparent
-                },
-            )
-            .clickable(role = Role.Button, onClick = onClick)
-            .heightIn(min = 52.dp)
-            .padding(horizontal = Space.l),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            label,
-            fontSize = 15.sp,
-            fontWeight = if (weight == AnswerWeight.QUIET) FontWeight.Medium else FontWeight.Bold,
-            color = when (weight) {
-                AnswerWeight.PRIMARY -> MaterialTheme.colorScheme.onPrimary
-                AnswerWeight.SECONDARY -> MaterialTheme.colorScheme.onSurface
-                AnswerWeight.QUIET -> MaterialTheme.colorScheme.onSurfaceVariant
-            },
         )
     }
 }
