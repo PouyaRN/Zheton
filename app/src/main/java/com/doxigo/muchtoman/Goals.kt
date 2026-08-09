@@ -39,6 +39,11 @@ data class Goal(
     val kind: String,
     /** For a cap, which category it holds down. Null on a savings goal. */
     @ColumnInfo(name = "category_id") val categoryId: String? = null,
+    /**
+     * For a cap scoped to a merchant: the stable merchant identity (merchantNorm).
+     * When set, the cap counts spending at this merchant. Null when scoped to a category.
+     */
+    @ColumnInfo(name = "scope_merchant_norm", defaultValue = "NULL") val scopeMerchantNorm: String? = null,
     val period: String,
     @ColumnInfo(name = "starts_on") val startsOn: Long,
     @ColumnInfo(name = "ends_on") val endsOn: Long? = null,
@@ -98,15 +103,20 @@ fun goalProgress(goal: Goal, entries: List<LedgerEntry>, today: Long, categories
     val current = when (goal.kind) {
         GoalKind.CAP -> {
             val from = jalaliMonthStart(today)
-            // A parent category cap counts the parent AND all its children.
-            val catIds = if (goal.categoryId != null) {
-                val children = categories.filter { it.parentId == goal.categoryId }.map { it.id }
-                setOf(goal.categoryId) + children
-            } else emptySet()
-            // No scope → don't count anything (graceful degradation, not a catch-all).
-            if (catIds.isEmpty()) 0L
-            else rows.filter { it.txn.day >= from && it.categoryId in catIds }
-                .sumOf { -(it.txn.signedRial ?: 0L).coerceAtMost(0L) }
+            val matching = when {
+                // Merchant scope: count all spending at this merchant identity.
+                goal.scopeMerchantNorm != null ->
+                    rows.filter { it.txn.day >= from && it.txn.merchantNorm == goal.scopeMerchantNorm }
+                // Category scope: count the category AND all its children.
+                goal.categoryId != null -> {
+                    val children = categories.filter { it.parentId == goal.categoryId }.map { it.id }
+                    val catIds = setOf(goal.categoryId) + children
+                    rows.filter { it.txn.day >= from && it.categoryId in catIds }
+                }
+                // No scope: count nothing (graceful degradation).
+                else -> emptyList()
+            }
+            matching.sumOf { -(it.txn.signedRial ?: 0L).coerceAtMost(0L) }
         }
         else -> rows.filter { it.txn.day >= goal.startsOn }.sumOf { it.txn.signedRial ?: 0L }
     }
@@ -140,85 +150,3 @@ fun goalProgress(goal: Goal, entries: List<LedgerEntry>, today: Long, categories
     )
 }
 
-// ─────────────────────── «آیا ارزشش را داشت؟» ───────────────────────
-
-object WorthIt {
-    const val YES = "yes"
-    const val NO = "no"
-    const val NEEDED = "needed"
-}
-
-/**
- * The question that separates spending she values from spending she regrets.
- *
- * It is asked about **at most two** discretionary purchases a week, and only large ones. The
- * point is not data collection: an app that asks about every coffee is one she stops answering,
- * and the answer is only worth having if it is considered.
- *
- * Rent, bills, fees and cash withdrawals are never asked about — "was it worth it" is not a
- * question about the electricity bill, and asking it would read as the app being smug.
- */
-private val NEVER_ASKED = setOf(CAT_TRANSFER, CAT_FEES, CAT_INCOME, "cat_bills", CAT_CASH)
-
-const val WORTH_IT_PER_WEEK = 2
-
-fun worthItCandidates(
-    entries: List<LedgerEntry>,
-    answered: Set<String>,
-    today: Long,
-    threshold: Long,
-): List<LedgerEntry> {
-    val weekFrom = weekStart(today)
-    return spendable(entries)
-        .filter {
-            it.txn.day >= weekFrom &&
-                it.txn.direction == "out" &&
-                (it.txn.amountRial ?: 0L) >= threshold &&
-                it.categoryId !in NEVER_ASKED &&
-                it.txn.ref !in answered &&
-                !it.needsReview // settle what it *is* before asking how she felt about it
-        }
-        .sortedByDescending { it.txn.amountRial ?: 0L }
-        .take(WORTH_IT_PER_WEEK)
-}
-
-/**
- * The threshold: the 90th percentile of what she spends, floored so that a quiet month does not
- * start asking about bus fares.
- *
- * `sorted()[n * 9 / 10]` rather than a window function, because API 24 ships SQLite 3.9 and this
- * runs in Kotlin anyway.
- */
-fun largeSpendThreshold(entries: List<LedgerEntry>, floorRial: Long = 20_000_000L): Long {
-    val amounts = spendable(entries)
-        .filter { it.txn.direction == "out" }
-        .mapNotNull { it.txn.amountRial }
-        .sorted()
-    if (amounts.size < 10) return floorRial
-    return maxOf(amounts[amounts.size * 9 / 10], floorRial)
-}
-
-/** What she has said about her own spending, once there is enough of it to say anything. */
-data class WorthItSummary(val worth: Long, val notWorth: Long, val needed: Long) {
-    val total: Long get() = worth + notWorth + needed
-    /**
-     * The only actionable half. "Spend less" is advice nobody can act on; "this is what you
-     * later wished you had not" is a number attached to decisions she actually made.
-     */
-    val regretted: Long get() = notWorth
-}
-
-fun worthItSummary(entries: List<LedgerEntry>, answers: Map<String, String>): WorthItSummary {
-    var worth = 0L
-    var notWorth = 0L
-    var needed = 0L
-    for (entry in spendable(entries)) {
-        val amount = entry.txn.amountRial ?: continue
-        when (answers[entry.txn.ref]) {
-            WorthIt.YES -> worth += amount
-            WorthIt.NO -> notWorth += amount
-            WorthIt.NEEDED -> needed += amount
-        }
-    }
-    return WorthItSummary(worth, notWorth, needed)
-}

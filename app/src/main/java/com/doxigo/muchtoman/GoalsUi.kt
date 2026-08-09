@@ -58,7 +58,9 @@ import kotlin.math.roundToLong
 fun GoalsScreen(
     goals: List<GoalProgress>,
     categories: List<Category>,
-    onAdd: (String, Long, String, String?) -> Unit,
+    /** Recent distinct merchants from the ledger, for the merchant picker. */
+    merchants: List<String> = emptyList(),
+    onAdd: (String, Long, String, String?, String?) -> Unit,
     onDelete: (String) -> Unit,
     bottomInset: androidx.compose.ui.unit.Dp,
 ) {
@@ -66,6 +68,8 @@ fun GoalsScreen(
     var amount by remember { mutableStateOf("") }
     var isCap by remember { mutableStateOf(false) }
     var selectedCategoryId by remember { mutableStateOf<String?>(null) }
+    var selectedMerchantNorm by remember { mutableStateOf<String?>(null) }
+    // When a merchant is picked, clear category and vice versa.
     val targetRial = remember(amount) {
         parseAmount(amount)
             ?.takeIf { it > 0.0 && it <= Long.MAX_VALUE / 10.0 }
@@ -149,9 +153,34 @@ fun GoalsScreen(
                             selected = category.id == selectedCategoryId,
                             onClick = {
                                 selectedCategoryId = if (category.id == selectedCategoryId) null else category.id
+                                if (selectedCategoryId != null) selectedMerchantNorm = null
                             },
                             label = { Text(category.nameFa, fontSize = 12.sp) },
                         )
+                    }
+                }
+                // Merchant picker — recent distinct merchants from the ledger.
+                if (merchants.isNotEmpty()) {
+                    Spacer(Modifier.height(Space.s))
+                    Text(
+                        "یا فروشگاه",
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = Space.xs),
+                    )
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(Space.s),
+                    ) {
+                        merchants.take(12).forEach { merchant ->
+                            FilterChip(
+                                selected = merchant == selectedMerchantNorm,
+                                onClick = {
+                                    selectedMerchantNorm = if (merchant == selectedMerchantNorm) null else merchant
+                                    if (selectedMerchantNorm != null) selectedCategoryId = null
+                                },
+                                label = { Text(merchant, fontSize = 12.sp) },
+                            )
+                        }
                     }
                 }
             }
@@ -191,8 +220,8 @@ fun GoalsScreen(
                         val catName = categories.firstOrNull { it.id == selectedCategoryId }?.nameFa ?: ""
                         "$name ($catName)"
                     } else name.trim()
-                    onAdd(goalName, rial, kind, if (isCap) selectedCategoryId else null)
-                    name = ""; amount = ""; selectedCategoryId = null
+                    onAdd(goalName, rial, kind, if (isCap) selectedCategoryId else null, if (isCap) selectedMerchantNorm else null)
+                    name = ""; amount = ""; selectedCategoryId = null; selectedMerchantNorm = null
                 },
                 enabled = name.isNotBlank() && targetRial != null && (!isCap || selectedCategoryId != null),
                 modifier = Modifier.fillMaxWidth(),
@@ -255,13 +284,33 @@ private fun GoalCard(progress: GoalProgress, categories: List<Category>, onDelet
                     .background(barColor),
             )
         }
-        // Call-out: what category this cap counts
-        if (progress.cap && progress.goal.categoryId != null) {
-            val catFa = categories.find { it.id == progress.goal.categoryId }?.nameFa ?: ""
-            if (catFa.isNotBlank()) {
+        // Savings goal: show deadline
+        if (!progress.cap && progress.goal.endsOn != null) {
+            Spacer(Modifier.height(Space.xs))
+            val deadlineDay = jalaliOf(progress.goal.endsOn)
+            val deadlineFaYear = buildString { for (c in deadlineDay.year.toString()) append('۰' + (c - '0')) }
+            val deadlineText = "${faNumber(deadlineDay.day.toDouble())} ${MONTHS[deadlineDay.month - 1]} $deadlineFaYear"
+            val daysLeftText = progress.daysLeft?.let { " (${faNumber(it.toDouble())} روز مونده)" } ?: ""
+            Text(
+                "مهلت: $deadlineText$daysLeftText",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        // Call-out: what category or merchant this cap counts
+        if (progress.cap) {
+            val label = when {
+                progress.goal.scopeMerchantNorm != null -> "شامل فروشگاه «${progress.goal.scopeMerchantNorm}»"
+                progress.goal.categoryId != null -> {
+                    val catFa = categories.find { it.id == progress.goal.categoryId }?.nameFa ?: ""
+                    if (catFa.isNotBlank()) "شامل دسته «$catFa»" else null
+                }
+                else -> null
+            }
+            if (label != null) {
                 Spacer(Modifier.height(Space.xs))
                 Text(
-                    "شامل دسته «$catFa»",
+                    label,
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

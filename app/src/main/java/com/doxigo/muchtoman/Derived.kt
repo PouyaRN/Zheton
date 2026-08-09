@@ -538,7 +538,10 @@ data class LedgerEntry(
 
 /** Everything the ledger screens need, read in one pass. */
 data class LedgerView(
+    /** Capped to the browsing window (300 rows) for the timeline. */
     val entries: List<LedgerEntry> = emptyList(),
+    /** The full stored ledger — uncapped, for reports and goals. */
+    val allEntries: List<LedgerEntry> = emptyList(),
     val categories: List<Category> = emptyList(),
     val goals: List<GoalProgress> = emptyList(),
     /** ref → yes | no | needed, for the ones she has answered. */
@@ -629,7 +632,14 @@ suspend fun ledgerView(
     durable: DurableDb,
     limit: Int = 300,
 ): LedgerView {
-    val ledger = ledgerEntries(derived, durable, limit)
+    // Fetch the full store for reports/goals; cap for the timeline.
+    val all = ledgerEntries(derived, durable, limit = Int.MAX_VALUE)
+    val capped = LedgerEntries(
+        entries = all.entries.take(limit),
+        categories = all.categories,
+        hiddenEntries = all.hiddenEntries,
+        categoryCounts = all.categoryCounts,
+    )
     val answers = durable.decisions().ofKind(DecisionKind.WORTH_IT)
         .mapNotNull { d -> d.value?.let { d.ref to it } }
         .toMap()
@@ -637,12 +647,19 @@ suspend fun ledgerView(
         .mapNotNull { d -> d.value?.let { d.ref to it } }
         .toMap()
     val today = tehranDay(System.currentTimeMillis())
-    val goals = durable.goals().active().map { goalProgress(it, ledger.entries, today, ledger.categories) }
+    // Goals read from the full store, not the capped window.
+    val goals = durable.goals().active().map { goalProgress(it, all.entries, today, all.categories) }
     return LedgerView(
-        ledger.entries, ledger.categories, goals, answers, notes,
-        ready = true, hiddenCount = ledger.hiddenEntries.size,
-        hiddenEntries = ledger.hiddenEntries,
-        categoryCounts = ledger.categoryCounts,
+        entries = capped.entries,
+        allEntries = all.entries,
+        categories = capped.categories,
+        goals = goals,
+        worthIt = answers,
+        notes = notes,
+        ready = true,
+        hiddenCount = capped.hiddenEntries.size,
+        hiddenEntries = capped.hiddenEntries,
+        categoryCounts = capped.categoryCounts,
     )
 }
 

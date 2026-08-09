@@ -68,12 +68,12 @@ fun ReportsTab(
             ReportWindow.THREE_MONTH -> jalaliMonthsBack(today, 3)
             ReportWindow.SIX_MONTH -> jalaliMonthsBack(today, 6)
             ReportWindow.YEAR -> jalaliMonthsBack(today, 12)
-            ReportWindow.ALL -> ledger.entries.minOfOrNull { it.txn.day } ?: today
+            ReportWindow.ALL -> ledger.allEntries.minOfOrNull { it.txn.day } ?: today
         }
     }
 
-    val snapshot = remember(ledger.entries, windowStart) {
-        val visible = ledger.entries.filter { !it.duplicate && !it.hidden && !it.transfer && it.txn.day >= windowStart }
+    val snapshot = remember(ledger.allEntries, windowStart) {
+        val visible = ledger.allEntries.filter { !it.duplicate && !it.hidden && !it.transfer && it.txn.day >= windowStart }
         val income = visible.filter { it.txn.direction == "in" }.sumOf { it.txn.signedRial ?: 0L }
         val expense = visible.filter { it.txn.direction == "out" }.sumOf { kotlin.math.abs(it.txn.signedRial ?: 0L) }
         val net = income - expense

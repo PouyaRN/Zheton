@@ -520,9 +520,17 @@ val snackbarHostState = remember { SnackbarHostState() }
         return@Scaffold
       }
       if (tab == Tab.GOALS) {
+        val recentMerchants = remember(state.ledger.allEntries) {
+            state.ledger.allEntries
+                .filter { it.txn.direction == "out" && it.txn.merchantNorm.isNotBlank() }
+                .map { it.txn.merchantNorm }
+                .distinct()
+                .take(20)
+        }
         GoalsScreen(
             goals = state.ledger.goals,
             categories = state.ledger.categories,
+            merchants = recentMerchants,
             onAdd = vm::addGoal,
             onDelete = vm::deleteGoal,
             bottomInset = pad.calculateBottomPadding(),

@@ -1289,7 +1289,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
      */
     private fun requestFamilySync(silent: Boolean) { /* dormant — no-op */ }
 
-    fun addGoal(name: String, targetRial: Long, kind: String = GoalKind.SAVE, categoryId: String? = null) {
+    fun addGoal(name: String, targetRial: Long, kind: String = GoalKind.SAVE, categoryId: String? = null, scopeMerchantNorm: String? = null) {
         val app = getApplication<Application>()
         viewModelScope.launch(Dispatchers.Default) {
             val durable = DurableDb.get(app)
@@ -1303,6 +1303,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                         targetRial = targetRial,
                         kind = kind,
                         categoryId = categoryId,
+                        scopeMerchantNorm = scopeMerchantNorm,
                         period = period,
                         startsOn = jalaliMonthStart(tehranDay(now)),
                         createdAt = now,
@@ -1322,21 +1323,6 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 durable.goals().delete(id, System.currentTimeMillis())
                 _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable, limit = ledgerLimit())) }
             }.onFailure { android.util.Log.w("muchtoman", "deleteGoal failed: $it") }
-        }
-    }
-
-    /** Her verdict on one purchase. No rule follows from it — it is an opinion, not a pattern. */
-    fun answerWorthIt(entry: LedgerEntry, answer: String) {
-        val app = getApplication<Application>()
-        viewModelScope.launch(Dispatchers.Default) {
-            val durable = DurableDb.get(app)
-            val now = System.currentTimeMillis()
-            runCatching {
-                durable.decisions().put(
-                    TxnDecision(uuid7(now), entry.txn.ref, DecisionKind.WORTH_IT, answer, now, now)
-                )
-                _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable, limit = ledgerLimit())) }
-            }.onFailure { android.util.Log.w("muchtoman", "worthIt failed: $it") }
         }
     }
 
