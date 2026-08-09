@@ -4,7 +4,7 @@
 
 **Blocked by:** none — the family screen, sync state, and QR pairing already exist.
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The tab reads «خانواده» (and nothing in the UI uses the word "Companion" any longer).
 - [ ] First open of the tab shows a short welcome about the household ledger and SMS-sharing-off default.

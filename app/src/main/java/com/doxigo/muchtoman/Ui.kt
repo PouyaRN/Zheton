@@ -578,8 +578,12 @@ val snackbarHostState = remember { SnackbarHostState() }
             onJoin = vm::joinFamily,
             onNameChange = vm::setFamilyName,
             onShareSmsChange = vm::setFamilySmsSharing,
+            bankAccounts = state.bankAccounts,
+            onBankPublishChange = vm::setFamilyBankPublish,
             onInvite = vm::inviteDevice,
             onSync = vm::syncFamily,
+            onWelcomeAck = vm::ackFamilyWelcome,
+            onRemoveMember = vm::removeFamilyMember,
             contributions = remember(state.ledger.entries) {
                 state.ledger.entries.filterNot { it.duplicate }
                     .groupingBy { it.ownerMemberId }

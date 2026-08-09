@@ -4,7 +4,7 @@
 
 **Blocked by:** 08 (the renamed family screen the member list and controls live on).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] A member row exposes a «حذف»/remove action for the owner, with a confirmation before it applies.
 - [ ] Removing a member stops new transactions from them appearing in the household ledger.

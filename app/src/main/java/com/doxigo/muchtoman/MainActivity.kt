@@ -1038,6 +1038,13 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     memberName = own?.name.orEmpty(),
                     members = members,
                     sharesSms = own?.sharesSms ?: false,
+                    welcomeSeen = durable.meta().get(META_SYNC_WELCOME_SEEN) == "true",
+                    mutedBanks = durable.meta().get(META_SYNC_MUTED_BANKS).orEmpty()
+                        .split(',').filter(String::isNotBlank).toSet(),
+                    // Households created before the owner stamp have none; their claimant keeps
+                    // the role this way so the (only) management control still works for them.
+                    ownerMemberId = durable.meta().get(META_SYNC_OWNER).orEmpty()
+                        .ifBlank { session?.member.orEmpty() },
                     lastSync = note ?: it.family.lastSync,
                     error = error,
                     working = false,
@@ -1147,6 +1154,85 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             }
             refreshFamily(session)
             requestFamilySync(silent = false)
+        }
+    }
+
+    /**
+     * Per-bank publish scope (ticket 09): a muted bank's SMS transactions are withheld from the
+     * family ledger. The local ledger is never touched; only the outgoing sync filter reads
+     * this. Re-enabling publishes that bank's *future* transactions — a watermark records the
+     * re-enable moment, so the rows that sat through the mute are never retroactively dug out.
+     */
+    fun setFamilyBankPublish(bank: String, publish: Boolean) {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            val durable = DurableDb.get(app)
+            val current = durable.meta().get(META_SYNC_MUTED_BANKS).orEmpty()
+            val muted = current.split(',').filter { it.isNotBlank() }.toMutableSet().apply {
+                if (publish) remove(bank) else add(bank)
+            }
+            durable.meta().put(
+                DurableMeta(META_SYNC_MUTED_BANKS, muted.joinToString(","))
+            )
+            if (publish) {
+                // The re-enable watermark: anything at-or-older than the switch stays put.
+                val wm = durable.meta().get(META_SYNC_BANK_WATERMARK).orEmpty()
+                val parsed = wm.split(',').filter { it.isNotBlank() }.toMutableList()
+                val now = System.currentTimeMillis()
+                parsed.removeAll { it.startsWith("$bank:") }
+                parsed += "$bank:$now"
+                durable.meta().put(DurableMeta(META_SYNC_BANK_WATERMARK, parsed.joinToString(",")))
+            }
+            refreshFamily(loadSession(durable))
+            requestFamilySync(silent = false)
+        }
+    }
+
+    /** Acknowledge the family tab's first-open explainer, once, durably. */
+    fun ackFamilyWelcome() {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            val durable = DurableDb.get(app)
+            durable.meta().put(DurableMeta(META_SYNC_WELCOME_SEEN, "true"))
+            refreshFamily(loadSession(durable))
+        }
+    }
+
+    /**
+     * Remove a member from the household (ticket 10). The owner only, never themselves, and it
+     * is a membership act, not a deletion: rows they already shared stay in the ledger — this
+     * just stops whatever arrives from them next, and stops their name appearing on this screen.
+     * The revoke is stored locally, so a later re-pairing by them would need a fresh claim.
+     */
+    fun removeFamilyMember(memberId: String) {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            val durable = DurableDb.get(app)
+            val session = loadSession(durable) ?: run {
+                refreshFamily(null, error = "هنوز به خانواده‌ای وصل نیستی.")
+                return@launch
+            }
+            // Households created before the owner stamp existed have no owner recorded; their
+            // phones already believed they were the one in charge, so they keep that belief.
+            val owner = durable.meta().get(META_SYNC_OWNER).orEmpty().ifBlank { session.member }
+            if (owner != session.member) return@launch refreshFamily(
+                session, error = "فقط صاحب خانواده می‌تونه عضو را حذف کنه."
+            )
+            if (memberId == session.member) return@launch refreshFamily(
+                session, error = "نمی‌تونی خودت رو حذف کنی."
+            )
+            val member = durable.familyMembers().get(memberId) ?: return@launch
+            val now = maxOf(System.currentTimeMillis(), member.updatedAt + 1L)
+            runCatching {
+                durable.withTransaction {
+                    durable.familyMembers().put(member.copy(updatedAt = now, deleted = true))
+                    val current = durable.meta().get(META_SYNC_REMOVED_MEMBERS).orEmpty()
+                    val set = current.split(',').filter(String::isNotBlank).toMutableSet() + memberId
+                    durable.meta().put(DurableMeta(META_SYNC_REMOVED_MEMBERS, set.joinToString(",")))
+                }
+            }.onFailure { android.util.Log.w("muchtoman", "remove member failed: $it") }
+            refreshFamily(session)
+            requestFamilySync(silent = true)
         }
     }
 

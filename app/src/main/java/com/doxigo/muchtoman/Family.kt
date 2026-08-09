@@ -2,6 +2,7 @@ package com.doxigo.muchtoman
 
 import android.graphics.Bitmap
 import android.graphics.Color as AndroidColor
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +23,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -78,8 +81,15 @@ fun CompanionScreen(
     onJoin: (String) -> Unit,
     onNameChange: (String) -> Unit,
     onShareSmsChange: (Boolean) -> Unit,
+    /** The banks this phone tracks, for per-bank publish mutes (ticket 09). */
+    bankAccounts: List<BankAccount>,
+    onBankPublishChange: (String, Boolean) -> Unit,
     onInvite: () -> Unit,
     onSync: () -> Unit,
+    /** Acknowledge the first-open welcome, durably, once. */
+    onWelcomeAck: () -> Unit,
+    /** Remove a member from the household — owner only, confirmed in the row. */
+    onRemoveMember: (String) -> Unit = {},
     /** How many ledger entries each member id has put in, for the rows to report. */
     contributions: Map<String, Int>,
     bottomInset: androidx.compose.ui.unit.Dp,
@@ -87,6 +97,7 @@ fun CompanionScreen(
     var name by remember(state.memberId, state.memberName, state.pendingPairing, suggestedName) {
         mutableStateOf(state.memberName.ifBlank { suggestedName })
     }
+    var showingExplain by remember { mutableStateOf(false) }
     val cleanName = name.trim()
 
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
@@ -105,12 +116,75 @@ fun CompanionScreen(
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(vertical = Space.m).semantics { heading() },
             )
-            Text(
+Text(
                 "تراکنش‌های اعضا در یک دفتر دیده می‌شن و اسم صاحب هر مورد همیشه کنارش میاد.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 25.sp,
             )
             Spacer(Modifier.height(Space.l))
+
+            // First-open welcome (ticket 08): what a household ledger actually is, before any
+            // of the controls. Shown once, marked acknowledged, and re-openable any time via the
+            // permanent «این تب یعنی چی؟» row below.
+            if (!state.welcomeSeen) {
+                Surface(
+                    shape = RoundedCornerShape(Radius.card),
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(Modifier.padding(Space.m)) {
+                        Text(
+                            "این تب یعنی چی؟",
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                        Spacer(Modifier.height(Space.xs))
+                        Text(
+                            "یک دفتر خانوادگی: همهٔ اعضا تراکنش‌هایشون رو در یک دفتر می‌بینن. " +
+                                "هر کس خودش انتخاب می‌کنه (پیش‌فرض: خاموش) که پیامک‌هاش از گوشی بیرون بره یا نه. " +
+                                "وقتی روشنش کنی، مبلغ، زمان، بانک، فروشنده و دسته‌بندی، رمز‌شده جابه‌جا می‌شن — متن خام نه. " +
+                                "گوشی دوم، یا نسخهٔ مرورگر/آیفون، با اسکن کدِ همین صفحه به این دفتر می‌پیونده.",
+                            fontSize = 13.sp,
+                            lineHeight = 22.sp,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                        Spacer(Modifier.height(Space.s))
+                        TextButton(onClick = onWelcomeAck) { Text("متوجه شدم", fontSize = 13.sp) }
+                    }
+                }
+                Spacer(Modifier.height(Space.l))
+            }
+
+            // Permanent deepen row: the welcome may only show once, but the same explanation is
+            // always one tap away.
+            TextButton(
+                onClick = { showingExplain = !showingExplain },
+                modifier = Modifier.padding(vertical = Space.xs),
+            ) {
+                Text(
+                    if (showingExplain) "این تب یعنی چی؟ (بستن)" else "این تب یعنی چی؟",
+                    fontSize = 14.sp,
+                )
+            }
+AnimatedVisibility(visible = showingExplain) {
+                Surface(
+                    shape = RoundedCornerShape(Radius.card),
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    modifier = Modifier.fillMaxWidth().padding(bottom = Space.m),
+                ) {
+                    Column(Modifier.padding(Space.m)) {
+                        Text(
+                            "یک دفتر خانوادگی، یعنی همهٔ اعضا تراکنش‌هایشون رو در یک دفتر مشترک می‌بینن — " +
+                                "هر کس تو صفحهٔ خودش. این جوری، «این هدیه از پولِ مامان بود» نوشته‌ای که سخت می‌شه ردش کرد. " +
+                                "هر عضو خودش انتخاب می‌کنه سهم پیامک‌هاش از گوشی بیرون بره یا نه (پیش‌فرض: خاموش). " +
+                                "اندروید دوم، مرورگر یا آیفون با اسکن کدِ همین صفحه عضو می‌شه.",
+                            fontSize = 13.sp,
+                            lineHeight = 22.sp,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        )
+                    }
+                }
+            }
 
             when {
                 state.pendingPairing != null -> JoinCard(
@@ -152,10 +226,51 @@ fun CompanionScreen(
                                 member = member,
                                 contributions = contributions[member.id] ?: 0,
                                 shape = bandShape(index + 1, count),
+                                canRemove = state.ownerMemberId.isNotBlank() && state.ownerMemberId == state.memberId,
+                                onRemove = { onRemoveMember(member.id) },
                             )
                         }
                     }
                     Spacer(Modifier.height(Space.l))
+
+                    // Per-bank publish scope (ticket 09): with the share switch on, she still
+                    // chooses which banks' SMS transactions actually leave the phone. Each bank
+                    // is a toggle; muted ones stay in the local ledger but never reach the
+                    // household. The master switch above still gates everything.
+                    if (bankAccounts.isNotEmpty()) {
+                        SectionHeading("انتشار از بانک‌ها", bankAccounts.size)
+                        Spacer(Modifier.height(Space.s))
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            bankAccounts.forEachIndexed { index, account ->
+                                Row(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .clip(bandShape(index, bankAccounts.size))
+                                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                                        .padding(horizontal = Space.m, vertical = Space.s),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Column(Modifier.weight(1f)) {
+                                        Text(
+                                            account.bankFa,
+                                            fontWeight = FontWeight.Medium,
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                        )
+                                        Text(
+                                            if (account.bank in state.mutedBanks) "بیرون نمی‌رود" else "با کلید اشتراک بیرون می‌رود",
+                                            fontSize = 12.sp,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                    Switch(
+                                        checked = account.bank !in state.mutedBanks,
+                                        onCheckedChange = { publish -> onBankPublishChange(account.bank, publish) },
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(Modifier.height(Space.l))
+                    }
 
                     state.pairingUrl?.let { url ->
                         val bitmap = remember(url) { qrBitmap(url) }
@@ -374,7 +489,14 @@ private fun MemberContribution(count: Int) {
 
 /** Somebody else in the family: what they are called, what they contribute, what they share. */
 @Composable
-private fun FamilyMemberRow(member: FamilyMember, contributions: Int, shape: Shape) {
+private fun FamilyMemberRow(
+    member: FamilyMember,
+    contributions: Int,
+    shape: Shape,
+    canRemove: Boolean = false,
+    onRemove: () -> Unit = {},
+) {
+    var confirmRemove by remember(member.id) { mutableStateOf(false) }
     Row(
         Modifier
             .fillMaxWidth()
@@ -396,6 +518,33 @@ private fun FamilyMemberRow(member: FamilyMember, contributions: Int, shape: Sha
         }
         Spacer(Modifier.size(Space.m))
         ShareStatus(member.sharesSms)
+        if (canRemove) {
+            Spacer(Modifier.size(Space.s))
+            TextButton(onClick = { confirmRemove = true }) {
+                Text("حذف", fontSize = 12.sp, color = MaterialTheme.colorScheme.error)
+            }
+        }
+    }
+    if (confirmRemove) {
+        AlertDialog(
+            onDismissRequest = { confirmRemove = false },
+            title = { Text("حذف «${member.name}» از خانواده؟") },
+            text = {
+                Text(
+                    "تراکنش‌هایی که تا حالا فرستاده توی دفتر همه می‌مونه؛ فقط از این به بعد " +
+                        "چیز تازه‌ای ازشون نمیاد."
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = { confirmRemove = false; onRemove() },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                ) { Text("حذف") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmRemove = false }) { Text("انصراف") }
+            },
+        )
     }
 }
 
@@ -517,7 +666,13 @@ data class FamilyState(
     val memberId: String = "",
     val memberName: String = "",
     val members: List<FamilyMember> = emptyList(),
-    val sharesSms: Boolean = false,
+val sharesSms: Boolean = false,
+    /** The first-open explainer has been shown once; the «این تب یعنی چی؟» row can reopen it. */
+    val welcomeSeen: Boolean = false,
+    /** Banks whose SMS transactions this phone withholds from the household ledger (ticket 09). */
+    val mutedBanks: Set<String> = emptySet(),
+    /** The member who created the household — the only one who may remove a member (ticket 10). */
+    val ownerMemberId: String = "",
     val pairingUrl: String? = null,
     val lastSync: String? = null,
     val working: Boolean = false,

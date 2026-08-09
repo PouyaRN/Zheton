@@ -1,6 +1,6 @@
 # Plan: Four tracks — auto-save notes, parser amount fix, bulk filter/select/edit, family
 
-Status: **tickets published** — see `issues/01..10`.
+Status: **all 10 tickets implemented and committed** — see `issues/01..10`.
 
 Decision tree recorded during grilling; each leaf is a ticket.
 

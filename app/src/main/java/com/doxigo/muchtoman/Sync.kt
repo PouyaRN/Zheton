@@ -31,6 +31,23 @@ const val META_SYNC_KEY = "sync_key"
 const val META_SYNC_SEQ = "sync_seq"
 const val META_SYNC_SHARE_SMS = "sync_share_sms"
 const val META_SYNC_IDENTITY_OK = "sync_identity_ok"
+/** Persistent flag: the family tab's first-open explainer has been acknowledged. */
+const val META_SYNC_WELCOME_SEEN = "sync_welcome_seen"
+/** Comma-separated bank ids whose SMS transactions must not leave this phone (ticket 09). */
+const val META_SYNC_MUTED_BANKS = "sync_muted_banks"
+/**
+ * Comma-separated `bank:ms` pairs — the moment each bank's publish state last changed. The
+ * watermark suppresses everything at-or-older, so re-enabling a bank publishes only the rows
+ * that arrive after the switch; the ones that sat through the mute are not dug out.
+ */
+const val META_SYNC_BANK_WATERMARK = "sync_bank_watermark"
+/** The member id that created this household — the only one allowed to remove a member (ticket 10). */
+const val META_SYNC_OWNER = "sync_owner"
+/**
+ * Comma-separated member ids this device has removed from the family (ticket 10). Their already
+ * shared rows stay in the ledger — this only stops whatever arrives from them next.
+ */
+const val META_SYNC_REMOVED_MEMBERS = "sync_removed_members"
 
 data class SyncSession(
     val base: String,
@@ -244,6 +261,9 @@ suspend fun claimHousehold(base: String, durable: DurableDb, memberName: String)
         )
         saveSession(durable, session)
         durable.meta().put(DurableMeta(META_SYNC_SHARE_SMS, "false"))
+        // The claimant is the household's owner — the only person allowed to remove a member
+        // (ticket 10). Joined devices never carry this stamp.
+        durable.meta().put(DurableMeta(META_SYNC_OWNER, member))
         durable.familyMembers().put(
             FamilyMember(member, cleanMemberName(memberName), sharesSms = false, updatedAt = System.currentTimeMillis())
         )
@@ -391,6 +411,14 @@ private suspend fun outgoingRecords(
     now: Long,
 ): List<PreparedRecord> {
     val shareSms = durable.meta().get(META_SYNC_SHARE_SMS).toBoolean()
+    val mutedBanks = durable.meta().get(META_SYNC_MUTED_BANKS).orEmpty()
+        .split(',').filter(String::isNotBlank).toSet()
+    // bank -> the moment its publish state last changed. Rows at-or-older than the watermark of
+    // a previously-re-enabled bank are not re-published; they sat through the mute and stay put.
+    val bankWatermark = durable.meta().get(META_SYNC_BANK_WATERMARK).orEmpty()
+        .split(',').filter(String::isNotBlank)
+        .mapNotNull { pair -> pair.split(':').let { if (it.size == 2) it[0] to it[1].toLongOrNull() else null } }
+        .toMap()
     val ownMember = durable.familyMembers().get(session.member) ?: FamilyMember(
         id = session.member,
         name = "عضو خانواده",
@@ -431,6 +459,11 @@ private suspend fun outgoingRecords(
         val signed = txn.signedRial ?: continue
         val sourceKind = txn.sourceKind
         if (sourceKind == "sms" && !shareSms) continue
+        if (sourceKind == "sms" && txn.bank in mutedBanks) continue
+        // A re-enabled bank's watermark suppresses everything at-or-older than the switch: rows
+        // that sat through the mute (published before it, or arriving inside it) stay put. Only
+        // transactions that arrive after the re-enable go to the household from then on.
+        if (sourceKind == "sms" && bankWatermark[txn.bank]?.let { txn.at <= it } == true) continue
         val id = familyTxnId(session.member, txn.ref)
         activeIds += id
         val category = categoryById[entry.categoryId]
@@ -721,6 +754,13 @@ private suspend fun applyRecord(
     record: WireRecord,
 ): Boolean {
     if (record.device == session.device) return false
+    // A removed member's rows already drove this ledger once; whatever arrives from them next
+    // (new transactions, category edits) is a member we deliberately cut off, so it stays out.
+    val removedMembers = durable.meta().get(META_SYNC_REMOVED_MEMBERS).orEmpty()
+        .split(',').filter(String::isNotBlank).toSet()
+    if (removedMembers.isNotEmpty() && (
+            record.ownerMemberId in removedMembers || record.authorMemberId in removedMembers)
+    ) return false
     if (record.deleted && record.kind == "transaction") {
         val owner = record.ownerMemberId
         if (owner.isNotBlank() && owner != session.member) {

@@ -4,7 +4,7 @@
 
 **Blocked by:** 08 (the renamed family screen this control lives on).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] Under the SMS-sharing switch, each tracked bank has a publish/mute control.
 - [ ] A muted bank's transactions never appear in the shared household ledger; the local ledger is unaffected.
