@@ -548,8 +548,11 @@ val snackbarHostState = remember { SnackbarHostState() }
             onBulkHide = vm::bulkHide,
             onBulkFlip = vm::bulkFlipDirection,
             onBulkDelete = vm::bulkDelete,
+            onBulkNote = vm::bulkSaveNote,
+            onBulkMerchant = vm::bulkPinMerchant,
             onHide = { entry, hidden -> vm.setTransactionHidden(entry, hidden) },
             onToggleShowHidden = { vm.setShowHidden(!state.showHidden) },
+            onFilterWide = { wide -> vm.setFilterWide(wide) },
         )
         return@Scaffold
       }

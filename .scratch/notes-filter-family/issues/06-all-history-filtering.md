@@ -4,7 +4,7 @@
 
 **Blocked by:** 04 (the filter sheet and selection model it feeds).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] A filter can match and select transactions far older than the newest-300 window.
 - [ ] «select all» and the batch-bar count reflect the full ledger, not the rendered sample.

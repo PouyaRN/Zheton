@@ -44,6 +44,10 @@ import kotlinx.coroutines.withContext
 private const val WALLET_REFRESH_MS = 10 * 60_000L
 private const val STOCK_REFRESH_MS = 10 * 60_000L
 private const val MAX_PARALLEL_WALLET_FETCHES = 4
+/** The default timeline browsing window — recently used in ledgerEntries' default limit. */
+private const val LEDGER_WINDOW = 300
+/** When a structured filter is live, the whole stored ledger becomes the matchable source. */
+private const val FILTER_WIDE_LIMIT = 50_000
 
 class AppVm(app: Application) : AndroidViewModel(app) {
     private val store = Store(app)
@@ -449,7 +453,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             android.util.Log.i("muchtoman", "ledger: +$added messages, $rows transactions")
         }
 
-        _state.update { it.copy(ledger = ledgerView(derived, durable)) }
+        _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
 
         // Load obligations, payments and reservations so the home screen cards appear on
         // cold start, not only after a family-sync session or an explicit user action.
@@ -474,6 +478,28 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             }
         }
     }
+
+    /**
+     * The timeline floats a window of rows at the newest edge of the ledger. A structured filter
+     * (ticket 04+) must be able to reach rows beyond that window — an old «اسنپ» must still
+     * match — so turning the filter on widens the window to the whole stored ledger (bounded by
+     * SOURCE_HARD_CAP), and turning it off narrows back to the browsing window. The checked
+     * recompute that follows a bulk action keeps working unchanged: it derives once and rebuilds
+     * the same LedgerView object, just with a wider source when a filter is live.
+     */
+    fun setFilterWide(wide: Boolean) {
+        if (wide == _state.value.filterWide) return
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            val durable = DurableDb.get(app)
+            val derived = DerivedDb.get(app)
+            _state.update { it.copy(filterWide = wide) }
+            _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
+        }
+    }
+
+    private fun ledgerLimit(): Int =
+        if (_state.value.filterWide) FILTER_WIDE_LIMIT else LEDGER_WINDOW
 
     /**
      * File one transaction, and — if she says «همیشه» — teach the app to file everything like
@@ -527,7 +553,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     durable.rules().put(ruleFrom(entry.txn, categoryId, addrKey, now))
                 }
                 derive(durable, derived, extraLookup(store.extraBankNumbers))
-                _state.update { it.copy(ledger = ledgerView(derived, durable)) }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
                 requestFamilySync(silent = true)
             }.onFailure { android.util.Log.w("muchtoman", "categorise failed: $it") }
         }
@@ -553,7 +579,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     durable.merchantAliases().put(MerchantAlias(sourceNorm, displayName, now, now))
                 }
                 derive(durable, derived, extraLookup(store.extraBankNumbers))
-                _state.update { it.copy(ledger = ledgerView(derived, durable)) }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
             }.onFailure { android.util.Log.w("muchtoman", "pin merchant alias failed: $it") }
         }
     }
@@ -597,10 +623,85 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     }
                 }
                 derive(durable, derived, extraLookup(store.extraBankNumbers))
-                _state.update { it.copy(ledger = ledgerView(derived, durable)) }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
                 recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
             }.onFailure { android.util.Log.w("muchtoman", "bulk categorise failed: $it") }
+        }
+    }
+
+    /**
+     * One note for many transactions at once — or none, which clears (tombstones) the note on
+     * each of them, exactly as a per-row edit would. Writes each durable NOTE row through the
+     * same path, then derives once for the whole batch and syncs the family once.
+     */
+    fun bulkSaveNote(entries: List<LedgerEntry>, note: String) {
+        if (entries.isEmpty()) return
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            runCatching {
+                val durable = DurableDb.get(app)
+                val derived = DerivedDb.get(app)
+                val session = loadSession(durable)
+                val now = System.currentTimeMillis()
+                val refs = entries.map { it.txn.ref }
+                val existingByRef = durable.decisions().all()
+                    .filter { it.ref in refs && it.kind == DecisionKind.NOTE }
+                    .associateBy { it.ref }
+                durable.withTransaction {
+                    if (note.isBlank()) {
+                        existingByRef.values.forEach { old ->
+                            durable.decisions().put(old.copy(deleted = true, updatedAt = now))
+                        }
+                    } else {
+                        for (entry in entries) {
+                            val old = existingByRef[entry.txn.ref]
+                            durable.decisions().put(
+                                TxnDecision(
+                                    id = old?.id ?: uuid7(now),
+                                    ref = entry.txn.ref,
+                                    kind = DecisionKind.NOTE,
+                                    value = note,
+                                    createdAt = old?.createdAt ?: now,
+                                    updatedAt = now,
+                                    deleted = false,
+                                    memberId = session?.member.orEmpty(),
+                                )
+                            )
+                        }
+                    }
+                }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
+                recomputeAccountBalancesFromLedger()
+                requestFamilySync(silent = true)
+            }.onFailure { android.util.Log.w("muchtoman", "bulk save note failed: $it") }
+        }
+    }
+
+    /**
+     * Set the display name of every merchant involved in the selected rows — or clear it, which
+     * unpins each alias so the parser's original name returns everywhere. The alias is global
+     * per merchantNorm (ticket 02 semantics), so the write is deduplicated by source name.
+     */
+    fun bulkPinMerchant(entries: List<LedgerEntry>, displayName: String) {
+        if (entries.isEmpty()) return
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            runCatching {
+                val durable = DurableDb.get(app)
+                val derived = DerivedDb.get(app)
+                val now = System.currentTimeMillis()
+                val norms = entries.map { it.txn.merchantNorm }.filter { it.isNotBlank() }.toSet()
+                durable.withTransaction {
+                    for (norm in norms) {
+                        durable.merchantAliases().put(MerchantAlias(norm, displayName, now, now))
+                    }
+                }
+                derive(durable, derived, extraLookup(store.extraBankNumbers))
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
+                recomputeAccountBalancesFromLedger()
+                requestFamilySync(silent = true)
+            }.onFailure { android.util.Log.w("muchtoman", "bulk pin merchant failed: $it") }
         }
     }
 
@@ -635,7 +736,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                         familyRef = entry.txn.familyRef.ifBlank { "" },
                     )
                 )
-                _state.update { it.copy(ledger = ledgerView(derived, durable)) }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
                 recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
             }.onFailure { android.util.Log.w("muchtoman", "hide transaction failed: $it") }
@@ -673,7 +774,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     )
                 )
                 derive(durable, derived, extraLookup(store.extraBankNumbers))
-                _state.update { it.copy(ledger = ledgerView(derived, durable)) }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
                 recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
             }.onFailure { android.util.Log.w("muchtoman", "direction change failed: $it") }
@@ -700,7 +801,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     )
                 }
                 derive(durable, derived, extraLookup(store.extraBankNumbers))
-                _state.update { it.copy(ledger = ledgerView(derived, durable)) }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
                 requestFamilySync(silent = true)
             }.onFailure { android.util.Log.w("muchtoman", "unpin category failed: $it") }
         }
@@ -761,7 +862,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     }
                 }
                 derive(durable, derived, extraLookup(store.extraBankNumbers))
-                _state.update { it.copy(ledger = ledgerView(derived, durable), pendingUndo = null) }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit()), pendingUndo = null) }
                 recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
             }.onFailure { android.util.Log.w("muchtoman", "permanent delete failed: $it") }
@@ -806,7 +907,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                         )
                     }
                 }
-                _state.update { it.copy(ledger = ledgerView(derived, durable)) }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
                 recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
             }.onFailure { android.util.Log.w("muchtoman", "bulk hide failed: $it") }
@@ -845,7 +946,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     }
                 }
                 derive(durable, derived, extraLookup(store.extraBankNumbers))
-                _state.update { it.copy(ledger = ledgerView(derived, durable)) }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
                 recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
             }.onFailure { android.util.Log.w("muchtoman", "bulk flip failed: $it") }
@@ -908,7 +1009,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 durable.rules().deleteForCategory(categoryId, now)
                 durable.categories().archive(categoryId, now)
                 derive(durable, derived, extraLookup(store.extraBankNumbers))
-                _state.update { it.copy(ledger = ledgerView(derived, durable)) }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
                 requestFamilySync(silent = true)
             }.onFailure { android.util.Log.w("muchtoman", "deleteCategory failed: $it") }
         }
@@ -1078,7 +1179,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             runCatching { syncNow(durable, derived, session) }
                 .onSuccess { result ->
                     if (result.received > 0) derive(durable, derived, extraLookup(store.extraBankNumbers))
-        _state.update { it.copy(ledger = ledgerView(derived, durable)) }
+        _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
 
         // Load obligations and reservations for the home screen.
         refreshObligations(durable)
@@ -1117,7 +1218,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                         updatedAt = now,
                     )
                 )
-                _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable)) }
+                _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable, limit = ledgerLimit())) }
             }.onFailure { android.util.Log.w("muchtoman", "addGoal failed: $it") }
         }
     }
@@ -1128,7 +1229,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             val durable = DurableDb.get(app)
             runCatching {
                 durable.goals().delete(id, System.currentTimeMillis())
-                _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable)) }
+                _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable, limit = ledgerLimit())) }
             }.onFailure { android.util.Log.w("muchtoman", "deleteGoal failed: $it") }
         }
     }
@@ -1143,7 +1244,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 durable.decisions().put(
                     TxnDecision(uuid7(now), entry.txn.ref, DecisionKind.WORTH_IT, answer, now, now)
                 )
-                _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable)) }
+                _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable, limit = ledgerLimit())) }
             }.onFailure { android.util.Log.w("muchtoman", "worthIt failed: $it") }
         }
     }
@@ -1192,7 +1293,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                         else it.ledger.notes + (entry.txn.ref to note),
                     ))
                 }
-                _state.update { it.copy(ledger = ledgerView(derived, durable)) }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
             }.onFailure { android.util.Log.w("muchtoman", "saveNote failed: $it") }
         }
     }
@@ -1218,7 +1319,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                         updatedAt = now,
                     )
                 )
-                _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable)) }
+                _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable, limit = ledgerLimit())) }
             }.onFailure { android.util.Log.w("muchtoman", "addCategory failed: $it") }
         }
     }
@@ -1235,7 +1336,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 durable.categories().put(
                     existing.copy(nameFa = newNameFa.trim().take(30), updatedAt = now)
                 )
-                _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable)) }
+                _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable, limit = ledgerLimit())) }
             }.onFailure { android.util.Log.w("muchtoman", "editCategory failed: $it") }
         }
     }
@@ -1712,6 +1813,9 @@ data class UiState(
     val disabledBanks: Set<String> = emptySet(),
     val hiddenCategories: Set<String> = emptySet(),
     val showHidden: Boolean = false,
+    /** When a structured filter (ticket 04+) is active, the ledger must not stop at the newest
+     * window: widen it so the filter can match and count old transactions too. */
+    val filterWide: Boolean = false,
     /** A pending permanent delete waiting out its undo window: label + size + when it fires. */
     val pendingUndo: PendingUndo? = null,
     val strangeSenders: List<StrangeSender> = emptyList(),

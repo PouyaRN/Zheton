@@ -4,7 +4,7 @@
 
 **Blocked by:** 04 (the batch bar and confirm-with-count pattern). Uses the merchant-alias semantics established in 02.
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The batch bar offers «یادداشت» (set and پاک کردن) and «فروشگاه» (set and پاک کردن) actions.
 - [ ] Set writes the same durable note/alias records a per-row edit would; clear does the inverse (tombstone note, blank alias).

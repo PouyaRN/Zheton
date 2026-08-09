@@ -23,6 +23,7 @@ enum class FilterOp(val fa: String) {
     NOT_EQUALS("نابرابر"),
     GTE("از"),
     LTE("تا"),
+    REGEX("عبارت کتابخانه‌ای"),
 }
 
 data class FilterToken(
@@ -43,12 +44,12 @@ fun matchesToken(entry: LedgerEntry, t: FilterToken): Boolean {
     return when (t.field) {
         FilterField.MERCHANT ->
             stringToken(txn.merchant.ifBlank { txn.merchantNorm }, t)
-        FilterField.CATEGORY -> when (t.op) {
+        FilterField.CATEGORY -> if (t.op == FilterOp.REGEX) false else when (t.op) {
             FilterOp.EQUALS -> entry.categoryId == t.value
             FilterOp.NOT_EQUALS -> entry.categoryId != t.value
             else -> stringToken(entry.categoryFa, t)
         }
-        FilterField.BANK -> when (t.op) {
+        FilterField.BANK -> if (t.op == FilterOp.REGEX) false else when (t.op) {
             FilterOp.EQUALS -> txn.bank == t.value
             FilterOp.NOT_EQUALS -> txn.bank != t.value
             else -> stringToken(bankNameOf(txn.bank), t)
@@ -58,7 +59,8 @@ fun matchesToken(entry: LedgerEntry, t: FilterToken): Boolean {
             when (t.op) {
                 FilterOp.EQUALS, FilterOp.CONTAINS -> current == t.value
                 FilterOp.NOT_EQUALS, FilterOp.NOT_CONTAINS -> current != t.value
-                FilterOp.GTE, FilterOp.LTE -> false
+                // Direction is a keyword, not a string, so ranges and regex mean nothing.
+                FilterOp.GTE, FilterOp.LTE, FilterOp.REGEX -> false
             }
         }
         FilterField.AMOUNT -> numberToken(txn.amountRial, t)
@@ -69,6 +71,11 @@ fun matchesToken(entry: LedgerEntry, t: FilterToken): Boolean {
 private fun stringToken(hay: String, t: FilterToken): Boolean {
     val needle = t.value.trim()
     if (needle.isEmpty()) return true
+    if (t.op == FilterOp.REGEX) {
+        // Raw regex is merchant-scoped: a malformed expression is not a blank result, it is
+        // treated as matching nothing so a typo never silently widens the filter.
+        return runCatching { Regex(needle).containsMatchIn(hay) }.getOrDefault(false)
+    }
     val hit = hay.trim().contains(needle, ignoreCase = true)
     return if (t.op == FilterOp.NOT_CONTAINS) !hit else hit
 }
@@ -83,5 +90,6 @@ private fun numberToken(value: Long?, t: FilterToken): Boolean {
         FilterOp.NOT_EQUALS -> v != parsed
         FilterOp.CONTAINS -> t.value.contains(v.toString())
         FilterOp.NOT_CONTAINS -> !t.value.contains(v.toString())
+        FilterOp.REGEX -> false
     }
 }

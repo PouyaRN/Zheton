@@ -136,8 +136,12 @@ fun TimelineScreen(
     onBulkHide: (List<LedgerEntry>, Boolean) -> Unit = { _, _ -> },
     onBulkFlip: (List<LedgerEntry>) -> Unit = {},
     onBulkDelete: (List<LedgerEntry>) -> Unit = {},
+    onBulkNote: (List<LedgerEntry>, String) -> Unit = { _, _ -> },
+    onBulkMerchant: (List<LedgerEntry>, String) -> Unit = { _, _ -> },
     onHide: (LedgerEntry, Boolean) -> Unit = { _, _ -> },
     onToggleShowHidden: () -> Unit = {},
+    /** Tells the host to widen the ledger window while a structured filter is live. */
+    onFilterWide: (Boolean) -> Unit = {},
 ) {
     val today = remember { tehranDay(System.currentTimeMillis()) }
     // Without the reveal, hidden rows leave the ledger entirely; with it, they come back
@@ -180,6 +184,10 @@ fun TimelineScreen(
             selected = emptySet()
         }
     }
+
+    // While a structured filter is live, the host widens the ledger window to the whole store;
+    // turning it back off narrows to the browsing window again.
+    LaunchedEffect(filterTokens) { onFilterWide(filterTokens.isNotEmpty()) }
 
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
@@ -404,6 +412,16 @@ TextButton(onClick = {
                         selecting = false
                         selected = emptySet()
                     },
+                    onNote = { note ->
+                        if (rows.isNotEmpty()) onBulkNote(rows, note)
+                        selecting = false
+                        selected = emptySet()
+                    },
+                    onMerchant = { name ->
+                        if (rows.isNotEmpty()) onBulkMerchant(rows, name)
+                        selecting = false
+                        selected = emptySet()
+                    },
                     onCancel = {
                         selecting = false
                         selected = emptySet()
@@ -521,7 +539,9 @@ Box {
                 Text(token.op.fa, fontSize = 13.sp)
             }
             DropdownMenu(expanded = opMenu, onDismissRequest = { opMenu = false }) {
-                FilterOp.entries.forEach { op ->
+                val ops = if (token.field == FilterField.MERCHANT) FilterOp.entries
+                else FilterOp.entries.filterNot { it == FilterOp.REGEX }
+                ops.forEach { op ->
                     DropdownMenuItem(
                         text = { Text(op.fa, fontSize = 13.sp) },
                         onClick = {
@@ -577,12 +597,20 @@ private fun BatchActionBar(
     onHide: () -> Unit,
     onFlip: () -> Unit,
     onDelete: () -> Unit,
+    /** Bulk note: the typed value, or blank to clear (tombstone) on every selected row. */
+    onNote: (String) -> Unit,
+    /** Bulk merchant display: blank unpins the alias back to the parser's name. */
+    onMerchant: (String) -> Unit,
     onCancel: () -> Unit,
 ) {
     var showCategoryPicker by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showHideConfirm by remember { mutableStateOf(false) }
     var showFlipConfirm by remember { mutableStateOf(false) }
+    var showNoteDialog by remember { mutableStateOf(false) }
+    var showMerchantDialog by remember { mutableStateOf(false) }
+    var noteValue by remember { mutableStateOf("") }
+    var merchantValue by remember { mutableStateOf("") }
     Surface(tonalElevation = 3.dp, shadowElevation = 4.dp) {
         Row(
             Modifier
@@ -611,13 +639,12 @@ private fun BatchActionBar(
         // A second row of actions keeps the bar from turning into a keyboard of buttons.
         // Three actions plus the count would crowd one line; the actions read better than the
         // count and deserve the width.
-        Row(
-            Modifier
+        FlowRow(
+            modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
                 .padding(horizontal = Space.xl, vertical = Space.s),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Space.s),
+            horizontalArrangement = Arrangement.spacedBy(Space.xs),
         ) {
             TextButton(onClick = { showCategoryPicker = true }) { Text("دسته‌بندی", fontSize = 13.sp) }
             TextButton(onClick = { showHideConfirm = true }) { Text("پنهان", fontSize = 13.sp) }
@@ -626,7 +653,66 @@ private fun BatchActionBar(
                 onClick = { showDeleteConfirm = true },
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
             ) { Text("حذف", fontSize = 13.sp) }
+            TextButton(onClick = { noteValue = ""; showNoteDialog = true }) { Text("یادداشت", fontSize = 13.sp) }
+            TextButton(onClick = { merchantValue = ""; showMerchantDialog = true }) { Text("فروشگاه", fontSize = 13.sp) }
         }
+    }
+    if (showNoteDialog) {
+        AlertDialog(
+            onDismissRequest = { showNoteDialog = false },
+            title = { Text("یادداشت برای ${selectedRefs.size} مورد") },
+            text = {
+                OutlinedTextField(
+                    value = noteValue,
+                    onValueChange = { noteValue = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("یادداشت یکسان برای همهٔ این‌ها...") },
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { showNoteDialog = false; onNote(noteValue) }) { Text("ذخیره") }
+            },
+            dismissButton = {
+                Row {
+                    if (noteValue.isNotEmpty()) {
+                        TextButton(onClick = { showNoteDialog = false; onNote("") }) { Text("پاک کردن", fontSize = 12.sp) }
+                    }
+                    TextButton(onClick = { showNoteDialog = false }) { Text("انصراف") }
+                }
+            },
+        )
+    }
+    if (showMerchantDialog) {
+        AlertDialog(
+            onDismissRequest = { showMerchantDialog = false },
+            title = { Text("نام فروشگاه برای ${selectedRefs.size} مورد") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = merchantValue,
+                        onValueChange = { merchantValue = it.take(40) },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("نام یکسان برای همهٔ فروشگاه‌های انتخاب‌شده...") },
+                    )
+                    Text(
+                        "خالی کردن، نام اصلی پیامک را برای همه برمی‌گرداند.",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showMerchantDialog = false; onMerchant(merchantValue) }) { Text("ذخیره") }
+            },
+            dismissButton = {
+                Row {
+                    if (merchantValue.isNotEmpty()) {
+                        TextButton(onClick = { showMerchantDialog = false; onMerchant("") }) { Text("پاک کردن", fontSize = 12.sp) }
+                    }
+                    TextButton(onClick = { showMerchantDialog = false }) { Text("انصراف") }
+                }
+            },
+        )
     }
     if (showCategoryPicker) {
         AlertDialog(

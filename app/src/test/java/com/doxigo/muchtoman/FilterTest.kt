@@ -47,6 +47,20 @@ class FilterTest {
     }
 
     @Test
+    fun `raw regex matches merchant text only`() {
+        val re = listOf(FilterToken(FilterField.MERCHANT, FilterOp.REGEX, "اسن[پب]"))
+        assertTrue(matchesFilter(row(merchant = "اسنپ"), re))
+        assertTrue(matchesFilter(row(merchant = "اسنب"), re))
+        assertFalse(matchesFilter(row(merchant = "اسنا"), re))
+    }
+
+    @Test
+    fun `a broken regex matches nothing instead of widening`() {
+        val re = listOf(FilterToken(FilterField.MERCHANT, FilterOp.REGEX, "اس[پ"))
+        assertFalse(matchesFilter(row(merchant = "اسنپ"), re))
+    }
+
+    @Test
     fun `merchant not-contains excludes a substring`() {
         val tokens = listOf(FilterToken(FilterField.MERCHANT, FilterOp.NOT_CONTAINS, "اسنپ"))
         assertTrue(matchesFilter(row(merchant = "تپسی"), tokens))

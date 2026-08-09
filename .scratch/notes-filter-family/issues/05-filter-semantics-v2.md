@@ -4,7 +4,7 @@
 
 **Blocked by:** 04 (builds the sheet and the AND-composed token model it extends).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] A filter like «merchant contains اسن، merchant not-contains اسنافود، merchant not-contains اسنپپی» returns only the intended rows.
 - [ ] Amount min/max and a date-range token work in the sheet.
