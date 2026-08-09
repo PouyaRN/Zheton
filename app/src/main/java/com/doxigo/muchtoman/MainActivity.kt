@@ -1155,7 +1155,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         return _state.value.ledger.notes[ref].orEmpty()
     }
 
-    /** Save a note for a transaction. */
+    /** Save a note for a transaction. Clearing the field tombstones the old one. */
     fun saveNote(entry: LedgerEntry, note: String) {
         val app = getApplication<Application>()
         viewModelScope.launch(Dispatchers.Default) {
@@ -1165,21 +1165,31 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 val now = System.currentTimeMillis()
                 val existing = durable.decisions().forRef(entry.txn.ref)
                     .firstOrNull { it.kind == DecisionKind.NOTE }
-                val id = existing?.id ?: uuid7(now)
-                durable.decisions().put(
-                    TxnDecision(
-                        id = id,
-                        ref = entry.txn.ref,
-                        kind = DecisionKind.NOTE,
-                        value = note.ifBlank { null },
-                        createdAt = existing?.createdAt ?: now,
-                        updatedAt = now,
+                if (note.isBlank()) {
+                    // Clearing a note can't delete the durable row — a tombstone keeps the
+                    // late-known existence of the decision so a re-derive never resurrects it.
+                    if (existing != null) {
+                        durable.decisions().put(existing.copy(deleted = true, updatedAt = now))
+                    }
+                } else {
+                    val id = existing?.id ?: uuid7(now)
+                    durable.decisions().put(
+                        TxnDecision(
+                            id = id,
+                            ref = entry.txn.ref,
+                            kind = DecisionKind.NOTE,
+                            value = note,
+                            createdAt = existing?.createdAt ?: now,
+                            updatedAt = now,
+                            deleted = false,
+                        )
                     )
-                )
+                }
                 // Update the notes map in state so getNote returns the new value immediately.
                 _state.update {
                     it.copy(ledger = it.ledger.copy(
-                        notes = it.ledger.notes + (entry.txn.ref to note),
+                        notes = if (note.isBlank()) it.ledger.notes - entry.txn.ref
+                        else it.ledger.notes + (entry.txn.ref to note),
                     ))
                 }
                 _state.update { it.copy(ledger = ledgerView(derived, durable)) }

@@ -4,7 +4,7 @@
 
 **Blocked by:** 01 (builds on the same debounce/flush/confirm helper).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] «ذخیره نام» button is gone; the merchant field autosaves on the same debounce.
 - [ ] Renaming a merchant on one transaction renames every transaction of that merchant in the timeline.

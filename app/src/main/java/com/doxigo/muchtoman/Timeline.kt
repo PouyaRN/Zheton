@@ -63,10 +63,12 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -86,6 +88,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * The activity timeline — what happened, grouped by the day it happened in Tehran.
@@ -784,6 +791,66 @@ private fun EmptyLedger() {
 internal fun bankNameOf(bank: String): String =
     runCatching { Bank.valueOf(bank) }.getOrDefault(Bank.OTHER).fa
 
+/**
+ * A field that saves itself: typing re-arms a [debounceMs] write, [flush] writes the current
+ * value immediately (used when the screen closes), and [justSaved] flips briefly so the
+ * «ذخیره شد» caption can render. Sharing one helper across the note and merchant fields (and
+ * any future text editor) keeps the save semantics in one place.
+ */
+private class AutoSaveState(
+    initial: String,
+    private val scope: CoroutineScope,
+    private val onSave: (String) -> Unit,
+    private val debounceMs: Long = 600L,
+    private val flashMs: Long = 1400L,
+) {
+    var value by mutableStateOf(initial)
+    var dirty by mutableStateOf(false)
+    var justSaved by mutableStateOf(false)
+    private var savedText: String = initial
+    private var job: Job? = null
+
+    fun onChange(next: String) {
+        value = next
+        dirty = next != savedText
+        job?.cancel()
+        job = scope.launch {
+            delay(debounceMs)
+            commit()
+        }
+    }
+
+    /** Write whatever is typed right now — called when the screen goes away. */
+    fun flush() = commit()
+
+    private fun commit() {
+        job?.cancel()
+        job = null
+        val text = value
+        if (text == savedText) return
+        savedText = text
+        dirty = false
+        runCatching { onSave(text) }
+            .onFailure { android.util.Log.w("muchtoman", "auto-save failed", it) }
+        justSaved = true
+        scope.launch {
+            delay(flashMs)
+            justSaved = false
+        }
+    }
+}
+
+@Composable
+private fun rememberAutoSave(
+    key: Any,
+    initial: String,
+    onSave: (String) -> Unit,
+    debounceMs: Long = 600L,
+): AutoSaveState {
+    val scope = rememberCoroutineScope()
+    return remember(key) { AutoSaveState(initial, scope, onSave, debounceMs) }
+}
+
 @Composable
 fun TransactionScreen(
     entry: LedgerEntry,
@@ -805,11 +872,20 @@ fun TransactionScreen(
     var learnSimilar by rememberSaveable(txn.ref) { mutableStateOf(false) }
     var chosen by remember(txn.ref) { mutableStateOf(entry.categoryId) }
     var source by remember(txn.ref) { mutableStateOf<String?>(null) }
-    var noteText by remember(txn.ref) { mutableStateOf(existingNote) }
-    var merchantText by remember(txn.ref) { mutableStateOf(txn.merchant) }
-    var merchantDirty by remember(txn.ref) { mutableStateOf(false) }
-    var categoryDirty by remember(txn.ref) { mutableStateOf(false) }
     var confirmDelete by remember(txn.ref) { mutableStateOf(false) }
+
+    // The two free-text fields save themselves: a debounce while typing, a final flush when
+    // the screen leaves. No «ذخیره یادداشت» / «ذخیره نام» buttons.
+    val noteState = rememberAutoSave(txn.ref, existingNote, onSave = { text -> onSaveNote(entry, text) })
+    val merchantState = rememberAutoSave(txn.ref, txn.merchant, onSave = { text ->
+        onPinMerchant(txn.merchantNorm, text)
+    })
+    DisposableEffect(txn.ref) {
+        onDispose {
+            noteState.flush()
+            merchantState.flush()
+        }
+    }
 
     LaunchedEffect(txn.ref) { source = onLoadSource(entry) }
     LaunchedEffect(entry.categoryId) { chosen = entry.categoryId }
@@ -940,17 +1016,18 @@ fun TransactionScreen(
                         )
                         Spacer(Modifier.height(Space.m))
                         OutlinedTextField(
-                            value = merchantText,
-                            onValueChange = { merchantText = it.take(40); merchantDirty = true },
+                            value = merchantState.value,
+                            onValueChange = { merchantState.onChange(it.take(40)) },
                             modifier = Modifier.fillMaxWidth(),
                             placeholder = { Text(txn.merchant.ifBlank { "نام فروشگاه..." }) },
                             maxLines = 2,
                         )
-                        Spacer(Modifier.height(Space.s))
-                        if (merchantDirty && merchantText != txn.merchant) {
-                            TextButton(onClick = { onPinMerchant(txn.merchantNorm, merchantText) }) {
-                                Text("ذخیره نام")
-                            }
+                        if (merchantState.justSaved) {
+                            Text(
+                                "ذخیره شد",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
                         }
                         Text(
                             // The alias renames everywhere this source appears, past and future.
@@ -975,17 +1052,18 @@ fun TransactionScreen(
                     )
                     Spacer(Modifier.height(Space.m))
                     OutlinedTextField(
-                        value = noteText,
-                        onValueChange = { noteText = it },
+                        value = noteState.value,
+                        onValueChange = { noteState.onChange(it) },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("یادداشت خود را بنویسید...") },
                         maxLines = 3,
                     )
-                    Spacer(Modifier.height(Space.s))
-                    if (noteText != existingNote) {
-                        TextButton(onClick = { onSaveNote(entry, noteText) }) {
-                            Text("ذخیره یادداشت")
-                        }
+                    if (noteState.justSaved) {
+                        Text(
+                            "ذخیره شد",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
                     }
                 }
             }

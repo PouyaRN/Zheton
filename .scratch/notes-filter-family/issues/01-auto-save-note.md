@@ -4,7 +4,7 @@
 
 **Blocked by:** None — can start immediately.
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [ ] The «ذخیره یادداشت» button is gone from the transaction detail; typing the note requires no button press.
 - [ ] Saving happens ~600 ms after typing stops, and a subtle «ذخیره شد» appears when the write lands.
