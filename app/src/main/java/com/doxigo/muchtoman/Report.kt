@@ -210,7 +210,7 @@ private fun barTint(kind: Kind): Color = when (kind) {
  * the same money in the same words — just side by side instead of stacked.
  */
 @Composable
-private fun CompositionBar(composition: List<Pair<Kind, Double>>) {
+internal fun CompositionBar(composition: List<Pair<Kind, Double>>) {
     val total = composition.sumOf { it.second }
     Column {
         Text(
@@ -266,7 +266,7 @@ private fun CompositionBar(composition: List<Pair<Kind, Double>>) {
  * agrees at a glance about which way the money went. Words carry it; colour confirms.
  */
 @Composable
-private fun changeTone(change: Change): Color = when {
+internal fun changeTone(change: Change): Color = when {
     abs(change.delta) < 1 -> MaterialTheme.colorScheme.onSurfaceVariant
     // tertiary is the gain role: borrowing primary made "بیشتر" green in light mode but
     // gold — the colour of every button — in dark.
@@ -295,7 +295,7 @@ private fun WindowPicker(
  * answers the same kind of question and has earned the same kind of answer.
  */
 @Composable
-private fun ChangeFigure(change: Change, windowLabel: String, now: Long) {
+internal fun ChangeFigure(change: Change, windowLabel: String, now: Long) {
     val gained = change.delta > 0
     val flat = abs(change.delta) < 1
     val tone = changeTone(change)
@@ -355,7 +355,7 @@ private fun ChangeFigure(change: Change, windowLabel: String, now: Long) {
 }
 
 @Composable
-private fun ChartCaption(label: String, value: Double) {
+internal fun ChartCaption(label: String, value: Double) {
     Column {
         Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(
@@ -369,7 +369,7 @@ private fun ChartCaption(label: String, value: Double) {
 }
 
 @Composable
-private fun EmptyReport() {
+internal fun EmptyReport() {
     Column(
         Modifier
             .fillMaxWidth()
@@ -402,7 +402,7 @@ private fun EmptyReport() {
  * It takes the verdict's colour, so the line and the figure above it can never disagree.
  */
 @Composable
-private fun HistoryChart(
+internal fun HistoryChart(
     points: List<Pair<Long, Double>>,
     tone: Color,
     modifier: Modifier = Modifier,

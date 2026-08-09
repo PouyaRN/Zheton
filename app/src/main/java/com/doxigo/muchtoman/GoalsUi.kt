@@ -102,7 +102,7 @@ fun GoalsScreen(
             }
 
             for (progress in goals) {
-                GoalCard(progress, onDelete = { onDelete(progress.goal.id) })
+                GoalCard(progress, categories, onDelete = { onDelete(progress.goal.id) })
                 Spacer(Modifier.height(Space.m))
             }
 
@@ -204,8 +204,16 @@ fun GoalsScreen(
 }
 
 @Composable
-private fun GoalCard(progress: GoalProgress, onDelete: () -> Unit) {
-    val tone = if (progress.done && !progress.cap) Color(0xFF2E9E5B) else MaterialTheme.colorScheme.primary
+private fun GoalCard(progress: GoalProgress, categories: List<Category>, onDelete: () -> Unit) {
+    // Green ≤70%, amber 70–90%, red >90% for caps; green when done for savings.
+    val barColor = when {
+        progress.cap && progress.done -> Color(0xFF2E9E5B)
+        progress.cap && progress.share <= 0.7f -> Color(0xFF2E9E5B)
+        progress.cap && progress.share <= 0.9f -> Color(0xFFF9A825)
+        progress.cap -> MaterialTheme.colorScheme.error
+        progress.done -> Color(0xFF2E9E5B)
+        else -> MaterialTheme.colorScheme.primary
+    }
     Panel {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -231,6 +239,7 @@ private fun GoalCard(progress: GoalProgress, onDelete: () -> Unit) {
             fontSize = 20.sp,
         )
         Spacer(Modifier.height(Space.s))
+        // Progress bar with tint
         Box(
             Modifier
                 .fillMaxWidth()
@@ -243,24 +252,47 @@ private fun GoalCard(progress: GoalProgress, onDelete: () -> Unit) {
                     .fillMaxWidth(progress.share)
                     .fillMaxHeight()
                     .clip(RoundedCornerShape(4.dp))
-                    .background(tone),
+                    .background(barColor),
+            )
+        }
+        // Call-out: what category this cap counts
+        if (progress.cap && progress.goal.categoryId != null) {
+            val catFa = categories.find { it.id == progress.goal.categoryId }?.nameFa ?: ""
+            if (catFa.isNotBlank()) {
+                Spacer(Modifier.height(Space.xs))
+                Text(
+                    "شامل دسته «$catFa»",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        // Pace estimate
+        if (progress.paceDay != null) {
+            Spacer(Modifier.height(Space.xs))
+            Text(
+                "با این روند، روز ${faNumber(progress.paceDay.toDouble())} تموم می‌شه.",
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
         when {
             progress.done && !progress.cap -> {
                 Spacer(Modifier.height(Space.s))
-                // Stated once, with the figure that earned it. Nothing animates, nothing pops.
-                Text("به هدفت رسیدی.", fontWeight = FontWeight.Bold, color = tone)
+                Text("به هدفت رسیدی.", fontWeight = FontWeight.Bold, color = barColor)
             }
             progress.underWater -> {
                 Spacer(Modifier.height(Space.s))
-                // A fact, not a verdict. No "you failed" anywhere in this app.
                 Text(
                     "از وقتی این هدف رو گذاشتی، هنوز چیزی پس‌انداز نشده.",
                     fontSize = 13.sp,
                     lineHeight = 22.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+            progress.cap && progress.done -> {
+                Spacer(Modifier.height(Space.s))
+                Text("زیر سقف موندی.", fontWeight = FontWeight.Bold, color = barColor)
             }
         }
     }

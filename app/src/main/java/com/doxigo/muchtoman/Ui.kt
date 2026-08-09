@@ -242,7 +242,6 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
     var editing by remember { mutableStateOf<Editing?>(null) }
     var settings by remember { mutableStateOf(false) }
     var banks by remember { mutableStateOf(false) }
-    var report by remember { mutableStateOf(false) }
     var transactionRef by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedObligation by remember { mutableStateOf<InstallmentObligation?>(null) }
     var addingReservation by remember { mutableStateOf(false) }
@@ -296,7 +295,7 @@ val snackbarHostState = remember { SnackbarHostState() }
     }
     // The tabs that start at the paper rather than at the field, plus every pushed screen.
     val paperUnderStatusBar = !state.locked && (
-        settings || report || transactionRef != null ||
+        settings || transactionRef != null ||
             tab == Tab.LEDGER || tab == Tab.GOALS || tab == Tab.REPORTS ||
             !heroUnderStatusBar
         )
@@ -359,21 +358,8 @@ val snackbarHostState = remember { SnackbarHostState() }
         return
     }
 
-    if (report) {
-        BackHandler { report = false }
-        val composition = remember(state.listHoldings, state.coins, state.effective, state.stocks) {
-            compositionByKind(state.listHoldings, state.coins, state.effective, state.stocks)
-        }
-        ReportScreen(
-            history = state.history,
-            current = state.totals.toman,
-            composition = composition,
-            story = state.story,
-            bottomInset = 0.dp,
-            onBack = { report = false },
-        )
-        return
-    }
+    // Report screen retired — wealth trend now lives in the Reports tab.
+    // All report entry points navigate to Tab.REPORTS instead.
 
     transactionRef?.let { ref ->
         val entry = state.ledger.entries.firstOrNull { it.txn.ref == ref }
@@ -544,8 +530,14 @@ val snackbarHostState = remember { SnackbarHostState() }
         return@Scaffold
       }
       if (tab == Tab.REPORTS) {
+        val composition = remember(state.listHoldings, state.coins, state.effective, state.stocks) {
+            compositionByKind(state.listHoldings, state.coins, state.effective, state.stocks)
+        }
         ReportsTab(
             ledger = state.ledger,
+            history = state.history,
+            current = state.totals.toman,
+            composition = composition,
             bottomInset = pad.calculateBottomPadding(),
         )
         return@Scaffold
@@ -594,7 +586,7 @@ val snackbarHostState = remember { SnackbarHostState() }
                     state = state,
                     usdRate = effective["usd"],
                     onRefresh = vm::refreshAll,
-                    onReport = { report = true },
+                    onReport = { tab = Tab.REPORTS },
                     onSettings = { settings = true },
                     onAdd = { adding = true; vm.refreshStocksForPicker() },
                     portfolio = portfolio,
