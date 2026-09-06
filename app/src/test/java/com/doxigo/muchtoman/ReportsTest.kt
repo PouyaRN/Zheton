@@ -1,6 +1,7 @@
 package com.doxigo.muchtoman
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -192,5 +193,50 @@ class ReportsTest {
         assertTrue(wins.any { it.text.contains("اولین ماهی") })
         assertTrue(wins.any { it.text.contains("یک ماه خرج") })
         assertTrue(wins.all { it.tone == Insight.Tone.GOOD })
+    }
+
+    @Test
+    fun `changeOver finds the closest base day within grace window`() {
+        val today = 1000L
+        val history = mapOf(
+            970L to 100_000.0, // target is 1000 - 30 = 970
+            900L to 50_000.0,
+        )
+        val c = changeOver(history, today, 30, 150_000.0)
+        assertNotNull(c)
+        assertEquals(50_000.0, c!!.delta, 0.001)
+        assertEquals(50.0, c.percent!!, 0.001)
+        assertEquals(970L, c.sinceDay)
+
+        // When exact target is missing but within grace window (target + 1..3)
+        val graceHistory = mapOf(
+            972L to 100_000.0,
+        )
+        val cGrace = changeOver(graceHistory, today, 30, 120_000.0)
+        assertNotNull(cGrace)
+        assertEquals(972L, cGrace!!.sinceDay)
+
+        // When data is too fresh (e.g. only 10 days of history for 30-day window) -> null
+        val shortHistory = mapOf(990L to 100_000.0)
+        assertNull(changeOver(shortHistory, today, 30, 120_000.0))
+    }
+
+    @Test
+    fun `jalaliMonthsBack correctly traverses back across Persian year boundary`() {
+        // Day in Farvardin 1405 (month 1, day 15)
+        val dayInFarvardin = jalaliDay(1405, 1, 15)
+        // 3 months back: Dey 1404 (month 10)
+        val threeMonthsBack = jalaliMonthsBack(dayInFarvardin, 3)
+        val j3 = jalaliOf(threeMonthsBack)
+        assertEquals(1404, j3.year)
+        assertEquals(10, j3.month)
+        assertEquals(1, j3.day)
+
+        // 12 months back: Farvardin 1404
+        val twelveMonthsBack = jalaliMonthsBack(dayInFarvardin, 12)
+        val j12 = jalaliOf(twelveMonthsBack)
+        assertEquals(1404, j12.year)
+        assertEquals(1, j12.month)
+        assertEquals(1, j12.day)
     }
 }

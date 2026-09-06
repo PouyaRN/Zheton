@@ -148,7 +148,14 @@ fun goalProgress(goal: Goal, entries: List<LedgerEntry>, today: Long, categories
         underWater = goal.kind != GoalKind.CAP && current < 0,
         share = share,
         done = if (goal.kind == GoalKind.CAP) current <= goal.targetRial else current >= goal.targetRial,
-        daysLeft = goal.endsOn?.let { (it - today).toInt() },
+        daysLeft = when {
+            goal.kind == GoalKind.CAP -> {
+                val j = jalaliOf(today)
+                (jalaliMonthLength(j.year, j.month) - j.day).coerceAtLeast(0)
+            }
+            goal.endsOn != null -> (goal.endsOn - today).toInt().coerceAtLeast(0)
+            else -> null
+        },
         paceDay = paceDay,
     )
 }
