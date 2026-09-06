@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -60,26 +61,26 @@ fun ReportsTab(
     current: Double = 0.0,
     composition: List<Pair<Kind, Double>> = emptyList(),
 ) {
-    val today = remember { mutableStateOf(tehranDay(System.currentTimeMillis())) }
+    val today = remember { mutableLongStateOf(tehranDay(System.currentTimeMillis())) }
     // Recompute at midnight so "این ماه" stays live.
     LaunchedEffect(Unit) {
         while (true) {
             val now = System.currentTimeMillis()
-            val tomorrowStart = (tehranDay(now) + 1) * DAY_MS - TEHRAN_OFFSET_MS + 1000
-            kotlinx.coroutines.delay(tomorrowStart - now)
-            today.value = tehranDay(System.currentTimeMillis())
+            val tomorrowStart = tehranDayStart(tehranDay(now) + 1) + 1000
+            delay(tomorrowStart - now)
+            today.longValue = tehranDay(System.currentTimeMillis())
         }
     }
     var window by remember { mutableStateOf(ReportWindow.MONTH) }
 
     // Compute the window start date
-    val windowStart = remember(today.value, window) {
+    val windowStart = remember(today.longValue, window) {
         when (window) {
-            ReportWindow.MONTH -> jalaliMonthStart(today.value)
-            ReportWindow.THREE_MONTH -> jalaliMonthsBack(today.value, 3)
-            ReportWindow.SIX_MONTH -> jalaliMonthsBack(today.value, 6)
-            ReportWindow.YEAR -> jalaliMonthsBack(today.value, 12)
-            ReportWindow.ALL -> ledger.allEntries.minOfOrNull { it.txn.day } ?: today.value
+            ReportWindow.MONTH -> jalaliMonthStart(today.longValue)
+            ReportWindow.THREE_MONTH -> jalaliMonthsBack(today.longValue, 3)
+            ReportWindow.SIX_MONTH -> jalaliMonthsBack(today.longValue, 6)
+            ReportWindow.YEAR -> jalaliMonthsBack(today.longValue, 12)
+            ReportWindow.ALL -> ledger.allEntries.minOfOrNull { it.txn.day } ?: today.longValue
         }
     }
 
@@ -102,7 +103,7 @@ fun ReportsTab(
 
     // Wealth-trend: change over the selected window
     val sorted = remember(history) { history.toSortedMap() }
-    val now = today.value
+    val now = today.longValue
     val wealthDays = when (window) {
         ReportWindow.MONTH -> 30
         ReportWindow.THREE_MONTH -> 90

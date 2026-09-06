@@ -2,35 +2,23 @@ package com.doxigo.muchtoman
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,153 +29,20 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
-import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.abs
 import kotlin.math.round
 
 /**
- * The report answers one follow-up question: "بیشتر شده یا کمتر؟" — over a window she picks.
- * It is deliberately balance-change, not profit-and-loss: the same thing comparing two bank
- * statements shows. Deposits count as growth here, exactly as they do at the bank.
+ * Shared visual components for wealth-trend and asset-composition reporting.
+ *
+ * Hosted by [ReportsTab] in [ReportsUi.kt].
  */
-private val WINDOWS: List<Pair<String, Int?>> = listOf(
-    "۱ ماه" to 30,
-    "۳ ماه" to 91,
-    "۶ ماه" to 182,
-    "۱ سال" to 365,
-    "همه" to null, // since the first recorded day
-)
-
-private fun today(): Long = System.currentTimeMillis() / DAY_MS
-
-@Composable
-fun ReportScreen(
-    history: Map<Long, Double>,
-    current: Double,
-    composition: List<Pair<Kind, Double>>,
-    story: HomeStory,
-    bottomInset: androidx.compose.ui.unit.Dp,
-    onBack: (() -> Unit)? = null,
-) {
-    val now = today()
-    val sorted = remember(history) { history.toSortedMap() }
-
-    fun available(days: Int?): Boolean = when {
-        sorted.isEmpty() -> days == null
-        days == null -> true
-        // Covered when the history reaches (almost) back to the window's edge.
-        else -> sorted.firstKey() <= now - days + 3
-    }
-
-    var selected by remember {
-        mutableStateOf(WINDOWS.firstOrNull { available(it.second) }?.first ?: "همه")
-    }
-    val days = WINDOWS.first { it.first == selected }.second
-
-    val change: Change? = when {
-        sorted.isEmpty() -> null
-        days == null -> sorted.firstKey().let { d ->
-            val base = sorted.getValue(d)
-            Change(current - base, if (base > 0) (current - base) / base * 100 else null, d)
-        }
-        else -> changeOver(history, now, days, current)
-    }
-
-    // Chart points: the window's snapshots, closed with the live total as today's point.
-    val points: List<Pair<Long, Double>> = change?.let { c ->
-        sorted.filterKeys { it >= c.sinceDay && it < now }.map { it.key to it.value } +
-            (now to current)
-    } ?: emptyList()
-
-    Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(horizontal = Space.xl)
-                // The composition legend can push past one screen on short phones.
-                .verticalScroll(rememberScrollState()),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    "گزارش دارایی",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    modifier = Modifier
-                        .weight(1f)
-                        .semantics { heading() },
-                )
-                onBack?.let { back ->
-                    TextButton(onClick = back) { Text("برگشت") }
-                }
-            }
-
-            Spacer(Modifier.height(Space.l))
-            WindowPicker(selected, ::available) { selected = it }
-
-            Spacer(Modifier.height(Space.xxl))
-            if (change == null || points.size < 2) {
-                EmptyReport()
-            } else {
-                ChangeFigure(change, selected, now)
-                Spacer(Modifier.height(Space.xl))
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(Radius.group))
-                        .background(MaterialTheme.colorScheme.surface)
-                        .padding(Space.l),
-                ) {
-                    Column {
-                        HistoryChart(
-                            points,
-                            tone = changeTone(change),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(220.dp),
-                        )
-                        Spacer(Modifier.height(Space.l))
-                        // Time flows left to right inside the chart, so in this RTL row the
-                        // first caption lands on the right — under the newest end of the line.
-                        Row(Modifier.fillMaxWidth()) {
-                            ChartCaption("اکنون", current)
-                            Spacer(Modifier.weight(1f))
-                            ChartCaption("شروع", sorted.getValue(change.sinceDay))
-                        }
-                    }
-                }
-                Text(
-                    "هر روز یک نقطه ثبت می‌شه، حتی اگه برنامه رو باز نکنی.",
-                    fontSize = 12.sp,
-                    lineHeight = 19.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = Space.m, start = Space.xs, end = Space.xs),
-                )
-            }
-            // One kind is the hero total said twice — same rule the list's section heads use.
-            if (composition.size > 1) {
-                Spacer(Modifier.height(Space.xxl))
-                CompositionBar(composition)
-            }
-
-            // The month, which is a different question from the chart above it: that one is
-            // "is there more than there was", this one is "where did it go".
-            if (story.month.transactions > 0) {
-                Spacer(Modifier.height(Space.xxl))
-                MonthStory(story)
-            }
-            Spacer(Modifier.height(bottomInset + Space.xl))
-        }
-    }
-}
 
 /**
  * The bar's own palette, not the icon discs' container tints: those are meant to sit quietly
@@ -274,22 +129,6 @@ internal fun changeTone(change: Change): Color = when {
     else -> MaterialTheme.colorScheme.error
 }
 
-/** A window the history is too short to answer is dimmed, not hidden — its absence is data. */
-@Composable
-private fun WindowPicker(
-    selected: String,
-    available: (Int?) -> Boolean,
-    onSelect: (String) -> Unit,
-) = SegmentedChoice(
-    options = WINDOWS.map { it.first },
-    selected = selected,
-    label = { it },
-    enabled = { label -> available(WINDOWS.first { it.first == label }.second) },
-    onSelect = onSelect,
-    role = Role.Tab,
-    fontSize = 14.sp,
-)
-
 /**
  * Bigger or smaller, by how much, since when — stacked the way the hero total is, because it
  * answers the same kind of question and has earned the same kind of answer.
@@ -299,7 +138,7 @@ internal fun ChangeFigure(change: Change, windowLabel: String, now: Long) {
     val gained = change.delta > 0
     val flat = abs(change.delta) < 1
     val tone = changeTone(change)
-    val since = if (windowLabel == "همه") {
+    val since = if (windowLabel == "همهٔ" || windowLabel == "همه") {
         "از ${faNumber((now - change.sinceDay).toDouble())} روز پیش"
     } else {
         "نسبت به $windowLabel پیش"
@@ -448,99 +287,5 @@ internal fun HistoryChart(
         drawCircle(tone.copy(alpha = 0.22f), radius = 11.dp.toPx(), center = end)
         drawCircle(surface, radius = 6.dp.toPx(), center = end)
         drawCircle(tone, radius = 4.dp.toPx(), center = end)
-    }
-}
-
-/**
- * The month's story — what came in, what went out, where, and how long the cash would last.
- *
- * Every figure comes from [buildStory]; nothing here computes anything, so what she reads and
- * what the tests assert are the same function. Categories are shown as a share of spending
- * rather than in Toman: with this inflation a smaller number of Toman is not a smaller amount
- * of money, and reporting it as progress would be a lie.
- */
-@Composable
-private fun MonthStory(story: HomeStory) {
-    val month = story.month
-    Column(Modifier.fillMaxWidth()) {
-        Text(
-            "${MONTHS[month.month - 1]} امسال",
-            fontSize = 20.sp,
-            fontWeight = FontWeight.ExtraBold,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.semantics { heading() },
-        )
-        Spacer(Modifier.height(Space.m))
-        MonthFlow(story)
-
-        story.bufferDays?.let { days ->
-            Spacer(Modifier.height(Space.m))
-            Panel {
-                Text(
-                    "پولت برای چند روز می‌رسه",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(Space.xs))
-                Text(
-                    "${faNumber(days.toDouble())} روز",
-                    style = figureStyle(MaterialTheme.colorScheme.onSurface, FontWeight.ExtraBold),
-                    fontSize = 22.sp,
-                )
-            }
-        }
-
-        if (month.byCategory.isNotEmpty() && month.spentRial > 0) {
-            Spacer(Modifier.height(Space.xl))
-            Text(
-                "خرج‌هات",
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            Spacer(Modifier.height(Space.s))
-            for ((name, rial) in month.byCategory.take(6)) {
-                CategoryShare(name, rial.toFloat() / month.spentRial, rial)
-            }
-        }
-
-        // Findings and wins in one grid, not two runs of one: paired by kind, each run could end
-        // on a lone card and leave a hole mid-page.
-        val cards = story.insights + story.wins
-        if (cards.isNotEmpty()) {
-            Spacer(Modifier.height(Space.m))
-            InsightGrid(cards)
-        }
-    }
-}
-
-@Composable
-private fun CategoryShare(name: String, share: Float, rial: Long) {
-    Column(Modifier.fillMaxWidth().padding(vertical = Space.s)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            CategoryIcon(name, MaterialTheme.colorScheme.onSurfaceVariant, size = 16.dp, stroke = 1.5.dp)
-            Spacer(Modifier.width(Space.s))
-            Text(name, Modifier.weight(1f), color = MaterialTheme.colorScheme.onBackground)
-            Text(
-                bidi(faCompact(tomanOf(rial))),
-                style = figureStyle(MaterialTheme.colorScheme.onSurfaceVariant, FontWeight.Bold),
-                fontSize = 14.sp,
-            )
-        }
-        Spacer(Modifier.height(Space.xs))
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(6.dp)
-                .clip(RoundedCornerShape(3.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant),
-        ) {
-            Box(
-                Modifier
-                    .fillMaxWidth(share.coerceIn(0f, 1f))
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(3.dp))
-                    .background(MaterialTheme.colorScheme.primary),
-            )
-        }
     }
 }

@@ -236,7 +236,6 @@ fun GoalsScreen(
 private fun GoalCard(progress: GoalProgress, categories: List<Category>, onDelete: () -> Unit) {
     // Green ≤70%, amber 70–90%, red >90% for caps; green when done for savings.
     val barColor = when {
-        progress.cap && progress.done -> Color(0xFF2E9E5B)
         progress.cap && progress.share <= 0.7f -> Color(0xFF2E9E5B)
         progress.cap && progress.share <= 0.9f -> Color(0xFFF9A825)
         progress.cap -> MaterialTheme.colorScheme.error
@@ -339,7 +338,11 @@ private fun GoalCard(progress: GoalProgress, categories: List<Category>, onDelet
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            progress.cap && progress.done -> {
+            progress.cap && !progress.done -> {
+                Spacer(Modifier.height(Space.s))
+                Text("بیشتر از سقف خرج شد.", fontWeight = FontWeight.Bold, color = barColor)
+            }
+            progress.cap && progress.done && progress.daysLeft == 0 -> {
                 Spacer(Modifier.height(Space.s))
                 Text("زیر سقف موندی.", fontWeight = FontWeight.Bold, color = barColor)
             }

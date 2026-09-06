@@ -82,9 +82,9 @@ fun categoryGlyph(nameFa: String): CategoryGlyph = when (nameFa) {
 fun CategoryIcon(
     nameFa: String,
     tint: Color,
+    modifier: Modifier = Modifier,
     size: Dp = 18.dp,
     stroke: Dp = 1.6.dp,
-    modifier: Modifier = Modifier,
 ) {
     Canvas(modifier.size(size)) {
         // The same proportion the tab bar keeps: nothing touches the edge of its own box.

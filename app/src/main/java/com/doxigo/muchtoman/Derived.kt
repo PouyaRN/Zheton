@@ -586,7 +586,8 @@ suspend fun ledgerEntries(
     durable: DurableDb,
     limit: Int = 300,
 ): LedgerEntries {
-    val transactions = derived.txn().newest(limit + MAX_HIDDEN_SLACK)
+    val fetchLimit = if (limit > Int.MAX_VALUE - MAX_HIDDEN_SLACK) Int.MAX_VALUE else limit + MAX_HIDDEN_SLACK
+    val transactions = derived.txn().newest(fetchLimit)
     val categories = durable.categories().all()
     val names = categories.associate { it.id to it.nameFa }
     val members = durable.familyMembers().all().associateBy { it.id }

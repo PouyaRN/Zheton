@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -498,7 +499,7 @@ val snackbarHostState = remember { SnackbarHostState() }
       // The tabs that are their own screens. They sit inside the Scaffold rather than
       // returning early, so the bar stays under them and there is always a way out.
       if (tab == Tab.LEDGER) {
-        val activity = LocalContext.current as? FragmentActivity
+        val activity = LocalActivity.current as? FragmentActivity
         TimelineScreen(
             ledger = state.ledger,
             state = state,
