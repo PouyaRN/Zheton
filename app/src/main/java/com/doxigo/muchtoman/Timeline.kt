@@ -72,6 +72,7 @@ import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -368,6 +369,18 @@ TextButton(onClick = {
                     }
                 }
             }
+
+            // Failed transaction watchdog banner (Ticket 05)
+            val failedWatchdogs = remember(visible) {
+                val failed = visible.filter { isFailedDebitTxn(it) }
+                reconcileFailedWatchdogs(failed, visible, System.currentTimeMillis())
+            }
+            FailedTxnWatchdogBanner(
+                watchdogs = failedWatchdogs,
+                onFilterRef = { ref ->
+                    searchQuery = ref
+                },
+            )
 
             // Active filter banner showing match count and fast one-tap reset
             val isFilterActive = searchQuery.isNotBlank() || selectedCategoryId != null || filterTokens.isNotEmpty()
@@ -1367,10 +1380,22 @@ fun TransactionScreen(
         // No «تاریخ» row: the field above states the day, and «زمان ثبت» carries the exact one.
         add("ثبت شده از" to if (txn.sourceKind == "manual") "ورود دستی" else bankNameOf(txn.bank))
         txn.printedAt.takeIf { it.isNotBlank() }?.let { add("زمان ثبت" to bidi(it)) }
-        txn.mask.takeIf { it.isNotBlank() }?.let { add("کارت یا حساب" to bidi(it)) }
+        txn.mask.takeIf { it.isNotBlank() }?.let { mask ->
+            add("کارت یا حساب" to bidi(mask))
+            lookupBankByCardBin(mask)?.let { binInfo ->
+                add("بانک صادرکننده کارت" to "${binInfo.bankNameFa} (${binInfo.shortNameFa})")
+            }
+        }
         txn.refNo.takeIf { it.isNotBlank() }?.let { add("شماره پیگیری" to bidi(it)) }
         txn.balanceRial?.let { add("مانده بعد از تراکنش" to bidi("${faCompact(tomanOf(it))} تومان")) }
         txn.feeRial?.takeIf { it > 0 }?.let { add("کارمزد" to bidi("${faCompact(tomanOf(it))} تومان")) }
+        if (txn.direction == "out") {
+            val amountToman = (txn.amountRial ?: 0L) / 10L
+            val energy = calculateLifeEnergy(amountToman)
+            if (energy.hours > 0 || energy.minutes > 0) {
+                add("ارزش زمان کاری" to "معادل ${energy.formattedFa} کار")
+            }
+        }
     }
     val choices = categoryChoices(categories, txn.direction, hiddenCategories)
 
@@ -2033,6 +2058,78 @@ fun ManualTxnSheet(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text("ثبت تراکنش")
+            }
+        }
+    }
+}
+
+/**
+ * Banner alerting user to failed debit transactions awaiting auto-reversal within 72 hours.
+ */
+@Composable
+internal fun FailedTxnWatchdogBanner(
+    watchdogs: List<FailedTxnWatchdog>,
+    onFilterRef: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val unresolved = watchdogs.filter { it.status != WatchdogStatus.REFUNDED }
+    if (unresolved.isEmpty()) return
+
+    Box(
+        modifier
+            .fillMaxWidth()
+            .padding(horizontal = Space.xl, vertical = Space.s)
+            .clip(RoundedCornerShape(Radius.card))
+            .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f))
+            .border(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.4f), RoundedCornerShape(Radius.card))
+            .padding(Space.m),
+    ) {
+        Column {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Icon(
+                    Icons.Default.Warning,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.width(Space.s))
+                Text(
+                    "دیده‌بان تراکنش ناموفق (${bidi(unresolved.size.toString())} مورد در انتظار بازگشت وجه)",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+
+            Spacer(Modifier.height(Space.xs))
+
+            unresolved.forEach { item ->
+                val bankName = bankNameOf(item.bank)
+                val toman = item.amountRial / 10L
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = Space.xs)
+                        .clickable { onFilterRef(item.ref) },
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "$bankName: ${faCompact(toman.toDouble())} تومان",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        if (item.status == WatchdogStatus.OVERDUE) "⚠️ بیش از ۷۲ ساعت گذشته (نیاز به پیگیری)"
+                        else "⏳ ${bidi(item.hoursRemaining.toString())} ساعت تا بازگشت خودکار",
+                        fontSize = 11.sp,
+                        color = if (item.status == WatchdogStatus.OVERDUE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }

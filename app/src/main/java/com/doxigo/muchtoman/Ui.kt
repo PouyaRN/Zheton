@@ -75,6 +75,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
@@ -256,6 +257,11 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
     var categoriesManaged by remember { mutableStateOf(false) }
     var timelineCategoryId by rememberSaveable { mutableStateOf<String?>(null) }
     var timelineSearchQuery by rememberSaveable { mutableStateOf<String?>(null) }
+    var currencyLens by rememberSaveable { mutableStateOf(CurrencyDenominator.TOMAN) }
+    var privacyMode by rememberSaveable { mutableStateOf(false) }
+    var showGoldBubbleSheet by remember { mutableStateOf(false) }
+    var showRecurringSheet by remember { mutableStateOf(false) }
+    var showWishlistSheet by remember { mutableStateOf(false) }
 
     // The permanent-delete undo door. One host, and the window's lifetime rides on the state
     // itself: when it nulls (the window elapsed or she hit Undo) the snackbar just leaves.
@@ -484,6 +490,24 @@ val snackbarHostState = remember { SnackbarHostState() }
         return
     }
 
+    if (showGoldBubbleSheet) {
+        GoldBubbleSheet(
+            effectiveRates = state.effective,
+            onDismiss = { showGoldBubbleSheet = false },
+        )
+    }
+    if (showRecurringSheet) {
+        RecurringExpensesSheet(
+            entries = state.ledger.entries,
+            onDismiss = { showRecurringSheet = false },
+        )
+    }
+    if (showWishlistSheet) {
+        WishlistSheet(
+            onDismiss = { showWishlistSheet = false },
+        )
+    }
+
     // Anywhere but home, back goes home. This is the whole reason the bar exists: before it,
     // there was no way out of a screen except a «بستن» she had to find in the corner. The lite
     // edition is one tab, so it is already home and back means back, as it did in v1.0.4.
@@ -639,6 +663,10 @@ val snackbarHostState = remember { SnackbarHostState() }
                     onSettings = { settings = true },
                     onAdd = { adding = true; vm.refreshStocksForPicker() },
                     portfolio = portfolio,
+                    currencyLens = currencyLens,
+                    onCurrencyLensChange = { currencyLens = it },
+                    privacyMode = privacyMode,
+                    onTogglePrivacy = { privacyMode = !privacyMode },
                 )
             }
 
@@ -650,6 +678,18 @@ val snackbarHostState = remember { SnackbarHostState() }
                         UpdateNote(release, onLater = { vm.dismissUpdate(release.name) })
                     }
                 }
+            }
+
+            // Cash burn and runway intelligence (Tickets 02, 03, 04, 06)
+            item(key = "cash_burn_runway") {
+                CashBurnAndRunwayCard(
+                    state = state,
+                    modifier = Modifier.padding(edge).padding(top = Space.l),
+                    privacyMode = privacyMode,
+                    onOpenGoldBubble = { showGoldBubbleSheet = true },
+                    onOpenRecurring = { showRecurringSheet = true },
+                    onOpenWishlist = { showWishlistSheet = true },
+                )
             }
 
             // Obligations card — always rendered; shows empty state when no data.
@@ -911,6 +951,10 @@ internal fun HeroField(
     onAdd: () -> Unit,
     /** Which screen this field is heading — the one thing that changes below the total. */
     portfolio: Boolean,
+    currencyLens: CurrencyDenominator = CurrencyDenominator.TOMAN,
+    onCurrencyLensChange: (CurrencyDenominator) -> Unit = {},
+    privacyMode: Boolean = false,
+    onTogglePrivacy: () -> Unit = {},
 ) {
     val total = state.totals.toman
 
@@ -953,6 +997,13 @@ internal fun HeroField(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
+                IconButton(onClick = onTogglePrivacy) {
+                    Icon(
+                        Icons.Rounded.Lock,
+                        contentDescription = if (privacyMode) "حالت امن (فعال)" else "حالت عادی",
+                        tint = if (privacyMode) Hero.gold else Hero.muted,
+                    )
+                }
                 IconButton(onClick = onSettings) {
                     // Rounded, like every other icon on this field: Material's Outlined and
                     // Rounded sets differ in corner treatment, and one gear drawn from the
@@ -1004,13 +1055,21 @@ internal fun HeroField(
             // Must never wrap: "۳٫۲ میلیارد تومان" broken across two lines reads as a layout
             // bug, and the figure can grow by orders of magnitude. Shrink to fit instead.
             // Three decimals here, one everywhere else: the headline is the one figure she
-            // watches move, so "۹٫۶۴۳ میلیارد" beats a ۹٫۶ that hides a day's change.
+            // watches move, so "۹٫۶۴۳ میلیارد" beats a ۹٫۶ که hides a day's change.
             //
             // Every refresh lifts the new figure into place from below. It is the visible
             // receipt that the fetch did something — and the reason the digits are tabular:
             // without that, one changed digit slides the whole number sideways as it lands.
+            val (heroDisplayFigure, heroDisplayUnit) = remember(total, currencyLens, state.effective) {
+                if (currencyLens == CurrencyDenominator.TOMAN) {
+                    faCompact(total, 3, pad = true) to "تومان"
+                } else {
+                    formatInDenominator(total, currencyLens, state.effective)
+                }
+            }
+
             AnimatedContent(
-                targetState = faCompact(total, 3, pad = true),
+                targetState = heroDisplayFigure,
                 transitionSpec = {
                     (
                         slideInVertically(tween(Motion.medium, easing = Motion.enter)) { it / 3 } +
@@ -1021,9 +1080,10 @@ internal fun HeroField(
                     )
                 },
                 label = "total",
+                modifier = Modifier.privacyBlur(privacyMode),
             ) { figure ->
                 BasicText(
-                    text = heroFigure(figure, Hero.gold),
+                    text = heroFigure(figure, Hero.gold, heroDisplayUnit),
                     maxLines = 1,
                     autoSize = TextAutoSize.StepBased(minFontSize = 28.sp, maxFontSize = 60.sp),
                     style = figureStyle(Hero.gold, FontWeight.Black),
@@ -1032,7 +1092,21 @@ internal fun HeroField(
 
             // Digits are quick to scan but easy to misread by a factor of ten. The words
             // are the check on that.
-            faWordsToman(total)?.let { words ->
+            val lensDescription = when (currencyLens) {
+                CurrencyDenominator.GOLD_18K -> "معادل $heroDisplayFigure گرم طلای ۱۸ عیار"
+                CurrencyDenominator.USD_TETHER -> "معادل $heroDisplayFigure تتر / دلار"
+                CurrencyDenominator.EMAMI_COIN -> "معادل $heroDisplayFigure تمام سکه بهار آزادی"
+                CurrencyDenominator.TOMAN -> null
+            }
+            lensDescription?.let { words ->
+                Text(
+                    words,
+                    fontSize = 15.sp,
+                    lineHeight = 25.sp,
+                    color = Hero.strong.copy(alpha = 0.93f),
+                    modifier = Modifier.padding(top = Space.s),
+                )
+            } ?: faWordsToman(total)?.let { words ->
                 Text(
                     words,
                     fontSize = 15.sp,
@@ -1046,8 +1120,40 @@ internal fun HeroField(
                 fontSize = 13.sp,
                 fontFamily = ModamFigures,
                 color = Hero.muted,
-                modifier = Modifier.padding(top = Space.xs),
+                modifier = Modifier.padding(top = Space.xs).privacyBlur(privacyMode),
             )
+
+            // Currency Lens Selector Pill Strip (Ticket 01)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = Space.m)
+                    .clip(RoundedCornerShape(Radius.pill))
+                    .background(Hero.well)
+                    .padding(2.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                CurrencyDenominator.entries.forEach { den ->
+                    val selected = den == currencyLens
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(Radius.pill))
+                            .background(if (selected) Hero.gold.copy(alpha = 0.28f) else Color.Transparent)
+                            .clickable { onCurrencyLensChange(den) }
+                            .padding(vertical = Space.xs),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = den.labelFa,
+                            fontSize = 12.sp,
+                            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium,
+                            fontFamily = ModamFigures,
+                            color = if (selected) Hero.gold else Hero.muted,
+                        )
+                    }
+                }
+            }
 
             // Show "available to spend" when there are active installment obligations.
             if (state.committedRial > 0) {
@@ -3503,7 +3609,7 @@ private fun WalletNetworkChoice(
  */
 @Composable
 internal fun BankLogo(bank: String, size: Dp = 32.dp) {
-    val logo = when (runCatching { Bank.valueOf(bank) }.getOrDefault(Bank.OTHER)) {
+    val enumLogo = when (runCatching { Bank.valueOf(bank) }.getOrDefault(Bank.OTHER)) {
         Bank.BLU -> R.drawable.ic_bank_blu
         Bank.SAMAN -> R.drawable.ic_bank_saman
         Bank.REFAH -> R.drawable.ic_bank_refah
@@ -3520,6 +3626,27 @@ internal fun BankLogo(bank: String, size: Dp = 32.dp) {
         Bank.TEJARAT -> R.drawable.ic_bank_tejarat
         Bank.OTHER -> null
     }
+
+    val extendedLogo = when {
+        bank.contains("KESHAVARZI", ignoreCase = true) || bank.contains("کشاورزی") -> R.drawable.ic_bank_keshavarzi
+        bank.contains("SHAHR", ignoreCase = true) || bank.contains("شهر") -> R.drawable.ic_bank_shahr
+        bank.contains("AYANDEH", ignoreCase = true) || bank.contains("آینده") -> R.drawable.ic_bank_ayandeh
+        bank.contains("SINA", ignoreCase = true) || bank.contains("سینا") -> R.drawable.ic_bank_sina
+        bank.contains("POST", ignoreCase = true) || bank.contains("پست") -> R.drawable.ic_bank_post
+        bank.contains("MEHR_IRAN", ignoreCase = true) || bank.contains("مهر") -> R.drawable.ic_bank_mehr_iran
+        bank.contains("GARDESHGARI", ignoreCase = true) || bank.contains("گردشگری") -> R.drawable.ic_bank_gardeshgari
+        bank.contains("SARMAYEH", ignoreCase = true) || bank.contains("سرمایه") -> R.drawable.ic_bank_sarmayeh
+        bank.contains("IRAN_ZAMIN", ignoreCase = true) || bank.contains("ایران زمین") -> R.drawable.ic_bank_iran_zamin
+        bank.contains("DEY", ignoreCase = true) || bank.contains("دی") -> R.drawable.ic_bank_dey
+        bank.contains("SANAT_MADAN", ignoreCase = true) || bank.contains("صنعت و معدن") -> R.drawable.ic_bank_sanat_madan
+        bank.contains("TOSEE_TAAVON", ignoreCase = true) || bank.contains("توسعه تعاون") -> R.drawable.ic_bank_tosee_taavon
+        bank.contains("GHAVAMIN", ignoreCase = true) || bank.contains("قوامین") -> R.drawable.ic_bank_ghavamin
+        bank.contains("KOSAR", ignoreCase = true) || bank.contains("کوثر") -> R.drawable.ic_bank_kosar
+        bank.contains("KARAFARIN", ignoreCase = true) || bank.contains("کارآفرین") -> R.drawable.ic_bank_karafarin
+        else -> null
+    }
+
+    val logo = enumLogo ?: extendedLogo
 
     Box(
         modifier = Modifier

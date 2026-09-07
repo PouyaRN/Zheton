@@ -83,10 +83,10 @@ fun figureStyle(color: Color, weight: FontWeight = FontWeight.ExtraBold) = TextS
     color = color,
 )
 
-internal fun heroFigure(figure: String, tone: Color): AnnotatedString =
-    heroFigure(AnnotatedString(figure), tone)
+internal fun heroFigure(figure: String, tone: Color, unit: String = "تومان"): AnnotatedString =
+    heroFigure(AnnotatedString(figure), tone, unit)
 
-internal fun heroFigure(figure: AnnotatedString, tone: Color): AnnotatedString = buildAnnotatedString {
+internal fun heroFigure(figure: AnnotatedString, tone: Color, unit: String = "تومان"): AnnotatedString = buildAnnotatedString {
     append(figure)
     withStyle(SpanStyle(fontSize = 0.9.em)) { append(" ") }
     withStyle(
@@ -95,7 +95,7 @@ internal fun heroFigure(figure: AnnotatedString, tone: Color): AnnotatedString =
             fontWeight = FontWeight.Bold,
             color = tone.copy(alpha = 0.75f),
         ),
-    ) { append("تومان") }
+    ) { append(unit) }
 }
 
 /**
