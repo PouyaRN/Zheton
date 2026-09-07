@@ -375,4 +375,33 @@ class IntelligenceTest {
         assertEquals(1, store.getHistory("usdt").size)
         assertEquals(0, store.getHistory("gold18").size)
     }
+
+    // ── Timeline Spending Calculation Tests ─────────────────────────
+
+    @Test
+    fun `computeDailyOutflowPoints correctly aggregates 14-day spending in Toman`() {
+        val today = 20_000L
+        fun makeTxn(ref: String, day: Long, amount: Long, dir: String = "out", dup: Boolean = false) = LedgerEntry(
+            txn = Txn(
+                ref = ref, srcHash = "h", seq = 0, at = day * 86400000L, day = day,
+                bank = "MELLAT", accountId = "acc", direction = dir, amountRial = amount,
+                signedRial = if (dir == "in") amount else -amount, balanceRial = null, feeRial = null, mask = "6104",
+                instrument = "card", merchant = "خرید", merchantNorm = "خرید", refNo = "", printedAt = "",
+                channel = "pos", unitPrinted = "none", inferred = false, parserVer = PARSER_VERSION,
+            ),
+            categoryId = "cat_other", categoryFa = "سایر", confidence = 100, needsReview = false, duplicate = dup, transfer = false,
+        )
+
+        val entry1 = makeTxn("tx1", day = today, amount = 500_000L)
+        val entry2 = makeTxn("tx2", day = today - 1, amount = 1_000_000L)
+        val entryDup = makeTxn("tx3", day = today, amount = 900_000L, dup = true)
+
+        val points = computeDailyOutflowPoints(listOf(entry1, entry2, entryDup), today, 14)
+        assertEquals(14, points.size)
+        assertEquals(today, points.last().day)
+        assertEquals(50_000.0, points.last().toman, 0.001)
+        assertEquals(today - 1, points[12].day)
+        assertEquals(100_000.0, points[12].toman, 0.001)
+        assertEquals(0.0, points[0].toman, 0.001)
+    }
 }

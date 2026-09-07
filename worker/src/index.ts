@@ -600,6 +600,27 @@ async function fetchTetherland(): Promise<TomanCrypto> {
   return { prices: { usdt: v }, namesFa: { usdt: 'تتر' } };
 }
 
+/** Backup Tehran crypto prices directly from Wallex */
+async function fetchWallex(): Promise<TomanCrypto> {
+  const data = asRecord(await getJson('https://api.wallex.ir/v1/currencies/stats'));
+  const list = asArray(data.result);
+  const prices: Record<string, number> = {};
+  const namesFa: Record<string, string> = {};
+  for (const item of list) {
+    const rec = asRecord(item);
+    const key = String(rec.key ?? '');
+    if (!key.endsWith('TMN')) continue;
+    const coin = key.slice(0, -3).toLowerCase();
+    const v = num(rec.price);
+    if (v != null) {
+      prices[coin] = v;
+      if (coin === 'usdt') namesFa.usdt = 'تتر';
+    }
+  }
+  if (Object.keys(prices).length === 0) throw new Error('no Wallex TMN prices');
+  return { prices, namesFa };
+}
+
 const hasPrices = (v: TomanCrypto) => Object.keys(v.prices).length > 0;
 
 // ───────────────────────── wallet balances ─────────────────────────
@@ -1009,6 +1030,7 @@ async function buildRates(): Promise<Response> {
       [
         { name: 'bitpin', run: fetchBitpin },
         { name: 'tetherland', run: fetchTetherland },
+        { name: 'wallex', run: fetchWallex },
       ],
       hasPrices,
     ),

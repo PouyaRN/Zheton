@@ -2149,6 +2149,24 @@ internal fun FailedTxnWatchdogBanner(
  */
 internal data class DailyOutflowPoint(val day: Long, val toman: Double)
 
+internal fun computeDailyOutflowPoints(
+    entries: List<LedgerEntry>,
+    todayEpochDay: Long,
+    daysCount: Int = 14,
+): List<DailyOutflowPoint> {
+    val expenseEntries = entries.filter { it.txn.direction == "out" && !it.duplicate && !it.transfer }
+    return ((daysCount - 1) downTo 0).map { daysAgo ->
+        val d = todayEpochDay - daysAgo
+        var sumRial = 0L
+        for (e in expenseEntries) {
+            if (e.txn.day == d) {
+                sumRial += (e.txn.amountRial ?: 0L)
+            }
+        }
+        DailyOutflowPoint(day = d, toman = sumRial / 10.0)
+    }
+}
+
 @Composable
 internal fun DailyOutflowSparkCard(
     entries: List<LedgerEntry>,
@@ -2156,17 +2174,7 @@ internal fun DailyOutflowSparkCard(
     modifier: Modifier = Modifier,
 ) {
     val dayPoints: List<DailyOutflowPoint> = remember(entries, todayEpochDay) {
-        val expenseEntries = entries.filter { it.txn.direction == "out" && !it.duplicate && !it.transfer }
-        (13 downTo 0).map { daysAgo ->
-            val d = todayEpochDay - daysAgo
-            var sumRial = 0L
-            for (e in expenseEntries) {
-                if (e.txn.day == d) {
-                    sumRial += (e.txn.amountRial ?: 0L)
-                }
-            }
-            DailyOutflowPoint(day = d, toman = sumRial / 10.0)
-        }
+        computeDailyOutflowPoints(entries, todayEpochDay, 14)
     }
 
     val total14DayToman = remember(dayPoints) { dayPoints.sumOf { it.toman } }
