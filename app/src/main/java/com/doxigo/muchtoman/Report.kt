@@ -19,6 +19,14 @@ import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -236,6 +244,18 @@ internal fun EmptyReport() {
 }
 
 /**
+ * Find the closest data point index for an interactive touch X coordinate along the chart width.
+ */
+fun findClosestPointIndex(touchX: Float, width: Float, points: List<Pair<Long, Double>>): Int? {
+    if (points.isEmpty() || width <= 0f) return null
+    if (points.size == 1) return 0
+    val step = width / (points.size - 1).coerceAtLeast(1)
+    val clampedX = touchX.coerceIn(0f, width)
+    val idx = kotlin.math.round(clampedX / step).toInt()
+    return idx.coerceIn(0, points.size - 1)
+}
+
+/**
  * A plain area line — the shape of the money over time, nothing else. Time flows left to
  * right (charts keep that direction even in RTL interfaces; every Iranian bank app agrees).
  * It takes the verdict's colour, so the line and the figure above it can never disagree.
@@ -245,9 +265,34 @@ internal fun HistoryChart(
     points: List<Pair<Long, Double>>,
     tone: Color,
     modifier: Modifier = Modifier,
+    onScrub: (Pair<Long, Double>?) -> Unit = {},
 ) {
     val surface = MaterialTheme.colorScheme.surface
-    Canvas(modifier) {
+    var scrubIndex by remember(points) { mutableStateOf<Int?>(null) }
+
+    val pointerMod = if (points.size > 1) {
+        Modifier.pointerInput(points) {
+            awaitEachGesture {
+                val down = awaitFirstDown(requireUnconsumed = false)
+                val idx = findClosestPointIndex(down.position.x, size.width.toFloat(), points)
+                scrubIndex = idx
+                onScrub(idx?.let { points[it] })
+                do {
+                    val event = awaitPointerEvent()
+                    val change = event.changes.firstOrNull()
+                    if (change != null && change.pressed) {
+                        val currentIdx = findClosestPointIndex(change.position.x, size.width.toFloat(), points)
+                        scrubIndex = currentIdx
+                        onScrub(currentIdx?.let { points[it] })
+                    }
+                } while (event.changes.any { it.pressed })
+                scrubIndex = null
+                onScrub(null)
+            }
+        }
+    } else Modifier
+
+    Canvas(modifier.then(pointerMod)) {
         val minV = points.minOf { it.second }
         val maxV = points.maxOf { it.second }
         val span = (maxV - minV).takeIf { it > 0.0 } ?: 1.0 // a flat line draws mid-height
@@ -281,6 +326,28 @@ internal fun HistoryChart(
             tone,
             style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round),
         )
+
+        // Draw active scrub indicator if user is touching/dragging across the chart
+        scrubIndex?.let { idx ->
+            val pt = points[idx]
+            val scrubX = px(pt.first)
+            val scrubY = py(pt.second)
+
+            // Vertical indicator guideline
+            drawLine(
+                color = tone.copy(alpha = 0.55f),
+                start = Offset(scrubX, 0f),
+                end = Offset(scrubX, size.height),
+                strokeWidth = 1.5.dp.toPx(),
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f),
+            )
+
+            // Scrubber point highlight
+            drawCircle(tone.copy(alpha = 0.28f), radius = 13.dp.toPx(), center = Offset(scrubX, scrubY))
+            drawCircle(surface, radius = 7.dp.toPx(), center = Offset(scrubX, scrubY))
+            drawCircle(tone, radius = 5.dp.toPx(), center = Offset(scrubX, scrubY))
+        }
+
         // Today's point, ringed in the card's own colour so it reads as a marker sitting on
         // the line rather than as the line gone briefly fat.
         val end = Offset(px(points.last().first), py(points.last().second))

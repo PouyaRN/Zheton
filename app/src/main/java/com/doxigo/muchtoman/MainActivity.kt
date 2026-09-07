@@ -144,6 +144,12 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         refreshWallets(force = true)
     }
 
+    /** Rescan SMS and refresh all external pricing and holdings data for the ledger timeline. */
+    fun refreshLedger() {
+        scanSms()
+        refreshAll()
+    }
+
     fun refresh() {
         if (_state.value.loading) return
         _state.update { it.copy(loading = true, error = null) }
@@ -946,6 +952,69 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             recomputeAccountBalancesFromLedger()
             requestFamilySync(silent = true)
         }.onFailure { android.util.Log.w("muchtoman", "batch ${batch.kind} failed: $it") }
+    }
+
+    /** Add a hand-entered cash or off-SMS transaction directly to durable storage. */
+    fun addManualTransaction(
+        amountRial: Long,
+        isExpense: Boolean,
+        categoryId: String?,
+        merchant: String,
+        note: String,
+        epochMillis: Long = System.currentTimeMillis(),
+    ) {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            runCatching {
+                val durable = DurableDb.get(app)
+                val derived = DerivedDb.get(app)
+                val id = uuid7(epochMillis)
+                val signedRial = if (isExpense) -kotlin.math.abs(amountRial) else kotlin.math.abs(amountRial)
+                val day = tehranDay(epochMillis)
+                val now = System.currentTimeMillis()
+                val row = ManualTxn(
+                    id = id,
+                    at = epochMillis,
+                    day = day,
+                    amountRial = signedRial,
+                    accountId = "MANUAL",
+                    categoryId = categoryId,
+                    merchant = merchant.trim(),
+                    note = note.trim(),
+                    createdAt = now,
+                    updatedAt = now,
+                    deleted = false,
+                )
+                durable.manual().put(row)
+                if (!categoryId.isNullOrBlank()) {
+                    durable.decisions().put(
+                        TxnDecision(
+                            id = uuid7(now),
+                            ref = manualRef(id),
+                            kind = DecisionKind.CATEGORY,
+                            value = categoryId,
+                            createdAt = now,
+                            updatedAt = now,
+                        )
+                    )
+                }
+                if (note.isNotBlank()) {
+                    durable.decisions().put(
+                        TxnDecision(
+                            id = uuid7(now + 1),
+                            ref = manualRef(id),
+                            kind = DecisionKind.NOTE,
+                            value = note.trim(),
+                            createdAt = now,
+                            updatedAt = now,
+                        )
+                    )
+                }
+                derive(durable, derived, extraLookup(store.extraBankNumbers))
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
+                requestFamilySync(silent = true)
+            }.onFailure { android.util.Log.w("muchtoman", "add manual transaction failed: $it") }
+        }
     }
 
     /**

@@ -139,4 +139,49 @@ class LedgerTest {
         assertTrue("must escape double quotes in note", csv.contains("\"خرید هفتگی \"\"میوه\"\"\""))
         assertTrue("must contain bank name", csv.contains("سامان"))
     }
+
+    @Test
+    fun `manualToRow maps ManualTxn to valid Txn with proper ref and signed Rial`() {
+        val manual = ManualTxn(
+            id = "m12345",
+            at = 1754000000000L,
+            day = tehranDay(1754000000000L),
+            amountRial = -2_500_000L,
+            accountId = "MANUAL",
+            categoryId = "cat_taxi",
+            merchant = "اسنپ نقدی",
+            note = "پرداخت کرایه نقدی",
+            createdAt = 1754000000000L,
+            updatedAt = 1754000000000L,
+        )
+        val row = manualToRow(manual)
+        assertEquals("m:m12345", row.ref)
+        assertEquals("m:m12345", manualRef("m12345"))
+        assertEquals("out", row.direction)
+        assertEquals(2_500_000L, row.amountRial)
+        assertEquals(-2_500_000L, row.signedRial)
+        assertEquals("MANUAL", row.bank)
+        assertEquals("manual", row.sourceKind)
+        assertEquals("اسنپ نقدی", row.merchant)
+        assertEquals(merchantNorm("اسنپ نقدی"), row.merchantNorm)
+    }
+
+    @Test
+    fun `manualToRow handles positive amount as income`() {
+        val manual = ManualTxn(
+            id = "m999",
+            at = 1754000000000L,
+            day = tehranDay(1754000000000L),
+            amountRial = 10_000_000L,
+            accountId = "MANUAL",
+            merchant = "دستمزد نقدی",
+            createdAt = 1754000000000L,
+            updatedAt = 1754000000000L,
+        )
+        val row = manualToRow(manual)
+        assertEquals("m:m999", row.ref)
+        assertEquals("in", row.direction)
+        assertEquals(10_000_000L, row.amountRial)
+        assertEquals(10_000_000L, row.signedRial)
+    }
 }

@@ -239,4 +239,34 @@ class ReportsTest {
         assertEquals(1, j12.month)
         assertEquals(1, j12.day)
     }
+
+    @Test
+    fun `findClosestPointIndex returns correct index for various touch positions`() {
+        val points = listOf(
+            100L to 10.0,
+            101L to 20.0,
+            102L to 30.0,
+            103L to 40.0,
+            104L to 50.0,
+        )
+        val width = 400f
+        // Indices 0 to 4 map to x = 0, 100, 200, 300, 400
+
+        // At x = 0 or negative -> index 0
+        assertEquals(0, findClosestPointIndex(0f, width, points))
+        assertEquals(0, findClosestPointIndex(-50f, width, points))
+
+        // At x = 400 or greater -> index 4
+        assertEquals(4, findClosestPointIndex(400f, width, points))
+        assertEquals(4, findClosestPointIndex(500f, width, points))
+
+        // Intermediate positions
+        assertEquals(1, findClosestPointIndex(110f, width, points))
+        assertEquals(2, findClosestPointIndex(190f, width, points))
+        assertEquals(3, findClosestPointIndex(310f, width, points))
+
+        // Empty list or single point
+        assertNull(findClosestPointIndex(100f, width, emptyList()))
+        assertEquals(0, findClosestPointIndex(100f, width, listOf(1L to 1.0)))
+    }
 }

@@ -71,6 +71,17 @@ import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.platform.LocalContext
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
+import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -137,6 +148,10 @@ fun TimelineScreen(
     onMarkCredit: (LedgerEntry) -> Unit,
     onLinkInstallment: (LedgerEntry) -> Unit,
     onExport: () -> Unit,
+    initialCategoryId: String? = null,
+    initialSearchQuery: String? = null,
+    onRefresh: () -> Unit = {},
+    onAddManual: (amountRial: Long, isExpense: Boolean, categoryId: String?, merchant: String, note: String, at: Long) -> Unit = { _, _, _, _, _, _ -> },
     onBulkCategorise: (List<LedgerEntry>, String) -> Unit = { _, _ -> },
     onBulkHide: (List<LedgerEntry>, Boolean) -> Unit = { _, _ -> },
     onBulkFlip: (List<LedgerEntry>) -> Unit = {},
@@ -155,8 +170,9 @@ fun TimelineScreen(
         val base = ledger.entries.filterNot { it.duplicate }
         if (state.showHidden) base + ledger.hiddenEntries else base
     }
-    var searchQuery by remember { mutableStateOf("") }
-    var selectedCategoryId by remember { mutableStateOf<String?>(null) }
+    var searchQuery by remember(initialSearchQuery) { mutableStateOf(initialSearchQuery ?: "") }
+    var selectedCategoryId by remember(initialCategoryId) { mutableStateOf(initialCategoryId) }
+    var showAddManual by remember { mutableStateOf(false) }
     // The structured filter sheet (ticket 04+). Tokens AND together on top of the search bar
     // and the category chips. Editing the filter clears any in-progress selection, because the
     // batch bar must describe a set that is still in front of the user.
@@ -170,10 +186,8 @@ fun TimelineScreen(
 
     val filtered = remember(visible, searchQuery, selectedCategoryId, filterTokens) {
         visible.filter { entry ->
-            val matchesSearch = searchQuery.isBlank() ||
-                entry.txn.merchant.contains(searchQuery, ignoreCase = true) ||
-                entry.categoryFa.contains(searchQuery, ignoreCase = true) ||
-                (entry.txn.amountRial?.let { faNumber(it / 10.0).contains(searchQuery) } == true)
+            val note = ledger.notes[entry.txn.ref].orEmpty()
+            val matchesSearch = matchesTimelineQuery(entry, note, searchQuery)
             val matchesCategory = selectedCategoryId == null || entry.categoryId == selectedCategoryId
             matchesSearch && matchesCategory && matchesFilter(entry, filterTokens)
         }
@@ -192,6 +206,17 @@ fun TimelineScreen(
     // While a structured filter is live, the host widens the ledger window to the whole store;
     // turning it back off narrows to the browsing window again.
     LaunchedEffect(filterTokens) { onFilterWide(filterTokens.isNotEmpty()) }
+
+    if (showAddManual) {
+        ManualTxnSheet(
+            categories = ledger.categories,
+            onDismiss = { showAddManual = false },
+            onSave = { amountRial, isExpense, catId, merchant, note, at ->
+                onAddManual(amountRial, isExpense, catId, merchant, note, at)
+                showAddManual = false
+            },
+        )
+    }
 
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
@@ -248,6 +273,9 @@ TextButton(onClick = {
                         selected = emptySet()
                     }) {
                         Text("انتخاب", fontSize = 14.sp)
+                    }
+                    IconButton(onClick = { showAddManual = true }) {
+                        Icon(Icons.Rounded.Add, contentDescription = "تراکنش جدید")
                     }
                     IconButton(onClick = onExport) {
                         Icon(Icons.Rounded.Share, contentDescription = "خروجی CSV")
@@ -387,47 +415,60 @@ TextButton(onClick = {
                 }
             }
 
-            if (filtered.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize().padding(Space.xl),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        "موردی یافت نشد",
-                        fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                return@Column
-            }
+            var pulled by remember { mutableStateOf(false) }
+            LaunchedEffect(state.refreshing) { if (!state.refreshing) pulled = false }
+            val pullState = rememberPullToRefreshState()
 
-            LazyColumn(
-                Modifier.fillMaxSize().weight(1f),
-                contentPadding = PaddingValues(
-                    start = Space.xl, end = Space.xl, bottom = Space.l,
-                ),
+            PullToRefreshBox(
+                isRefreshing = state.refreshing && pulled,
+                onRefresh = { pulled = true; onRefresh() },
+                state = pullState,
+                modifier = Modifier.fillMaxSize().weight(1f),
             ) {
-                for ((day, rows) in grouped) {
-                    item(key = "day-$day") {
-                        DayBand(
-                            day = day,
-                            today = today,
-                            rows = rows,
-                            state = state,
-                            selecting = selecting,
-                            selected = selected,
-                            onSelect = { ref ->
-                                selected = if (ref in selected) selected - ref else selected + ref
-                            },
-                            onEnterSelection = { ref ->
-                                selecting = true
-                                selected = setOf(ref)
-                            },
-                            onOpen = onOpen,
-                            onHide = onHide,
-                            onMarkCredit = onMarkCredit,
-                            onLinkInstallment = onLinkInstallment,
+                if (filtered.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(Space.xl),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            "موردی یافت نشد",
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                    }
+                } else {
+                    LazyColumn(
+                        Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(
+                            start = Space.xl, end = Space.xl, bottom = Space.l,
+                        ),
+                    ) {
+                        for ((day, rows) in grouped) {
+                            item(key = "day-$day") {
+                                DayBand(
+                                    day = day,
+                                    today = today,
+                                    rows = rows,
+                                    state = state,
+                                    selecting = selecting,
+                                    selected = selected,
+                                    onSelect = { ref ->
+                                        selected = if (ref in selected) selected - ref else selected + ref
+                                    },
+                                    onEnterSelection = { ref ->
+                                        selecting = true
+                                        selected = setOf(ref)
+                                    },
+                                    onOpen = onOpen,
+                                    onHide = onHide,
+                                    onMarkCredit = onMarkCredit,
+                                    onLinkInstallment = onLinkInstallment,
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -1235,6 +1276,47 @@ private fun rememberAutoSave(
     return remember(key) { AutoSaveState(initial, scope, onSave, debounceMs) }
 }
 
+/**
+ * Checks if a ledger entry matches a free-text timeline search query.
+ * Matches against merchant, category, notes, transaction reference ID, and formatted/raw amount.
+ */
+fun matchesTimelineQuery(entry: LedgerEntry, note: String, query: String): Boolean {
+    val q = query.trim()
+    if (q.isBlank()) return true
+    return entry.txn.merchant.contains(q, ignoreCase = true) ||
+        entry.categoryFa.contains(q, ignoreCase = true) ||
+        note.contains(q, ignoreCase = true) ||
+        entry.txn.ref.contains(q, ignoreCase = true) ||
+        (entry.txn.amountRial?.let {
+            faNumber(it / 10.0).contains(q) || (it / 10L).toString().contains(q)
+        } == true)
+}
+
+/**
+ * Format a human-readable Persian transaction receipt for clipboard copying and sharing.
+ */
+fun formatReceipt(entry: LedgerEntry, note: String = ""): String {
+    val txn = entry.txn
+    val amountStr = txn.amountRial?.let { "${faCompact(tomanOf(it))} تومان" } ?: "نامشخص"
+    val dirStr = when (txn.direction) {
+        "in" -> "واریز"
+        "out" -> "برداشت"
+        else -> "تراکنش"
+    }
+    val dateStr = if (txn.printedAt.isNotBlank()) txn.printedAt else faDay(txn.day)
+    return buildString {
+        appendLine("رسید تراکنش ($dirStr)")
+        appendLine("مبلغ: $amountStr")
+        if (txn.merchant.isNotBlank()) appendLine("طرف حساب: ${txn.merchant}")
+        if (entry.categoryFa.isNotBlank()) appendLine("دسته‌بندی: ${entry.categoryFa}")
+        if (txn.bank.isNotBlank()) appendLine("بانک: ${bankNameOf(txn.bank)}")
+        if (txn.mask.isNotBlank()) appendLine("کارت/حساب: ${txn.mask}")
+        if (txn.refNo.isNotBlank()) appendLine("شماره پیگیری: ${txn.refNo}")
+        appendLine("تاریخ: $dateStr")
+        if (note.isNotBlank()) appendLine("یادداشت: $note")
+    }.trimEnd()
+}
+
 @Composable
 fun TransactionScreen(
     entry: LedgerEntry,
@@ -1309,6 +1391,43 @@ fun TransactionScreen(
                     incoming = incoming,
                     onBack = onBack,
                 )
+            }
+
+            item(key = "receipt_actions") {
+                val context = LocalContext.current
+                Row(
+                    modifier = gutter.padding(top = Space.m),
+                    horizontalArrangement = Arrangement.spacedBy(Space.m),
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            val receipt = formatReceipt(entry, noteState.value)
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            clipboard.setPrimaryClip(ClipData.newPlainText("رسید تراکنش", receipt))
+                            Toast.makeText(context, "رسید در کلیپ‌بورد کپی شد", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(Icons.Rounded.Check, contentDescription = null)
+                        Spacer(Modifier.width(Space.xs))
+                        Text("کپی رسید", fontSize = 13.sp)
+                    }
+                    Button(
+                        onClick = {
+                            val receipt = formatReceipt(entry, noteState.value)
+                            val intent = Intent(Intent.ACTION_SEND).apply {
+                                type = "text/plain"
+                                putExtra(Intent.EXTRA_TEXT, receipt)
+                            }
+                            context.startActivity(Intent.createChooser(intent, "اشتراک‌گذاری رسید"))
+                        },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(Icons.Rounded.Share, contentDescription = null)
+                        Spacer(Modifier.width(Space.xs))
+                        Text("اشتراک‌گذاری", fontSize = 13.sp)
+                    }
+                }
             }
 
             item(key = "category_heading") {
@@ -1778,5 +1897,143 @@ private fun DetailRow(label: String, value: String) {
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1.4f),
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ManualTxnSheet(
+    categories: List<Category>,
+    onDismiss: () -> Unit,
+    onSave: (amountRial: Long, isExpense: Boolean, categoryId: String?, merchant: String, note: String, at: Long) -> Unit,
+) {
+    var isExpense by remember { mutableStateOf(true) }
+    var amountText by remember { mutableStateOf("") }
+    var isToman by remember { mutableStateOf(true) }
+    var merchant by remember { mutableStateOf("") }
+    var selectedCatId by remember { mutableStateOf<String?>(null) }
+    var note by remember { mutableStateOf("") }
+
+    val rawAmount = amountText.replace(",", "").replace(" ", "").toLongOrNull() ?: 0L
+    val amountRial = if (isToman) rawAmount * 10L else rawAmount
+    val amountToman = if (isToman) rawAmount else rawAmount / 10L
+
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Space.l)
+                .padding(bottom = Space.xl)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Text(
+                "ثبت تراکنش دستی",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier.padding(bottom = Space.l),
+            )
+
+            // Direction toggle: هزینه vs دریافت
+            Row(
+                Modifier.fillMaxWidth().padding(bottom = Space.m),
+                horizontalArrangement = Arrangement.spacedBy(Space.m),
+            ) {
+                FilterChip(
+                    selected = isExpense,
+                    onClick = { isExpense = true },
+                    label = { Text("هزینه (پرداخت)") },
+                    modifier = Modifier.weight(1f),
+                )
+                FilterChip(
+                    selected = !isExpense,
+                    onClick = { isExpense = false },
+                    label = { Text("درآمد (واریز)") },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+
+            // Amount input + unit toggle
+            OutlinedTextField(
+                value = amountText,
+                onValueChange = { amountText = it.filter { c -> c.isDigit() || c == ',' } },
+                label = { Text("مبلغ") },
+                trailingIcon = {
+                    TextButton(onClick = { isToman = !isToman }) {
+                        Text(if (isToman) "تومان" else "ریال", fontWeight = FontWeight.Bold)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().padding(bottom = Space.xs),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+            )
+            if (rawAmount > 0) {
+                Text(
+                    if (isToman) "معادل ${faNumber(amountRial.toDouble())} ریال"
+                    else "معادل ${faNumber(amountToman.toDouble())} تومان",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = Space.m),
+                )
+            } else {
+                Spacer(Modifier.height(Space.m))
+            }
+
+            // Merchant / Title
+            OutlinedTextField(
+                value = merchant,
+                onValueChange = { merchant = it },
+                label = { Text("طرف حساب / شرح") },
+                placeholder = { Text(if (isExpense) "مثال: نانوایی، اسنپ، خرید سوپرمارکت" else "مثال: حقوق، واریز نقدی") },
+                modifier = Modifier.fillMaxWidth().padding(bottom = Space.m),
+                singleLine = true,
+            )
+
+            // Categories
+            Text("دسته‌بندی (اختیاری)", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Spacer(Modifier.height(Space.xs))
+            val availableCats = categoryChoices(categories, if (isExpense) "out" else "in")
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(Space.xs),
+                verticalArrangement = Arrangement.spacedBy(Space.xs),
+                modifier = Modifier.fillMaxWidth().padding(bottom = Space.m),
+            ) {
+                availableCats.forEach { cat ->
+                    FilterChip(
+                        selected = selectedCatId == cat.id,
+                        onClick = {
+                            selectedCatId = if (selectedCatId == cat.id) null else cat.id
+                        },
+                        label = { Text(cat.nameFa, fontSize = 12.sp) },
+                    )
+                }
+            }
+
+            // Note
+            OutlinedTextField(
+                value = note,
+                onValueChange = { note = it },
+                label = { Text("یادداشت (اختیاری)") },
+                modifier = Modifier.fillMaxWidth().padding(bottom = Space.l),
+                maxLines = 2,
+            )
+
+            Button(
+                onClick = {
+                    if (amountRial > 0 && merchant.isNotBlank()) {
+                        onSave(amountRial, isExpense, selectedCatId, merchant, note, System.currentTimeMillis())
+                    }
+                },
+                enabled = amountRial > 0 && merchant.isNotBlank(),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("ثبت تراکنش")
+            }
+        }
     }
 }

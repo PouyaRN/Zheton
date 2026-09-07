@@ -75,9 +75,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -249,8 +251,11 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
     var banks by remember { mutableStateOf(false) }
     var transactionRef by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedObligation by remember { mutableStateOf<InstallmentObligation?>(null) }
+    var addingObligation by remember { mutableStateOf(false) }
     var addingReservation by remember { mutableStateOf(false) }
     var categoriesManaged by remember { mutableStateOf(false) }
+    var timelineCategoryId by rememberSaveable { mutableStateOf<String?>(null) }
+    var timelineSearchQuery by rememberSaveable { mutableStateOf<String?>(null) }
 
     // The permanent-delete undo door. One host, and the window's lifetime rides on the state
     // itself: when it nulls (the window elapsed or she hit Undo) the snackbar just leaves.
@@ -443,6 +448,28 @@ val snackbarHostState = remember { SnackbarHostState() }
         return
     }
 
+    // Direct obligation creation form — opened from obligations card.
+    if (addingObligation) {
+        BackHandler { addingObligation = false }
+        DirectObligationSheet(
+            onSave = { provider, total, installments, amount, startDate, notes ->
+                vm.saveObligation(
+                    provider = provider,
+                    totalRial = total,
+                    downPaymentRial = 0L,
+                    installmentCount = installments,
+                    installmentRial = amount,
+                    startDate = startDate,
+                    notes = notes,
+                    linkedTxnRef = "",
+                )
+                addingObligation = false
+            },
+            onDismiss = { addingObligation = false },
+        )
+        return
+    }
+
     // Add reservation form — opened from home screen button.
     if (addingReservation) {
         BackHandler { addingReservation = false }
@@ -512,6 +539,12 @@ val snackbarHostState = remember { SnackbarHostState() }
             onMarkCredit = { vm.startMarkCredit(it) },
             onLinkInstallment = { vm.startLinkInstallment(it) },
             onExport = { activity?.let { ctx -> vm.exportCsv(ctx) } },
+            initialCategoryId = timelineCategoryId,
+            initialSearchQuery = timelineSearchQuery,
+            onRefresh = { vm.refreshLedger() },
+            onAddManual = { amountRial, isExpense, catId, merchant, note, at ->
+                vm.addManualTransaction(amountRial, isExpense, catId, merchant, note, at)
+            },
             onBulkCategorise = vm::bulkCategorise,
             onBulkHide = vm::bulkHide,
             onBulkFlip = vm::bulkFlipDirection,
@@ -550,6 +583,11 @@ val snackbarHostState = remember { SnackbarHostState() }
             history = state.history,
             current = state.totals.toman,
             composition = composition,
+            onSelectCategory = { catId ->
+                timelineCategoryId = catId
+                timelineSearchQuery = null
+                tab = Tab.LEDGER
+            },
         )
         return@Scaffold
       }
@@ -620,6 +658,7 @@ val snackbarHostState = remember { SnackbarHostState() }
                     state = state,
                     modifier = Modifier.padding(edge).padding(top = Space.l),
                     onOpenObligation = { selectedObligation = it },
+                    onAddObligation = { addingObligation = true },
                 )
             }
 
@@ -1509,6 +1548,7 @@ private fun ObligationsCard(
     state: UiState,
     modifier: Modifier = Modifier,
     onOpenObligation: (InstallmentObligation) -> Unit = {},
+    onAddObligation: () -> Unit = {},
 ) {
     var expanded by remember { mutableStateOf(false) }
     val obligations = state.obligations.filter { !it.archived }
@@ -1522,12 +1562,22 @@ private fun ObligationsCard(
             ),
             modifier = modifier.fillMaxWidth(),
         ) {
-            Text(
-                "اقساط فعالی نیست",
-                modifier = Modifier.padding(horizontal = Space.l, vertical = Space.m),
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-            )
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = Space.l, vertical = Space.m),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "اقساط فعالی نیست",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = onAddObligation) {
+                    Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(Space.xs))
+                    Text("ثبت قسط", fontSize = 13.sp)
+                }
+            }
         }
         return
     }
@@ -1555,6 +1605,12 @@ private fun ObligationsCard(
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f),
                 )
+                TextButton(onClick = onAddObligation) {
+                    Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(Space.xs))
+                    Text("افزودن", fontSize = 13.sp)
+                }
+                Spacer(Modifier.width(Space.xs))
                 Text(
                     "${faNumber(obligations.size.toDouble())} مورد",
                     fontSize = 13.sp,
@@ -2871,9 +2927,15 @@ private fun PickTypeSheet(
                 value = query,
                 onValueChange = { query = it },
                 singleLine = true,
-                // No fontSize on the placeholder: it sits in the same slot as the value and
-                // must not shrink the moment she starts typing.
                 placeholder = { Text("جستجو...") },
+                leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
+                trailingIcon = {
+                    if (query.isNotBlank()) {
+                        IconButton(onClick = { query = "" }) {
+                            Icon(Icons.Rounded.Close, contentDescription = "پاک کردن")
+                        }
+                    }
+                },
                 shape = RoundedCornerShape(Radius.field),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -4525,6 +4587,118 @@ private fun CreditPurchaseForm(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text("ذخیره")
+            }
+        }
+    }
+}
+
+/**
+ * Bottom sheet for directly creating an installment obligation (e.g. cash or non-SMS BNPL).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DirectObligationSheet(
+    onSave: (provider: String, totalRial: Long, installments: Int, amountRial: Long, startDate: Long, notes: String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var provider by remember { mutableStateOf("") }
+    var totalText by remember { mutableStateOf("") }
+    var installmentsText by remember { mutableStateOf("4") }
+    var amountText by remember { mutableStateOf("") }
+    var notes by remember { mutableStateOf("") }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    val totalToman = totalText.filter { it.isDigit() }.toLongOrNull() ?: 0L
+    val count = installmentsText.filter { it.isDigit() }.toIntOrNull() ?: 0
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Space.l)
+                .padding(bottom = Space.xl),
+        ) {
+            Text(
+                "ثبت مستقیم قسط",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier.padding(bottom = Space.l),
+            )
+
+            OutlinedTextField(
+                value = provider,
+                onValueChange = { provider = it },
+                label = { Text("نام فروشگاه یا ارائه‌دهنده (مثلاً اسنپ‌پی)") },
+                modifier = Modifier.fillMaxWidth().padding(bottom = Space.m),
+                singleLine = true,
+            )
+
+            OutlinedTextField(
+                value = totalText,
+                onValueChange = {
+                    totalText = it.filter { c -> c.isDigit() || c == ',' }
+                    val t = it.filter { c -> c.isDigit() }.toLongOrNull() ?: 0L
+                    val c = installmentsText.filter { ch -> ch.isDigit() }.toIntOrNull() ?: 0
+                    if (t > 0 && c > 0) {
+                        amountText = (t / c).toString()
+                    }
+                },
+                label = { Text("قیمت کل (تومان)") },
+                modifier = Modifier.fillMaxWidth().padding(bottom = Space.m),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+            )
+
+            OutlinedTextField(
+                value = installmentsText,
+                onValueChange = {
+                    installmentsText = it.filter { c -> c.isDigit() }
+                    val c = it.filter { ch -> ch.isDigit() }.toIntOrNull() ?: 0
+                    val t = totalText.filter { ch -> ch.isDigit() }.toLongOrNull() ?: 0L
+                    if (t > 0 && c > 0) {
+                        amountText = (t / c).toString()
+                    }
+                },
+                label = { Text("تعداد اقساط") },
+                modifier = Modifier.fillMaxWidth().padding(bottom = Space.m),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+            )
+
+            OutlinedTextField(
+                value = amountText,
+                onValueChange = { amountText = it.filter { c -> c.isDigit() || c == ',' } },
+                label = { Text("مبلغ هر قسط (تومان)") },
+                modifier = Modifier.fillMaxWidth().padding(bottom = Space.m),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+            )
+
+            OutlinedTextField(
+                value = notes,
+                onValueChange = { notes = it },
+                label = { Text("یادداشت (اختیاری)") },
+                modifier = Modifier.fillMaxWidth().padding(bottom = Space.l),
+                singleLine = true,
+            )
+
+            Button(
+                onClick = {
+                    val t = totalText.filter { it.isDigit() }.toLongOrNull()
+                    val i = installmentsText.filter { it.isDigit() }.toIntOrNull()
+                    val a = amountText.filter { it.isDigit() }.toLongOrNull()
+                    if (provider.isNotBlank() && t != null && i != null && a != null && t > 0 && i > 0 && a > 0) {
+                        onSave(provider.trim(), t * 10L, i, a * 10L, System.currentTimeMillis(), notes.trim())
+                    }
+                },
+                enabled = provider.isNotBlank() && totalToman > 0 && count > 0,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text("ذخیره اقساط")
             }
         }
     }

@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -65,6 +66,7 @@ fun ReportsTab(
     history: Map<Long, Double> = emptyMap(),
     current: Double = 0.0,
     composition: List<Pair<Kind, Double>> = emptyList(),
+    onSelectCategory: (String?) -> Unit = {},
 ) {
     val today = remember { mutableLongStateOf(tehranDay(System.currentTimeMillis())) }
     // Recompute at midnight so "این ماه" stays live.
@@ -174,7 +176,7 @@ fun ReportsTab(
                     items(snapshot.catSpend, key = { it.first ?: "uncategorized" }) { (catId, amount) ->
                         val catFa = ledger.categories.find { it.id == catId }?.nameFa ?: "دسته‌بندی نشده"
                         val isUncategorized = catId == null
-                        CategorySpendRow(catFa, amount, snapshot.expense, isUncategorized)
+                        CategorySpendRow(catFa, amount, snapshot.expense, isUncategorized, onClick = { onSelectCategory(catId) })
                     }
                 }
 
@@ -194,6 +196,8 @@ fun ReportsTab(
                         } else {
                             ChangeFigure(change, window.fa, now)
                             Spacer(Modifier.height(Space.xl))
+                            var scrubPoint by remember(points) { mutableStateOf<Pair<Long, Double>?>(null) }
+                            val tone = changeTone(change)
                             Box(
                                 Modifier
                                     .fillMaxWidth()
@@ -203,13 +207,41 @@ fun ReportsTab(
                                     .padding(Space.l),
                             ) {
                                 Column {
-                                    HistoryChart(
-                                        points,
-                                        tone = changeTone(change),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(220.dp),
-                                    )
+                                    Box(Modifier.fillMaxWidth()) {
+                                        scrubPoint?.let { (day, v) ->
+                                            Row(
+                                                modifier = Modifier
+                                                    .align(Alignment.TopCenter)
+                                                    .clip(RoundedCornerShape(Radius.pill))
+                                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                                                    .border(1.dp, tone.copy(alpha = 0.5f), RoundedCornerShape(Radius.pill))
+                                                    .padding(horizontal = Space.m, vertical = 4.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                            ) {
+                                                Text(
+                                                    faDay(day),
+                                                    fontSize = 12.sp,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                )
+                                                Spacer(Modifier.width(Space.s))
+                                                Text(
+                                                    "${faCompact(v, 3, pad = true)} تومان",
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    fontFamily = ModamFigures,
+                                                    color = tone,
+                                                )
+                                            }
+                                        }
+                                        HistoryChart(
+                                            points,
+                                            tone = tone,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(220.dp),
+                                            onScrub = { scrubPoint = it },
+                                        )
+                                    }
                                     Spacer(Modifier.height(Space.l))
                                     Row(Modifier.fillMaxWidth()) {
                                         ChartCaption("اکنون", current)
@@ -327,7 +359,13 @@ private fun ReportSummaryCard(snapshot: ReportSnapshot, window: ReportWindow) {
 }
 
 @Composable
-private fun CategorySpendRow(nameFa: String, amount: Long, totalExpense: Long, isUncategorized: Boolean) {
+private fun CategorySpendRow(
+    nameFa: String,
+    amount: Long,
+    totalExpense: Long,
+    isUncategorized: Boolean,
+    onClick: (() -> Unit)? = null,
+) {
     val pct = if (totalExpense > 0) (amount.toDouble() / totalExpense * 100).toInt() else 0
     val animatedProgress by animateFloatAsState(
         targetValue = (pct / 100f).coerceIn(0f, 1f),
@@ -337,9 +375,11 @@ private fun CategorySpendRow(nameFa: String, amount: Long, totalExpense: Long, i
         ),
         label = "cat_spend_progress",
     )
+    val clickModifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
     Row(
         Modifier
             .fillMaxWidth()
+            .then(clickModifier)
             .padding(vertical = Space.s),
         verticalAlignment = Alignment.CenterVertically,
     ) {
