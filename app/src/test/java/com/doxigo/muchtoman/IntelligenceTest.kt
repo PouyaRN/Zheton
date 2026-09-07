@@ -287,4 +287,50 @@ class IntelligenceTest {
         assertEquals(70, advice.allocations[0].percentage)
         assertNotNull(advice.realEstateContextFa)
     }
+
+    // ── Ticket 08: Market Fluctuation Engine & Chart Series Tests ──
+
+    @Test
+    fun `MarketFluctuationEngine computes accurate series ending at current price`() {
+        val currentTether = 92_500.0
+        val series = MarketFluctuationEngine.computeSeries(
+            assetId = "usdt",
+            currentPriceToman = currentTether,
+            interval = FluctuationInterval.DAY_1,
+        )
+
+        assertEquals("usdt", series.assetId)
+        assertEquals(FluctuationInterval.DAY_1, series.interval)
+        assertEquals(FluctuationInterval.DAY_1.pointCount, series.points.size)
+        assertEquals(currentTether, series.points.last().priceToman, 0.001)
+        assertEquals(currentTether, series.currentPriceToman, 0.001)
+        assertTrue(series.highPriceToman >= series.lowPriceToman)
+        assertTrue(series.startPriceToman > 0.0)
+    }
+
+    @Test
+    fun `MarketFluctuationEngine safely handles zero or negative price`() {
+        val series = MarketFluctuationEngine.computeSeries(
+            assetId = "unknown",
+            currentPriceToman = 0.0,
+            interval = FluctuationInterval.MONTH_1,
+        )
+
+        assertEquals(0.0, series.currentPriceToman, 0.0)
+        assertEquals(1, series.points.size)
+        assertEquals(0.0, series.points[0].priceToman, 0.0)
+    }
+
+    @Test
+    fun `MarketFluctuationEngine generateSparkline returns 7 normalized points`() {
+        val sparkline = MarketFluctuationEngine.generateSparkline(
+            assetId = "coin_emami",
+            currentPrice = 48_000_000.0,
+        )
+
+        assertEquals(7, sparkline.size)
+        for (point in sparkline) {
+            assertTrue(point in 0.0..1.0)
+        }
+    }
 }

@@ -312,7 +312,7 @@ val snackbarHostState = remember { SnackbarHostState() }
     // The tabs that start at the paper rather than at the field, plus every pushed screen.
     val paperUnderStatusBar = !state.locked && (
         settings || transactionRef != null ||
-            tab == Tab.LEDGER || tab == Tab.GOALS || tab == Tab.REPORTS ||
+            tab == Tab.LEDGER || tab == Tab.GOALS || tab == Tab.REPORTS || tab == Tab.ASSETS ||
             !heroUnderStatusBar
         )
     val lightScheme = MaterialTheme.colorScheme.background.luminance() > 0.5f
@@ -612,6 +612,17 @@ val snackbarHostState = remember { SnackbarHostState() }
                 timelineSearchQuery = null
                 tab = Tab.LEDGER
             },
+        )
+        return@Scaffold
+      }
+      if (tab == Tab.ASSETS) {
+        MarketAndAssetsScreen(
+            state = state,
+            effective = effective,
+            onRefresh = { vm.refreshAll() },
+            onAddHolding = { adding = true; vm.refreshStocksForPicker() },
+            onEditHolding = { h -> editing = Editing(h.typeId, h.key) },
+            bottomInset = pad.calculateBottomPadding(),
         )
         return@Scaffold
       }

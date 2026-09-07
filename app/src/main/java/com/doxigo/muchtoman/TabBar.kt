@@ -67,7 +67,7 @@ enum class Tab(val fa: String) {
     HOME("خانه"),
     LEDGER("دفتر"),
     GOALS("هدف‌ها"),
-    ASSETS("دارایی"),
+    ASSETS("بازار"),
     REPORTS("گزارش‌ها"),
 }
 
