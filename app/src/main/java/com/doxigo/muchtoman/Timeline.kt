@@ -4,6 +4,9 @@ import androidx.activity.compose.BackHandler
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -80,6 +83,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -909,7 +913,8 @@ private fun DayBand(
         Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(Radius.group))
-            .background(MaterialTheme.colorScheme.surfaceVariant),
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.group)),
     ) {
         rows.forEach { entry ->
             TimelineRow(
@@ -955,10 +960,24 @@ private fun TimelineRow(
     val hasUnpaidInstallments = state.obligationPayments.values.any { payments ->
         payments.any { it.paidDate == null }
     }
+    val rowBackground by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f) else Color.Transparent,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "row_bg",
+    )
+    val checkScale by animateFloatAsState(
+        targetValue = if (selected) 1f else 0.85f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium,
+        ),
+        label = "check_scale",
+    )
 
     Row(
         Modifier
             .fillMaxWidth()
+            .background(rowBackground)
             .combinedClickable(
                 onClick = { if (selecting) onSelect() else onClick() },
                 onLongClick = {
@@ -975,10 +994,11 @@ private fun TimelineRow(
             Box(
                 Modifier
                     .size(22.dp)
-                    .clip(RoundedCornerShape(5.dp))
+                    .scale(checkScale)
+                    .clip(RoundedCornerShape(6.dp))
                     .then(
                         if (selected) Modifier.background(MaterialTheme.colorScheme.primary)
-                        else Modifier.border(1.5.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(5.dp))
+                        else Modifier.border(1.5.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(6.dp))
                     ),
                 contentAlignment = Alignment.Center,
             ) {

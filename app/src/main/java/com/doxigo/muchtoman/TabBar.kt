@@ -1,5 +1,9 @@
 package com.doxigo.muchtoman
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.WindowInsets
@@ -18,6 +22,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -95,9 +100,8 @@ fun TabBar(
             .padding(horizontal = Space.m, vertical = Space.s),
         shape = RoundedCornerShape(Radius.group),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        // Lifted, not outlined. A hairline would put a fifth line weight on a bar that already
-        // carries four; a real shadow says "on top of" without adding one.
-        shadowElevation = 12.dp,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+        shadowElevation = 10.dp,
     ) {
         NavigationBar(
             // The island owns the shape, the colour and the gesture inset, so the component is
@@ -109,8 +113,17 @@ fun TabBar(
         ) {
             for (tab in tabs) {
                 val badge = if (tab == Tab.LEDGER) ledgerBadge else 0
+                val isSelected = tab == selected
+                val iconScale by animateFloatAsState(
+                    targetValue = if (isSelected) 1.08f else 1.0f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessMedium,
+                    ),
+                    label = "tab_icon_scale",
+                )
                 NavigationBarItem(
-                    selected = tab == selected,
+                    selected = isSelected,
                     onClick = { onSelect(tab) },
                     icon = {
                         BadgedBox(
@@ -142,7 +155,11 @@ fun TabBar(
                                     // Its own layer, so the two glyphs that cut a hole in
                                     // themselves cut it in the glyph and not in the slug
                                     // underneath. See [knockOut].
-                                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen },
+                                    .graphicsLayer {
+                                        scaleX = iconScale
+                                        scaleY = iconScale
+                                        compositingStrategy = CompositingStrategy.Offscreen
+                                    },
                             ) { drawTabIcon(tab, tint) }
                         }
                     },

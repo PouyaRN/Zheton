@@ -1,11 +1,16 @@
 package com.doxigo.muchtoman
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -193,7 +198,8 @@ fun ReportsTab(
                                 Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(Radius.group))
-                                    .background(MaterialTheme.colorScheme.surface)
+                                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.group))
                                     .padding(Space.l),
                             ) {
                                 Column {
@@ -264,8 +270,9 @@ private fun ReportSummaryCard(snapshot: ReportSnapshot, window: ReportWindow) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.group)),
-        color = MaterialTheme.colorScheme.surfaceVariant,
+            .clip(RoundedCornerShape(Radius.group))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.group)),
+        color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Column(Modifier.padding(Space.xl)) {
             Text(
@@ -322,6 +329,14 @@ private fun ReportSummaryCard(snapshot: ReportSnapshot, window: ReportWindow) {
 @Composable
 private fun CategorySpendRow(nameFa: String, amount: Long, totalExpense: Long, isUncategorized: Boolean) {
     val pct = if (totalExpense > 0) (amount.toDouble() / totalExpense * 100).toInt() else 0
+    val animatedProgress by animateFloatAsState(
+        targetValue = (pct / 100f).coerceIn(0f, 1f),
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessLow,
+        ),
+        label = "cat_spend_progress",
+    )
     Row(
         Modifier
             .fillMaxWidth()
@@ -342,6 +357,22 @@ private fun CategorySpendRow(nameFa: String, amount: Long, totalExpense: Long, i
                 color = if (isUncategorized) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onBackground,
                 fontWeight = if (isUncategorized) FontWeight.Normal else FontWeight.SemiBold,
             )
+            Spacer(Modifier.height(4.dp))
+            Box(
+                Modifier
+                    .fillMaxWidth(0.85f)
+                    .height(3.dp)
+                    .clip(RoundedCornerShape(1.5.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+            ) {
+                Box(
+                    Modifier
+                        .fillMaxWidth(animatedProgress)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(1.5.dp))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.75f))
+                )
+            }
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(

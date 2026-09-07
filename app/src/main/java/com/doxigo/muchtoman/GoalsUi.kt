@@ -1,5 +1,14 @@
 package com.doxigo.muchtoman
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -137,33 +146,15 @@ fun GoalsScreen(
                 )
             }
 
-            if (isCap) {
-                Spacer(Modifier.height(Space.s))
-                Text(
-                    "دسته‌بندی",
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = Space.xs),
-                )
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(Space.s),
-                ) {
-                    categories.filter { it.kind == "expense" }.forEach { category ->
-                        FilterChip(
-                            selected = category.id == selectedCategoryId,
-                            onClick = {
-                                selectedCategoryId = if (category.id == selectedCategoryId) null else category.id
-                                if (selectedCategoryId != null) selectedMerchantNorm = null
-                            },
-                            label = { Text(category.nameFa, fontSize = 12.sp) },
-                        )
-                    }
-                }
-                // Merchant picker — recent distinct merchants from the ledger.
-                if (merchants.isNotEmpty()) {
+            AnimatedVisibility(
+                visible = isCap,
+                enter = expandVertically(spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn(),
+                exit = shrinkVertically(spring(stiffness = Spring.StiffnessMediumLow)) + fadeOut(),
+            ) {
+                Column {
                     Spacer(Modifier.height(Space.s))
                     Text(
-                        "یا فروشگاه",
+                        "دسته‌بندی",
                         fontSize = 13.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = Space.xs),
@@ -171,15 +162,39 @@ fun GoalsScreen(
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(Space.s),
                     ) {
-                        merchants.take(12).forEach { merchant ->
+                        categories.filter { it.kind == "expense" }.forEach { category ->
                             FilterChip(
-                                selected = merchant == selectedMerchantNorm,
+                                selected = category.id == selectedCategoryId,
                                 onClick = {
-                                    selectedMerchantNorm = if (merchant == selectedMerchantNorm) null else merchant
-                                    if (selectedMerchantNorm != null) selectedCategoryId = null
+                                    selectedCategoryId = if (category.id == selectedCategoryId) null else category.id
+                                    if (selectedCategoryId != null) selectedMerchantNorm = null
                                 },
-                                label = { Text(merchant, fontSize = 12.sp) },
+                                label = { Text(category.nameFa, fontSize = 12.sp) },
                             )
+                        }
+                    }
+                    // Merchant picker — recent distinct merchants from the ledger.
+                    if (merchants.isNotEmpty()) {
+                        Spacer(Modifier.height(Space.s))
+                        Text(
+                            "یا فروشگاه",
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = Space.xs),
+                        )
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(Space.s),
+                        ) {
+                            merchants.take(12).forEach { merchant ->
+                                FilterChip(
+                                    selected = merchant == selectedMerchantNorm,
+                                    onClick = {
+                                        selectedMerchantNorm = if (merchant == selectedMerchantNorm) null else merchant
+                                        if (selectedMerchantNorm != null) selectedCategoryId = null
+                                    },
+                                    label = { Text(merchant, fontSize = 12.sp) },
+                                )
+                            }
                         }
                     }
                 }
@@ -242,6 +257,19 @@ private fun GoalCard(progress: GoalProgress, categories: List<Category>, onDelet
         progress.done -> Color(0xFF2E9E5B)
         else -> MaterialTheme.colorScheme.primary
     }
+    val animatedShare by animateFloatAsState(
+        targetValue = progress.share.coerceIn(0f, 1f),
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessLow,
+        ),
+        label = "goal_share",
+    )
+    val animatedBarColor by animateColorAsState(
+        targetValue = barColor,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "goal_color",
+    )
     Panel {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -253,9 +281,11 @@ private fun GoalCard(progress: GoalProgress, categories: List<Category>, onDelet
             Text(
                 "حذف",
                 fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.error,
                 modifier = Modifier
                     .clip(RoundedCornerShape(Radius.pill))
+                    .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f))
                     .clickable(role = Role.Button, onClick = onDelete)
                     .padding(vertical = Space.xs, horizontal = Space.s),
             )
@@ -273,14 +303,14 @@ private fun GoalCard(progress: GoalProgress, categories: List<Category>, onDelet
                 .fillMaxWidth()
                 .height(8.dp)
                 .clip(RoundedCornerShape(4.dp))
-                .background(MaterialTheme.colorScheme.surface),
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
         ) {
             Box(
                 Modifier
-                    .fillMaxWidth(progress.share)
+                    .fillMaxWidth(animatedShare)
                     .fillMaxHeight()
                     .clip(RoundedCornerShape(4.dp))
-                    .background(barColor),
+                    .background(animatedBarColor),
             )
         }
         // Savings goal: show deadline

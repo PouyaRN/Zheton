@@ -6,12 +6,15 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -198,7 +201,8 @@ internal val GroupedNumber = VisualTransformation { text ->
 internal fun Modifier.panel(): Modifier = this
     .fillMaxWidth()
     .clip(RoundedCornerShape(Radius.card))
-    .background(MaterialTheme.colorScheme.surfaceVariant)
+    .background(MaterialTheme.colorScheme.surfaceContainer)
+    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.card))
     .padding(Space.l)
 
 @Composable
@@ -1279,8 +1283,11 @@ private fun HeroAction(
     val press = remember { MutableInteractionSource() }
     val pressed by press.collectIsPressedAsState()
     val give by animateFloatAsState(
-        if (pressed) 0.96f else 1f,
-        tween(Motion.fast, easing = Motion.enter),
+        targetValue = if (pressed) 0.94f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium,
+        ),
         label = "press",
     )
 
@@ -3290,13 +3297,25 @@ internal fun <T> SegmentedChoice(
         options.forEach { option ->
             val active = option == selected
             val usable = enabled(option)
+            val animatedBg by animateColorAsState(
+                targetValue = if (active) MaterialTheme.colorScheme.primary else Color.Transparent,
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                label = "segment_bg",
+            )
+            val animatedTextColor by animateColorAsState(
+                targetValue = when {
+                    active -> MaterialTheme.colorScheme.onPrimary
+                    usable -> MaterialTheme.colorScheme.onSurface
+                    else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                },
+                animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                label = "segment_txt",
+            )
             Box(
                 Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(Radius.pill))
-                    .background(
-                        if (active) MaterialTheme.colorScheme.primary else Color.Transparent,
-                    )
+                    .background(animatedBg)
                     .selectable(
                         selected = active,
                         enabled = usable,
@@ -3312,13 +3331,7 @@ internal fun <T> SegmentedChoice(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
-                    // 0.5, not 0.35: at 0.35 a dark-mode label fell below the floor where
-                    // disabled text stops being readable at all.
-                    color = when {
-                        active -> MaterialTheme.colorScheme.onPrimary
-                        usable -> MaterialTheme.colorScheme.onSurface
-                        else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                    },
+                    color = animatedTextColor,
                 )
             }
         }
