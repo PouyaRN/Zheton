@@ -1177,12 +1177,25 @@ private fun TimelineRow(
         }
         val rial = txn.signedRial ?: txn.amountRial
         if (rial != null) {
-            Text(
-                faSignedCompact(tomanOf(rial), incoming),
-                style = figureStyle(tone, FontWeight.Bold),
-                fontSize = 15.sp,
-                textDecoration = if (entry.transfer) TextDecoration.LineThrough else null,
-            )
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    faSignedCompact(tomanOf(rial), incoming),
+                    style = figureStyle(tone, FontWeight.Bold),
+                    fontSize = 15.sp,
+                    textDecoration = if (entry.transfer) TextDecoration.LineThrough else null,
+                )
+                if (state.hourlyWageToman > 0L && !incoming && !entry.transfer) {
+                    val toman = kotlin.math.abs(tomanOf(rial)).toLong()
+                    val energy = calculateLifeEnergy(toman, customHourlyWageToman = state.hourlyWageToman)
+                    if (energy.hours > 0 || energy.minutes >= 10) {
+                        Text(
+                            "⏱️ ${energy.formattedFa}",
+                            fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                        )
+                    }
+                }
+            }
         } else {
             Text(
                 "مانده",
@@ -1452,6 +1465,7 @@ fun TransactionScreen(
     onLoadSource: suspend (LedgerEntry) -> String,
     onToggleTransfer: (LedgerEntry) -> Unit = {},
     gold18RateToman: Double? = null,
+    hourlyWageToman: Long = 0L,
     onBack: () -> Unit,
 ) {
     val txn = entry.txn
@@ -1499,7 +1513,7 @@ fun TransactionScreen(
         txn.feeRial?.takeIf { it > 0 }?.let { add("کارمزد" to bidi("${faCompact(tomanOf(it))} تومان")) }
         if (txn.direction == "out") {
             val amountToman = (txn.amountRial ?: 0L) / 10L
-            val energy = calculateLifeEnergy(amountToman)
+            val energy = calculateLifeEnergy(amountToman, customHourlyWageToman = hourlyWageToman.takeIf { it > 0 })
             if (energy.hours > 0 || energy.minutes > 0) {
                 add("ارزش زمان کاری" to "معادل ${energy.formattedFa} کار")
             }
@@ -2341,6 +2355,8 @@ internal fun DailyOutflowSparkCard(
 
     val maxDayToman = remember(dayPoints) { dayPoints.maxOf { it.toman }.coerceAtLeast(1.0) }
     val peakPoint = remember(dayPoints) { dayPoints.maxByOrNull { it.toman } }
+    var selectedPoint by remember { mutableStateOf<DailyOutflowPoint?>(null) }
+    val streak = remember(entries, todayEpochDay) { calculateNoSpendStreak(entries, todayEpochDay) }
 
     Card(
         modifier = modifier
@@ -2389,7 +2405,7 @@ internal fun DailyOutflowSparkCard(
 
             Spacer(Modifier.height(Space.s))
 
-            // Chart area with dashed ceiling guide line
+            // Chart area with dashed ceiling guide line and ceiling text
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -2412,6 +2428,15 @@ internal fun DailyOutflowSparkCard(
                     )
                 }
 
+                Text(
+                    "سقف: ${faCompact(maxDayToman)} ت",
+                    fontSize = 8.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(end = 2.dp, top = 2.dp),
+                )
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -2423,11 +2448,15 @@ internal fun DailyOutflowSparkCard(
                         val heightRatio = (point.toman / maxDayToman).toFloat().coerceIn(0.08f, 1f)
                         val isToday = point.day == todayEpochDay
                         val isPeak = point == peakPoint && point.toman > 0.0
+                        val isSelected = point == selectedPoint
 
                         Column(
                             modifier = Modifier
                                 .weight(1f)
-                                .fillMaxHeight(),
+                                .fillMaxHeight()
+                                .clickable {
+                                    selectedPoint = if (selectedPoint == point) null else point
+                                },
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.Bottom,
                         ) {
@@ -2438,6 +2467,7 @@ internal fun DailyOutflowSparkCard(
                                     .clip(RoundedCornerShape(3.dp))
                                     .background(
                                         when {
+                                            isSelected -> MaterialTheme.colorScheme.tertiary
                                             isPeak -> MaterialTheme.colorScheme.error
                                             isToday -> Hero.gold
                                             point.toman > 0.0 -> MaterialTheme.colorScheme.primary.copy(alpha = 0.75f)
@@ -2464,13 +2494,80 @@ internal fun DailyOutflowSparkCard(
                     val dayIdx = (((point.day - 2) % 7 + 7) % 7).toInt()
                     val dayName = dayNames.getOrElse(dayIdx) { "" }
                     val isToday = point.day == todayEpochDay
+                    val isSelected = point == selectedPoint
                     Text(
                         text = dayName,
                         fontSize = 9.sp,
-                        fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
-                        color = if (isToday) Hero.gold else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        fontWeight = if (isToday || isSelected) FontWeight.Bold else FontWeight.Normal,
+                        color = when {
+                            isSelected -> MaterialTheme.colorScheme.tertiary
+                            isToday -> Hero.gold
+                            else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        },
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+
+            // Interactive inspection chip when tapping a bar
+            selectedPoint?.let { sel ->
+                val selDayIdx = (((sel.day - 2) % 7 + 7) % 7).toInt()
+                val fullDayNames = listOf("شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنج‌شنبه", "جمعه")
+                val dayNameFa = fullDayNames.getOrElse(selDayIdx) { "" }
+                val dayLabel = if (sel.day == todayEpochDay) "امروز ($dayNameFa)" else "$dayNameFa ${faDay(sel.day, todayEpochDay)}"
+                Spacer(Modifier.height(Space.xs))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        .padding(horizontal = Space.s, vertical = 4.dp),
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            dayLabel,
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            if (sel.toman > 0.0) "${faNumber(sel.toman)} تومان خرج" else "روز بدون خرج 🌿",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (sel.toman > 0.0) MaterialTheme.colorScheme.error else Color(0xFF2E9E5B),
+                        )
+                    }
+                }
+            }
+
+            // No-Spend discipline and mindfulness badge
+            Spacer(Modifier.height(Space.xs))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Color(0xFF2E9E5B).copy(alpha = 0.08f))
+                    .padding(horizontal = Space.s, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    "🌿 ${streak.motivationFa}",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color(0xFF2E9E5B),
+                    modifier = Modifier.weight(1f),
+                )
+                if (streak.currentStreakDays > 0) {
+                    Text(
+                        "${faNumber(streak.currentStreakDays)} روز",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF2E9E5B),
                     )
                 }
             }

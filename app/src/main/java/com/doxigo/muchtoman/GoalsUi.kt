@@ -92,7 +92,7 @@ fun GoalsScreen(
                 .statusBarsPadding()
                 .padding(horizontal = Space.xl)
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = bottomInset + Space.l),
+                .padding(bottom = bottomInset + 100.dp),
         ) {
             Row(Modifier.fillMaxWidth().padding(vertical = Space.m), verticalAlignment = Alignment.CenterVertically) {
                 Text(

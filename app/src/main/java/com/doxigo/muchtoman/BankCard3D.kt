@@ -680,28 +680,16 @@ fun formatCardPan(raw: String): String {
         }
     }.joinToString("")
 
-    // If string is already grouped or has spaces, just convert digits to Persian
-    if (clean.contains("  ") || clean.contains(" - ") || clean.contains("-")) {
+    // If string is already grouped with bullet masks or double-spacing, preserve it
+    if (clean.contains(" •••• ") || clean.contains("  ") || clean.contains(" - ")) {
         return convertPersian(clean)
     }
 
-    // Normal continuous 16 digits
-    val digits = toAsciiDigits(clean).filter { it.isDigit() }
-    if (digits.length == 16 && !clean.contains("•") && !clean.contains("*")) {
-        val p1 = digits.substring(0, 4)
-        val p2 = digits.substring(4, 8)
-        val p3 = digits.substring(8, 12)
-        val p4 = digits.substring(12, 16)
-        return convertPersian("$p1  $p2  $p3  $p4")
-    }
-
-    // Typical masked format without spaces: "603799••••••5421"
-    if (clean.length == 16) {
-        val p1 = clean.substring(0, 4)
-        val p2 = clean.substring(4, 8)
-        val p3 = clean.substring(8, 12)
-        val p4 = clean.substring(12, 16)
-        return convertPersian("$p1  $p2  $p3  $p4")
+    // Strip hyphens and single spaces to uniformly segment into 4-character clusters
+    val stripped = clean.replace("-", "").replace(" ", "")
+    if (stripped.length >= 8) {
+        val chunks = stripped.chunked(4)
+        return convertPersian(chunks.joinToString("  "))
     }
 
     return convertPersian(clean)

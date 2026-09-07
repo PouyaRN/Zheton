@@ -134,7 +134,8 @@ fun MarketAndAssetsScreen(
         )
         for ((id, nameFa, ticker) in fiatCurrencies) {
             val price = effective[id] ?: continue
-            val spark = MarketFluctuationEngine.generateSparkline(id, price)
+            val change = MarketFluctuationEngine.computeAsset24hChange(id, price, state.rateHistoryStore)
+            val spark = MarketFluctuationEngine.generateSparkline(id, price, change24hPercent = change)
             items.add(
                 MarketItem(
                     id = id,
@@ -142,7 +143,7 @@ fun MarketAndAssetsScreen(
                     enTicker = ticker,
                     category = MarketCategory.CURRENCY,
                     currentPriceToman = price,
-                    change24hPercent = if (id == "usd") 1.15 else 0.85,
+                    change24hPercent = change,
                     secondaryInfoFa = "اسکناس بازار آزاد",
                     sparkline = spark,
                 )
@@ -180,7 +181,8 @@ fun MarketAndAssetsScreen(
                 }
                 else -> null
             }
-            val spark = MarketFluctuationEngine.generateSparkline(id, price)
+            val change = MarketFluctuationEngine.computeAsset24hChange(id, price, state.rateHistoryStore)
+            val spark = MarketFluctuationEngine.generateSparkline(id, price, change24hPercent = change)
             items.add(
                 MarketItem(
                     id = id,
@@ -188,7 +190,7 @@ fun MarketAndAssetsScreen(
                     enTicker = ticker,
                     category = MarketCategory.GOLD_COIN,
                     currentPriceToman = price,
-                    change24hPercent = 1.42,
+                    change24hPercent = change,
                     bubblePercent = bubble,
                     secondaryInfoFa = if (bubble != null && bubble > 0) "حباب: ${faDecimal(bubble, 1)}٪" else "بدون حباب طلا",
                     sparkline = spark,
@@ -206,7 +208,8 @@ fun MarketAndAssetsScreen(
         )
         for ((id, nameFa, ticker) in topCrypto) {
             val price = effective[id] ?: if (id == "usdt") usdCashToman * 1.015 else continue
-            val spark = MarketFluctuationEngine.generateSparkline(id, price)
+            val change = MarketFluctuationEngine.computeAsset24hChange(id, price, state.rateHistoryStore)
+            val spark = MarketFluctuationEngine.generateSparkline(id, price, change24hPercent = change)
             items.add(
                 MarketItem(
                     id = id,
@@ -214,7 +217,7 @@ fun MarketAndAssetsScreen(
                     enTicker = ticker,
                     category = MarketCategory.CRYPTO,
                     currentPriceToman = price,
-                    change24hPercent = if (id == "btc") 2.8 else 0.95,
+                    change24hPercent = change,
                     secondaryInfoFa = if (id == "usdt") "اختلاف با اسکناس: +${faNumber(abs(price - usdCashToman))} ت" else "شبکه بلاک‌چین",
                     sparkline = spark,
                 )
@@ -230,7 +233,8 @@ fun MarketAndAssetsScreen(
         )
         for ((id, nameFa, ticker) in bourseGoldFunds) {
             val price = effective[id] ?: (gold18Toman * 0.0125) // representative per-unit NAV
-            val spark = MarketFluctuationEngine.generateSparkline(id, price)
+            val change = MarketFluctuationEngine.computeAsset24hChange(id, price, state.rateHistoryStore)
+            val spark = MarketFluctuationEngine.generateSparkline(id, price, change24hPercent = change)
             items.add(
                 MarketItem(
                     id = id,
@@ -238,7 +242,7 @@ fun MarketAndAssetsScreen(
                     enTicker = ticker,
                     category = MarketCategory.BOURSE,
                     currentPriceToman = price,
-                    change24hPercent = 1.6,
+                    change24hPercent = change,
                     secondaryInfoFa = "بورس کالا • کارمزد ۰.۱۵٪",
                     sparkline = spark,
                 )
@@ -990,7 +994,7 @@ fun MiniSparkline(
     modifier: Modifier = Modifier,
     isPositive: Boolean = true,
 ) {
-    val color = if (isPositive) Color(0xFF0F9D58) else Color(0xFFE53935)
+    val color = if (isPositive) Color(0xFF137333) else Color(0xFFC5221F)
 
     Canvas(modifier = modifier) {
         if (points.size < 2) return@Canvas

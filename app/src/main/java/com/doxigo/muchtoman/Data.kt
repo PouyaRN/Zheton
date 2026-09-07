@@ -647,6 +647,11 @@ class Store(context: Context) {
         get() = prefs.getLong("smsScannedTo", 0L)
         set(v) { prefs.edit().putLong("smsScannedTo", v).apply() }
 
+    /** Hourly wage in Toman, used for converting expenses to hours of work. 0 = unconfigured. */
+    var hourlyWageToman: Long
+        get() = prefs.getLong("hourlyWageToman", 0L)
+        set(v) { prefs.edit().putLong("hourlyWageToman", v).apply() }
+
     private inline fun <reified T> read(key: String, fallback: T): T =
         prefs.getString(key, null)?.let {
             runCatching { JSON.decodeFromString<T>(it) }.getOrNull()

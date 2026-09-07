@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -37,6 +38,9 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -67,6 +71,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -198,6 +203,9 @@ fun SettingsScreen(
     onBankChange: (String, Boolean) -> Unit,
     onLockChange: (Boolean) -> Unit,
     onWidgetLockChange: (Boolean) -> Unit,
+    hourlyWageToman: Long = 0L,
+    onHourlyWageChange: (Long) -> Unit = {},
+    onForceRescanSms: (Int) -> Unit = {},
     onCategoriesManage: () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -345,6 +353,64 @@ fun SettingsScreen(
                         )
                     }
                 }
+
+                Spacer(Modifier.height(Space.m))
+                var rescanning by remember { mutableStateOf(false) }
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(Radius.card))
+                        .clickable(enabled = !rescanning) {
+                            rescanning = true
+                            onForceRescanSms(90)
+                            android.widget.Toast.makeText(
+                                context,
+                                "بازخوانی پیامک‌های ۳ ماه اخیر آغاز شد",
+                                android.widget.Toast.LENGTH_SHORT,
+                            ).show()
+                        },
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(Space.m),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text("🔄", fontSize = 18.sp)
+                        }
+                        Spacer(Modifier.width(Space.m))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                "بازخوانی و اسکن مجدد پیامک‌ها",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                            )
+                            Text(
+                                "اسکن مجدد پیامک‌های بانکی برای شناسایی پیام‌های جا افتاده",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        if (rescanning) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        } else {
+                            Text(
+                                "اسکن",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
             }
 
             SectionLabel("امنیت")
@@ -418,6 +484,47 @@ fun SettingsScreen(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(20.dp),
                 )
+            }
+
+            SectionLabel("ارزش زمانی پول (انرژی حیاتی)")
+            Text(
+                "با تعیین دستمزد ساعتی، مبالغ خرید به «ساعت کار مورد نیاز» تبدیل می‌شوند تا دید بهتری نسبت به ارزش واقعی خریدها داشته باشید.",
+                fontSize = 13.sp,
+                lineHeight = 20.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = Space.s, start = Space.xs, end = Space.xs),
+            )
+            var wageDraft by remember(hourlyWageToman) {
+                mutableStateOf(if (hourlyWageToman > 0) hourlyWageToman.toString() else "")
+            }
+            OutlinedTextField(
+                value = wageDraft,
+                onValueChange = { input ->
+                    val cleanDigits = toAsciiDigits(input).filter { it.isDigit() }
+                    wageDraft = cleanDigits
+                    val num = cleanDigits.toLongOrNull() ?: 0L
+                    onHourlyWageChange(num)
+                },
+                singleLine = true,
+                placeholder = { Text("مثلاً ۱۵۰,۰۰۰ تومان در ساعت") },
+                suffix = { Text("تومان / ساعت", fontSize = 13.sp) },
+                shape = RoundedCornerShape(Radius.field),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { contentDescription = "دستمزد ساعتی" },
+            )
+            if (wageDraft.isNotBlank()) {
+                val parsedWage = wageDraft.toLongOrNull() ?: 0L
+                if (parsedWage > 0L) {
+                    val monthlyApprox = parsedWage * 176
+                    Text(
+                        "معادل تقریباً ${faCompact(monthlyApprox)} تومان درآمد ماهانه (بر مبنای ۴۴ ساعت کار هفتگی)",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = Space.xs, start = Space.xs),
+                    )
+                }
             }
 
             // The answer to "which version do you have?" over the phone, without her having

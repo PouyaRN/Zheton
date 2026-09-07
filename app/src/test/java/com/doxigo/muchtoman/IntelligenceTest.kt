@@ -787,4 +787,77 @@ class IntelligenceTest {
         )
         assertNull(zeroBurnRunway)
     }
+
+    @Test
+    fun `calculateNoSpendStreak counts consecutive zero outflow days and monthly no-spend totals`() {
+        val todayEpochDay = 20000L
+        fun makeTxn(ref: String, day: Long, amount: Long, dir: String = "out", dup: Boolean = false) = LedgerEntry(
+            txn = Txn(
+                ref = ref, srcHash = "h", seq = 0, at = day * 86400000L, day = day,
+                bank = "MELLAT", accountId = "acc", direction = dir, amountRial = amount,
+                signedRial = if (dir == "in") amount else -amount, balanceRial = null, feeRial = null, mask = "6104",
+                instrument = "card", merchant = "خرید", merchantNorm = "خرید", refNo = "", printedAt = "",
+                channel = "pos", unitPrinted = "none", inferred = false, parserVer = PARSER_VERSION,
+            ),
+            categoryId = "cat_other", categoryFa = "سایر", confidence = 100, needsReview = false, duplicate = dup, transfer = false,
+        )
+
+        // Case 1: Active 3-day streak (no debits on today=20000, 19999, 19998; debit on 19997)
+        val entriesStreak3 = listOf(
+            makeTxn("tx1", day = 19997L, amount = 100_000L),
+            makeTxn("tx2", day = 19995L, amount = 200_000L),
+        )
+        val streakResult3 = calculateNoSpendStreak(entriesStreak3, todayEpochDay)
+        assertEquals(3, streakResult3.currentStreakDays)
+        assertTrue(streakResult3.isTodayZeroSpend)
+        assertEquals(28, streakResult3.totalNoSpendDaysPast30)
+        assertTrue(streakResult3.motivationFa.contains("۳ روز"))
+
+        // Case 2: Spent today (todayEpochDay has an outflow debit)
+        val entriesSpentToday = listOf(
+            makeTxn("txToday", day = todayEpochDay, amount = 50_000L, dir = "out"),
+        )
+        val streakResult0 = calculateNoSpendStreak(entriesSpentToday, todayEpochDay)
+        assertEquals(0, streakResult0.currentStreakDays)
+        assertFalse(streakResult0.isTodayZeroSpend)
+        assertEquals(29, streakResult0.totalNoSpendDaysPast30)
+    }
+
+    @Test
+    fun `calculateLifeEnergy uses custom hourly wage when provided`() {
+        val duration = calculateLifeEnergy(
+            amountToman = 600_000L,
+            customHourlyWageToman = 200_000L,
+        )
+        assertEquals(3, duration.hours)
+        assertEquals(0, duration.minutes)
+        assertTrue(duration.formattedFa.contains("۳ ساعت"))
+
+        val durationWithMinutes = calculateLifeEnergy(
+            amountToman = 300_000L,
+            customHourlyWageToman = 200_000L,
+        )
+        assertEquals(1, durationWithMinutes.hours)
+        assertEquals(30, durationWithMinutes.minutes)
+        assertTrue(durationWithMinutes.formattedFa.contains("۱ ساعت") && durationWithMinutes.formattedFa.contains("۳۰ دقیقه"))
+    }
+
+    @Test
+    fun `computeAsset24hChange generates deterministic percentage changes matching asset type`() {
+        val fixedNowMs = 1715000000000L
+        val btcChange = MarketFluctuationEngine.computeAsset24hChange("btc", 65_000_000_000.0, null, fixedNowMs)
+        val usdChange = MarketFluctuationEngine.computeAsset24hChange("usd", 60_000.0, null, fixedNowMs)
+        val coinChange = MarketFluctuationEngine.computeAsset24hChange("coin_emami", 42_000_000.0, null, fixedNowMs)
+
+        assertTrue(btcChange in -15.0..15.0)
+        assertTrue(usdChange in -15.0..15.0)
+        assertTrue(coinChange in -15.0..15.0)
+
+        val btcChangeRepeat = MarketFluctuationEngine.computeAsset24hChange("btc", 65_000_000_000.0, null, fixedNowMs)
+        assertEquals(btcChange, btcChangeRepeat, 0.001)
+
+        val sparkline = MarketFluctuationEngine.generateSparkline("btc", 65_000_000_000.0, btcChange)
+        assertEquals(7, sparkline.size)
+        assertTrue(sparkline.all { it in 0.0..1.0 })
+    }
 }

@@ -17,6 +17,12 @@ private val FA_INTEGER = object : ThreadLocal<NumberFormat>() {
 fun faNumber(value: Double): String =
     FA_INTEGER.get()!!.format(value.roundToLong())
 
+fun faNumber(value: Long): String =
+    FA_INTEGER.get()!!.format(value)
+
+fun faNumber(value: Int): String =
+    FA_INTEGER.get()!!.format(value.toLong())
+
 /**
  * Persian digits with decimals kept: 0.0345 -> "۰٫۰۳۴۵". With [pad] the decimals are held at
  * exactly [decimals] places, zeros and all, so a column of figures keeps one shape.
@@ -34,6 +40,9 @@ fun faDecimal(value: Double, decimals: Int, pad: Boolean = false): String {
  * so we do too: "۳۰۰ میلیون" instead of "۳۰۰٬۰۰۰٬۰۰۰".
  */
 fun tomanOf(rial: Long): Double = rial / 10.0
+
+fun faCompact(toman: Long, dec: Int = 1, pad: Boolean = false): String =
+    faCompact(toman.toDouble(), dec, pad)
 
 fun faCompact(toman: Double, dec: Int = 1, pad: Boolean = false): String {
     val n = abs(toman)

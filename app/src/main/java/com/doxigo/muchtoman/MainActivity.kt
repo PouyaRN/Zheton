@@ -83,6 +83,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             dismissedUpdate = store.dismissedUpdate,
             commitments = store.commitments,
             rateHistoryStore = store.rateHistoryStore,
+            hourlyWageToman = store.hourlyWageToman,
         )
     )
     val state: StateFlow<UiState> = _state.asStateFlow()
@@ -401,6 +402,29 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         store.widgetLock = on
         _state.update { it.copy(widgetLock = on) }
         updateTotalWidget(getApplication())
+    }
+
+    /** Hourly wage in Toman for calculating work-hours cost of expenses. */
+    fun setHourlyWageToman(wage: Long) {
+        store.hourlyWageToman = wage
+        _state.update { it.copy(hourlyWageToman = wage) }
+    }
+
+    /**
+     * Resets scan watermarks and re-ingests SMS inbox messages from [daysAgo] (0 = full 13-month horizon).
+     * Re-derives the full ledger and refreshes widgets.
+     */
+    fun forceRescanSms(daysAgo: Int = 90) {
+        val app = getApplication<Application>()
+        if (!store.smsEnabled || !canReadSms(app)) return
+        viewModelScope.launch(Dispatchers.Default) {
+            val durable = DurableDb.get(app)
+            val targetSince = if (daysAgo <= 0) 0L else System.currentTimeMillis() - (daysAgo * 24L * 3600L * 1000L)
+            durable.meta().put(DurableMeta(SOURCE_SCANNED_TO, targetSince.toString()))
+            store.smsScannedTo = targetSince
+            runLedgerPipeline(app, extraLookup(store.extraBankNumbers))
+            updateTotalWidget(app)
+        }
     }
 
     /** Called when the app leaves the foreground, so returning to it asks again. */
@@ -2050,6 +2074,7 @@ data class UiState(
     val reservations: List<Reservation> = emptyList(),
     val commitments: List<Commitment> = emptyList(),
     val rateHistoryStore: MarketRateHistoryStore = MarketRateHistoryStore(),
+    val hourlyWageToman: Long = 0L,
 ) {
     val coins: List<Coin> get() = rates.coins
 

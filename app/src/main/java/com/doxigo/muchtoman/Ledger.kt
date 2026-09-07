@@ -592,7 +592,7 @@ const val SOURCE_GRACE_DAYS = 62L
  */
 const val SOURCE_HARD_CAP = 50_000
 
-private const val SOURCE_SCANNED_TO = "source_scanned_to"
+const val SOURCE_SCANNED_TO = "source_scanned_to"
 
 /**
  * Durable tombstones for permanently deleted messages (spec 16).

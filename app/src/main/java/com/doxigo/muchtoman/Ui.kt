@@ -357,6 +357,9 @@ val snackbarHostState = remember { SnackbarHostState() }
                 else vm.setLockEnabled(false)
             },
             onWidgetLockChange = vm::setWidgetLock,
+            hourlyWageToman = state.hourlyWageToman,
+            onHourlyWageChange = vm::setHourlyWageToman,
+            onForceRescanSms = { days -> vm.forceRescanSms(days) },
             onCategoriesManage = { settings = false; categoriesManaged = true },
             onBack = { settings = false },
         )
@@ -402,6 +405,7 @@ val snackbarHostState = remember { SnackbarHostState() }
                 onLoadSource = vm::sourceOf,
                 onToggleTransfer = { e -> vm.toggleTransfer(e) },
                 gold18RateToman = state.effective["gold18"],
+                hourlyWageToman = state.hourlyWageToman,
                 onBack = { transactionRef = null },
             )
             return

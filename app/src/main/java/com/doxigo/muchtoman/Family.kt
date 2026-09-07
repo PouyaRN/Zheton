@@ -107,7 +107,7 @@ fun CompanionScreen(
                 .statusBarsPadding()
                 .padding(horizontal = Space.xl)
                 .verticalScroll(rememberScrollState())
-                .padding(bottom = bottomInset + Space.l),
+                .padding(bottom = bottomInset + 100.dp),
         ) {
             Text(
                 "خانواده",

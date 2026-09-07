@@ -46,6 +46,14 @@ class BankCardTest {
         val maskSpaced = "6037 •••• •••• 1234"
         val formatted = formatCardPan(maskSpaced)
         assertEquals("۶۰۳۷ •••• •••• ۱۲۳۴", formatted)
+
+        // Non-standard PAN length (e.g. 13 digits) segmented into 4-character clusters
+        val nonStandardPan = "0235375275786"
+        assertEquals("۰۲۳۵  ۳۷۵۲  ۷۵۷۸  ۶", formatCardPan(nonStandardPan))
+
+        // Hyphenated non-standard PAN
+        val hyphenatedPan = "0235-3752-7578-6"
+        assertEquals("۰۲۳۵  ۳۷۵۲  ۷۵۷۸  ۶", formatCardPan(hyphenatedPan))
     }
 
     @Test
