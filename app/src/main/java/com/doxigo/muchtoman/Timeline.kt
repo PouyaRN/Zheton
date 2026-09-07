@@ -341,6 +341,52 @@ TextButton(onClick = {
                 }
             }
 
+            // Active filter banner showing match count and fast one-tap reset
+            val isFilterActive = searchQuery.isNotBlank() || selectedCategoryId != null || filterTokens.isNotEmpty()
+            if (isFilterActive) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    shape = RoundedCornerShape(Radius.field),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = Space.xl, vertical = Space.xs)
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.field)),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = Space.m, vertical = Space.xs),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = "${faNumber(filtered.size.toDouble())} تراکنش پیدا شد",
+                            fontSize = 13.sp,
+                            fontFamily = ModamFigures,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        TextButton(
+                            onClick = {
+                                searchQuery = ""
+                                selectedCategoryId = null
+                                filterTokens = emptyList()
+                                selecting = false
+                                selected = emptySet()
+                            },
+                            contentPadding = PaddingValues(horizontal = Space.s, vertical = 0.dp),
+                        ) {
+                            Text(
+                                "پاک کردن فیلترها",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                }
+            }
+
             if (filtered.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize().padding(Space.xl),
@@ -1207,7 +1253,7 @@ fun TransactionScreen(
 ) {
     val txn = entry.txn
     val incoming = txn.direction == "in"
-    var learnSimilar by rememberSaveable(txn.ref) { mutableStateOf(false) }
+    var learnSimilar by rememberSaveable(txn.ref) { mutableStateOf(txn.merchantNorm.isNotBlank()) }
     var chosen by remember(txn.ref) { mutableStateOf(entry.categoryId) }
     var source by remember(txn.ref) { mutableStateOf<String?>(null) }
     var confirmDelete by remember(txn.ref) { mutableStateOf(false) }

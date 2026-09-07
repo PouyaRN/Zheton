@@ -129,11 +129,12 @@ object Hero {
     val hairline = Color(0x1FFFFFFF)
 }
 
-/** Three states, not a switch: a two-state toggle cannot express "follow the phone". */
+/** Theme choices: follow phone, light, dark, or AMOLED pitch black. */
 enum class ThemeMode(val fa: String) {
     SYSTEM("خودکار"),
     LIGHT("روشن"),
     DARK("تیره"),
+    AMOLED("آمولد"),
 }
 
 /** One spacing scale. Anything not on it is a decision someone has to defend. */
@@ -261,12 +262,54 @@ private val DarkColors = darkColorScheme(
     scrim = Color(0xFF000000),
 )
 
+val AmoledDarkColors = darkColorScheme(
+    primary = Color(0xFFF2C64D),
+    onPrimary = Color(0xFF2C2004),
+    primaryContainer = Color(0xFF0E3832),
+    onPrimaryContainer = Color(0xFFCFE7E1),
+
+    secondary = Color(0xFFE8C77E),
+    onSecondary = Color(0xFF2E1F00),
+    secondaryContainer = Color(0xFF382C0A),
+    onSecondaryContainer = Color(0xFFF8E8C4),
+
+    tertiary = Color(0xFF3BE0A8),
+    onTertiary = Color(0xFF00311F),
+    tertiaryContainer = Color(0xFF043826),
+    onTertiaryContainer = Color(0xFFB6F2D8),
+
+    background = Color(0xFF000000),
+    onBackground = Color(0xFFF0F5F3),
+
+    surface = Color(0xFF000000),
+    onSurface = Color(0xFFF0F5F3),
+    surfaceVariant = Color(0xFF161E1C),
+    onSurfaceVariant = Color(0xFFB0C4BF),
+
+    surfaceContainerLowest = Color(0xFF000000),
+    surfaceContainerLow = Color(0xFF080D0C),
+    surfaceContainer = Color(0xFF101715),
+    surfaceContainerHigh = Color(0xFF17201E),
+    surfaceContainerHighest = Color(0xFF1E2826),
+
+    outline = Color(0xFF8E9F9B),
+    outlineVariant = Color(0xFF2A3633),
+
+    error = Color(0xFFFFB4AB),
+    onError = Color(0xFF5F1410),
+    errorContainer = Color(0xFF7A2820),
+    onErrorContainer = Color(0xFFFFDAD5),
+    scrim = Color(0xFF000000),
+)
+
 @Composable
 fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -> Unit) {
-    val dark = when (mode) {
-        ThemeMode.SYSTEM -> isSystemInDarkTheme()
-        ThemeMode.LIGHT -> false
-        ThemeMode.DARK -> true
+    val systemDark = isSystemInDarkTheme()
+    val colorScheme = when (mode) {
+        ThemeMode.SYSTEM -> if (systemDark) DarkColors else LightColors
+        ThemeMode.LIGHT -> LightColors
+        ThemeMode.DARK -> DarkColors
+        ThemeMode.AMOLED -> AmoledDarkColors
     }
     val base = Typography()
     // Roboto has no real Persian coverage, so every style gets Modam — and zero tracking.
@@ -292,7 +335,7 @@ fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -
     )
 
     MaterialTheme(
-        colorScheme = if (dark) DarkColors else LightColors,
+        colorScheme = colorScheme,
         typography = base.persian(),
         content = content,
     )

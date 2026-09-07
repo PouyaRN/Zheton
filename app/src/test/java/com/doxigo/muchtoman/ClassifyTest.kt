@@ -320,4 +320,20 @@ class ClassifyTest {
         val backwards = findLinks(rows.reversed(), emptyList()).toSet()
         assertEquals(forwards, backwards)
     }
+
+    @Test
+    fun `ruleFrom merchant creates USER_EXACT_MERCHANT rule matching future transactions`() {
+        val original = txn(signed = -250_000, merchant = "اسنپ فود", channel = "pos")
+        val learnedRule = ruleFrom(original, "cat_dining", "addr1", 1000L)
+        assertEquals(Priority.USER_EXACT_MERCHANT, learnedRule.priority)
+        assertEquals("cat_dining", learnedRule.categoryId)
+        assertEquals(original.merchantNorm, learnedRule.pMerchantNorm)
+
+        // Future transaction from the same merchant with different amount or time matches
+        val future = txn(at = 2000L, signed = -780_000, merchant = "اسنپ فود", channel = "ipg")
+        assertTrue(learnedRule.matches(future))
+        val classification = classify(future, listOf(learnedRule))
+        assertEquals("cat_dining", classification.categoryId)
+        assertEquals(Confidence.RULE_EXACT, classification.confidence)
+    }
 }

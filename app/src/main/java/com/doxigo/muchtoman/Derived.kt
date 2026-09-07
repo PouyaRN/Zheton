@@ -779,3 +779,54 @@ fun reconcileBalances(
         )
     }.let { collapsed -> collapseAccounts(collapsed) }
 }
+
+/** Escapes a field for CSV output according to RFC 4180. */
+fun csvEscape(value: String): String =
+    if (value.contains(',') || value.contains('"') || value.contains('\n') || value.contains('\r')) {
+        "\"" + value.replace("\"", "\"\"") + "\""
+    } else {
+        value
+    }
+
+/**
+ * Generates an Excel-friendly CSV string for ledger entries.
+ * Prepends \uFEFF (UTF-8 BOM) so Microsoft Excel displays Persian characters properly.
+ */
+fun generateLedgerCsv(entries: List<LedgerEntry>, notes: Map<String, String> = emptyMap()): String = buildString {
+    append('\uFEFF')
+    appendLine("تاریخ,ساعت,مبلغ (تومان),مبلغ (ریال),نوع,دسته‌بندی,طرف حساب/فروشگاه,بانک,کارت/حساب,شماره پیگیری,یادداشت")
+    for (entry in entries) {
+        val txn = entry.txn
+        val date = jalaliOf(txn.day).toString()
+        val time = txn.printedAt.ifBlank { "" }
+        val amountRial = txn.signedRial ?: txn.amountRial ?: 0L
+        val amountToman = amountRial / 10
+        val direction = when {
+            entry.transfer -> "انتقال"
+            txn.direction == "in" -> "واریز"
+            txn.direction == "out" -> "برداشت"
+            else -> "نامشخص"
+        }
+        val category = if (entry.transfer) "انتقال بین حساب‌ها" else entry.categoryFa
+        val merchant = txn.merchant
+        val bank = bankNameOf(txn.bank)
+        val mask = txn.mask
+        val refNo = txn.refNo
+        val note = notes[txn.ref].orEmpty()
+        appendLine(
+            listOf(
+                date,
+                time,
+                amountToman.toString(),
+                amountRial.toString(),
+                direction,
+                category,
+                merchant,
+                bank,
+                mask,
+                refNo,
+                note,
+            ).joinToString(",") { csvEscape(it) }
+        )
+    }
+}

@@ -178,3 +178,50 @@ fun buildObligation(
     }
     return obligation to payments
 }
+
+enum class UrgencyLevel {
+    NORMAL,
+    WARNING,
+    OVERDUE,
+}
+
+data class DueDateBadge(
+    val text: String,
+    val level: UrgencyLevel,
+    val daysLeft: Long,
+)
+
+/**
+ * Calculates due date urgency relative to Tehran calendar day.
+ * - Negative days: Overdue (red)
+ * - 0 days: Due today (amber)
+ * - 1..5 days: Approaching due date (amber)
+ * - >5 days: Normal (neutral)
+ */
+fun installmentDueBadge(dueDate: Long, now: Long = System.currentTimeMillis()): DueDateBadge {
+    val dueDay = tehranDay(dueDate)
+    val today = tehranDay(now)
+    val daysLeft = dueDay - today
+    return when {
+        daysLeft < 0 -> DueDateBadge(
+            text = "سررسید گذشته (${faNumber((-daysLeft).toDouble())} روز)",
+            level = UrgencyLevel.OVERDUE,
+            daysLeft = daysLeft,
+        )
+        daysLeft == 0L -> DueDateBadge(
+            text = "امروز سررسید است",
+            level = UrgencyLevel.WARNING,
+            daysLeft = 0L,
+        )
+        daysLeft <= 5L -> DueDateBadge(
+            text = "${faNumber(daysLeft.toDouble())} روز مانده",
+            level = UrgencyLevel.WARNING,
+            daysLeft = daysLeft,
+        )
+        else -> DueDateBadge(
+            text = "${faNumber(daysLeft.toDouble())} روز مانده",
+            level = UrgencyLevel.NORMAL,
+            daysLeft = daysLeft,
+        )
+    }
+}

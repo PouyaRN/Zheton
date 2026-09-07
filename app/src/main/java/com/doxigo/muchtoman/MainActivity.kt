@@ -621,6 +621,12 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                             )
                         )
                     }
+                    val distinctMerchants = entries.filter { it.txn.merchantNorm.isNotBlank() }
+                        .distinctBy { it.txn.merchantNorm }
+                    for (entry in distinctMerchants) {
+                        val addrKey = durable.smsSource().addrKeyOf(entry.txn.srcHash).orEmpty()
+                        durable.rules().put(ruleFrom(entry.txn, categoryId, addrKey, now))
+                    }
                 }
                 derive(durable, derived, extraLookup(store.extraBankNumbers))
                 _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
@@ -1562,30 +1568,14 @@ class AppVm(app: Application) : AndroidViewModel(app) {
     fun exportCsv(context: Context) {
         viewModelScope.launch(Dispatchers.Default) {
             runCatching {
-                val entries = _state.value.ledger.entries.filterNot { it.duplicate }
-                val csv = buildString {
-                    appendLine("تاریخ,مبلغ,جهت,دسته‌بندی,فروشگاه,بانک,یادداشت")
-                    for (entry in entries) {
-                        val txn = entry.txn
-                        val date = jalaliOf(txn.at).let { "${it.year}/${it.month}/${it.day}" }
-                        val amount = txn.signedRial ?: txn.amountRial ?: 0L
-                        val direction = when (txn.direction) {
-                            "in" -> "واریز"
-                            "out" -> "برداشت"
-                            else -> "نامشخص"
-                        }
-                        val category = entry.categoryFa
-                        val merchant = txn.merchant.replace(",", " ")
-                        val bank = bankNameOf(txn.bank)
-                        val note = "" // Notes could be loaded from decisions if needed
-                        appendLine("$date,$amount,$direction,$category,$merchant,$bank,$note")
-                    }
-                }
+                val ledger = _state.value.ledger
+                val entries = ledger.allEntries.filterNot { it.duplicate || it.hidden }
+                val csv = generateLedgerCsv(entries, ledger.notes)
                 val file = File(context.cacheDir, "muchtoman_ledger.csv")
-                file.writeText(csv)
+                file.writeText(csv, Charsets.UTF_8)
                 val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
                 val intent = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/csv"
+                    type = "text/csv; charset=utf-8"
                     putExtra(Intent.EXTRA_STREAM, uri)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }

@@ -112,4 +112,31 @@ class LedgerTest {
         assertTrue(refOf(hash).startsWith("s:"))
         assertTrue(manualRef(hash).startsWith("m:"))
     }
+
+    @Test
+    fun `generateLedgerCsv includes UTF-8 BOM, headers, Toman and Rial, and notes`() {
+        val t = Txn(
+            ref = "s:123:0", srcHash = "123", seq = 0, at = 1754000000000L,
+            day = tehranDay(1754000000000L), bank = "SAMAN", accountId = "SAMAN",
+            direction = "out", amountRial = 500_000L, signedRial = -500_000L,
+            balanceRial = 10_000_000L, feeRial = 0L, mask = "1234", instrument = "card",
+            merchant = "هایپرمی, تهران", merchantNorm = "هایپرمی تهران", refNo = "987654",
+            printedAt = "14:30", channel = "pos", unitPrinted = "none", inferred = false,
+            parserVer = PARSER_VERSION,
+        )
+        val entry = LedgerEntry(
+            txn = t, categoryId = "cat_groceries", categoryFa = "خواربار",
+            confidence = 90, needsReview = false, duplicate = false, transfer = false,
+        )
+        val notes = mapOf("s:123:0" to "خرید هفتگی \"میوه\"")
+        val csv = generateLedgerCsv(listOf(entry), notes)
+
+        assertTrue("must start with UTF-8 BOM", csv.startsWith("\uFEFF"))
+        assertTrue("must contain header row", csv.contains("تاریخ,ساعت,مبلغ (تومان),مبلغ (ریال)"))
+        assertTrue("must contain Toman amount -50000", csv.contains("-50000"))
+        assertTrue("must contain Rial amount -500000", csv.contains("-500000"))
+        assertTrue("must escape commas in merchant name", csv.contains("\"هایپرمی, تهران\""))
+        assertTrue("must escape double quotes in note", csv.contains("\"خرید هفتگی \"\"میوه\"\"\""))
+        assertTrue("must contain bank name", csv.contains("سامان"))
+    }
 }

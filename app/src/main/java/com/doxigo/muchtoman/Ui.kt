@@ -1574,8 +1574,11 @@ private fun ObligationsCard(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Spacer(Modifier.height(Space.m))
                 obligations.forEach { ob ->
-                    val paid = state.obligationPayments[ob.id]?.count { it.paidDate != null } ?: 0
+                    val payments = state.obligationPayments[ob.id] ?: emptyList()
+                    val paid = payments.count { it.paidDate != null }
                     val remaining = (ob.installmentCount - paid).toLong() * ob.installmentRial
+                    val nextUnpaid = payments.filter { it.paidDate == null }.minByOrNull { it.dueDate }
+                    val badge = nextUnpaid?.let { installmentDueBadge(it.dueDate) }
                     Row(
                         Modifier
                             .fillMaxWidth()
@@ -1589,11 +1592,31 @@ private fun ObligationsCard(
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Medium,
                             )
-                            Text(
-                                "${paid}/${ob.installmentCount} قسط پرداخت شده",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    "${paid}/${ob.installmentCount} قسط پرداخت شده",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                )
+                                if (badge != null) {
+                                    Text(
+                                        " • ",
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                    )
+                                    val badgeColor = when (badge.level) {
+                                        UrgencyLevel.OVERDUE -> MaterialTheme.colorScheme.error
+                                        UrgencyLevel.WARNING -> MaterialTheme.colorScheme.secondary
+                                        UrgencyLevel.NORMAL -> MaterialTheme.colorScheme.onSurfaceVariant
+                                    }
+                                    Text(
+                                        badge.text,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (badge.level != UrgencyLevel.NORMAL) FontWeight.Bold else FontWeight.Normal,
+                                        color = badgeColor,
+                                    )
+                                }
+                            }
                         }
                         Text(
                             "${faNumber(remaining / 10.0)}",
@@ -4284,6 +4307,7 @@ fun ObligationDetailScreen(
                 Column {
                     payments.sortedBy { it.installmentNumber }.forEach { payment ->
                         val isPaid = payment.paidDate != null
+                        val badge = if (!isPaid) installmentDueBadge(payment.dueDate) else null
                         Row(
                             Modifier
                                 .fillMaxWidth()
@@ -4296,15 +4320,49 @@ fun ObligationDetailScreen(
                                 Modifier
                                     .size(8.dp)
                                     .clip(CircleShape)
-                                    .background(if (isPaid) Color(0xFF2E9E5B) else MaterialTheme.colorScheme.outline),
+                                    .background(
+                                        when {
+                                            isPaid -> Color(0xFF2E9E5B)
+                                            badge?.level == UrgencyLevel.OVERDUE -> MaterialTheme.colorScheme.error
+                                            badge?.level == UrgencyLevel.WARNING -> MaterialTheme.colorScheme.secondary
+                                            else -> MaterialTheme.colorScheme.outline
+                                        }
+                                    ),
                             )
                             Spacer(Modifier.width(Space.m))
                             Column(Modifier.weight(1f)) {
-                                Text(
-                                    "قسط ${faNumber(payment.installmentNumber.toDouble())}",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        "قسط ${faNumber(payment.installmentNumber.toDouble())}",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Medium,
+                                    )
+                                    if (badge != null) {
+                                        Spacer(Modifier.width(Space.s))
+                                        val badgeColor = when (badge.level) {
+                                            UrgencyLevel.OVERDUE -> MaterialTheme.colorScheme.error
+                                            UrgencyLevel.WARNING -> MaterialTheme.colorScheme.secondary
+                                            UrgencyLevel.NORMAL -> MaterialTheme.colorScheme.onSurfaceVariant
+                                        }
+                                        val badgeBg = when (badge.level) {
+                                            UrgencyLevel.OVERDUE -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f)
+                                            UrgencyLevel.WARNING -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f)
+                                            UrgencyLevel.NORMAL -> MaterialTheme.colorScheme.surfaceContainerHighest
+                                        }
+                                        Surface(
+                                            color = badgeBg,
+                                            shape = RoundedCornerShape(Radius.pill),
+                                        ) {
+                                            Text(
+                                                badge.text,
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = badgeColor,
+                                                modifier = Modifier.padding(horizontal = Space.s, vertical = 2.dp),
+                                            )
+                                        }
+                                    }
+                                }
                                 Text(
                                     formatDate(payment.dueDate),
                                     fontSize = 12.sp,
