@@ -517,7 +517,7 @@ object PurchasingOptimizationEngine {
         budgetToman: Long,
         halfCoinBubblePercent: Double = 32.0,
         quarterCoinBubblePercent: Double = 42.0,
-        usdtRateToman: Double = 226_700.0,
+        usdtRateToman: Double = 93_000.0,
     ): BestBuyAdvice {
         val safeBudget = max(1_000_000L, budgetToman)
         val warnings = mutableListOf<String>()
@@ -568,10 +568,10 @@ object PurchasingOptimizationEngine {
 
     fun computeBestBuy(
         budgetToman: Long,
-        usdtToman: Double = 226_700.0,
-        gold18Toman: Double = 23_353_600.0,
-        emamiCoinToman: Double = 229_230_000.0,
-        robCoinToman: Double = 64_500_000.0
+        usdtToman: Double = 93_000.0,
+        gold18Toman: Double = 4_650_000.0,
+        emamiCoinToman: Double = 54_000_000.0,
+        robCoinToman: Double = 18_400_000.0
     ): BestBuyAdvice {
         val safeBudget = max(1_000_000L, budgetToman)
         val robBubble = evaluateCoinBubble(GoldCoinType.ROB, robCoinToman.roundToLong(), gold18Toman)
@@ -823,13 +823,23 @@ object MarketFluctuationEngine {
 
         val durationMs = interval.durationHours * 3600_000L
         val startTimeMs = nowMs - durationMs
-        val history = historyStore?.getHistory(assetId, sinceMs = startTimeMs) ?: emptyList()
+        val rawHistory = historyStore?.getHistory(assetId, sinceMs = startTimeMs) ?: emptyList()
 
-        // Combine with historical day snapshots if available
+        // Sanitize observations to eliminate cross-asset confusion or portfolio net worth mixups
+        val validHistory = rawHistory.filter { obs ->
+            obs.priceToman > 0.0 &&
+                obs.priceToman in (currentPriceToman * 0.25)..(currentPriceToman * 3.5)
+        }
+
+        // Combine with sanitized historical day snapshots if provided
         val snapshotObs = historicalSnapshots.map { (day, toman) ->
             RateObservation(day * DAY_MS, toman)
-        }.filter { it.timestampMs in startTimeMs..nowMs }
-        val combinedHistory = (history + snapshotObs).sortedBy { it.timestampMs }
+        }.filter {
+            it.timestampMs in startTimeMs..nowMs &&
+                it.priceToman > 0.0 &&
+                it.priceToman in (currentPriceToman * 0.25)..(currentPriceToman * 3.5)
+        }
+        val combinedHistory = (validHistory + snapshotObs).sortedBy { it.timestampMs }
 
         // Expected macro net return in Iranian markets for this interval
         val defaultChangePct = when (interval) {

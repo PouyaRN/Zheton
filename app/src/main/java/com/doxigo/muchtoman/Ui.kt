@@ -664,16 +664,6 @@ val snackbarHostState = remember { SnackbarHostState() }
                 )
             }
 
-            // Under the total, not above it: the money is what she opened the app for, and an
-            // update is never the more urgent of the two.
-            state.update?.let { release ->
-                item(key = "update") {
-                    Box(Modifier.padding(edge).padding(top = Space.l)) {
-                        UpdateNote(release, onLater = { vm.dismissUpdate(release.name) })
-                    }
-                }
-            }
-
             // Interactive 3D Iranian Bank Card Deck — front and center
             if (state.bankAccounts.isNotEmpty()) {
                 item(key = "bank_card_deck") {
@@ -687,17 +677,9 @@ val snackbarHostState = remember { SnackbarHostState() }
                 }
             }
 
-            // Dynamic Wealth Defense & Purchasing Optimizer (Real-time Asset Allocation against inflation)
-            item(key = "wealth_defense_advisor") {
-                WealthDefenseAdvisorCard(
-                    state = state,
-                    modifier = Modifier.padding(edge).padding(top = Space.l),
-                )
-            }
-
-            // Cash burn and runway intelligence
-            item(key = "cash_burn_runway") {
-                CashBurnAndRunwayCard(
+            // Unified Studio-Grade Financial Command Deck
+            item(key = "home_financial_executive_deck") {
+                HomeFinancialExecutiveDeck(
                     state = state,
                     modifier = Modifier.padding(edge).padding(top = Space.l),
                     privacyMode = privacyMode,
@@ -927,16 +909,19 @@ internal fun HeroPanel(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val topColor = Hero.top
+    val bottomColor = Hero.bottom
+    val goldColor = Hero.gold
     Box(
         modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(bottomStart = Radius.hero, bottomEnd = Radius.hero))
-            .background(Brush.verticalGradient(listOf(Hero.top, Hero.bottom))),
+            .background(Brush.verticalGradient(listOf(topColor, bottomColor))),
     ) {
         Canvas(Modifier.matchParentSize()) {
             drawRect(
                 Brush.radialGradient(
-                    colors = listOf(Hero.gold.copy(alpha = 0.13f), Color.Transparent),
+                    colors = listOf(goldColor.copy(alpha = 0.13f), Color.Transparent),
                     center = Offset(size.width * 0.88f, size.height * -0.05f),
                     radius = size.width * 0.95f,
                 ),
@@ -1029,22 +1014,74 @@ internal fun HeroField(
             }
 
             Spacer(Modifier.height(Space.m))
-            // Label and dollar figure share a line, so the top of the field reads as one
-            // sentence — "مجموع دارایی شما ≈ $۵۱٬۵۰۰" — and the dollars stay an aside rather
-            // than a second headline.
+
+            var showLiquidPerspective by remember { mutableStateOf(false) }
+
+            val liquidCashToman = state.bankToman.toLong()
+            val upcomingObligationsToman = (state.obligations.filter { !it.archived }.sumOf { obligation ->
+                val paid = state.obligationPayments[obligation.id]?.count { it.paidDate != null } ?: 0
+                val unpaidCount = (obligation.installmentCount - paid).coerceAtLeast(0)
+                unpaidCount.toLong() * obligation.installmentRial
+            } / 10L)
+            val reservationsToman = (state.reservations.filter { !it.released }.sumOf { it.amountRial } / 10L)
+            val safeLiquidToman = (liquidCashToman - upcomingObligationsToman - reservationsToman).coerceAtLeast(0L).toDouble()
+
+            val activeTotal = if (showLiquidPerspective) safeLiquidToman else total
+            val activeUsd = usdRate?.let { if (it > 0) activeTotal / it else null }
+
+            // Perspective toggle pill
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(Radius.pill))
+                    .background(Hero.well)
+                    .padding(2.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(Radius.pill))
+                        .background(if (!showLiquidPerspective) Hero.gold.copy(alpha = 0.28f) else Color.Transparent)
+                        .clickable { showLiquidPerspective = false }
+                        .padding(horizontal = Space.s, vertical = 3.dp),
+                ) {
+                    Text(
+                        "کل دارایی",
+                        fontSize = 12.sp,
+                        fontWeight = if (!showLiquidPerspective) FontWeight.ExtraBold else FontWeight.Medium,
+                        fontFamily = ModamFigures,
+                        color = if (!showLiquidPerspective) Hero.gold else Hero.muted,
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(Radius.pill))
+                        .background(if (showLiquidPerspective) Hero.gold.copy(alpha = 0.28f) else Color.Transparent)
+                        .clickable { showLiquidPerspective = true }
+                        .padding(horizontal = Space.s, vertical = 3.dp),
+                ) {
+                    Text(
+                        "نقدینگی آزاد",
+                        fontSize = 12.sp,
+                        fontWeight = if (showLiquidPerspective) FontWeight.ExtraBold else FontWeight.Medium,
+                        fontFamily = ModamFigures,
+                        color = if (showLiquidPerspective) Hero.gold else Hero.muted,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(Space.s))
+
+            // Label and dollar figure share a line
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "جمع دارایی‌هات",
-                    fontSize = 15.sp,
+                    if (showLiquidPerspective) "تنخواه آزاد نقد (پس از کسر اقساط)" else "جمع دارایی‌هات",
+                    fontSize = 14.sp,
                     color = Hero.muted,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                usd?.let {
-                    // The isolate keeps the number one opaque run; the "$" sits outside it so
-                    // bidi puts it on the reading side of the figure whether faRate returns
-                    // digits ("$۵۱٬۵۰۰") or a magnitude ("$۱٫۲ میلیون").
+                activeUsd?.let {
                     Text(
                         "≈ \$${bidi(faRate(it))}",
                         fontSize = 14.sp,
@@ -1052,8 +1089,6 @@ internal fun HeroField(
                         fontFamily = ModamFigures,
                         color = Hero.muted,
                         maxLines = 1,
-                        // "$" is read out as punctuation or skipped entirely; the unit has to
-                        // survive for anyone listening rather than looking.
                         modifier = Modifier
                             .padding(start = Space.s)
                             .semantics { contentDescription = "حدود ${faRate(it)} دلار" },
@@ -1062,19 +1097,11 @@ internal fun HeroField(
             }
 
             Spacer(Modifier.height(Space.xs))
-            // Must never wrap: "۳٫۲ میلیارد تومان" broken across two lines reads as a layout
-            // bug, and the figure can grow by orders of magnitude. Shrink to fit instead.
-            // Three decimals here, one everywhere else: the headline is the one figure she
-            // watches move, so "۹٫۶۴۳ میلیارد" beats a ۹٫۶ که hides a day's change.
-            //
-            // Every refresh lifts the new figure into place from below. It is the visible
-            // receipt that the fetch did something — and the reason the digits are tabular:
-            // without that, one changed digit slides the whole number sideways as it lands.
-            val (heroDisplayFigure, heroDisplayUnit) = remember(total, currencyLens, state.effective) {
+            val (heroDisplayFigure, heroDisplayUnit) = remember(activeTotal, currencyLens, state.effective) {
                 if (currencyLens == CurrencyDenominator.TOMAN) {
-                    faCompact(total, 3, pad = true) to "تومان"
+                    faCompact(activeTotal, 3, pad = true) to "تومان"
                 } else {
-                    formatInDenominator(total, currencyLens, state.effective)
+                    formatInDenominator(activeTotal, currencyLens, state.effective)
                 }
             }
 
@@ -1126,7 +1153,7 @@ internal fun HeroField(
                 )
             }
             Text(
-                "${faNumber(total)} تومان",
+                "${faNumber(activeTotal)} تومان",
                 fontSize = 13.sp,
                 fontFamily = ModamFigures,
                 color = Hero.muted,

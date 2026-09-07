@@ -1644,17 +1644,37 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             runCatching {
                 val ledger = _state.value.ledger
                 val entries = ledger.allEntries.filterNot { it.duplicate || it.hidden }
+                if (entries.isEmpty()) {
+                    withContext(Dispatchers.Main) {
+                        android.widget.Toast.makeText(context, "تراکنشی برای خروجی گرفتن وجود ندارد", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                    return@launch
+                }
                 val csv = generateLedgerCsv(entries, ledger.notes)
                 val file = File(context.cacheDir, "muchtoman_ledger.csv")
                 file.writeText(csv, Charsets.UTF_8)
                 val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
                 val intent = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/csv; charset=utf-8"
+                    type = "text/csv"
                     putExtra(Intent.EXTRA_STREAM, uri)
+                    clipData = android.content.ClipData.newRawUri("CSV Export", uri)
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                context.startActivity(Intent.createChooser(intent, "خروجی CSV"))
-            }.onFailure { android.util.Log.w("muchtoman", "exportCsv failed: $it") }
+                val chooser = Intent.createChooser(intent, "خروجی اکسل و CSV").apply {
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    if (context !is android.app.Activity) {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                }
+                withContext(Dispatchers.Main) {
+                    context.startActivity(chooser)
+                }
+            }.onFailure { e ->
+                android.util.Log.e("muchtoman", "exportCsv failed: $e", e)
+                withContext(Dispatchers.Main) {
+                    android.widget.Toast.makeText(context, "خطا در تهیه خروجی CSV", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 
@@ -1997,17 +2017,9 @@ data class UiState(
     val stocks: List<Stock> get() = tse.stocks
 
     /**
-     * The release worth a line on the list: newer than this build, and not one she has already
-     * waved off. Debug builds are left out because they carry a placeholder version name, so
-     * every locally-built install would claim to be out of date.
+     * Update check permanently disabled for this fork.
      */
-    val update: Release?
-        get() = rates.latest?.takeIf {
-            !BuildConfig.DEBUG &&
-                it.url.isNotBlank() &&
-                it.name != dismissedUpdate &&
-                isNewerVersion(it.name, BuildConfig.VERSION_NAME)
-        }
+    val update: Release? get() = null
     /**
      * by lazy, not get(): building this copies the whole rate map three times over, and with
      * بورس loaded that map is the Worker's several hundred plus a couple of thousand نماد.

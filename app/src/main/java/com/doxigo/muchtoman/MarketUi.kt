@@ -251,13 +251,12 @@ fun MarketAndAssetsScreen(
     val currentSelectedPrice = effective[selectedAssetId] ?: marketItems.firstOrNull { it.id == selectedAssetId }?.currentPriceToman ?: usdCashToman
     val selectedItem = marketItems.firstOrNull { it.id == selectedAssetId } ?: marketItems.firstOrNull()
 
-    val chartSeries = remember(selectedAssetId, currentSelectedPrice, selectedInterval, state.rateHistoryStore, state.history) {
+    val chartSeries = remember(selectedAssetId, currentSelectedPrice, selectedInterval, state.rateHistoryStore) {
         MarketFluctuationEngine.computeSeries(
             assetId = selectedAssetId,
             currentPriceToman = currentSelectedPrice,
             interval = selectedInterval,
             historyStore = state.rateHistoryStore,
-            historicalSnapshots = state.history,
         )
     }
 
@@ -740,6 +739,8 @@ fun MarketSplineChart(
     modifier: Modifier = Modifier,
     onScrub: (FluctuationPoint?) -> Unit = {},
 ) {
+    val heroGold = Hero.gold
+    val heroTop = Hero.top
     var scrubIndex by remember(series) { mutableStateOf<Int?>(null) }
 
     val pointerMod = if (series.points.size > 1) {
@@ -863,7 +864,7 @@ fun MarketSplineChart(
 
                 // Vertical scrub line
                 drawLine(
-                    color = Hero.gold,
+                    color = heroGold,
                     start = Offset(scrubX, 0f),
                     end = Offset(scrubX, h),
                     strokeWidth = 2.dp.toPx(),
@@ -877,7 +878,7 @@ fun MarketSplineChart(
                     center = Offset(scrubX, scrubY),
                 )
                 drawCircle(
-                    color = Hero.top,
+                    color = heroTop,
                     radius = 4.dp.toPx(),
                     center = Offset(scrubX, scrubY),
                 )

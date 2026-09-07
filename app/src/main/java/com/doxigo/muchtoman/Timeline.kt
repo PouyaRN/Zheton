@@ -1184,18 +1184,41 @@ private fun TimelineRow(
             )
         }
 
-        // Three-dot action menu — only for debit transactions with meaningful actions.
-        if (!entry.transfer && (txn.direction == "out" || txn.direction == null)) {
-            Box {
-                IconButton(onClick = { menuOpen = true }, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        Icons.Rounded.MoreVert,
-                        contentDescription = "عملیات",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+        val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
+        val context = androidx.compose.ui.platform.LocalContext.current
+
+        // Three-dot action menu — comprehensive, clear, and feature-complete
+        Box {
+            IconButton(onClick = { menuOpen = true }, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    Icons.Rounded.MoreVert,
+                    contentDescription = "عملیات",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+            DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                DropdownMenuItem(
+                    text = { Text("مشاهده و ویرایش") },
+                    onClick = { menuOpen = false; onClick() },
+                )
+                DropdownMenuItem(
+                    text = { Text("کپی متن رسید") },
+                    onClick = {
+                        menuOpen = false
+                        val note = state.ledger.notes[entry.txn.ref].orEmpty()
+                        clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(formatReceipt(entry, note)))
+                        android.widget.Toast.makeText(context, "رسید تراکنش کپی شد", android.widget.Toast.LENGTH_SHORT).show()
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text(if (entry.hidden) "نمایش مجدد" else "پنهان‌سازی از گزارش‌ها") },
+                    onClick = {
+                        menuOpen = false
+                        onHide(entry, !entry.hidden)
+                    },
+                )
+                if (!entry.transfer && (txn.direction == "out" || txn.direction == null)) {
                     if (!isCreditLinked && rial != null && rial < 0) {
                         DropdownMenuItem(
                             text = { Text("ثبت به عنوان خرید اعتباری") },
@@ -1204,7 +1227,7 @@ private fun TimelineRow(
                     }
                     if (hasUnpaidInstallments && rial != null && rial < 0) {
                         DropdownMenuItem(
-                            text = { Text("پیوند به قسط") },
+                            text = { Text("پیوند به قسط وام") },
                             onClick = { menuOpen = false; onLinkInstallment(entry) },
                         )
                     }
@@ -1299,19 +1322,77 @@ private fun rememberAutoSave(
 }
 
 /**
+ * Normalizes text for search indexing and fuzzy Persian matching.
+ * Converts Arabic variants to Persian, unifies Persian/Arabic digits to ASCII,
+ * and strips punctuation, commas, and zero-width non-joiners.
+ */
+fun normalizeSearchToken(str: String): String {
+    return str.lowercase()
+        .replace('ي', 'ی')
+        .replace('ك', 'ک')
+        .replace('ة', 'ه')
+        .replace('آ', 'ا')
+        .replace('أ', 'ا')
+        .replace('إ', 'ا')
+        .replace('۰', '0')
+        .replace('۱', '1')
+        .replace('۲', '2')
+        .replace('۳', '3')
+        .replace('۴', '4')
+        .replace('۵', '5')
+        .replace('۶', '6')
+        .replace('۷', '7')
+        .replace('۸', '8')
+        .replace('۹', '9')
+        .replace('٠', '0')
+        .replace('١', '1')
+        .replace('٢', '2')
+        .replace('٣', '3')
+        .replace('٤', '4')
+        .replace('٥', '5')
+        .replace('٦', '6')
+        .replace('٧', '7')
+        .replace('٨', '8')
+        .replace('٩', '9')
+        .replace(",", "")
+        .replace("،", "")
+        .replace(" ", "")
+        .replace("\u200c", "") // ZWNJ
+}
+
+/**
  * Checks if a ledger entry matches a free-text timeline search query.
- * Matches against merchant, category, notes, transaction reference ID, and formatted/raw amount.
+ * Matches against merchant, category, notes, transaction reference ID, bank name, card mask,
+ * direction (واریز/برداشت), and formatted/raw amounts in Rial and Toman.
  */
 fun matchesTimelineQuery(entry: LedgerEntry, note: String, query: String): Boolean {
-    val q = query.trim()
-    if (q.isBlank()) return true
-    return entry.txn.merchant.contains(q, ignoreCase = true) ||
-        entry.categoryFa.contains(q, ignoreCase = true) ||
-        note.contains(q, ignoreCase = true) ||
-        entry.txn.ref.contains(q, ignoreCase = true) ||
-        (entry.txn.amountRial?.let {
-            faNumber(it / 10.0).contains(q) || (it / 10L).toString().contains(q)
-        } == true)
+    val rawQ = query.trim()
+    if (rawQ.isBlank()) return true
+    val q = normalizeSearchToken(rawQ)
+
+    val bankFa = bankNameOf(entry.txn.bank)
+    val dirFa = if (entry.txn.direction == "in") "واریز" else "برداشت"
+    val rial = entry.txn.amountRial
+    val toman = rial?.let { it / 10L }
+
+    val targets = listOfNotNull(
+        entry.txn.merchant,
+        entry.txn.merchantNorm,
+        entry.categoryFa,
+        note,
+        entry.txn.ref,
+        entry.txn.refNo,
+        entry.txn.mask,
+        entry.txn.bank,
+        bankFa,
+        dirFa,
+        rial?.toString(),
+        toman?.toString(),
+        rial?.let { faNumber(it.toDouble()) },
+        toman?.let { faNumber(it.toDouble()) }
+    )
+
+    return targets.any { normalizeSearchToken(it).contains(q) }
 }
 
 /**

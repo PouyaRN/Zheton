@@ -100,6 +100,19 @@ fun ReportsTab(
         }
     }
 
+    val windowDays = remember(window, today.longValue, windowStart) {
+        when (window) {
+            ReportWindow.MONTH -> {
+                val jal = jalaliOf(today.longValue)
+                jal.day.coerceAtLeast(1)
+            }
+            ReportWindow.THREE_MONTH -> 90
+            ReportWindow.SIX_MONTH -> 180
+            ReportWindow.YEAR -> 365
+            ReportWindow.ALL -> (today.longValue - windowStart).toInt().coerceAtLeast(1)
+        }
+    }
+
     val snapshot = remember(ledger.allEntries, windowStart) {
         val visible = ledger.allEntries.filter { !it.duplicate && !it.hidden && !it.transfer && it.txn.day >= windowStart }
         val income = visible.filter { it.txn.direction == "in" }.sumOf { it.txn.signedRial ?: 0L }
@@ -174,19 +187,20 @@ fun ReportsTab(
                     horizontal = Space.xl, vertical = Space.s,
                 ),
             ) {
-                // Spending summary card
-                item { ReportSummaryCard(snapshot, window) }
+                // Executive Cash Flow & Velocity Card
+                item {
+                    ExecutiveCashFlowCard(
+                        snapshot = snapshot,
+                        window = window,
+                        windowDays = windowDays,
+                        change = change,
+                    )
+                }
 
                 // Wealth Defense Index gauge card
                 item {
                     Spacer(Modifier.height(Space.l))
                     WealthDefenseGaugeCard(unhedgedToman = unhedgedToman, hedgedToman = hedgedToman)
-                }
-
-                // AI Purchasing & Hedging Advisor card
-                item {
-                    Spacer(Modifier.height(Space.l))
-                    ReportsPurchasingAdvisorCard(unhedgedToman = unhedgedToman)
                 }
 
                 // Asset Allocation Donut chart
@@ -334,7 +348,24 @@ private data class ReportSnapshot(
 )
 
 @Composable
-private fun ReportSummaryCard(snapshot: ReportSnapshot, window: ReportWindow) {
+private fun ExecutiveCashFlowCard(
+    snapshot: ReportSnapshot,
+    window: ReportWindow,
+    windowDays: Int,
+    change: Change?,
+) {
+    val dailyBurnToman = if (windowDays > 0) tomanOf(snapshot.expense) / windowDays else 0L
+
+    val periodInflation = when (window) {
+        ReportWindow.MONTH -> 3.75
+        ReportWindow.THREE_MONTH -> 11.25
+        ReportWindow.SIX_MONTH -> 22.5
+        ReportWindow.YEAR -> 45.0
+        ReportWindow.ALL -> 45.0
+    }
+    val nominalPct: Double? = change?.percent
+    val realGrowth: Double? = nominalPct?.let { it - periodInflation }
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -343,51 +374,197 @@ private fun ReportSummaryCard(snapshot: ReportSnapshot, window: ReportWindow) {
         color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Column(Modifier.padding(Space.xl)) {
-            Text(
-                window.fa,
-                fontSize = 14.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(Space.s))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column {
-                    Text("درآمد", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "تراز مالی و جریان نقدینگی",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Text(
+                    "${window.fa} (${faNumber(windowDays.toDouble())} روز)",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(Radius.pill))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                        .padding(horizontal = Space.s, vertical = 2.dp),
+                )
+            }
+
+            Spacer(Modifier.height(Space.m))
+
+            // 2x2 Financial Matrix
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.m)) {
+                // Inflow
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(Radius.card))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                        .padding(Space.m),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("درآمد / واریز", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.weight(1f))
+                        Text("↑", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E9E5B))
+                    }
+                    Spacer(Modifier.height(4.dp))
                     Text(
-                        bidi(faCompact(tomanOf(snapshot.income))),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
+                        text = bidi(faCompact(tomanOf(snapshot.income))),
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = ModamFigures,
                         color = Color(0xFF2E9E5B),
                     )
+                    Text("تومان", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text("هزینه", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+                // Outflow
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(Radius.card))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                        .padding(Space.m),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("مخارج / هزینه", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(Modifier.weight(1f))
+                        Text("↓", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+                    }
+                    Spacer(Modifier.height(4.dp))
                     Text(
-                        bidi(faCompact(tomanOf(snapshot.expense))),
-                        fontSize = 18.sp,
+                        text = bidi(faCompact(tomanOf(snapshot.expense))),
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = ModamFigures,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                    Text("تومان", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+
+            Spacer(Modifier.height(Space.s))
+
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.m)) {
+                // Net
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(Radius.card))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                        .padding(Space.m),
+                ) {
+                    Text("تراز خالص دوره", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = bidi(faSignedCompact(tomanOf(snapshot.net), snapshot.net > 0)),
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = ModamFigures,
+                        color = if (snapshot.net >= 0) Color(0xFF2E9E5B) else MaterialTheme.colorScheme.error,
+                    )
+                    Text(
+                        if (snapshot.net >= 0) "مازاد نقدی مثبت" else "کسری تراز نقدینگی",
+                        fontSize = 10.sp,
+                        color = if (snapshot.net >= 0) Color(0xFF2E9E5B) else MaterialTheme.colorScheme.error,
+                    )
+                }
+
+                // Savings Rate
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(Radius.card))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                        .padding(Space.m),
+                ) {
+                    Text("نرخ پس‌انداز", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "٪${faNumber(snapshot.savingsRate.toDouble())}",
+                        fontSize = 17.sp,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = ModamFigures,
+                        color = if (snapshot.savingsRate >= 20) Color(0xFF2E9E5B) else MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        when {
+                            snapshot.savingsRate >= 30 -> "سپر پس‌انداز قوی"
+                            snapshot.savingsRate >= 15 -> "سطح مطلوب"
+                            else -> "نیازمند صرفه‌جویی"
+                        },
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(Space.m))
+
+            // Daily Burn Velocity
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(Radius.card))
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
+                    .padding(horizontal = Space.m, vertical = Space.s),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("🔥", fontSize = 18.sp, modifier = Modifier.padding(end = Space.s))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "سرعت خرج‌کرد روزانه",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = "${faRate(dailyBurnToman.toDouble())} تومان در روز",
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
+                        fontFamily = ModamFigures,
                         color = MaterialTheme.colorScheme.onBackground,
                     )
                 }
             }
-            Spacer(Modifier.height(Space.m))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column {
-                    Text("خالص", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(
-                        bidi(faSignedCompact(tomanOf(snapshot.net), snapshot.net > 0)),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (snapshot.net >= 0) Color(0xFF2E9E5B) else MaterialTheme.colorScheme.error,
-                    )
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text("نرخ پس‌انداز", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(
-                        "${snapshot.savingsRate}%",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (snapshot.savingsRate >= 20) Color(0xFF2E9E5B) else MaterialTheme.colorScheme.onBackground,
-                    )
+
+            // Real Inflation Return Insight
+            if (realGrowth != null && nominalPct != null) {
+                Spacer(Modifier.height(Space.s))
+                val isAhead = realGrowth >= 0.0
+                val accentColor = if (isAhead) Color(0xFF10B981) else Color(0xFFF59E0B)
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(Radius.card))
+                        .background(accentColor.copy(alpha = 0.12f))
+                        .padding(horizontal = Space.m, vertical = Space.s),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(if (isAhead) "🛡️" else "⚠️", fontSize = 18.sp, modifier = Modifier.padding(end = Space.s))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            "سنجش قدرت خرید حقیقی پس از کسر تورم",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = accentColor,
+                        )
+                        Text(
+                            text = if (isAhead) {
+                                "رشد اسمی ٪${faDecimal(nominalPct, 1)} در برابر تورم ٪${faDecimal(periodInflation, 1)} (بازدهی خالص حقیقی: +٪${faDecimal(realGrowth, 1)})"
+                            } else {
+                                "تورم دوره ٪${faDecimal(periodInflation, 1)} بوده و بازدهی خالص ٪${faDecimal(kotlin.math.abs(realGrowth), 1)}- از تورم عقب مانده است."
+                            },
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                    }
                 }
             }
         }
@@ -588,185 +765,6 @@ private fun WealthDefenseGaugeCard(
                         fontWeight = FontWeight.Bold,
                         fontFamily = ModamFigures,
                         color = if (defense.dailyBleedToman > 0) MaterialTheme.colorScheme.error else gaugeColor,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun ReportsPurchasingAdvisorCard(
-    unhedgedToman: Long,
-    modifier: Modifier = Modifier,
-) {
-    val quickBudgets = remember(unhedgedToman) {
-        listOfNotNull(
-            if (unhedgedToman >= 1_000_000L) unhedgedToman else null,
-            10_000_000L,
-            50_000_000L,
-            150_000_000L,
-            500_000_000L,
-        ).distinct()
-    }
-    var selectedBudget by remember(unhedgedToman) {
-        mutableLongStateOf(if (unhedgedToman >= 1_000_000L) unhedgedToman else 50_000_000L)
-    }
-
-    val advice = remember(selectedBudget) {
-        PurchasingOptimizationEngine.computeBestBuyAdvice(budgetToman = selectedBudget)
-    }
-
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.group))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.group)),
-        color = MaterialTheme.colorScheme.surfaceContainer,
-    ) {
-        Column(Modifier.padding(Space.xl)) {
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    "🛡️ دستیار هوشمند سپر تورمی",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Text(
-                    "بودجه: ${faCompact(selectedBudget.toDouble())} ت",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    fontFamily = ModamFigures,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-
-            Spacer(Modifier.height(Space.s))
-
-            // Studio-grade budget quick segmented selector
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
-                    .padding(3.dp),
-                horizontalArrangement = Arrangement.spacedBy(3.dp),
-            ) {
-                quickBudgets.forEach { b ->
-                    val isSelected = b == selectedBudget
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(
-                                if (isSelected) MaterialTheme.colorScheme.primary
-                                else Color.Transparent
-                            )
-                            .clickable { selectedBudget = b }
-                            .padding(vertical = 6.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = if (b == unhedgedToman && b >= 1_000_000L) "نقدینگی من" else "${faCompact(b.toDouble())} ت",
-                            fontSize = 11.sp,
-                            fontFamily = ModamFigures,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                        )
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(Space.s))
-
-            Text(
-                advice.headlineFa,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.primary,
-            )
-
-            Spacer(Modifier.height(2.dp))
-
-            Text(
-                advice.summaryFa,
-                fontSize = 12.sp,
-                lineHeight = 18.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            Spacer(Modifier.height(Space.m))
-
-            // Allocation visual split bar
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp)),
-            ) {
-                advice.allocations.forEach { slice ->
-                    val sliceColor = when (slice.asset) {
-                        AssetClass.GOLD_ETF, AssetClass.MELTED_GOLD_18K, AssetClass.GOLD_COIN_BAHAR -> Color(0xFFFBBF24)
-                        AssetClass.USDT_STABLECOIN -> Color(0xFF34D399)
-                        AssetClass.REAL_ESTATE_FUND, AssetClass.PHYSICAL_PROPERTY -> Color(0xFF38BDF8)
-                    }
-                    Box(
-                        Modifier
-                            .weight(slice.percentage.toFloat())
-                            .fillMaxHeight()
-                            .background(sliceColor),
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(Space.s))
-
-            // Slices detail list
-            advice.allocations.forEach { slice ->
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        Text(slice.asset.icon, fontSize = 13.sp)
-                        Text(
-                            "${slice.percentage}٪ ${slice.asset.fa}",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground,
-                        )
-                    }
-                    Text(
-                        "${faCompact(slice.amountToman.toDouble())} ت",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = ModamFigures,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
-
-            // Warnings
-            if (advice.warningsFa.isNotEmpty()) {
-                Spacer(Modifier.height(Space.s))
-                advice.warningsFa.forEach { warn ->
-                    Text(
-                        "⚠️ $warn",
-                        fontSize = 11.sp,
-                        lineHeight = 16.sp,
-                        color = Color(0xFFF59E0B),
-                        modifier = Modifier.padding(vertical = 2.dp),
                     )
                 }
             }

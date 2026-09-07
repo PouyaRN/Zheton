@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -53,6 +54,288 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
+/**
+ * Unified Studio-Grade Financial Command Deck on the Home screen.
+ * Combines 4 vital financial metrics (Safe daily spend, monthly rhythm, inflation bleed, inflation shield index)
+ * with real-time wealth defense allocation and tactical shortcut tools.
+ */
+@Composable
+internal fun HomeFinancialExecutiveDeck(
+    state: UiState,
+    modifier: Modifier = Modifier,
+    privacyMode: Boolean = false,
+    onOpenGoldBubble: () -> Unit = {},
+    onOpenRecurring: () -> Unit = {},
+    onOpenWishlist: () -> Unit = {},
+) {
+    val liquidCashToman = state.bankToman.toLong()
+    val upcomingObligationsToman = (state.obligations.filter { !it.archived }.sumOf { obligation ->
+        val paid = state.obligationPayments[obligation.id]?.count { it.paidDate != null } ?: 0
+        val unpaidCount = (obligation.installmentCount - paid).coerceAtLeast(0)
+        unpaidCount.toLong() * obligation.installmentRial
+    } / 10L)
+    val reservationsToman = (state.reservations.filter { !it.released }.sumOf { it.amountRial } / 10L)
+
+    val burn = remember(liquidCashToman) {
+        calculateDailyCashBurn(liquidCashToman)
+    }
+    val runway = remember(liquidCashToman, upcomingObligationsToman, reservationsToman) {
+        calculateSafeToSpend(
+            liquidCashToman = liquidCashToman,
+            upcomingObligationsToman = upcomingObligationsToman,
+            reservationsToman = reservationsToman,
+        )
+    }
+
+    val todayJal = jalaliOf(tehranDay(System.currentTimeMillis()))
+    val totalDaysInMonth = jalaliMonthLength(todayJal.year, todayJal.month)
+    val monthProgress = (todayJal.day.toFloat() / totalDaysInMonth).coerceIn(0f, 1f)
+
+    // Calculate wealth defense index
+    val unhedgedToman = liquidCashToman
+    val totalWealthToman = state.totals.toman.toLong()
+    val hedgedToman = (totalWealthToman - unhedgedToman).coerceAtLeast(0L)
+    val defenseIndex = if (totalWealthToman > 0) ((hedgedToman.toDouble() / totalWealthToman) * 100).toInt().coerceIn(0, 100) else 0
+
+    val rates = state.rates.toman
+    val usdtRate = rates["usdt"] ?: rates["usd"] ?: 93_000.0
+    val gold18Rate = rates["gold18"] ?: 4_650_000.0
+    val emamiRate = rates["coin_emami"] ?: 54_000_000.0
+    val robRate = rates["coin_rob"] ?: 18_400_000.0
+
+    val safeBudgetToman = kotlin.math.max(1_000_000L, runway.safeToSpendToman)
+    val advice = remember(safeBudgetToman, usdtRate, gold18Rate, emamiRate, robRate) {
+        PurchasingOptimizationEngine.computeBestBuy(
+            budgetToman = safeBudgetToman,
+            usdtToman = usdtRate,
+            gold18Toman = gold18Rate,
+            emamiCoinToman = emamiRate,
+            robCoinToman = robRate,
+        )
+    }
+
+    Panel(modifier) {
+        // Header
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "دیده‌بان پایش ثروت و تاب‌آوری مالی",
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                "هوشمند",
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(Radius.pill))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                    .padding(horizontal = Space.s, vertical = 2.dp),
+            )
+        }
+
+        Spacer(Modifier.height(Space.m))
+
+        // 2x2 Vital Signs Grid
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.m)) {
+            // Safe Daily Spend
+            Column(
+                Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(Radius.card))
+                    .background(
+                        if (runway.isOverdrawn) MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f)
+                        else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f)
+                    )
+                    .padding(Space.m),
+            ) {
+                Text(
+                    "سهمیه خرج امن روزانه",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = if (runway.isOverdrawn) "کسری بودجه" else "${faRate(runway.dailyAllowanceToman.toDouble())} ت",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Black,
+                    fontFamily = ModamFigures,
+                    color = if (runway.isOverdrawn) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.privacyBlur(privacyMode),
+                )
+                Text(
+                    "${faNumber(runway.daysRemaining.toDouble())} روز تا آخر ماه",
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            // Month Rhythm & Progress
+            Column(
+                Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(Radius.card))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                    .padding(Space.m),
+            ) {
+                Text(
+                    "پیشرفت زمانی این ماه",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "روز ${faNumber(todayJal.day.toDouble())} از ${faNumber(totalDaysInMonth.toDouble())}",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = ModamFigures,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Spacer(Modifier.height(4.dp))
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
+                ) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth(monthProgress)
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(MaterialTheme.colorScheme.primary),
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(Space.s))
+
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.m)) {
+            // Inflation Bleed
+            Column(
+                Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(Radius.card))
+                    .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.18f))
+                    .padding(Space.m),
+            ) {
+                Text(
+                    "افت روزانه ارزش نقدینگی",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "${faRate(burn.dailyLossToman.toDouble())} ت/روز",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Black,
+                    fontFamily = ModamFigures,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.privacyBlur(privacyMode),
+                )
+                Text(
+                    "سوزانده‌شده در تورم",
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                )
+            }
+
+            // Inflation Shield Index
+            Column(
+                Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(Radius.card))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                    .padding(Space.m),
+            ) {
+                Text(
+                    "شاخص مصونیت از تورم",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "٪${faNumber(defenseIndex.toDouble())} مصون",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Black,
+                    fontFamily = ModamFigures,
+                    color = if (defenseIndex >= 60) Color(0xFF10B981) else Color(0xFFF59E0B),
+                )
+                Text(
+                    "طلا، ارز و دارایی محافظ",
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        Spacer(Modifier.height(Space.m))
+
+        // Actionable Recommendation Bar
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(Radius.card))
+                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f))
+                .padding(horizontal = Space.m, vertical = Space.s),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("🛡️", fontSize = 18.sp, modifier = Modifier.padding(end = Space.s))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    advice.headlineFa,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Text(
+                    advice.summaryFa,
+                    fontSize = 11.sp,
+                    lineHeight = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        Spacer(Modifier.height(Space.m))
+
+        // Tactical shortcuts
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Space.s),
+        ) {
+            OutlinedButton(
+                onClick = onOpenGoldBubble,
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(horizontal = Space.xs, vertical = Space.xs),
+            ) {
+                Text("حباب طلا", fontSize = 11.sp, maxLines = 1)
+            }
+            OutlinedButton(
+                onClick = onOpenRecurring,
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(horizontal = Space.xs, vertical = Space.xs),
+            ) {
+                Text("اقساط و دوره‌ای", fontSize = 11.sp, maxLines = 1)
+            }
+            OutlinedButton(
+                onClick = onOpenWishlist,
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(horizontal = Space.xs, vertical = Space.xs),
+            ) {
+                Text("کنترل خرید", fontSize = 11.sp, maxLines = 1)
+            }
+        }
+    }
+}
 
 /**
  * Smart Cash Burn and Safe-to-Spend Runway Card on the Home screen.
@@ -793,10 +1076,10 @@ internal fun WealthDefenseAdvisorCard(
     val liquidBudgetToman = kotlin.math.max(1_000_000L, safe)
 
     val rates = state.rates.toman
-    val usdtRate = rates["usd"] ?: 226_700.0
-    val gold18Rate = rates["gold18"] ?: 23_353_600.0
-    val emamiRate = rates["coin_emami"] ?: 229_230_000.0
-    val robRate = rates["coin_rob"] ?: 64_500_000.0
+    val usdtRate = rates["usdt"] ?: rates["usd"] ?: 93_000.0
+    val gold18Rate = rates["gold18"] ?: 4_650_000.0
+    val emamiRate = rates["coin_emami"] ?: 54_000_000.0
+    val robRate = rates["coin_rob"] ?: 18_400_000.0
 
     val advice = remember(liquidBudgetToman, usdtRate, gold18Rate, emamiRate, robRate) {
         PurchasingOptimizationEngine.computeBestBuy(

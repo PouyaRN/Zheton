@@ -7,6 +7,8 @@ import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.ExperimentalTextApi
@@ -99,34 +101,47 @@ internal fun heroFigure(figure: AnnotatedString, tone: Color, unit: String = "ت
 }
 
 /**
- * The hero is the same object in both themes — deep green field, gold number. Fixing it here
- * rather than deriving it from the scheme also means dark mode cannot quietly invert it into
- * a gold slab.
+ * Studio-grade palette for the hero field. Each theme mode owns its own luxury gradient and accents.
+ */
+data class HeroPalette(
+    val top: Color,
+    val bottom: Color,
+    val gold: Color,
+    val muted: Color,
+    val strong: Color,
+    val mint: Color = Color(0xFF3BE0A8),
+    val warn: Color = Color(0xFFFFB4A6),
+    val well: Color = Color(0x1AFFFFFF),
+    val hairline: Color = Color(0x1FFFFFFF),
+)
+
+val LocalHeroPalette = staticCompositionLocalOf {
+    HeroPalette(
+        top = Color(0xFF1E293B),
+        bottom = Color(0xFF0F172A),
+        gold = Color(0xFFF59E0B),
+        muted = Color(0xFF94A3B8),
+        strong = Color(0xFFF8FAFC),
+    )
+}
+
+/**
+ * The hero field adapts dynamically to whichever theme is chosen by the user.
  */
 object Hero {
-    /** Top and bottom of the field's gradient. Light hits the top corner, as on a card. */
-    val top = Color(0xFF0C544A)
-    val bottom = Color(0xFF03201C)
+    val top: Color @Composable get() = LocalHeroPalette.current.top
+    val bottom: Color @Composable get() = LocalHeroPalette.current.bottom
+    val gold: Color @Composable get() = LocalHeroPalette.current.gold
+    val muted: Color @Composable get() = LocalHeroPalette.current.muted
+    val strong: Color @Composable get() = LocalHeroPalette.current.strong
+    val mint: Color @Composable get() = LocalHeroPalette.current.mint
+    val warn: Color @Composable get() = LocalHeroPalette.current.warn
+    val well: Color @Composable get() = LocalHeroPalette.current.well
+    val hairline: Color @Composable get() = LocalHeroPalette.current.hairline
 
-    /** The answer, and the one thing allowed to be gold inside the field. */
-    val gold = Color(0xFFF7C948)
-
-    /** Green-tinted secondary text, never flat grey. 8.4:1 on `bottom`. */
-    val muted = Color(0xFF93B7B0)
-    val strong = Color(0xFFEAF3F0)
-
-    /** Growth. The same convention every Iranian bank app shares. */
-    val mint = Color(0xFF3BE0A8)
-
-    /**
-     * The one warning colour the field may use. Gold already means "the answer" and "the
-     * action" up here; a caution in the same gold reads as a second call to act.
-     */
-    val warn = Color(0xFFFFB4A6)
-
-    /** Raised surfaces inside the field: action circles, pills, the freshness strip. */
-    val well = Color(0x1AFFFFFF)
-    val hairline = Color(0x1FFFFFFF)
+    val defaultTop = Color(0xFF0C544A)
+    val defaultBottom = Color(0xFF03201C)
+    val defaultGold = Color(0xFFF7C948)
 }
 
 /** Theme choices: follow phone, light, dark, AMOLED, or modern studio palettes. */
@@ -502,9 +517,93 @@ fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -
         labelSmall = labelSmall.copy(fontFamily = Modam, fontWeight = FontWeight.Medium, letterSpacing = 0.sp),
     )
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = base.persian(),
-        content = content,
-    )
+    val heroPalette = when (mode) {
+        ThemeMode.SYSTEM -> if (systemDark) {
+            HeroPalette(
+                top = Color(0xFF16221E),
+                bottom = Color(0xFF090E0C),
+                gold = Color(0xFFFBBF24),
+                muted = Color(0xFF8FA8A1),
+                strong = Color(0xFFF0FDF4),
+            )
+        } else {
+            HeroPalette(
+                top = Color(0xFF1E293B),
+                bottom = Color(0xFF0F172A),
+                gold = Color(0xFFF59E0B),
+                muted = Color(0xFF94A3B8),
+                strong = Color(0xFFF8FAFC),
+            )
+        }
+        ThemeMode.LIGHT -> HeroPalette(
+            top = Color(0xFF1E293B),
+            bottom = Color(0xFF0F172A),
+            gold = Color(0xFFF59E0B),
+            muted = Color(0xFF94A3B8),
+            strong = Color(0xFFF8FAFC),
+        )
+        ThemeMode.DARK -> HeroPalette(
+            top = Color(0xFF16221E),
+            bottom = Color(0xFF090E0C),
+            gold = Color(0xFFFBBF24),
+            muted = Color(0xFF8FA8A1),
+            strong = Color(0xFFF0FDF4),
+        )
+        ThemeMode.AMOLED -> HeroPalette(
+            top = Color(0xFF000000),
+            bottom = Color(0xFF0A0A0A),
+            gold = Color(0xFFFFD700),
+            muted = Color(0xFF71717A),
+            strong = Color(0xFFFFFFFF),
+            well = Color(0x1FFFFFFF),
+            hairline = Color(0x28FFFFFF),
+        )
+        ThemeMode.OBSIDIAN_EMERALD -> HeroPalette(
+            top = Color(0xFF063326),
+            bottom = Color(0xFF021610),
+            gold = Color(0xFF34D399),
+            muted = Color(0xFF6EE7B7).copy(alpha = 0.85f),
+            strong = Color(0xFFECFDF5),
+            mint = Color(0xFF10B981),
+            well = Color(0x2210B981),
+            hairline = Color(0x3334D399),
+        )
+        ThemeMode.ROYAL_AMETHYST -> HeroPalette(
+            top = Color(0xFF3B0764),
+            bottom = Color(0xFF120324),
+            gold = Color(0xFFFDE047),
+            muted = Color(0xFFD8B4FE),
+            strong = Color(0xFFFAF5FF),
+            well = Color(0x22A855F7),
+            hairline = Color(0x33C084FC),
+        )
+        ThemeMode.NORDIC_SLATE -> HeroPalette(
+            top = Color(0xFF0C2B4E),
+            bottom = Color(0xFF051324),
+            gold = Color(0xFF38BDF8),
+            muted = Color(0xFF94A3B8),
+            strong = Color(0xFFF0F9FF),
+            well = Color(0x220284C7),
+            hairline = Color(0x3338BDF8),
+        )
+        ThemeMode.CYBER_GOLD -> HeroPalette(
+            top = Color(0xFF2C1E03),
+            bottom = Color(0xFF0E0901),
+            gold = Color(0xFFFFD700),
+            muted = Color(0xFFEAB308),
+            strong = Color(0xFFFEFCE8),
+            well = Color(0x22CA8A04),
+            hairline = Color(0x33FACC15),
+        )
+    }
+
+    CompositionLocalProvider(
+        LocalHeroPalette provides heroPalette,
+    ) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = base.persian(),
+            content = content,
+        )
+    }
 }
