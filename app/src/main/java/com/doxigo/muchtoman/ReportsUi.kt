@@ -535,7 +535,7 @@ private fun ExecutiveCashFlowCard(
             }
 
             // Real Inflation Return Insight
-            if (realGrowth != null && nominalPct != null) {
+            if (realGrowth != null) {
                 Spacer(Modifier.height(Space.s))
                 val isAhead = realGrowth >= 0.0
                 val accentColor = if (isAhead) Color(0xFF10B981) else Color(0xFFF59E0B)

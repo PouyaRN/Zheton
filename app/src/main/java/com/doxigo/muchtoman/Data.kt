@@ -388,6 +388,7 @@ internal fun sanitizeRates(
     now: Long = System.currentTimeMillis(),
 ): Rates {
     val toman = LinkedHashMap<String, Double>()
+    val emamiPrice = raw.toman["coin_emami"]
     for ((id, value) in raw.toman) {
         if (toman.size >= MAX_RATE_ENTRIES) break
         if (
@@ -396,7 +397,25 @@ internal fun sanitizeRates(
             id.none { it.isISOControl() || it.isWhitespace() } &&
             value.isFinite() &&
             value > 0.0
-        ) toman[id] = value
+        ) {
+            var sanitizedValue = value
+            // Guard against USD/USDT rate anomaly (jumping to 54M if coin_emami is mixed up, or quoted in Rial)
+            if (id == "usd" || id == "usdt") {
+                if (emamiPrice != null && kotlin.math.abs(sanitizedValue - emamiPrice) < 1000.0) {
+                    // Clearly mixed up with full gold coin price
+                    continue
+                }
+                if (sanitizedValue > 2_000_000.0) {
+                    if (sanitizedValue in (20_000.0 * 10)..(2_000_000.0 * 10)) {
+                        sanitizedValue /= 10.0
+                    } else {
+                        // Completely implausible rate for 1 USD/USDT
+                        continue
+                    }
+                }
+            }
+            toman[id] = sanitizedValue
+        }
     }
 
     val seen = HashSet<String>()

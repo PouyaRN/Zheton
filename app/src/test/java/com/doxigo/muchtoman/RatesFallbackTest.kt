@@ -192,4 +192,26 @@ class RatesFallbackTest {
         val raw = Rates(now + 5 * 60_000L + 1, mapOf("usd" to 1.0))
         assertEquals(0L, sanitizeRates(raw, "https://rates.muchtoman.com/rates", now).updatedAt)
     }
+
+    @Test
+    fun `usd rate anomaly jumping to gold coin or extreme values is sanitized`() {
+        val now = 1_000_000L
+        val ours = "https://rates.muchtoman.com/rates"
+
+        // 1. USD mixed up with coin_emami (54M) is rejected
+        val mixedUp = Rates(now, mapOf("usd" to 54_000_000.0, "coin_emami" to 54_000_000.0))
+        val sanitizedMixed = sanitizeRates(mixedUp, ours, now)
+        assertFalse("usd should be rejected when identical to coin_emami", sanitizedMixed.toman.containsKey("usd"))
+        assertEquals(54_000_000.0, sanitizedMixed.toman["coin_emami"])
+
+        // 2. USD mistakenly quoted in Rial (e.g. 93,000 * 10 = 930,000 Toman or 930,000 * 10 Rial) is converted
+        val rialQuoted = Rates(now, mapOf("usd" to 930_000.0 * 10))
+        val sanitizedRial = sanitizeRates(rialQuoted, ours, now)
+        assertEquals(930_000.0, sanitizedRial.toman["usd"])
+
+        // 3. Completely implausible USD rate (> 20,000,000) without matching coin is rejected
+        val crazyHigh = Rates(now, mapOf("usd" to 85_000_000.0))
+        val sanitizedCrazy = sanitizeRates(crazyHigh, ours, now)
+        assertFalse("Implausible USD rate should be rejected", sanitizedCrazy.toman.containsKey("usd"))
+    }
 }

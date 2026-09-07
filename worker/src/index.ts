@@ -46,7 +46,7 @@ const APK_PATH = '/download';
  * confident wrong total. The official IRR peg would land the dollar near 4,200 Toman and a
  * parse slip lands it near zero — both are rejected rather than shown to a user.
  */
-const PLAUSIBLE_USD_TOMAN = { min: 10_000, max: 10_000_000 };
+const PLAUSIBLE_USD_TOMAN = { min: 20_000, max: 500_000 };
 
 /** How many coins the picker offers, by market cap. */
 const COIN_LIMIT = 250;
