@@ -164,6 +164,7 @@ fun TimelineScreen(
     onBulkMerchant: (List<LedgerEntry>, String) -> Unit = { _, _ -> },
     onHide: (LedgerEntry, Boolean) -> Unit = { _, _ -> },
     onToggleShowHidden: () -> Unit = {},
+    onToggleTransfer: (LedgerEntry) -> Unit = {},
     /** Tells the host to widen the ledger window while a structured filter is live. */
     onFilterWide: (Boolean) -> Unit = {},
 ) {
@@ -488,6 +489,7 @@ TextButton(onClick = {
                                     onHide = onHide,
                                     onMarkCredit = onMarkCredit,
                                     onLinkInstallment = onLinkInstallment,
+                                    onToggleTransfer = onToggleTransfer,
                                 )
                             }
                         }
@@ -986,6 +988,7 @@ private fun DayBand(
     onHide: (LedgerEntry, Boolean) -> Unit = { _, _ -> },
     onMarkCredit: (LedgerEntry) -> Unit,
     onLinkInstallment: (LedgerEntry) -> Unit,
+    onToggleTransfer: (LedgerEntry) -> Unit = {},
 ) {
     // Transfers move money between her own accounts. Counting them would show a day that only
     // shuffled funds as a day she earned or spent, which is the whole reason they are struck
@@ -1039,6 +1042,7 @@ private fun DayBand(
                 onHide = onHide,
                 onMarkCredit = onMarkCredit,
                 onLinkInstallment = onLinkInstallment,
+                onToggleTransfer = onToggleTransfer,
             )
         }
     }
@@ -1056,6 +1060,7 @@ private fun TimelineRow(
     onHide: (LedgerEntry, Boolean) -> Unit = { _, _ -> },
     onMarkCredit: (LedgerEntry) -> Unit,
     onLinkInstallment: (LedgerEntry) -> Unit,
+    onToggleTransfer: (LedgerEntry) -> Unit = {},
 ) {
     val txn = entry.txn
     val incoming = txn.direction == "in"
@@ -1216,6 +1221,15 @@ private fun TimelineRow(
                     onClick = {
                         menuOpen = false
                         onHide(entry, !entry.hidden)
+                    },
+                )
+                DropdownMenuItem(
+                    text = {
+                        Text(if (entry.transfer) "لغو انتقال بین حساب‌ها (محاسبه در مخارج)" else "ثبت به عنوان انتقال بین حساب‌ها")
+                    },
+                    onClick = {
+                        menuOpen = false
+                        onToggleTransfer(entry)
                     },
                 )
                 if (!entry.transfer && (txn.direction == "out" || txn.direction == null)) {
@@ -1434,6 +1448,7 @@ fun TransactionScreen(
     onUnpinCategory: (LedgerEntry) -> Unit = {},
     onDeletePermanently: (LedgerEntry) -> Unit = {},
     onLoadSource: suspend (LedgerEntry) -> String,
+    onToggleTransfer: (LedgerEntry) -> Unit = {},
     onBack: () -> Unit,
 ) {
     val txn = entry.txn
@@ -1541,6 +1556,54 @@ fun TransactionScreen(
                         Icon(Icons.Rounded.Share, contentDescription = null)
                         Spacer(Modifier.width(Space.xs))
                         Text("اشتراک‌گذاری", fontSize = 13.sp)
+                    }
+                }
+            }
+
+            item(key = "transfer_toggle") {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (entry.transfer) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+                        else MaterialTheme.colorScheme.surfaceContainer,
+                    ),
+                    shape = RoundedCornerShape(Radius.card),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(gutter)
+                        .padding(top = Space.m),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .toggleable(
+                                value = entry.transfer,
+                                role = Role.Switch,
+                                onValueChange = { onToggleTransfer(entry) },
+                            )
+                            .padding(Space.m),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                "انتقال بین حساب‌های خودی",
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                if (entry.transfer)
+                                    "این تراکنش جابجایی بین حساب‌های خود شماست و در مخارج یا درآمد محاسبه نمی‌شود."
+                                else
+                                    "اگر این پول بین کارت‌های خودتان جابجا شده، روشن کنید تا خرج حساب نشود.",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Spacer(Modifier.width(Space.m))
+                        Switch(
+                            checked = entry.transfer,
+                            onCheckedChange = null,
+                        )
                     }
                 }
             }

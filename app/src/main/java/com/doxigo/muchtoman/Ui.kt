@@ -396,6 +396,7 @@ val snackbarHostState = remember { SnackbarHostState() }
                 onUnpinCategory = vm::unpinCategory,
                 onDeletePermanently = { e -> vm.deletePermanently(listOf(e)) },
                 onLoadSource = vm::sourceOf,
+                onToggleTransfer = { e -> vm.toggleTransfer(e) },
                 onBack = { transactionRef = null },
             )
             return
@@ -503,7 +504,22 @@ val snackbarHostState = remember { SnackbarHostState() }
         )
     }
     if (showWishlistSheet) {
+        val liquidCashToman = state.bankToman.toLong()
+        val upcomingObligationsToman = (state.obligations.filter { !it.archived }.sumOf { obligation ->
+            val paid = state.obligationPayments[obligation.id]?.count { it.paidDate != null } ?: 0
+            val unpaidCount = (obligation.installmentCount - paid).coerceAtLeast(0)
+            unpaidCount.toLong() * obligation.installmentRial
+        } / 10L)
+        val reservationsToman = (state.reservations.filter { !it.released }.sumOf { it.amountRial } / 10L)
+        val safeSpendResult = remember(liquidCashToman, upcomingObligationsToman, reservationsToman) {
+            calculateSafeToSpend(
+                liquidCashToman = liquidCashToman,
+                upcomingObligationsToman = upcomingObligationsToman,
+                reservationsToman = reservationsToman,
+            )
+        }
         WishlistSheet(
+            dailySafeSpendToman = safeSpendResult.dailyAllowanceToman,
             onDismiss = { showWishlistSheet = false },
         )
     }
@@ -577,6 +593,7 @@ val snackbarHostState = remember { SnackbarHostState() }
             onBulkMerchant = vm::bulkPinMerchant,
             onHide = { entry, hidden -> vm.setTransactionHidden(entry, hidden) },
             onToggleShowHidden = { vm.setShowHidden(!state.showHidden) },
+            onToggleTransfer = { entry -> vm.toggleTransfer(entry) },
             onFilterWide = { wide -> vm.setFilterWide(wide) },
         )
         return@Scaffold

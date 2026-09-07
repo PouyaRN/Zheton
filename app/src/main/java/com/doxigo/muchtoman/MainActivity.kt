@@ -824,6 +824,66 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /**
+     * Mark or unmark a transaction as an internal self-transfer between the user's own accounts.
+     * Reconciled self-transfers neutralize both income and spending, preventing distorted cash flow.
+     */
+    fun toggleTransfer(entry: LedgerEntry) {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            runCatching {
+                val durable = DurableDb.get(app)
+                val derived = DerivedDb.get(app)
+                val session = loadSession(durable)
+                val now = System.currentTimeMillis()
+                val ref = entry.txn.ref
+                val previous = durable.decisions().forRef(ref)
+                    .firstOrNull { it.kind == DecisionKind.CATEGORY }
+
+                if (entry.transfer) {
+                    // Unmark transfer: reject any transfer link touching this ref
+                    derived.links().touching(ref)
+                        .filter { it.kind == LinkKind.TRANSFER }
+                        .forEach { link ->
+                            durable.linkDecisions().put(
+                                linkDecision(
+                                    link.aRef,
+                                    link.bRef,
+                                    LinkKind.TRANSFER,
+                                    Verdict.REJECTED,
+                                    now,
+                                )
+                            )
+                        }
+                    // If category was pinned to CAT_TRANSFER, delete the decision
+                    if (previous?.value == CAT_TRANSFER) {
+                        durable.decisions().put(
+                            previous.copy(deleted = true, updatedAt = now, memberId = session?.member.orEmpty())
+                        )
+                    }
+                } else {
+                    // Mark as transfer: pin category to CAT_TRANSFER
+                    durable.decisions().put(
+                        TxnDecision(
+                            id = previous?.id ?: uuid7(now),
+                            ref = ref,
+                            kind = DecisionKind.CATEGORY,
+                            value = CAT_TRANSFER,
+                            createdAt = previous?.createdAt ?: now,
+                            updatedAt = now,
+                            memberId = session?.member.orEmpty(),
+                            familyRef = entry.txn.familyRef.ifBlank { "" },
+                        )
+                    )
+                }
+                derive(durable, derived, extraLookup(store.extraBankNumbers))
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
+                recomputeAccountBalancesFromLedger()
+                requestFamilySync(silent = true)
+            }.onFailure { android.util.Log.w("muchtoman", "toggle transfer failed: $it") }
+        }
+    }
+
     /** How long a batch action waits before it becomes irreversible. */
     private val pendingBatchWindowMs = 10_000L
     @Volatile private var pendingBatchJob: kotlinx.coroutines.Job? = null

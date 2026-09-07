@@ -143,4 +143,45 @@ class TimelineUiFeaturesTest {
         // Non-match
         assertFalse(matchesSearch(bitcoin, "eth"))
     }
+
+    // ── Self-transfer reconciliation Tests ──────────────────────────
+
+    @Test
+    fun `self transfer entries are excluded from net cash calculation`() {
+        val outflow = dummyEntry(
+            ref = "sms:blu:1",
+            direction = "out",
+            amountRial = 50_000_000L,
+            merchant = "انتقال به سامان",
+        ).copy(transfer = true)
+
+        val regularSpend = dummyEntry(
+            ref = "sms:blu:2",
+            direction = "out",
+            amountRial = 2_000_000L,
+            merchant = "نانوایی",
+        )
+
+        val rows = listOf(outflow, regularSpend)
+        // Day net must only count regularSpend (-2M Rial), ignoring the 50M transfer
+        val net = rows.filterNot { it.transfer || it.hidden }.sumOf { it.txn.signedRial ?: 0L }
+        assertEquals(-2_000_000L, net)
+    }
+
+    @Test
+    fun `reports entries exclude transfers and duplicates`() {
+        val transferIn = dummyEntry(ref = "1", direction = "in", amountRial = 10_000_000L).copy(transfer = true)
+        val transferOut = dummyEntry(ref = "2", direction = "out", amountRial = 10_000_000L).copy(transfer = true)
+        val realIncome = dummyEntry(ref = "3", direction = "in", amountRial = 25_000_000L)
+        val realExpense = dummyEntry(ref = "4", direction = "out", amountRial = 5_000_000L)
+
+        val allEntries = listOf(transferIn, transferOut, realIncome, realExpense)
+        val effective = spendable(allEntries)
+
+        assertEquals(2, effective.size)
+        assertTrue(effective.contains(realIncome))
+        assertTrue(effective.contains(realExpense))
+        assertFalse(effective.contains(transferIn))
+        assertFalse(effective.contains(transferOut))
+    }
 }

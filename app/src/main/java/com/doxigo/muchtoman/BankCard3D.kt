@@ -37,6 +37,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.geometry.Size
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.pager.HorizontalPager
@@ -44,9 +49,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -331,16 +334,40 @@ fun BankCard3D(
                     ContactlessWaves(color = palette.secondaryTextColor.copy(alpha = 0.7f))
                 }
 
-                // Card Number PAN
+                // Card Number PAN & Copy Action
                 val displayPan = formatCardPan(bankAccount?.mask ?: "۶۰۳۷ •••• •••• ۱۲۳۴")
-                Text(
-                    text = displayPan,
-                    color = palette.textColor,
-                    fontSize = 19.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = ModamFigures,
-                    letterSpacing = 2.sp,
-                )
+                val cardContext = LocalContext.current
+                val cardClipboard = LocalClipboardManager.current
+                val cardDigits = bankAccount?.mask?.filter { it.isDigit() }?.ifBlank { bankAccount.mask } ?: ""
+
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable {
+                            if (cardDigits.isNotBlank()) {
+                                cardClipboard.setText(AnnotatedString(cardDigits))
+                                android.widget.Toast.makeText(cardContext, "شماره کپی شد: $cardDigits", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        .padding(vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = displayPan,
+                        color = palette.textColor,
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = ModamFigures,
+                        letterSpacing = 2.sp,
+                    )
+                    if (cardDigits.isNotBlank()) {
+                        CardCopyIcon(
+                            tint = palette.accentColor.copy(alpha = 0.85f),
+                            modifier = Modifier.size(15.dp),
+                        )
+                    }
+                }
 
                 // Bottom Row: Cardholder / Title & Live Balance
                 Row(
@@ -585,6 +612,34 @@ fun formatCardPan(raw: String): String {
 }
 
 /**
+ * Minimalist crisp dual-page copy icon.
+ */
+@Composable
+private fun CardCopyIcon(
+    tint: Color,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier = modifier) {
+        val stroke = 1.3.dp.toPx()
+        val corner = 2.dp.toPx()
+        drawRoundRect(
+            color = tint.copy(alpha = 0.5f),
+            topLeft = Offset(size.width * 0.28f, 0f),
+            size = Size(size.width * 0.72f, size.height * 0.72f),
+            cornerRadius = CornerRadius(corner, corner),
+            style = Stroke(width = stroke),
+        )
+        drawRoundRect(
+            color = tint,
+            topLeft = Offset(0f, size.height * 0.28f),
+            size = Size(size.width * 0.72f, size.height * 0.72f),
+            cornerRadius = CornerRadius(corner, corner),
+            style = Stroke(width = stroke),
+        )
+    }
+}
+
+/**
  * Interactive fluid carousel/deck of 3D Iranian bank cards with native snapping,
  * 3D perspective scroll tilt, and dynamic bank-accented indicator pills.
  */
@@ -599,13 +654,78 @@ fun BankCardDeck(
 
     if (accounts.size == 1) {
         val singleAccount = accounts.first()
-        BankCard3D(
-            bankAccount = singleAccount,
-            cardHolderName = cardHolderName,
-            modifier = modifier.padding(horizontal = 20.dp),
-            onClick = { onCardClick(singleAccount) },
-            enable3DTiltDrag = true,
-        )
+        val context = LocalContext.current
+        val clipboardManager = LocalClipboardManager.current
+        val copyText = singleAccount.mask.filter { it.isDigit() }.ifBlank { singleAccount.mask }
+
+        Column(
+            modifier = modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            BankCard3D(
+                bankAccount = singleAccount,
+                cardHolderName = cardHolderName,
+                modifier = Modifier.padding(horizontal = 20.dp),
+                onClick = { onCardClick(singleAccount) },
+                enable3DTiltDrag = true,
+            )
+            Spacer(Modifier.height(10.dp))
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(Radius.pill))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    .padding(horizontal = Space.m, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Space.s),
+            ) {
+                if (copyText.isNotBlank()) {
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(Radius.pill))
+                            .clickable {
+                                clipboardManager.setText(AnnotatedString(copyText))
+                                android.widget.Toast.makeText(context, "شماره کپی شد: $copyText", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                            .padding(horizontal = Space.s, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        CardCopyIcon(
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(13.dp),
+                        )
+                        Text(
+                            text = "کپی شماره",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+
+                    Box(
+                        Modifier
+                            .width(1.dp)
+                            .height(14.dp)
+                            .background(MaterialTheme.colorScheme.outlineVariant)
+                    )
+                }
+
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(Radius.pill))
+                        .clickable { onCardClick(singleAccount) }
+                        .padding(horizontal = Space.s, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = "گردش حساب ${singleAccount.bankFa}",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
         return
     }
 
@@ -673,6 +793,71 @@ fun BankCardDeck(
                             }
                         },
                 )
+            }
+        }
+
+        // Active card quick copy and details bar
+        val activeAccount = accounts.getOrNull(pagerState.currentPage) ?: accounts.firstOrNull()
+        if (activeAccount != null) {
+            val context = LocalContext.current
+            val clipboardManager = LocalClipboardManager.current
+            val copyText = activeAccount.mask.filter { it.isDigit() }.ifBlank { activeAccount.mask }
+
+            Spacer(Modifier.height(10.dp))
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(Radius.pill))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    .padding(horizontal = Space.m, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Space.s),
+            ) {
+                if (copyText.isNotBlank()) {
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(Radius.pill))
+                            .clickable {
+                                clipboardManager.setText(AnnotatedString(copyText))
+                                android.widget.Toast.makeText(context, "شماره کپی شد: $copyText", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                            .padding(horizontal = Space.s, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        CardCopyIcon(
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(13.dp),
+                        )
+                        Text(
+                            text = "کپی شماره",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+
+                    Box(
+                        Modifier
+                            .width(1.dp)
+                            .height(14.dp)
+                            .background(MaterialTheme.colorScheme.outlineVariant)
+                    )
+                }
+
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(Radius.pill))
+                        .clickable { onCardClick(activeAccount) }
+                        .padding(horizontal = Space.s, vertical = 2.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = "گردش حساب ${activeAccount.bankFa}",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }

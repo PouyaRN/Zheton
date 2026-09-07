@@ -817,6 +817,7 @@ internal fun RecurringExpensesSheet(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun WishlistSheet(
+    dailySafeSpendToman: Long = 0L,
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -935,6 +936,35 @@ internal fun WishlistSheet(
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                     )
+
+                    val candidateAmount = newAmountText.filter { it.isDigit() }.toLongOrNull() ?: 0L
+                    if (candidateAmount > 0L) {
+                        val candidateEnergy = calculateLifeEnergy(candidateAmount)
+                        val candidateDays = if (dailySafeSpendToman > 0L) candidateAmount.toDouble() / dailySafeSpendToman else 0.0
+                        Spacer(Modifier.height(Space.xs))
+                        Column(
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(Radius.card))
+                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f))
+                                .padding(Space.s),
+                        ) {
+                            Text(
+                                "⏳ بهای انرژی: ${candidateEnergy.formattedFa} از کار و تلاش شما",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                            if (candidateDays >= 0.1) {
+                                Text(
+                                    "⚡ اثر بر بودجه: مصرف ${faDecimal(candidateDays, 1)} روز از خرج روزانه امن",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+
                     Spacer(Modifier.height(Space.s))
                     Row(
                         Modifier.fillMaxWidth(),
@@ -971,6 +1001,7 @@ internal fun WishlistSheet(
                     val remaining = item.hoursRemaining(now)
                     val elapsed = item.isCoolingPeriodElapsed(now)
                     val energy = calculateLifeEnergy(item.amountToman)
+                    val daysBurned = if (dailySafeSpendToman > 0L) item.amountToman.toDouble() / dailySafeSpendToman else 0.0
 
                     Box(
                         Modifier
@@ -1007,6 +1038,16 @@ internal fun WishlistSheet(
                                 fontSize = 12.sp,
                                 color = MaterialTheme.colorScheme.primary,
                             )
+
+                            if (daysBurned >= 0.1) {
+                                Spacer(Modifier.height(2.dp))
+                                Text(
+                                    "⚡ فشار بر بودجه: بلعیدن ${faDecimal(daysBurned, 1)} روز از خرج روزانه امن",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                )
+                            }
 
                             Spacer(Modifier.height(Space.xs))
 

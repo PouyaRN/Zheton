@@ -608,7 +608,7 @@ suspend fun ledgerEntries(
             confidence = filed?.confidence ?: Confidence.NONE,
             needsReview = filed?.needsReview ?: true,
             duplicate = txn.ref in hiddenRefs(links),
-            transfer = txn.ref in transfers,
+            transfer = txn.ref in transfers || filed?.categoryId == CAT_TRANSFER,
             hidden = txn.ref in hidden,
             ownerMemberId = ownerMemberId,
             ownerName = members[ownerMemberId]?.name.orEmpty(),
