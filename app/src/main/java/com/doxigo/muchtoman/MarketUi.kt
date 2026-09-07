@@ -277,7 +277,7 @@ fun MarketAndAssetsScreen(
     ) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = bottomInset + 80.dp),
+            contentPadding = PaddingValues(bottom = bottomInset + 100.dp),
         ) {
             // Header
             item(key = "market_header") {

@@ -56,6 +56,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.material3.Button
+import androidx.compose.runtime.mutableStateOf
 import kotlin.math.abs
 
 /** Theme palette for styling an Iranian bank card with physical metallic sheen. */
@@ -118,6 +122,34 @@ object BankCardThemes {
         secondaryTextColor = Color(0xFFB2DFDB),
     )
 
+    val SEPAH = BankCardPalette(
+        backgroundGradient = listOf(Color(0xFF1B2A1B), Color(0xFF2E4C2E), Color(0xFF1B2A1B)),
+        accentColor = Color(0xFF81C784),
+        textColor = Color(0xFFFFFFFF),
+        secondaryTextColor = Color(0xFFC8E6C9),
+    )
+
+    val KESHAVARZI = BankCardPalette(
+        backgroundGradient = listOf(Color(0xFF1A2E1A), Color(0xFF2D5A27), Color(0xFF1E3F1A)),
+        accentColor = Color(0xFFAED581),
+        textColor = Color(0xFFFFFFFF),
+        secondaryTextColor = Color(0xFFDCEDC8),
+    )
+
+    val SADERAT = BankCardPalette(
+        backgroundGradient = listOf(Color(0xFF141E30), Color(0xFF243B55), Color(0xFF141E30)),
+        accentColor = Color(0xFF64B5F6),
+        textColor = Color(0xFFFFFFFF),
+        secondaryTextColor = Color(0xFFBBDEFB),
+    )
+
+    val REFAH = BankCardPalette(
+        backgroundGradient = listOf(Color(0xFF1E1B2E), Color(0xFF382D54), Color(0xFF1E1B2E)),
+        accentColor = Color(0xFFBA68C8),
+        textColor = Color(0xFFFFFFFF),
+        secondaryTextColor = Color(0xFFE1BEE7),
+    )
+
     val DEFAULT = BankCardPalette(
         backgroundGradient = listOf(Color(0xFF1A1C20), Color(0xFF24272C), Color(0xFF121417)),
         accentColor = Color(0xFF81D4FA),
@@ -125,15 +157,27 @@ object BankCardThemes {
         secondaryTextColor = Color(0xFF90A4AE),
     )
 
-    fun resolve(bankName: String): BankCardPalette = when {
-        bankName.contains("ملی") || bankName.equals("MELLI", ignoreCase = true) -> MELLI
-        bankName.contains("ملت") || bankName.equals("MELLAT", ignoreCase = true) -> MELLAT
-        bankName.contains("سامان") || bankName.equals("SAMAN", ignoreCase = true) -> SAMAN
-        bankName.contains("پاسارگاد") || bankName.equals("PASARGAD", ignoreCase = true) -> PASARGAD
-        bankName.contains("بلو") || bankName.equals("BLU", ignoreCase = true) -> BLU
-        bankName.contains("تجارت") || bankName.equals("TEJARAT", ignoreCase = true) -> TEJARAT
-        bankName.contains("رسالت") || bankName.equals("RESALAT", ignoreCase = true) -> RESALAT
-        else -> DEFAULT
+    /**
+     * Resolves bank theme from bank name or leading BIN digits (first 6 digits of card PAN).
+     */
+    fun resolve(bankName: String, pan: String = ""): BankCardPalette {
+        val cleanPan = toAsciiDigits(pan).filter { it.isDigit() }
+        val bin = if (cleanPan.length >= 6) cleanPan.substring(0, 6) else ""
+
+        return when {
+            bin.startsWith("603799") || bankName.contains("ملی") || bankName.equals("MELLI", ignoreCase = true) -> MELLI
+            bin.startsWith("610433") || bankName.contains("ملت") || bankName.equals("MELLAT", ignoreCase = true) -> MELLAT
+            bin.startsWith("621986") || bankName.contains("سامان") || bankName.equals("SAMAN", ignoreCase = true) -> SAMAN
+            bin.startsWith("502229") || bin.startsWith("639347") || bankName.contains("پاسارگاد") || bankName.equals("PASARGAD", ignoreCase = true) -> PASARGAD
+            bin.startsWith("622106") || bankName.contains("بلو") || bankName.equals("BLU", ignoreCase = true) -> BLU
+            bin.startsWith("585983") || bin.startsWith("627353") || bankName.contains("تجارت") || bankName.equals("TEJARAT", ignoreCase = true) -> TEJARAT
+            bin.startsWith("504172") || bankName.contains("رسالت") || bankName.equals("RESALAT", ignoreCase = true) -> RESALAT
+            bin.startsWith("589210") || bin.startsWith("671500") || bankName.contains("سپه") || bankName.equals("SEPAH", ignoreCase = true) -> SEPAH
+            bin.startsWith("603770") || bankName.contains("کشاورزی") || bankName.equals("KESHAVARZI", ignoreCase = true) -> KESHAVARZI
+            bin.startsWith("603769") || bankName.contains("صادرات") || bankName.equals("SADERAT", ignoreCase = true) -> SADERAT
+            bin.startsWith("589463") || bankName.contains("رفاه") || bankName.equals("REFAH", ignoreCase = true) -> REFAH
+            else -> DEFAULT
+        }
     }
 }
 
@@ -148,9 +192,10 @@ fun BankCard3D(
     cardHolderName: String = "کارت اصلی شتاب",
     onClick: () -> Unit = {},
     enable3DTiltDrag: Boolean = true,
+    privacyMode: Boolean = false,
 ) {
     val bankName = bankAccount?.bankFa ?: "کارت شتاب"
-    val palette = remember(bankName) { BankCardThemes.resolve(bankName) }
+    val palette = remember(bankName, bankAccount?.mask) { BankCardThemes.resolve(bankName, bankAccount?.mask ?: "") }
     val balanceToman = bankAccount?.balance ?: 0.0
 
     // Raw drag offsets in pixels
@@ -317,8 +362,28 @@ fun BankCard3D(
                         )
                     }
 
-                    // Shetab Badge
-                    ShetabInsignia(accentColor = palette.accentColor)
+                    // Shetab Badge & Dormant Pill
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        if (bankAccount != null && bankAccount.isDormant()) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(Radius.pill))
+                                    .background(Color.Black.copy(alpha = 0.3f))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                            ) {
+                                Text(
+                                    "راکد",
+                                    color = palette.secondaryTextColor.copy(alpha = 0.85f),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                )
+                            }
+                        }
+                        ShetabInsignia(accentColor = palette.accentColor)
+                    }
                 }
 
                 // Middle: EMV Smart Chip and Contactless glyphs
@@ -344,7 +409,7 @@ fun BankCard3D(
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
                         .clickable {
-                            if (cardDigits.isNotBlank()) {
+                            if (!privacyMode && cardDigits.isNotBlank()) {
                                 cardClipboard.setText(AnnotatedString(cardDigits))
                                 android.widget.Toast.makeText(cardContext, "شماره کپی شد: $cardDigits", android.widget.Toast.LENGTH_SHORT).show()
                             }
@@ -354,14 +419,14 @@ fun BankCard3D(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Text(
-                        text = displayPan,
+                        text = if (privacyMode) "••••  ••••  ••••  ••••" else displayPan,
                         color = palette.textColor,
                         fontSize = 19.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = ModamFigures,
                         letterSpacing = 2.sp,
                     )
-                    if (cardDigits.isNotBlank()) {
+                    if (!privacyMode && cardDigits.isNotBlank()) {
                         CardCopyIcon(
                             tint = palette.accentColor.copy(alpha = 0.85f),
                             modifier = Modifier.size(15.dp),
@@ -401,7 +466,7 @@ fun BankCard3D(
                         Spacer(Modifier.height(2.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = faNumber(balanceToman),
+                                text = if (privacyMode) "••••••" else faNumber(balanceToman),
                                 color = palette.accentColor,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Black,
@@ -615,16 +680,27 @@ fun formatCardPan(raw: String): String {
         }
     }.joinToString("")
 
-    if (clean.contains("•") || clean.contains("*")) {
+    // If string is already grouped or has spaces, just convert digits to Persian
+    if (clean.contains("  ") || clean.contains(" - ") || clean.contains("-")) {
         return convertPersian(clean)
     }
 
-    val digits = clean.filter { it.isDigit() }
-    if (digits.length >= 16) {
+    // Normal continuous 16 digits
+    val digits = toAsciiDigits(clean).filter { it.isDigit() }
+    if (digits.length == 16 && !clean.contains("•") && !clean.contains("*")) {
         val p1 = digits.substring(0, 4)
         val p2 = digits.substring(4, 8)
         val p3 = digits.substring(8, 12)
         val p4 = digits.substring(12, 16)
+        return convertPersian("$p1  $p2  $p3  $p4")
+    }
+
+    // Typical masked format without spaces: "603799••••••5421"
+    if (clean.length == 16) {
+        val p1 = clean.substring(0, 4)
+        val p2 = clean.substring(4, 8)
+        val p3 = clean.substring(8, 12)
+        val p4 = clean.substring(12, 16)
         return convertPersian("$p1  $p2  $p3  $p4")
     }
 
@@ -660,6 +736,150 @@ private fun CardCopyIcon(
 }
 
 /**
+ * Minimalist QR code micro icon.
+ */
+@Composable
+private fun CardQrIcon(
+    tint: Color,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier = modifier) {
+        val stroke = 1.2.dp.toPx()
+        val s = size.width
+        val block = s * 0.38f
+        // Top-left finder
+        drawRect(
+            color = tint,
+            topLeft = Offset(0f, 0f),
+            size = Size(block, block),
+            style = Stroke(width = stroke),
+        )
+        drawRect(
+            color = tint,
+            topLeft = Offset(block * 0.3f, block * 0.3f),
+            size = Size(block * 0.4f, block * 0.4f),
+        )
+        // Bottom-left finder
+        drawRect(
+            color = tint,
+            topLeft = Offset(0f, s - block),
+            size = Size(block, block),
+            style = Stroke(width = stroke),
+        )
+        drawRect(
+            color = tint,
+            topLeft = Offset(block * 0.3f, s - block + block * 0.3f),
+            size = Size(block * 0.4f, block * 0.4f),
+        )
+        // Top-right finder
+        drawRect(
+            color = tint,
+            topLeft = Offset(s - block, 0f),
+            size = Size(block, block),
+            style = Stroke(width = stroke),
+        )
+        drawRect(
+            color = tint,
+            topLeft = Offset(s - block + block * 0.3f, block * 0.3f),
+            size = Size(block * 0.4f, block * 0.4f),
+        )
+    }
+}
+
+/**
+ * Dialog displaying an instant scannable QR code for the bank card or IBAN.
+ */
+@Composable
+fun CardQrDialog(
+    account: BankAccount,
+    onDismiss: () -> Unit,
+) {
+    val cleanDigits = toAsciiDigits(account.mask).filter { it.isDigit() }
+    val displayPan = formatCardPan(account.mask.ifBlank { "۶۰۳۷ •••• •••• ۱۲۳۴" })
+    val qrContent = cleanDigits.ifBlank { account.mask }
+    val bitmap = remember(qrContent) {
+        runCatching { qrBitmap(qrContent, 600) }.getOrNull()
+    }
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(Radius.sheet),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            tonalElevation = 6.dp,
+            modifier = Modifier
+                .fillMaxWidth(0.92f)
+                .padding(Space.m),
+        ) {
+            Column(
+                modifier = Modifier.padding(Space.xl),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    text = "بارکد کارت ${account.bankFa}",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(Modifier.height(Space.xs))
+                Text(
+                    text = displayPan,
+                    fontSize = 14.sp,
+                    fontFamily = ModamFigures,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+
+                Spacer(Modifier.height(Space.l))
+
+                if (bitmap != null) {
+                    Box(
+                        modifier = Modifier
+                            .size(220.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Color.White)
+                            .padding(12.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = "کد QR کارت",
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(200.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text("خطا در تولید بارکد", color = MaterialTheme.colorScheme.error)
+                    }
+                }
+
+                Spacer(Modifier.height(Space.m))
+                Text(
+                    text = "طرف مقابل می‌تواند با دوربین گوشی این بارکد را اسکن کند.",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+
+                Spacer(Modifier.height(Space.l))
+                Button(
+                    onClick = onDismiss,
+                    shape = RoundedCornerShape(Radius.pill),
+                    modifier = Modifier.fillMaxWidth(0.6f),
+                ) {
+                    Text("بستن")
+                }
+            }
+        }
+    }
+}
+
+/**
  * Interactive fluid carousel/deck of 3D Iranian bank cards with native snapping,
  * 3D perspective scroll tilt, and dynamic bank-accented indicator pills.
  */
@@ -669,11 +889,26 @@ fun BankCardDeck(
     modifier: Modifier = Modifier,
     cardHolderName: String = "کاربر مهربان",
     onCardClick: (BankAccount) -> Unit = {},
+    privacyMode: Boolean = false,
 ) {
     if (accounts.isEmpty()) return
 
-    if (accounts.size == 1) {
-        val singleAccount = accounts.first()
+    // Dormant account detection: accounts with updatedAt older than 45 days (or unanchored with 0 activity)
+    // sort to the end of the carousel so active cards are prioritized.
+    val sortedAccounts = remember(accounts) {
+        val now = System.currentTimeMillis()
+        accounts.sortedBy { account ->
+            if (account.isDormant(now)) 1 else 0
+        }
+    }
+
+    var qrAccountToShow by remember { mutableStateOf<BankAccount?>(null) }
+    qrAccountToShow?.let { acc ->
+        CardQrDialog(account = acc, onDismiss = { qrAccountToShow = null })
+    }
+
+    if (sortedAccounts.size == 1) {
+        val singleAccount = sortedAccounts.first()
         val context = LocalContext.current
         val clipboardManager = LocalClipboardManager.current
         val rawDigits = toAsciiDigits(singleAccount.mask).filter { it.isDigit() }
@@ -689,6 +924,7 @@ fun BankCardDeck(
                 modifier = Modifier.padding(horizontal = 20.dp),
                 onClick = { onCardClick(singleAccount) },
                 enable3DTiltDrag = true,
+                privacyMode = privacyMode,
             )
             Spacer(Modifier.height(10.dp))
             Row(
@@ -729,6 +965,33 @@ fun BankCardDeck(
                             .height(14.dp)
                             .background(MaterialTheme.colorScheme.outlineVariant)
                     )
+
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(Radius.pill))
+                            .clickable { qrAccountToShow = singleAccount }
+                            .padding(horizontal = Space.s, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        CardQrIcon(
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(13.dp),
+                        )
+                        Text(
+                            text = "بارکد QR",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+
+                    Box(
+                        Modifier
+                            .width(1.dp)
+                            .height(14.dp)
+                            .background(MaterialTheme.colorScheme.outlineVariant)
+                    )
                 }
 
                 Row(
@@ -750,7 +1013,7 @@ fun BankCardDeck(
         return
     }
 
-    val pagerState = rememberPagerState(pageCount = { accounts.size })
+    val pagerState = rememberPagerState(pageCount = { sortedAccounts.size })
     val coroutineScope = rememberCoroutineScope()
     val density = LocalDensity.current
 
@@ -764,7 +1027,7 @@ fun BankCardDeck(
             pageSpacing = 12.dp,
             modifier = Modifier.fillMaxWidth(),
         ) { page ->
-            val account = accounts[page]
+            val account = sortedAccounts[page]
             val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction)
             val clampedOffset = pageOffset.coerceIn(-1f, 1f)
 
@@ -785,6 +1048,7 @@ fun BankCardDeck(
                     cardHolderName = cardHolderName,
                     onClick = { onCardClick(account) },
                     enable3DTiltDrag = false, // HorizontalPager handles swipe gesture cleanly
+                    privacyMode = privacyMode,
                 )
             }
         }
@@ -796,9 +1060,9 @@ fun BankCardDeck(
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            accounts.forEachIndexed { index, acc ->
+            sortedAccounts.forEachIndexed { index, acc ->
                 val isSelected = index == pagerState.currentPage
-                val palette = remember(acc.bankFa) { BankCardThemes.resolve(acc.bankFa) }
+                val palette = remember(acc.bankFa, acc.mask) { BankCardThemes.resolve(acc.bankFa, acc.mask) }
                 Box(
                     modifier = Modifier
                         .height(6.dp)
@@ -818,7 +1082,7 @@ fun BankCardDeck(
         }
 
         // Active card quick copy and details bar
-        val activeAccount = accounts.getOrNull(pagerState.currentPage) ?: accounts.firstOrNull()
+        val activeAccount = sortedAccounts.getOrNull(pagerState.currentPage) ?: sortedAccounts.firstOrNull()
         if (activeAccount != null) {
             val context = LocalContext.current
             val clipboardManager = LocalClipboardManager.current
@@ -852,6 +1116,33 @@ fun BankCardDeck(
                         )
                         Text(
                             text = "کپی شماره",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+
+                    Box(
+                        Modifier
+                            .width(1.dp)
+                            .height(14.dp)
+                            .background(MaterialTheme.colorScheme.outlineVariant)
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(Radius.pill))
+                            .clickable { qrAccountToShow = activeAccount }
+                            .padding(horizontal = Space.s, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        CardQrIcon(
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(13.dp),
+                        )
+                        Text(
+                            text = "بارکد QR",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary,

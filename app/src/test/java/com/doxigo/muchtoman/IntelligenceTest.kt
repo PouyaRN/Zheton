@@ -541,4 +541,114 @@ class IntelligenceTest {
         assertTrue(formattedMask.contains("۶۰۳۷"))
         assertTrue(formattedMask.contains("۱۲۳۴"))
     }
+
+    // ── Ticket 06: 50/30/20 Classification & Idle Cash Sweep Tests ──
+
+    @Test
+    fun `NecessityType classifies standard categories into Need, Want, and Savings`() {
+        assertEquals(NecessityType.NEED, NecessityType.classifyCategory("cat_groceries"))
+        assertEquals(NecessityType.NEED, NecessityType.classifyCategory("cat_bills"))
+        assertEquals(NecessityType.NEED, NecessityType.classifyCategory("cat_transport"))
+        assertEquals(NecessityType.NEED, NecessityType.classifyCategory("cat_health"))
+        assertEquals(NecessityType.NEED, NecessityType.classifyCategory("cat_home"))
+
+        assertEquals(NecessityType.WANT, NecessityType.classifyCategory("cat_dining"))
+        assertEquals(NecessityType.WANT, NecessityType.classifyCategory("cat_shopping"))
+        assertEquals(NecessityType.WANT, NecessityType.classifyCategory("cat_travel"))
+        assertEquals(NecessityType.WANT, NecessityType.classifyCategory("cat_entertainment"))
+        assertEquals(NecessityType.WANT, NecessityType.classifyCategory(null))
+
+        assertEquals(NecessityType.SAVINGS, NecessityType.classifyCategory("cat_savings"))
+        assertEquals(NecessityType.SAVINGS, NecessityType.classifyCategory("cat_loan"))
+    }
+
+    @Test
+    fun `BudgetRule503020Summary computes structural expense percentages correctly`() {
+        fun makeExpense(catId: String, amountRial: Long): LedgerEntry {
+            return LedgerEntry(
+                txn = Txn(
+                    ref = "r:$catId:$amountRial",
+                    srcHash = "h:$catId",
+                    seq = 0,
+                    at = 1000L,
+                    day = 100L,
+                    bank = "MELLAT",
+                    accountId = "acc1",
+                    direction = "out",
+                    amountRial = amountRial,
+                    signedRial = -amountRial,
+                    balanceRial = null,
+                    feeRial = null,
+                    mask = "",
+                    instrument = "pos",
+                    merchant = "",
+                    merchantNorm = "",
+                    refNo = "",
+                    printedAt = "",
+                    channel = "pos",
+                    unitPrinted = "none",
+                    inferred = false,
+                    parserVer = PARSER_VERSION,
+                ),
+                categoryId = catId,
+                categoryFa = "تست",
+                confidence = 100,
+                needsReview = false,
+                duplicate = false,
+                transfer = false,
+            )
+        }
+
+        val entries = listOf(
+            makeExpense("cat_groceries", 50_000_000L),  // 5M Toman Need (50%)
+            makeExpense("cat_dining", 30_000_000L),     // 3M Toman Want (30%)
+            makeExpense("cat_savings", 20_000_000L),    // 2M Toman Savings (20%)
+        )
+
+        val summary = BudgetRule503020Summary.compute(entries)
+
+        assertEquals(100_000_000L, summary.totalExpenseRial)
+        assertEquals(10_000_000L, summary.totalExpenseToman)
+        assertEquals(50_000_000L, summary.needRial)
+        assertEquals(5_000_000L, summary.needToman)
+        assertEquals(30_000_000L, summary.wantRial)
+        assertEquals(3_000_000L, summary.wantToman)
+        assertEquals(20_000_000L, summary.savingsRial)
+        assertEquals(2_000_000L, summary.savingsToman)
+
+        assertEquals(50, summary.needPercent)
+        assertEquals(30, summary.wantPercent)
+        assertEquals(20, summary.savingsPercent)
+    }
+
+    @Test
+    fun `IdleCashAnalyzer detects excessive checking account balances and recommends sweep`() {
+        val monthlyBurnToman = 20_000_000L // 20 Million monthly burn
+        // 1.5x monthly burn = 30M Toman operational need
+        // 60M Toman checking balance => 30M Toman excess (>5M threshold)
+        val highBalanceToman = 60_000_000L
+        val warning = IdleCashAnalyzer.evaluate(
+            checkingBalanceToman = highBalanceToman,
+            monthlyExpenseToman = monthlyBurnToman,
+            annualInflationRate = 0.45,
+        )
+
+        assertTrue(warning.hasIdleCash)
+        assertEquals(30_000_000L, warning.operationalNeedToman)
+        assertEquals(30_000_000L, warning.excessCashToman)
+        // 30M * 0.45 = 13.5M Toman annual opportunity loss
+        assertEquals(13_500_000L, warning.annualOpportunityLossToman)
+        assertTrue(warning.recommendationFa.contains("هشدار نقدینگی مازاد"))
+        assertEquals(AssetClass.GOLD_ETF, warning.targetAsset)
+
+        // Safe balance scenario: checking balance under operational need
+        val safeBalanceToman = 25_000_000L
+        val safeWarning = IdleCashAnalyzer.evaluate(
+            checkingBalanceToman = safeBalanceToman,
+            monthlyExpenseToman = monthlyBurnToman,
+        )
+        org.junit.Assert.assertFalse(safeWarning.hasIdleCash)
+        assertEquals(0L, safeWarning.excessCashToman)
+        assertEquals(0L, safeWarning.annualOpportunityLossToman)
+    }
 }

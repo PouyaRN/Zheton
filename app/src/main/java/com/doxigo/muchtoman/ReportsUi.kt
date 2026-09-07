@@ -75,7 +75,9 @@ fun ReportsTab(
     history: Map<Long, Double> = emptyMap(),
     current: Double = 0.0,
     composition: List<Pair<Kind, Double>> = emptyList(),
+    bankAccounts: List<BankAccount> = emptyList(),
     onSelectCategory: (String?) -> Unit = {},
+    bottomInset: androidx.compose.ui.unit.Dp = 0.dp,
 ) {
     val today = remember { mutableLongStateOf(tehranDay(System.currentTimeMillis())) }
     // Recompute at midnight so "این ماه" stays live.
@@ -128,6 +130,23 @@ fun ReportsTab(
             .sortedByDescending { it.second }
 
         ReportSnapshot(income, expense, net, savingsRate, catSpend)
+    }
+
+    // 50/30/20 Structural Budget Classification for the selected window
+    val budget503020 = remember(ledger.allEntries, windowStart) {
+        val visible = ledger.allEntries.filter { !it.duplicate && !it.hidden && !it.transfer && it.txn.day >= windowStart }
+        BudgetRule503020Summary.compute(visible)
+    }
+
+    // Idle Cash & Anti-Inflation Sweep recommendation
+    val idleCashWarning = remember(bankAccounts, snapshot.expense, windowDays) {
+        val totalCheckingBalanceToman = bankAccounts.sumOf { it.balance }.toLong()
+        val expenseToman = snapshot.expense / 10L
+        val monthlyBurnToman = if (windowDays > 0) (expenseToman * 30L / windowDays) else expenseToman
+        IdleCashAnalyzer.evaluate(
+            checkingBalanceToman = totalCheckingBalanceToman,
+            monthlyExpenseToman = monthlyBurnToman,
+        )
     }
 
     // Wealth-trend: change over the selected window
@@ -184,7 +203,7 @@ fun ReportsTab(
             LazyColumn(
                 Modifier.fillMaxSize(),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    horizontal = Space.xl, vertical = Space.s,
+                    start = Space.xl, end = Space.xl, top = Space.s, bottom = bottomInset + 100.dp,
                 ),
             ) {
                 // Executive Cash Flow & Velocity Card
@@ -201,6 +220,22 @@ fun ReportsTab(
                 item {
                     Spacer(Modifier.height(Space.l))
                     WealthDefenseGaugeCard(unhedgedToman = unhedgedToman, hedgedToman = hedgedToman)
+                }
+
+                // Idle Cash Sweep Warning Card
+                if (idleCashWarning.hasIdleCash) {
+                    item {
+                        Spacer(Modifier.height(Space.l))
+                        IdleCashSweepCard(warning = idleCashWarning)
+                    }
+                }
+
+                // 50/30/20 Structural Expense Classification Card
+                if (budget503020.totalExpenseRial > 0L) {
+                    item {
+                        Spacer(Modifier.height(Space.l))
+                        Budget503020Card(summary = budget503020)
+                    }
                 }
 
                 // Asset Allocation Donut chart
@@ -769,6 +804,248 @@ private fun WealthDefenseGaugeCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun IdleCashSweepCard(
+    warning: IdleCashWarning,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Radius.group))
+            .border(1.dp, Color(0xFFF59E0B).copy(alpha = 0.5f), RoundedCornerShape(Radius.group)),
+        color = Color(0xFFFEF3C7).copy(alpha = 0.35f),
+    ) {
+        Column(Modifier.padding(Space.xl)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text("💡", fontSize = 18.sp)
+                    Text(
+                        "هشدار انتقال نقدینگی مازاد (Sweep)",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
+                Surface(
+                    shape = RoundedCornerShape(Radius.pill),
+                    color = Color(0xFFF59E0B).copy(alpha = 0.2f),
+                ) {
+                    Text(
+                        "فرصت حفظ ارزش",
+                        modifier = Modifier.padding(horizontal = Space.m, vertical = 2.dp),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFB45309),
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(Space.m))
+
+            Text(
+                warning.recommendationFa,
+                fontSize = 13.sp,
+                lineHeight = 20.sp,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+
+            Spacer(Modifier.height(Space.m))
+
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Column {
+                    Text(
+                        "نقدینگی مازاد بر نیاز",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        "${faCompact(warning.excessCashToman.toDouble())} تومان",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = ModamFigures,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        "زیان سالانه ناشی از تورم",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        "${faCompact(warning.annualOpportunityLossToman.toDouble())} تومان",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = ModamFigures,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun Budget503020Card(
+    summary: BudgetRule503020Summary,
+    modifier: Modifier = Modifier,
+) {
+    val needColor = Color(0xFF3B82F6)
+    val wantColor = Color(0xFFF97316)
+    val savingsColor = Color(0xFF10B981)
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Radius.group))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.group)),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+    ) {
+        Column(Modifier.padding(Space.xl)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "توزیع ساختاری مخارج (قانون ۵۰/۳۰/۲۰)",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Text(
+                    "هدف: ۵۰ / ۳۰ / ۲۰",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    fontFamily = ModamFigures,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+
+            Spacer(Modifier.height(Space.m))
+
+            // Multi-segment horizontal ratio bar
+            val total = summary.totalExpenseRial.toFloat().coerceAtLeast(1f)
+            val needRatio = summary.needRial / total
+            val wantRatio = summary.wantRial / total
+            val savingsRatio = summary.savingsRial / total
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(10.dp)
+                    .clip(RoundedCornerShape(5.dp)),
+            ) {
+                if (needRatio > 0f) {
+                    Box(
+                        modifier = Modifier
+                            .weight(needRatio)
+                            .fillMaxHeight()
+                            .background(needColor),
+                    )
+                }
+                if (wantRatio > 0f) {
+                    Box(
+                        modifier = Modifier
+                            .weight(wantRatio)
+                            .fillMaxHeight()
+                            .background(wantColor),
+                    )
+                }
+                if (savingsRatio > 0f) {
+                    Box(
+                        modifier = Modifier
+                            .weight(savingsRatio)
+                            .fillMaxHeight()
+                            .background(savingsColor),
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(Space.l))
+
+            // Three columns: Need, Want, Savings
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Budget503020Column(
+                    title = "نیازها (۵۰٪)",
+                    amountToman = summary.needToman,
+                    actualPercent = summary.needPercent,
+                    color = needColor,
+                )
+                Budget503020Column(
+                    title = "خواسته‌ها (۳۰٪)",
+                    amountToman = summary.wantToman,
+                    actualPercent = summary.wantPercent,
+                    color = wantColor,
+                )
+                Budget503020Column(
+                    title = "سرمایه (۲۰٪)",
+                    amountToman = summary.savingsToman,
+                    actualPercent = summary.savingsPercent,
+                    color = savingsColor,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun Budget503020Column(
+    title: String,
+    amountToman: Long,
+    actualPercent: Int,
+    color: Color,
+) {
+    Column {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(color),
+            )
+            Text(
+                title,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Spacer(Modifier.height(2.dp))
+        Text(
+            "${faNumber(actualPercent.toDouble())}٪",
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Black,
+            fontFamily = ModamFigures,
+            color = color,
+        )
+        Text(
+            "${faCompact(amountToman.toDouble())} ت",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Normal,
+            fontFamily = ModamFigures,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

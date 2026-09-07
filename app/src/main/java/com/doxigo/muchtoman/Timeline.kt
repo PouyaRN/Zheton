@@ -12,6 +12,8 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
@@ -466,7 +468,7 @@ TextButton(onClick = {
                     LazyColumn(
                         Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(
-                            start = Space.xl, end = Space.xl, bottom = Space.l,
+                            start = Space.xl, end = Space.xl, bottom = bottomInset + 100.dp,
                         ),
                     ) {
                         for ((day, rows) in grouped) {
@@ -2325,6 +2327,7 @@ internal fun DailyOutflowSparkCard(
     if (total14DayToman <= 0.0) return
 
     val maxDayToman = remember(dayPoints) { dayPoints.maxOf { it.toman }.coerceAtLeast(1.0) }
+    val peakPoint = remember(dayPoints) { dayPoints.maxByOrNull { it.toman } }
 
     Card(
         modifier = modifier
@@ -2339,12 +2342,30 @@ internal fun DailyOutflowSparkCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    "روند مخارج ۱۴ روز گذشته",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "روند مخارج ۱۴ روز گذشته",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    if (peakPoint != null && peakPoint.toman > 0.0) {
+                        Spacer(Modifier.width(Space.s))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(MaterialTheme.colorScheme.error.copy(alpha = 0.15f))
+                                .padding(horizontal = 5.dp, vertical = 2.dp),
+                        ) {
+                            Text(
+                                "اوج: ${faCompact(peakPoint.toman)}",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
+                    }
+                }
                 Text(
                     "${faCompact(total14DayToman)} تومان",
                     fontSize = 13.sp,
@@ -2355,35 +2376,89 @@ internal fun DailyOutflowSparkCard(
 
             Spacer(Modifier.height(Space.s))
 
-            Row(
+            // Chart area with dashed ceiling guide line
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp),
+                    .height(54.dp),
+            ) {
+                // Dashed ceiling line
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .align(Alignment.TopCenter),
+                ) {
+                    val pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(8f, 6f), 0f)
+                    drawLine(
+                        color = Color.Gray.copy(alpha = 0.35f),
+                        start = Offset(0f, 0f),
+                        end = Offset(size.width, 0f),
+                        strokeWidth = 1.dp.toPx(),
+                        pathEffect = pathEffect,
+                    )
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.Bottom,
+                ) {
+                    for (point in dayPoints) {
+                        val heightRatio = (point.toman / maxDayToman).toFloat().coerceIn(0.08f, 1f)
+                        val isToday = point.day == todayEpochDay
+                        val isPeak = point == peakPoint && point.toman > 0.0
+
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Bottom,
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .fillMaxHeight(heightRatio)
+                                    .clip(RoundedCornerShape(3.dp))
+                                    .background(
+                                        when {
+                                            isPeak -> MaterialTheme.colorScheme.error
+                                            isToday -> Hero.gold
+                                            point.toman > 0.0 -> MaterialTheme.colorScheme.primary.copy(alpha = 0.75f)
+                                            else -> MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f)
+                                        },
+                                    ),
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(4.dp))
+
+            // Day-of-week letter labels
+            val dayNames = listOf("ش", "ی", "د", "س", "چ", "پ", "ج")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.Bottom,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 for (point in dayPoints) {
-                    val heightRatio = (point.toman / maxDayToman).toFloat().coerceIn(0.08f, 1f)
+                    // Tehran day % 7: Saturday is (day - 2) % 7 == 0
+                    val dayIdx = (((point.day - 2) % 7 + 7) % 7).toInt()
+                    val dayName = dayNames.getOrElse(dayIdx) { "" }
                     val isToday = point.day == todayEpochDay
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Bottom,
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .fillMaxHeight(heightRatio)
-                                .clip(RoundedCornerShape(3.dp))
-                                .background(
-                                    if (isToday) Hero.gold
-                                    else if (point.toman > 0.0) MaterialTheme.colorScheme.primary.copy(alpha = 0.75f)
-                                    else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f),
-                                ),
-                        )
-                    }
+                    Text(
+                        text = dayName,
+                        fontSize = 9.sp,
+                        fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
+                        color = if (isToday) Hero.gold else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
         }

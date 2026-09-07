@@ -442,7 +442,7 @@ fun SettingsScreen(
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = Space.l),
+                    .padding(bottom = 100.dp),
             )
         }
     }

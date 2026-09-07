@@ -262,6 +262,9 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
     var showGoldBubbleSheet by remember { mutableStateOf(false) }
     var showRecurringSheet by remember { mutableStateOf(false) }
     var showWishlistSheet by remember { mutableStateOf(false) }
+    var showQuickAdd by remember { mutableStateOf(false) }
+    var showCommitmentsHubSheet by remember { mutableStateOf(false) }
+    var showAddCommitmentSheet by remember { mutableStateOf(false) }
 
     // The permanent-delete undo door. One host, and the window's lifetime rides on the state
     // itself: when it nulls (the window elapsed or she hit Undo) the snackbar just leaves.
@@ -524,6 +527,38 @@ val snackbarHostState = remember { SnackbarHostState() }
         )
     }
 
+    if (showQuickAdd) {
+        ManualTxnSheet(
+            categories = state.ledger.categories,
+            onDismiss = { showQuickAdd = false },
+            onSave = { amountRial, isExpense, catId, merchant, note, at ->
+                vm.addManualTransaction(amountRial, isExpense, catId, merchant, note, at)
+                showQuickAdd = false
+            },
+        )
+    }
+
+    if (showCommitmentsHubSheet) {
+        CommitmentsHubSheet(
+            commitments = state.commitments,
+            onDismiss = { showCommitmentsHubSheet = false },
+            onAdd = { showAddCommitmentSheet = true },
+            onToggleSettled = { vm.toggleCommitmentSettled(it) },
+            onDelete = { vm.deleteCommitment(it) },
+            privacyMode = privacyMode,
+        )
+    }
+
+    if (showAddCommitmentSheet) {
+        AddCommitmentSheet(
+            onDismiss = { showAddCommitmentSheet = false },
+            onSave = { commitment ->
+                vm.saveCommitment(commitment)
+                showAddCommitmentSheet = false
+            },
+        )
+    }
+
     // Anywhere but home, back goes home. This is the whole reason the bar exists: before it,
     // there was no way out of a screen except a «بستن» she had to find in the corner. The lite
     // edition is one tab, so it is already home and back means back, as it did in v1.0.4.
@@ -558,6 +593,7 @@ val snackbarHostState = remember { SnackbarHostState() }
                     selected = tab,
                     ledgerBadge = 0,
                     onSelect = { tab = it },
+                    onQuickAdd = { showQuickAdd = true },
                 )
             } else {
                 // The lite edition has no bar, but the Scaffold's inset is the only thing keeping
@@ -607,11 +643,13 @@ val snackbarHostState = remember { SnackbarHostState() }
             history = state.history,
             current = state.totals.toman,
             composition = composition,
+            bankAccounts = state.bankAccounts,
             onSelectCategory = { catId ->
                 timelineCategoryId = catId
                 timelineSearchQuery = null
                 tab = Tab.LEDGER
             },
+            bottomInset = pad.calculateBottomPadding(),
         )
         return@Scaffold
       }
@@ -663,7 +701,7 @@ val snackbarHostState = remember { SnackbarHostState() }
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = Space.l),
+            contentPadding = PaddingValues(bottom = pad.calculateBottomPadding() + 100.dp),
         ) {
             item(key = "hero") {
                 HeroField(
@@ -689,6 +727,7 @@ val snackbarHostState = remember { SnackbarHostState() }
                             accounts = state.bankAccounts,
                             cardHolderName = state.name.ifBlank { "کاربر مهربان" },
                             onCardClick = { banks = true },
+                            privacyMode = privacyMode,
                         )
                     }
                 }
@@ -701,9 +740,22 @@ val snackbarHostState = remember { SnackbarHostState() }
                     modifier = Modifier.padding(edge).padding(top = Space.l),
                     privacyMode = privacyMode,
                     onOpenGoldBubble = { showGoldBubbleSheet = true },
-                    onOpenRecurring = { showRecurringSheet = true },
+                    onOpenRecurring = { showCommitmentsHubSheet = true },
                     onOpenWishlist = { showWishlistSheet = true },
                 )
+            }
+
+            // Active Commitments Hub (BNPL, Loans, Sayad Checks)
+            if (state.commitments.isNotEmpty()) {
+                item(key = "commitments_card") {
+                    CommitmentsCard(
+                        commitments = state.commitments,
+                        modifier = Modifier.padding(edge).padding(top = Space.l),
+                        onOpenHub = { showCommitmentsHubSheet = true },
+                        onAddCommitment = { showAddCommitmentSheet = true },
+                        privacyMode = privacyMode,
+                    )
+                }
             }
 
             // Active Obligations — only rendered when there are active obligations to attend to
@@ -2379,6 +2431,8 @@ private fun BankSheet(
                             accounts = accounts,
                             cardHolderName = userName.ifBlank { "کاربر مهربان" },
                             modifier = Modifier.padding(bottom = Space.m),
+                            onCardClick = {},
+                            privacyMode = false,
                         )
                     }
                 }

@@ -960,5 +960,140 @@ object MarketFluctuationEngine {
     }
 }
 
+// ════════════════════════════════════════════════════════════════════════════════
+// 8. 50/30/20 EXPENSE CLASSIFICATION & IDLE CASH SWEEP (Ticket 06)
+// ════════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Structural 50/30/20 classification for budgeting:
+ * - NEED: 50% target (essentials: groceries, rent, utilities, transport, health)
+ * - WANT: 30% target (discretionary: dining, entertainment, shopping, travel)
+ * - SAVINGS: 20% target (wealth defense: savings, investments, debt principal)
+ */
+enum class NecessityType(val titleFa: String, val targetPercent: Int, val emoji: String) {
+    NEED("نیازهای اساسی (۵۰٪)", 50, "🏠"),
+    WANT("خواسته‌ها و علایق (۳۰٪)", 30, "☕"),
+    SAVINGS("پس‌انداز و سرمایه‌گذاری (۲۰٪)", 20, "📈");
+
+    companion object {
+        fun classifyCategory(categoryId: String?): NecessityType {
+            if (categoryId == null) return WANT
+            return when (categoryId) {
+                "cat_groceries", "cat_bills", "cat_transport", "cat_health",
+                "cat_home", "cat_fuel", "cat_insurance", "cat_repair",
+                CAT_FEES -> NEED
+
+                "cat_savings", "cat_loan" -> SAVINGS
+
+                "cat_dining", "cat_shopping", "cat_beauty", "cat_clothing",
+                "cat_culture", "cat_atina", "cat_gifts", "cat_entertainment",
+                "cat_subscriptions", "cat_electronics", "cat_travel",
+                CAT_UNCATEGORISED, CAT_CASH -> WANT
+
+                else -> WANT
+            }
+        }
+    }
+}
+
+data class BudgetRule503020Summary(
+    val totalExpenseRial: Long,
+    val needRial: Long,
+    val wantRial: Long,
+    val savingsRial: Long,
+    val needPercent: Int,
+    val wantPercent: Int,
+    val savingsPercent: Int,
+) {
+    val needToman: Long get() = needRial / 10L
+    val wantToman: Long get() = wantRial / 10L
+    val savingsToman: Long get() = savingsRial / 10L
+    val totalExpenseToman: Long get() = totalExpenseRial / 10L
+
+    companion object {
+        fun compute(entries: List<LedgerEntry>): BudgetRule503020Summary {
+            val visible = entries.filter { !it.duplicate && !it.hidden && !it.transfer && it.txn.direction == "out" }
+            var needSum = 0L
+            var wantSum = 0L
+            var savingsSum = 0L
+
+            for (entry in visible) {
+                val amount = kotlin.math.abs(entry.txn.signedRial ?: 0L)
+                when (NecessityType.classifyCategory(entry.categoryId)) {
+                    NecessityType.NEED -> needSum += amount
+                    NecessityType.WANT -> wantSum += amount
+                    NecessityType.SAVINGS -> savingsSum += amount
+                }
+            }
+
+            val total = needSum + wantSum + savingsSum
+            val needPct = if (total > 0L) ((needSum.toDouble() / total) * 100).toInt() else 0
+            val wantPct = if (total > 0L) ((wantSum.toDouble() / total) * 100).toInt() else 0
+            val savingsPct = if (total > 0L) ((savingsSum.toDouble() / total) * 100).toInt() else 0
+
+            return BudgetRule503020Summary(
+                totalExpenseRial = total,
+                needRial = needSum,
+                wantRial = wantSum,
+                savingsRial = savingsSum,
+                needPercent = needPct,
+                wantPercent = wantPct,
+                savingsPercent = savingsPct,
+            )
+        }
+    }
+}
+
+/**
+ * Real-time analysis of idle cash in checking accounts exceeding monthly operational needs,
+ * along with immediate sweep conversion suggestions into anti-inflation assets (Gold / Funds / USDT).
+ */
+data class IdleCashWarning(
+    val hasIdleCash: Boolean,
+    val checkingBalanceToman: Long,
+    val operationalNeedToman: Long,
+    val excessCashToman: Long,
+    val annualOpportunityLossToman: Long,
+    val recommendationFa: String,
+    val targetAsset: AssetClass,
+)
+
+object IdleCashAnalyzer {
+    /**
+     * Evaluates whether liquid checking balances exceed 1.5x monthly operational burn.
+     * Excess liquid funds are vulnerable to 45% annual purchasing power decay.
+     */
+    fun evaluate(
+        checkingBalanceToman: Long,
+        monthlyExpenseToman: Long,
+        annualInflationRate: Double = 0.45,
+    ): IdleCashWarning {
+        // Operational safety buffer: at least 1.5x monthly expenses, minimum 10M Toman
+        val operationalNeed = kotlin.math.max(10_000_000L, (monthlyExpenseToman * 1.5).toLong())
+        val excess = (checkingBalanceToman - operationalNeed).coerceAtLeast(0L)
+        val hasExcess = excess >= 5_000_000L // Trigger when at least 5M Toman excess idle cash
+
+        val annualLoss = (excess * annualInflationRate).toLong()
+        val recommendation = if (hasExcess) {
+            "هشدار نقدینگی مازاد: موجودی حساب جاری شما بیش از نیاز مخارج ۱٫۵ ماه آینده است. انتقال ${faCompact(excess.toDouble())} تومان به صندوق طلای بورس یا طلای ۱۸ عیار از زیان سالانه ${faCompact(annualLoss.toDouble())} تومان جلوگیری می‌کند."
+        } else {
+            "نقدینگی در محدوده امن عملیاتی قرار دارد."
+        }
+
+        val target = if (excess >= 50_000_000L) AssetClass.MELTED_GOLD_18K else AssetClass.GOLD_ETF
+
+        return IdleCashWarning(
+            hasIdleCash = hasExcess,
+            checkingBalanceToman = checkingBalanceToman,
+            operationalNeedToman = operationalNeed,
+            excessCashToman = excess,
+            annualOpportunityLossToman = annualLoss,
+            recommendationFa = recommendation,
+            targetAsset = target,
+        )
+    }
+}
+
+
 
 

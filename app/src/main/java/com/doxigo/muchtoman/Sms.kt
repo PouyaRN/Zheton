@@ -143,6 +143,12 @@ data class BankAccount(
 
     /** Whether the figure can be shown as fact rather than as something to check. */
     val trusted: Boolean get() = anchored && !inferred
+
+    /** An account with zero activity for >45 days (or unanchored with zero activity). */
+    fun isDormant(nowEpochMs: Long = System.currentTimeMillis()): Boolean {
+        val fortyFiveDaysMs = 45L * 24L * 3600L * 1000L
+        return updatedAt > 0L && (nowEpochMs - updatedAt) > fortyFiveDaysMs
+    }
 }
 
 /**

@@ -81,6 +81,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             showHidden = store.showHidden,
             strangeSenders = store.strangeSenders,
             dismissedUpdate = store.dismissedUpdate,
+            commitments = store.commitments,
             rateHistoryStore = store.rateHistoryStore,
         )
     )
@@ -1656,6 +1657,34 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         _state.update { it.copy(obligations = obligations, obligationPayments = payments, reservations = reservations) }
     }
 
+    // ──────────────────────── commitments (BNPL, Loans, Checks) ────────────────────────
+
+    fun saveCommitment(commitment: Commitment) {
+        val updated = (store.commitments.filterNot { it.id == commitment.id } + commitment)
+        store.commitments = updated
+        _state.update { it.copy(commitments = updated) }
+    }
+
+    fun toggleCommitmentSettled(commitmentId: String) {
+        val current = store.commitments
+        val target = current.firstOrNull { it.id == commitmentId } ?: return
+        val updated = current.map {
+            if (it.id == commitmentId) it.copy(
+                isSettled = !it.isSettled,
+                paidInstallmentCount = if (!it.isSettled) it.installmentCount else 0,
+                remainingAmountRial = if (!it.isSettled) 0L else it.totalAmountRial,
+            ) else it
+        }
+        store.commitments = updated
+        _state.update { it.copy(commitments = updated) }
+    }
+
+    fun deleteCommitment(commitmentId: String) {
+        val updated = store.commitments.filterNot { it.id == commitmentId }
+        store.commitments = updated
+        _state.update { it.copy(commitments = updated) }
+    }
+
     // ──────────────────────── fund reservations ────────────────────────
 
     fun saveReservation(purpose: String, amountRial: Long, categoryId: String?) {
@@ -2061,6 +2090,7 @@ data class UiState(
     val obligations: List<InstallmentObligation> = emptyList(),
     val obligationPayments: Map<String, List<InstallmentPayment>> = emptyMap(),
     val reservations: List<Reservation> = emptyList(),
+    val commitments: List<Commitment> = emptyList(),
     val rateHistoryStore: MarketRateHistoryStore = MarketRateHistoryStore(),
 ) {
     val coins: List<Coin> get() = rates.coins

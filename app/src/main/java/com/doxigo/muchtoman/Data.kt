@@ -515,6 +515,11 @@ class Store(context: Context) {
         get() = read("holdings", emptyList())
         set(v) = write("holdings", v)
 
+    /** Manual BNPL, loan, Sayad check, and installment commitments tracked offline. */
+    var commitments: List<Commitment>
+        get() = read("commitments", emptyList())
+        set(v) = write("commitments", v)
+
     /** Last successful fetch, so the app still shows something offline. */
     var cachedRates: Rates
         get() = sanitizeRates(read("rates", Rates()), BuildConfig.RATES_URL)

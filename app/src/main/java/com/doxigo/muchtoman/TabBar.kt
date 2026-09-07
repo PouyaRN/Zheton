@@ -7,11 +7,15 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.LocalContentColor
@@ -88,6 +92,7 @@ fun TabBar(
     ledgerBadge: Int,
     onSelect: (Tab) -> Unit,
     modifier: Modifier = Modifier,
+    onQuickAdd: (() -> Unit)? = null,
 ) {
     Surface(
         modifier = modifier
@@ -110,7 +115,48 @@ fun TabBar(
             windowInsets = WindowInsets(0),
             modifier = Modifier.height(72.dp),
         ) {
-            for (tab in tabs) {
+            val half = tabs.size / 2
+            tabs.forEachIndexed { index, tab ->
+                if (onQuickAdd != null && index == half) {
+                    // Central high-velocity quick entry action FAB
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Surface(
+                            onClick = onQuickAdd,
+                            shape = CircleShape,
+                            color = Hero.gold,
+                            shadowElevation = 6.dp,
+                            modifier = Modifier.size(46.dp),
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Canvas(modifier = Modifier.size(20.dp)) {
+                                    val stroke = 2.5.dp.toPx()
+                                    // Horizontal plus bar
+                                    drawLine(
+                                        color = Color.Black,
+                                        start = Offset(0f, size.height / 2),
+                                        end = Offset(size.width, size.height / 2),
+                                        strokeWidth = stroke,
+                                        cap = StrokeCap.Round,
+                                    )
+                                    // Vertical plus bar
+                                    drawLine(
+                                        color = Color.Black,
+                                        start = Offset(size.width / 2, 0f),
+                                        end = Offset(size.width / 2, size.height),
+                                        strokeWidth = stroke,
+                                        cap = StrokeCap.Round,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
                 val badge = if (tab == Tab.LEDGER) ledgerBadge else 0
                 val isSelected = tab == selected
                 val iconScale by animateFloatAsState(
@@ -128,10 +174,6 @@ fun TabBar(
                         BadgedBox(
                             badge = {
                                 if (badge > 0) {
-                                    // Gold again, and deliberately: the slug says where she is,
-                                    // the slug-coloured dot says where she is wanted next. Two
-                                    // sizes of one idea reads as a system. Red would read as a
-                                    // fault, and twelve receipts to sort is not one.
                                     Badge(
                                         containerColor = MaterialTheme.colorScheme.primary,
                                         contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -145,15 +187,10 @@ fun TabBar(
                                 }
                             },
                         ) {
-                            // The item hands its animated selected/unselected colour down
-                            // through LocalContentColor, so the drawn glyph tints with it.
                             val tint = LocalContentColor.current
                             Canvas(
                                 Modifier
                                     .size(24.dp)
-                                    // Its own layer, so the two glyphs that cut a hole in
-                                    // themselves cut it in the glyph and not in the slug
-                                    // underneath. See [knockOut].
                                     .graphicsLayer {
                                         scaleX = iconScale
                                         scaleY = iconScale
@@ -164,9 +201,6 @@ fun TabBar(
                     },
                     label = { Text(tab.fa, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     colors = NavigationBarItemDefaults.colors(
-                        // Full-strength gold, not the container tint the component defaults to:
-                        // that default is a brown wash on this palette, and a wash is exactly
-                        // what a "you are here" mark must not be.
                         indicatorColor = MaterialTheme.colorScheme.primary,
                         selectedIconColor = MaterialTheme.colorScheme.onPrimary,
                         selectedTextColor = MaterialTheme.colorScheme.primary,
