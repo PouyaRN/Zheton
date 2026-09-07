@@ -26,9 +26,9 @@ android {
         applicationId = "com.doxigo.muchtoman"
         minSdk = 24
         targetSdk = 37
-        // CI passes these from the git tag; local builds don't care.
-        versionCode = providers.gradleProperty("muchtoman.versionCode").orNull?.toInt() ?: 1
-        versionName = providers.gradleProperty("muchtoman.versionName").orNull ?: "1.0"
+        // CI passes these from the git tag; local builds default to latest release version.
+        versionCode = providers.gradleProperty("muchtoman.versionCode").orNull?.toInt() ?: 201
+        versionName = providers.gradleProperty("muchtoman.versionName").orNull ?: "1.0.5"
         buildConfigField("boolean", "LITE", "false")
     }
 
@@ -76,6 +76,8 @@ android {
                 storePassword = keystoreProps.getProperty("storePassword")
                 keyAlias = keystoreProps.getProperty("keyAlias")
                 keyPassword = keystoreProps.getProperty("keyPassword")
+                enableV1Signing = true
+                enableV2Signing = true
             }
         }
     }
