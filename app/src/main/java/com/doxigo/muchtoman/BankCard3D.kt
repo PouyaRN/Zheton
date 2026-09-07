@@ -576,6 +576,26 @@ private fun ShetabInsignia(
     }
 }
 
+/**
+ * Sanitizes any Persian or Arabic numerals to standard ASCII digits 0-9
+ * for seamless compatibility when pasting into banking apps or web portals.
+ */
+fun toAsciiDigits(str: String): String = str.map { char ->
+    when (char) {
+        '۰', '٠' -> '0'
+        '۱', '١' -> '1'
+        '۲', '٢' -> '2'
+        '۳', '٣' -> '3'
+        '۴', '٤' -> '4'
+        '۵', '٥' -> '5'
+        '۶', '٦' -> '6'
+        '۷', '٧' -> '7'
+        '۸', '٨' -> '8'
+        '۹', '٩' -> '9'
+        else -> char
+    }
+}.joinToString("")
+
 /** Formats a PAN or mask into 4 digit blocks with Persian numerals. */
 fun formatCardPan(raw: String): String {
     val clean = raw.trim()
@@ -656,7 +676,8 @@ fun BankCardDeck(
         val singleAccount = accounts.first()
         val context = LocalContext.current
         val clipboardManager = LocalClipboardManager.current
-        val copyText = singleAccount.mask.filter { it.isDigit() }.ifBlank { singleAccount.mask }
+        val rawDigits = toAsciiDigits(singleAccount.mask).filter { it.isDigit() }
+        val copyText = if (rawDigits.length >= 16) rawDigits.take(16) else rawDigits.ifBlank { singleAccount.mask }
 
         Column(
             modifier = modifier.fillMaxWidth(),
@@ -801,7 +822,8 @@ fun BankCardDeck(
         if (activeAccount != null) {
             val context = LocalContext.current
             val clipboardManager = LocalClipboardManager.current
-            val copyText = activeAccount.mask.filter { it.isDigit() }.ifBlank { activeAccount.mask }
+            val rawDigits = toAsciiDigits(activeAccount.mask).filter { it.isDigit() }
+            val copyText = if (rawDigits.length >= 16) rawDigits.take(16) else rawDigits.ifBlank { activeAccount.mask }
 
             Spacer(Modifier.height(10.dp))
             Row(

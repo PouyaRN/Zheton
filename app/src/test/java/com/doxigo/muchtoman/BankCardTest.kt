@@ -31,4 +31,12 @@ class BankCardTest {
         val formatted = formatCardPan(mask)
         assertEquals("۶۰۳۷ •••• •••• ۱۲۳۴", formatted)
     }
+
+    @Test
+    fun `toAsciiDigits properly converts Persian and Arabic numerals to ASCII digits`() {
+        assertEquals("0123456789", toAsciiDigits("۰۱۲۳۴۵۶۷۸۹"))
+        assertEquals("0123456789", toAsciiDigits("٠١٢٣٤٥٦٧٨٩"))
+        assertEquals("6037997512345678", toAsciiDigits("۶۰۳۷۹۹۷۵۱۲۳۴۵۶۷۸"))
+        assertEquals("Card: 50222910", toAsciiDigits("Card: ۵۰۲۲۲۹۱۰"))
+    }
 }
