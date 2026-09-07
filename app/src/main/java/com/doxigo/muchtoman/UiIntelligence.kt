@@ -765,3 +765,202 @@ internal fun WishlistSheet(
         }
     }
 }
+
+// ════════════════════════════════════════════════════════════════════════════════
+// 5. WEALTH DEFENSE ADVISOR CARD (Dynamic Best-Buy Engine)
+// ════════════════════════════════════════════════════════════════════════════════
+
+@Composable
+internal fun WealthDefenseAdvisorCard(
+    state: UiState,
+    modifier: Modifier = Modifier,
+) {
+    val liquidCashToman = state.bankToman.toLong()
+    val upcomingObligationsToman = (state.obligations.filter { !it.archived }.sumOf { obligation ->
+        val paid = state.obligationPayments[obligation.id]?.count { it.paidDate != null } ?: 0
+        val unpaidCount = (obligation.installmentCount - paid).coerceAtLeast(0)
+        unpaidCount.toLong() * obligation.installmentRial
+    } / 10L)
+    val reservationsToman = (state.reservations.filter { !it.released }.sumOf { it.amountRial } / 10L)
+
+    val safe = remember(liquidCashToman, upcomingObligationsToman, reservationsToman) {
+        calculateSafeToSpend(
+            liquidCashToman = liquidCashToman,
+            upcomingObligationsToman = upcomingObligationsToman,
+            reservationsToman = reservationsToman,
+        ).safeToSpendToman
+    }
+    val liquidBudgetToman = kotlin.math.max(1_000_000L, safe)
+
+    val rates = state.rates.toman
+    val usdtRate = rates["usd"] ?: 226_700.0
+    val gold18Rate = rates["gold18"] ?: 23_353_600.0
+    val emamiRate = rates["coin_emami"] ?: 229_230_000.0
+    val robRate = rates["coin_rob"] ?: 64_500_000.0
+
+    val advice = remember(liquidBudgetToman, usdtRate, gold18Rate, emamiRate, robRate) {
+        PurchasingOptimizationEngine.computeBestBuy(
+            budgetToman = liquidBudgetToman,
+            usdtToman = usdtRate,
+            gold18Toman = gold18Rate,
+            emamiCoinToman = emamiRate,
+            robCoinToman = robRate,
+        )
+    }
+
+    Panel(modifier) {
+        // Header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("🛡️", fontSize = 18.sp, modifier = Modifier.padding(end = Space.xs))
+                Text(
+                    "دستیار ضد تورم و خرید بهینه",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(Radius.pill))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                    .padding(horizontal = Space.s, vertical = 2.dp),
+            ) {
+                Text(
+                    "بودجه: ${faNumber(advice.userBudgetToman.toDouble())} ت",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+
+        Spacer(Modifier.height(Space.s))
+
+        // Primary Recommendation Headline
+        Text(
+            advice.headlineFa,
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = 15.sp,
+            color = MaterialTheme.colorScheme.primary,
+            lineHeight = 22.sp,
+        )
+
+        Spacer(Modifier.height(4.dp))
+
+        // Summary Explanation
+        Text(
+            advice.summaryFa,
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            lineHeight = 18.sp,
+        )
+
+        Spacer(Modifier.height(Space.m))
+
+        // Allocations breakdown
+        Text(
+            "سبد تخصیص پیشنهادی بر اساس شرایط لحظه‌ای بازار:",
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+
+        Spacer(Modifier.height(Space.xs))
+
+        advice.allocations.forEach { slice ->
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 3.dp)
+                    .clip(RoundedCornerShape(Radius.card))
+                    .background(MaterialTheme.colorScheme.surface)
+                    .padding(Space.s),
+            ) {
+                Column {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            slice.assetClass.titleFa,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            "${faNumber(slice.percentage.toDouble())}٪ (${faNumber(slice.amountToman.toDouble())} ت)",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        slice.rationaleFa,
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        "اقدام: ${slice.actionableStepsFa}",
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
+            }
+        }
+
+        // Market Warnings (e.g. Coin Bubbles)
+        if (advice.warningsFa.isNotEmpty()) {
+            Spacer(Modifier.height(Space.s))
+            advice.warningsFa.forEach { warn ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(Radius.card))
+                        .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f))
+                        .padding(Space.xs),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("⚠️", fontSize = 12.sp, modifier = Modifier.padding(end = 4.dp))
+                    Text(
+                        warn,
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        lineHeight = 15.sp,
+                    )
+                }
+                Spacer(Modifier.height(2.dp))
+            }
+        }
+
+        // Real Estate context if present
+        advice.realEstateContextFa?.let { reContext ->
+            Spacer(Modifier.height(Space.xs))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(Radius.card))
+                    .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.30f))
+                    .padding(Space.xs),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("🏢", fontSize = 12.sp, modifier = Modifier.padding(end = 4.dp))
+                Text(
+                    reContext,
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    lineHeight = 15.sp,
+                )
+            }
+        }
+    }
+}
+

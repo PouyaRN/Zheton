@@ -692,6 +692,14 @@ val snackbarHostState = remember { SnackbarHostState() }
                 )
             }
 
+            // Dynamic Wealth Defense & Purchasing Optimizer (Ticket 07: Real-time Asset Allocation against USD surge)
+            item(key = "wealth_defense_advisor") {
+                WealthDefenseAdvisorCard(
+                    state = state,
+                    modifier = Modifier.padding(edge).padding(top = Space.l),
+                )
+            }
+
             // Obligations card — always rendered; shows empty state when no data.
             item(key = "obligations") {
                 ObligationsCard(

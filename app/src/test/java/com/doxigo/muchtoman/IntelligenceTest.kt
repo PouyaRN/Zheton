@@ -247,4 +247,44 @@ class IntelligenceTest {
         assertTrue(itemExpired.isCoolingPeriodElapsed(now))
         assertEquals(0, itemExpired.hoursRemaining(now))
     }
+
+    // ── Ticket 07: Dynamic Wealth Defense & Purchasing Optimization ──
+
+    @Test
+    fun `PurchasingOptimizationEngine recommends Gold ETF for micro budget`() {
+        val microBudget = 5_000_000L // 5 Million Toman
+        val advice = PurchasingOptimizationEngine.computeBestBuy(
+            budgetToman = microBudget,
+            usdtToman = 65_000.0,
+            gold18Toman = 3_500_000.0,
+            emamiCoinToman = 45_000_000.0,
+            robCoinToman = 18_000_000.0,
+        )
+
+        assertEquals(AssetClass.GOLD_ETF, advice.primaryRecommendation)
+        assertEquals(2, advice.allocations.size)
+        assertEquals(AssetClass.GOLD_ETF, advice.allocations[0].assetClass)
+        assertEquals(70, advice.allocations[0].percentage)
+        assertEquals(AssetClass.USDT_STABLECOIN, advice.allocations[1].assetClass)
+        assertEquals(30, advice.allocations[1].percentage)
+        assertTrue(advice.warningsFa.isNotEmpty()) // Detects elevated coin bubbles
+    }
+
+    @Test
+    fun `PurchasingOptimizationEngine recommends Property for macro budget`() {
+        val macroBudget = 2_000_000_000L // 2 Billion Toman
+        val advice = PurchasingOptimizationEngine.computeBestBuy(
+            budgetToman = macroBudget,
+            usdtToman = 65_000.0,
+            gold18Toman = 3_500_000.0,
+            emamiCoinToman = 45_000_000.0,
+            robCoinToman = 18_000_000.0,
+        )
+
+        assertEquals(AssetClass.PHYSICAL_PROPERTY, advice.primaryRecommendation)
+        assertEquals(3, advice.allocations.size)
+        assertEquals(AssetClass.PHYSICAL_PROPERTY, advice.allocations[0].assetClass)
+        assertEquals(70, advice.allocations[0].percentage)
+        assertNotNull(advice.realEstateContextFa)
+    }
 }

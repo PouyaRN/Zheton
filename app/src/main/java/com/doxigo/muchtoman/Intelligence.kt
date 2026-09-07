@@ -450,3 +450,152 @@ data class WishlistItem(
     fun isCoolingPeriodElapsed(nowEpochMs: Long = System.currentTimeMillis()): Boolean =
         hoursRemaining(nowEpochMs) == 0
 }
+
+// ════════════════════════════════════════════════════════════════════════════════
+// 7. WEALTH DEFENSE & PURCHASING OPTIMIZATION ENGINE
+// ════════════════════════════════════════════════════════════════════════════════
+
+enum class AssetClass(val titleFa: String, val riskLevelFa: String) {
+    GOLD_ETF("صندوق طلای بورس (عیار/طلا)", "ریسک بسیار پایین - بدون حباب"),
+    MELTED_GOLD_18K("طلای آب‌شده ۱۸ عیار نقدی", "ریسک پایین - بدون اجرت ساخت"),
+    GOLD_COIN_BAHAR("سکه تمام بهار آزادی", "ریسک متوسط - حباب کمتر از امامی"),
+    USDT_STABLECOIN("تتر (دلار دیجیتال)", "نقدینگی دلاری و حفظ قدرت خرید"),
+    REAL_ESTATE_FUND("صندوق املاک و مستغلات بورس", "ریسک پایین - سپر تورمی مسکن متری"),
+    PHYSICAL_PROPERTY("خرید قطعی ملک و آپارتمان", "سرمایه‌گذاری بنیادی بلندمدت")
+}
+
+data class AllocationSlice(
+    val assetClass: AssetClass,
+    val percentage: Int,
+    val amountToman: Long,
+    val rationaleFa: String,
+    val actionableStepsFa: String
+)
+
+data class BestBuyAdvice(
+    val userBudgetToman: Long,
+    val primaryRecommendation: AssetClass,
+    val headlineFa: String,
+    val summaryFa: String,
+    val allocations: List<AllocationSlice>,
+    val warningsFa: List<String>,
+    val realEstateContextFa: String?
+)
+
+object PurchasingOptimizationEngine {
+
+    fun computeBestBuy(
+        budgetToman: Long,
+        usdtToman: Double = 226_700.0,
+        gold18Toman: Double = 23_353_600.0,
+        emamiCoinToman: Double = 229_230_000.0,
+        robCoinToman: Double = 64_500_000.0
+    ): BestBuyAdvice {
+        val safeBudget = max(1_000_000L, budgetToman)
+        val robBubble = evaluateCoinBubble(GoldCoinType.ROB, robCoinToman.roundToLong(), gold18Toman)
+        val emamiBubble = evaluateCoinBubble(GoldCoinType.EMAMI, emamiCoinToman.roundToLong(), gold18Toman)
+
+        val warnings = mutableListOf<String>()
+        if (robBubble.bubblePercent > 10.0) {
+            warnings.add("هشدار حباب: ربع سکه دارای ${faNumber(robBubble.bubblePercent)}٪ حباب سفته‌بازی است. خرید سکه فیزیکی توصیه نمی‌شود.")
+        }
+        if (emamiBubble.bubblePercent > 10.0) {
+            warnings.add("حباب سکه امامی (${faNumber(emamiBubble.bubblePercent)}٪) بالاست؛ گواهی شمش یا سکه طرح قدیم بهار آزادی ترجیح دارد.")
+        }
+
+        return when {
+            safeBudget < 15_000_000L -> {
+                // Tier 1: Micro budget (< 15M Toman)
+                val etfPart = (safeBudget * 0.70).toLong()
+                val usdtPart = safeBudget - etfPart
+                BestBuyAdvice(
+                    userBudgetToman = safeBudget,
+                    primaryRecommendation = AssetClass.GOLD_ETF,
+                    headlineFa = "بهترین خرید: صندوق‌های طلای بورس (بدون حباب)",
+                    summaryFa = "با بودجه کمتر از ۱۵ میلیون تومان، خرید سکه فیزیکی به دلیل حباب بالا موجب زیان فوری می‌شود. صندوق‌های طلا (مانند عیار، طلا و کهربا) امکان خرید کسری طلا را با حباب صفر و بدون اجرت فراهم می‌کنند.",
+                    allocations = listOf(
+                        AllocationSlice(AssetClass.GOLD_ETF, 70, etfPart, "پوشش ۱۰۰٪ تورم با شمش طلای ۹۹.۵٪", "از طریق کارگزاری‌های بورسی، نمادهای «عیار» یا «طلا» را با حداقل ۱۰۰ هزار تومان خریداری کنید."),
+                        AllocationSlice(AssetClass.USDT_STABLECOIN, 30, usdtPart, "نقدینگی دلاری و مصونیت از افت ریال", "خرید تتر از صرافی‌های معتبر مانند تترلند یا والکس و نگهداری در کیف پول امن.")
+                    ),
+                    warningsFa = warnings,
+                    realEstateContextFa = "متوسط هر متر مربع مسکن در پرند حدود ۲۵ تا ۳۰ میلیون تومان است؛ با صندوق‌های املاک بورس می‌توانید متراژ کسری پس‌انداز کنید."
+                )
+            }
+            safeBudget < 80_000_000L -> {
+                // Tier 2: Small capital (15M - 80M Toman)
+                val goldPart = (safeBudget * 0.75).toLong()
+                val usdtPart = safeBudget - goldPart
+                BestBuyAdvice(
+                    userBudgetToman = safeBudget,
+                    primaryRecommendation = AssetClass.MELTED_GOLD_18K,
+                    headlineFa = "بهترین خرید: طلای آب‌شده نقدی یا صندوق طلا",
+                    summaryFa = "با این بودجه می‌توانید قطعات طلای آب‌شده دارای کد انگ آزمایشگاهی ری‌گیری یا واحدهای صندوق طلا تهیه کنید که برخلاف سکه و طلافروشی، اجرت ساخت و حباب ندارد.",
+                    allocations = listOf(
+                        AllocationSlice(AssetClass.MELTED_GOLD_18K, 75, goldPart, "حفظ مستقیم ارزش دارایی بدون اجرت و مالیات", "خرید از طلافروشی‌های دارای جواز با دریافت فاکتور رسمی و استعلام تلفنی کد انگ ری‌گیری."),
+                        AllocationSlice(AssetClass.USDT_STABLECOIN, 25, usdtPart, "تثبیت دلاری سبد سرمایه", "حفظ بخش نقدی به صورت تتر برای شکار فرصت‌های خرید در بازار.")
+                    ),
+                    warningsFa = warnings,
+                    realEstateContextFa = "این بودجه معادل پیش‌پرداخت حدود ۲ تا ۳ متر مربع مسکن در حومه تهران (پردیس یا پرند) است."
+                )
+            }
+            safeBudget < 300_000_000L -> {
+                // Tier 3: Medium capital (80M - 300M Toman)
+                val baharPart = (safeBudget * 0.60).toLong()
+                val etfPart = (safeBudget * 0.25).toLong()
+                val usdtPart = safeBudget - baharPart - etfPart
+                BestBuyAdvice(
+                    userBudgetToman = safeBudget,
+                    primaryRecommendation = AssetClass.GOLD_COIN_BAHAR,
+                    headlineFa = "بهترین خرید: سکه تمام طرح قدیم (بهار آزادی) و گواهی شمش",
+                    summaryFa = "سکه تمام بهار آزادی دقیقاً هم‌وزن سکه امامی (۸.۱۳۳ گرم عیار ۹۰۰) است اما حباب قیمتی آن بسیار کمتر است. ترکیب آن با گواهی شمش طلا بالاترین بازدهی را دارد.",
+                    allocations = listOf(
+                        AllocationSlice(AssetClass.GOLD_COIN_BAHAR, 60, baharPart, "طلای مسکوک قانونی با کمترین حباب بازار", "خرید سکه تمام طرح قدیم و نگهداری در صندوق امانات بانکی."),
+                        AllocationSlice(AssetClass.GOLD_ETF, 25, etfPart, "نقدشوندگی فوری در کمتر از یک دقیقه", "خرید واحدهای صندوق طلا در تابلوی بورس کالا."),
+                        AllocationSlice(AssetClass.USDT_STABLECOIN, 15, usdtPart, "توازن نقدینگی و دارایی‌های ارزی", "تتر جهت پوشش فوری شوک‌های قیمتی.")
+                    ),
+                    warningsFa = warnings,
+                    realEstateContextFa = "امکان خرید سهام متری مسکن در صندوق‌های املاک و مستغلات بورس کالا."
+                )
+            }
+            safeBudget < 1_500_000_000L -> {
+                // Tier 4: Large capital (300M - 1.5B Toman)
+                val goldPart = (safeBudget * 0.50).toLong()
+                val reFundPart = (safeBudget * 0.25).toLong()
+                val usdtPart = safeBudget - goldPart - reFundPart
+                BestBuyAdvice(
+                    userBudgetToman = safeBudget,
+                    primaryRecommendation = AssetClass.REAL_ESTATE_FUND,
+                    headlineFa = "بهترین خرید: سبد تدافعی طلا + صندوق املاک و مستغلات",
+                    summaryFa = "در این محدوده سرمایه، ورود به بازار مسکن به صورت متری یا از طریق صندوق‌های ساختمانی بورس در کنار شمش طلا، بالاترین سپر تورمی را ایجاد می‌کند.",
+                    allocations = listOf(
+                        AllocationSlice(AssetClass.GOLD_ETF, 50, goldPart, "سپر تورمی آنی شمش طلا", "خرید گواهی شمش طلا و صندوق‌های طلا."),
+                        AllocationSlice(AssetClass.REAL_ESTATE_FUND, 25, reFundPart, "بهره‌مندی از جهش قیمت مسکن در موج دوم تورم", "خرید نمادهای املاک و مستغلات در بورس."),
+                        AllocationSlice(AssetClass.USDT_STABLECOIN, 25, usdtPart, "حفظ نقدینگی دلاری پرسرعت", "ذخیره در کیف پول سرد و امن.")
+                    ),
+                    warningsFa = warnings,
+                    realEstateContextFa = "معادل خرید یک واحد آپارتمان مسکن مهر فاز ۱۱ پردیس یا پرند با وام بانکی."
+                )
+            }
+            else -> {
+                // Tier 5: Macro capital (1.5B+ Toman)
+                val propertyPart = (safeBudget * 0.70).toLong()
+                val goldPart = (safeBudget * 0.20).toLong()
+                val usdtPart = safeBudget - propertyPart - goldPart
+                BestBuyAdvice(
+                    userBudgetToman = safeBudget,
+                    primaryRecommendation = AssetClass.PHYSICAL_PROPERTY,
+                    headlineFa = "بهترین خرید: ملک مسکونی / آپارتمان در قطب‌های رشد",
+                    summaryFa = "با جهش دلار، بازار مسکن دچار تاخیر قیمتی ۳ تا ۶ ماهه می‌شود. در ماه‌های نخست جهش ارزی، قیمت دلاری هر متر مربع مسکن در کف قرار دارد و بهترین زمان خرید ملک است.",
+                    allocations = listOf(
+                        AllocationSlice(AssetClass.PHYSICAL_PROPERTY, 70, propertyPart, "انباشت ثروت پایدار با سند تک‌برگ", "خرید آپارتمان سنددار در پردیس، اندیشه یا مناطق مستعد تهران (منطقه ۵ یا ۲۲ چیتگر)."),
+                        AllocationSlice(AssetClass.GOLD_ETF, 20, goldPart, "نقدینگی پشتیبان با بازدهی طلا", "واحدهای صندوق‌های طلای بدون حباب."),
+                        AllocationSlice(AssetClass.USDT_STABLECOIN, 10, usdtPart, "تنخواه‌گردان دلاری", "تتر جهت پوشش هزینه‌های غیرمترقبه انتقال سند و بازسازی.")
+                    ),
+                    warningsFa = warnings,
+                    realEstateContextFa = "خرید قطعی یک یا چند واحد مسکونی سنددار در پردیس، پرند، یا مناطق در حال رشد تهران."
+                )
+            }
+        }
+    }
+}
+
