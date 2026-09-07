@@ -1981,6 +1981,16 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun updateAccountDetails(key: String, nickname: String, fullPan: String) {
+        val next = store.bankAccounts.map { acct ->
+            if (acct.key == key) {
+                acct.copy(nickname = nickname.trim(), fullPan = fullPan.trim())
+            } else acct
+        }
+        store.bankAccounts = next
+        _state.update { it.copy(bankAccounts = next) }
+    }
+
     /**
      * Recompute the persisted fold from the corrected ledger.
      *

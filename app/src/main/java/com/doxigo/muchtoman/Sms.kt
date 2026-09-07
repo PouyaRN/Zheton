@@ -135,6 +135,8 @@ data class BankAccount(
     val inferred: Boolean = false,
     val anchored: Boolean = false,
     val sender: String = "",
+    val nickname: String = "",
+    val fullPan: String = "",
 ) {
     /** The bank alone: see [applyBankSms] for why the printed identifier cannot key an account. */
     val key: String get() = bank
@@ -855,7 +857,15 @@ fun collapseAccounts(accounts: List<BankAccount>): List<BankAccount> =
         // than known by their number, are exactly this: unnameable and unfixable.
         .filter { it.bank in READ_BANKS }
         .groupBy { it.bank }
-        .map { (_, rows) -> rows.maxWith(compareBy({ it.anchored }, { it.updatedAt })) }
+        .map { (_, rows) ->
+            val best = rows.maxWith(compareBy({ it.anchored }, { it.updatedAt }))
+            val nickname = rows.firstOrNull { it.nickname.isNotBlank() }?.nickname ?: ""
+            val fullPan = rows.firstOrNull { it.fullPan.isNotBlank() }?.fullPan ?: ""
+            best.copy(
+                nickname = if (best.nickname.isNotBlank()) best.nickname else nickname,
+                fullPan = if (best.fullPan.isNotBlank()) best.fullPan else fullPan,
+            )
+        }
 
 private val READ_BANKS: Set<String> =
     Bank.entries.filter { it.numbers.isNotEmpty() }.map { it.name }.toSet()

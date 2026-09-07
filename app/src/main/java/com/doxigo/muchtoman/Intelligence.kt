@@ -1354,6 +1354,242 @@ fun calculateAccountRunwayDays(
     return (checkingBalanceToman / averageDailyBurnToman).toInt().coerceAtLeast(0)
 }
 
+// ════════════════════════════════════════════════════════════════════════════════
+// 12. BANK FEES & TAX FRICTION TRACKER
+// ════════════════════════════════════════════════════════════════════════════════
+
+data class BankFeeSummary(
+    val totalFeeToman: Long,
+    val feeCount: Int,
+    val feePercentageOfSpend: Double,
+    val narrativeFa: String,
+)
+
+object BankFeeTracker {
+    private val FEE_KEYWORDS = listOf("کارمزد", "پایا", "ساتنا", "آبونمان", "ابونمان", "هزینه سرویس", "کارمزد انتقال", "کارمزد پیامک")
+
+    fun isFeeTxn(entry: LedgerEntry): Boolean {
+        if (entry.transfer || entry.hidden || entry.duplicate) return false
+        if (entry.categoryId == CAT_FEES) return true
+        val merchant = entry.txn.merchant.lowercase()
+        return FEE_KEYWORDS.any { merchant.contains(it) } || (entry.txn.feeRial != null && entry.txn.feeRial > 0)
+    }
+
+    fun analyze(entries: List<LedgerEntry>, windowDays: Int = 30): BankFeeSummary {
+        val nowDay = System.currentTimeMillis() / (24L * 3600L * 1000L)
+        val startDay = nowDay - windowDays
+
+        val relevant = entries.filter { !it.duplicate && !it.hidden && !it.transfer && it.txn.day >= startDay }
+        val totalOutflowRial = relevant.filter { it.txn.direction == "out" }.sumOf { it.txn.amountRial ?: 0L }
+
+        var feeSumRial = 0L
+        var count = 0
+
+        for (entry in relevant) {
+            val feeRialExplicit = entry.txn.feeRial ?: 0L
+            if (feeRialExplicit > 0L) {
+                feeSumRial += feeRialExplicit
+            }
+            if (entry.categoryId == CAT_FEES || FEE_KEYWORDS.any { entry.txn.merchant.contains(it) }) {
+                feeSumRial += entry.txn.amountRial ?: 0L
+                count++
+            }
+        }
+
+        val totalFeeToman = feeSumRial / 10L
+        val totalOutflowToman = totalOutflowRial / 10L
+        val pct = if (totalOutflowToman > 0L) (totalFeeToman.toDouble() / totalOutflowToman.toDouble()) * 100.0 else 0.0
+
+        val narrative = when {
+            count == 0 -> "در این بازه هیچ کارمزد یا آبونمان بانکی ثبت نشده است."
+            totalFeeToman > 100_000L -> "در ${faNumber(windowDays.toDouble())} روز گذشته، ${faCompact(totalFeeToman.toDouble())} تومان صرف کارمزد، انتقال پایا/ساتنا و آبونمان بانکی شده است (${faDecimal(pct, 1)}٪ کل مخارج)."
+            else -> "${faNumber(count.toDouble())} مورد کارمزد و آبونمان بانکی به مبلغ ${faNumber(totalFeeToman.toDouble())} تومان ثبت شد."
+        }
+
+        return BankFeeSummary(totalFeeToman, count, pct, narrative)
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// 13. SPENDING TIME HEATMAP & BEHAVIORAL PATTERN ANALYZER
+// ════════════════════════════════════════════════════════════════════════════════
+
+enum class TimeSlot(val titleFa: String, val rangeHoursFa: String) {
+    MORNING("صبح", "۰۶ تا ۱۲"),
+    AFTERNOON("ظهر و عصر", "۱۲ تا ۱۸"),
+    EVENING("شب", "۱۸ تا ۲۴"),
+    NIGHT("بامداد", "۰۰ تا ۰۶");
+
+    companion object {
+        fun fromTime(time: Int): TimeSlot {
+            // time is in HHMM format (e.g., 1430 for 14:30)
+            val hour = (time / 100).coerceIn(0, 23)
+            return when (hour) {
+                in 6..11 -> MORNING
+                in 12..17 -> AFTERNOON
+                in 18..23 -> EVENING
+                else -> NIGHT
+            }
+        }
+    }
+}
+
+data class DayOfWeekSpending(
+    val dayIndex: Int, // 0 = Shanbeh, 6 = Jomeh
+    val nameFa: String,
+    val totalSpendToman: Long,
+    val txnCount: Int,
+    val slots: Map<TimeSlot, Long>,
+)
+
+data class HeatmapInsight(
+    val peakDayNameFa: String,
+    val peakSlotTitleFa: String,
+    val peakSpendToman: Long,
+    val summaryFa: String,
+    val days: List<DayOfWeekSpending>,
+)
+
+object SpendingHeatmapAnalyzer {
+    private val SHAMSI_DAYS = listOf("شنبه", "یک‌شنبه", "دوشنبه", "سه‌شنبه", "چهارشنبه", "پنج‌شنبه", "جمعه")
+
+    fun analyze(entries: List<LedgerEntry>, windowDays: Int = 60): HeatmapInsight {
+        val nowDay = System.currentTimeMillis() / (24L * 3600L * 1000L)
+        val startDay = nowDay - windowDays
+
+        val outTxns = entries.filter {
+            !it.duplicate && !it.hidden && !it.transfer && it.txn.direction == "out" && it.txn.day >= startDay
+        }
+
+        val daySpendMap = mutableMapOf<Int, MutableMap<TimeSlot, Long>>()
+        val dayCountMap = mutableMapOf<Int, Int>()
+        for (i in 0..6) {
+            daySpendMap[i] = mutableMapOf(
+                TimeSlot.MORNING to 0L,
+                TimeSlot.AFTERNOON to 0L,
+                TimeSlot.EVENING to 0L,
+                TimeSlot.NIGHT to 0L,
+            )
+            dayCountMap[i] = 0
+        }
+
+        for (entry in outTxns) {
+            val dayOfWeek = ((entry.txn.day + 5) % 7).toInt().let { if (it < 0) it + 7 else it }
+            val millisInTehranDay = (entry.txn.at + TEHRAN_OFFSET_MS) % DAY_MS
+            val hour = (millisInTehranDay / 3600_000L).toInt().coerceIn(0, 23)
+            val minute = ((millisInTehranDay % 3600_000L) / 60_000L).toInt().coerceIn(0, 59)
+            val slot = TimeSlot.fromTime(hour * 100 + minute)
+            val toman = (entry.txn.amountRial ?: 0L) / 10L
+            daySpendMap[dayOfWeek]?.let { slots ->
+                slots[slot] = (slots[slot] ?: 0L) + toman
+            }
+            dayCountMap[dayOfWeek] = (dayCountMap[dayOfWeek] ?: 0) + 1
+        }
+
+        val daysList = (0..6).map { dayIdx ->
+            val slots = daySpendMap[dayIdx] ?: emptyMap()
+            val totalSpend = slots.values.sum()
+            DayOfWeekSpending(
+                dayIndex = dayIdx,
+                nameFa = SHAMSI_DAYS[dayIdx],
+                totalSpendToman = totalSpend,
+                txnCount = dayCountMap[dayIdx] ?: 0,
+                slots = slots,
+            )
+        }
+
+        val peakDay = daysList.maxByOrNull { it.totalSpendToman } ?: daysList[0]
+        val peakSlot = peakDay.slots.entries.maxByOrNull { it.value }?.key ?: TimeSlot.EVENING
+
+        val summary = if (peakDay.totalSpendToman > 0) {
+            "بیشترین حجم هزینه‌ها در ${peakDay.nameFa}‌ها و در بازه ${peakSlot.titleFa} (${peakSlot.rangeHoursFa}) رخ می‌دهد."
+        } else {
+            "الگوی زمانی هزینه‌ها پس از ثبت تراکنش‌های بیشتر تحلیل می‌شود."
+        }
+
+        return HeatmapInsight(
+            peakDayNameFa = peakDay.nameFa,
+            peakSlotTitleFa = peakSlot.titleFa,
+            peakSpendToman = peakDay.totalSpendToman,
+            summaryFa = summary,
+            days = daysList,
+        )
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════════════
+// 14. IMPULSE CLUSTER DETECTOR
+// ════════════════════════════════════════════════════════════════════════════════
+
+data class ImpulseCluster(
+    val clusterId: String,
+    val startEpochMs: Long,
+    val endEpochMs: Long,
+    val durationMinutes: Int,
+    val entries: List<LedgerEntry>,
+    val totalAmountToman: Long,
+) {
+    val count: Int get() = entries.size
+    val merchantSummary: String
+        get() = entries.map { it.txn.merchant }.filter { it.isNotBlank() }.distinct().take(3).joinToString("، ")
+}
+
+object ImpulseClusterDetector {
+    /**
+     * Finds bursts of 3 or more debit transactions across distinct merchants
+     * within [windowMinutes] (default 120 min = 2 hours).
+     */
+    fun findClusters(entries: List<LedgerEntry>, windowMinutes: Int = 120): List<ImpulseCluster> {
+        val outEntries = entries
+            .filter { !it.duplicate && !it.hidden && !it.transfer && it.txn.direction == "out" }
+            .sortedBy { it.txn.at }
+
+        if (outEntries.size < 3) return emptyList()
+
+        val clusters = mutableListOf<ImpulseCluster>()
+        val windowMs = windowMinutes * 60 * 1000L
+
+        var i = 0
+        while (i < outEntries.size) {
+            val group = mutableListOf<LedgerEntry>()
+            group.add(outEntries[i])
+            var j = i + 1
+            while (j < outEntries.size && (outEntries[j].txn.at - outEntries[i].txn.at) <= windowMs) {
+                group.add(outEntries[j])
+                j++
+            }
+
+            val distinctMerchants = group.map { it.txn.merchant.trim() }.filter { it.isNotBlank() }.distinct()
+            if (group.size >= 3 && distinctMerchants.size >= 2) {
+                val start = group.first().txn.at
+                val end = group.last().txn.at
+                val durationMin = ((end - start) / 60_000L).toInt().coerceAtLeast(1)
+                val totalToman = group.sumOf { it.txn.amountRial ?: 0L } / 10L
+                clusters.add(
+                    ImpulseCluster(
+                        clusterId = "cluster_${group.first().txn.ref}",
+                        startEpochMs = start,
+                        endEpochMs = end,
+                        durationMinutes = durationMin,
+                        entries = group,
+                        totalAmountToman = totalToman,
+                    )
+                )
+                i = j
+            } else {
+                i++
+            }
+        }
+
+        return clusters
+    }
+
+    fun isPartOfCluster(entry: LedgerEntry, allEntries: List<LedgerEntry>): Boolean {
+        val clusters = findClusters(allEntries)
+        return clusters.any { cluster -> cluster.entries.any { it.txn.ref == entry.txn.ref } }
+    }
+}
+
 
 
 

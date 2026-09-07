@@ -860,4 +860,192 @@ class IntelligenceTest {
         assertEquals(7, sparkline.size)
         assertTrue(sparkline.all { it in 0.0..1.0 })
     }
+
+    // ── Ticket: BankFeeTracker, HeatmapAnalyzer & ImpulseDetector Tests ──
+
+    private fun makeIntelligenceEntry(
+        ref: String,
+        day: Long = System.currentTimeMillis() / (24L * 3600L * 1000L),
+        at: Long = System.currentTimeMillis(),
+        amountRial: Long = 100_000L,
+        direction: String = "out",
+        merchant: String = "فروشگاه",
+        categoryId: String = "cat_other",
+        feeRial: Long? = null,
+        duplicate: Boolean = false,
+        hidden: Boolean = false,
+        transfer: Boolean = false,
+    ) = LedgerEntry(
+        txn = Txn(
+            ref = ref, srcHash = "hash_$ref", seq = 0, at = at, day = day,
+            bank = "MELLAT", accountId = "acc", direction = direction, amountRial = amountRial,
+            signedRial = if (direction == "in") amountRial else -amountRial, balanceRial = null, feeRial = feeRial, mask = "6104",
+            instrument = "card", merchant = merchant, merchantNorm = merchant, refNo = "ref_$ref", printedAt = "",
+            channel = "pos", unitPrinted = "none", inferred = false, parserVer = PARSER_VERSION,
+        ),
+        categoryId = categoryId, categoryFa = "سایر", confidence = 100, needsReview = false, duplicate = duplicate, hidden = hidden, transfer = transfer,
+    )
+
+    @Test
+    fun `BankFeeTracker isFeeTxn identifies fees by category keyword or explicit fee and excludes transfers`() {
+        // Explicit category
+        val feeCat = makeIntelligenceEntry("f1", categoryId = CAT_FEES)
+        assertTrue(BankFeeTracker.isFeeTxn(feeCat))
+
+        // Keywords in merchant name
+        val satnaFee = makeIntelligenceEntry("f2", merchant = "کارمزد انتقال ساتنا")
+        assertTrue(BankFeeTracker.isFeeTxn(satnaFee))
+
+        val smsSubscription = makeIntelligenceEntry("f3", merchant = "آبونمان سالانه پیامک بانک")
+        assertTrue(BankFeeTracker.isFeeTxn(smsSubscription))
+
+        val serviceFee = makeIntelligenceEntry("f4", merchant = "هزینه سرویس همراه بانک")
+        assertTrue(BankFeeTracker.isFeeTxn(serviceFee))
+
+        // Explicit fee field
+        val explicitFee = makeIntelligenceEntry("f5", merchant = "خرید اینترنتی", feeRial = 12_000L)
+        assertTrue(BankFeeTracker.isFeeTxn(explicitFee))
+
+        // Non-fee merchant
+        val normalSpend = makeIntelligenceEntry("f6", merchant = "سوپرمارکت محله")
+        assertFalse(BankFeeTracker.isFeeTxn(normalSpend))
+
+        // Exclusions: transfer, hidden, duplicate
+        val transferWithKeyword = makeIntelligenceEntry("f7", merchant = "کارمزد پایا", transfer = true)
+        assertFalse(BankFeeTracker.isFeeTxn(transferWithKeyword))
+
+        val hiddenWithFee = makeIntelligenceEntry("f8", categoryId = CAT_FEES, hidden = true)
+        assertFalse(BankFeeTracker.isFeeTxn(hiddenWithFee))
+
+        val duplicateFee = makeIntelligenceEntry("f9", categoryId = CAT_FEES, duplicate = true)
+        assertFalse(BankFeeTracker.isFeeTxn(duplicateFee))
+    }
+
+    @Test
+    fun `BankFeeTracker analyze computes fees percentage and generates appropriate narrative`() {
+        val today = System.currentTimeMillis() / (24L * 3600L * 1000L)
+
+        val entries = listOf(
+            // Outflow with explicit fee (50,000 Toman spend, 1,200 Toman fee)
+            makeIntelligenceEntry("t1", day = today - 2, amountRial = 500_000L, feeRial = 12_000L, merchant = "خرید کالا"),
+            // Outflow dedicated fee txn (7,000 Toman fee)
+            makeIntelligenceEntry("t2", day = today - 5, amountRial = 70_000L, categoryId = CAT_FEES, merchant = "کارمزد پایا"),
+            // Regular outflow (43,000 Toman spend)
+            makeIntelligenceEntry("t3", day = today - 10, amountRial = 430_000L, merchant = "رستوران"),
+            // Older than 30-day window (should be ignored)
+            makeIntelligenceEntry("t4", day = today - 45, amountRial = 100_000L, categoryId = CAT_FEES, merchant = "کارمزد قدیمی"),
+        )
+
+        val summary = BankFeeTracker.analyze(entries, windowDays = 30)
+
+        // Total outflow = (500_000 + 70_000 + 430_000) / 10 = 100,000 Toman
+        // Fee sum = (12_000 + 70_000) / 10 = 8,200 Toman
+        assertEquals(8_200L, summary.totalFeeToman)
+        assertEquals(1, summary.feeCount)
+        // 8,200 / 100,000 * 100 = 8.2%
+        assertEquals(8.2, summary.feePercentageOfSpend, 0.05)
+        assertTrue(summary.narrativeFa.contains("۸٬۲۰۰") || summary.narrativeFa.contains("8200") || summary.narrativeFa.contains("کارمزد"))
+    }
+
+    @Test
+    fun `TimeSlot fromTime maps hours into morning afternoon evening and night`() {
+        assertEquals(TimeSlot.MORNING, TimeSlot.fromTime(600))
+        assertEquals(TimeSlot.MORNING, TimeSlot.fromTime(930))
+        assertEquals(TimeSlot.MORNING, TimeSlot.fromTime(1159))
+
+        assertEquals(TimeSlot.AFTERNOON, TimeSlot.fromTime(1200))
+        assertEquals(TimeSlot.AFTERNOON, TimeSlot.fromTime(1545))
+        assertEquals(TimeSlot.AFTERNOON, TimeSlot.fromTime(1759))
+
+        assertEquals(TimeSlot.EVENING, TimeSlot.fromTime(1800))
+        assertEquals(TimeSlot.EVENING, TimeSlot.fromTime(2115))
+        assertEquals(TimeSlot.EVENING, TimeSlot.fromTime(2359))
+
+        assertEquals(TimeSlot.NIGHT, TimeSlot.fromTime(0))
+        assertEquals(TimeSlot.NIGHT, TimeSlot.fromTime(230))
+        assertEquals(TimeSlot.NIGHT, TimeSlot.fromTime(559))
+    }
+
+    @Test
+    fun `SpendingHeatmapAnalyzer analyze builds 7-day matrix and pinpoints peak spending day and slot`() {
+        val today = System.currentTimeMillis() / (24L * 3600L * 1000L)
+
+        // Find a recent Monday (dayOfWeek index 2) and Sunday (dayOfWeek index 1)
+        // Note: dayOfWeek formula is ((day + 5) % 7). If (today + 5) % 7 != 0, adjust.
+        val currentDayOfWeek = ((today + 5) % 7).toInt().let { if (it < 0) it + 7 else it }
+        val daysBackToShanbeh = currentDayOfWeek
+        val shanbehDay = today - daysBackToShanbeh
+
+        fun makeTehranEpochMs(day: Long, hour: Int, minute: Int): Long {
+            return day * 86400000L - TEHRAN_OFFSET_MS + hour * 3600000L + minute * 60000L
+        }
+
+        // Heavy spend on Shanbeh afternoon (14:30 Tehran time, 500k Toman)
+        val shanbehSpend = makeIntelligenceEntry(
+            "h1",
+            day = shanbehDay,
+            at = makeTehranEpochMs(shanbehDay, 14, 30),
+            amountRial = 5_000_000L,
+            merchant = "مرکز خرید",
+        )
+        // Smaller spend on Shanbeh morning (09:00 Tehran time, 50k Toman)
+        val shanbehMorningSpend = makeIntelligenceEntry(
+            "h2",
+            day = shanbehDay,
+            at = makeTehranEpochMs(shanbehDay, 9, 0),
+            amountRial = 500_000L,
+            merchant = "کافه",
+        )
+
+        val insight = SpendingHeatmapAnalyzer.analyze(listOf(shanbehSpend, shanbehMorningSpend), windowDays = 60)
+
+        assertEquals(7, insight.days.size)
+        assertEquals("شنبه", insight.peakDayNameFa)
+        assertEquals("ظهر و عصر", insight.peakSlotTitleFa)
+        assertEquals(550_000L, insight.peakSpendToman)
+        assertTrue(insight.summaryFa.contains("شنبه"))
+        assertTrue(insight.summaryFa.contains("ظهر و عصر"))
+    }
+
+    @Test
+    fun `ImpulseClusterDetector detects bursts across distinct merchants within time window`() {
+        val baseTimeMs = 1715000000000L
+        val entries = listOf(
+            // 3 transactions within 40 minutes at 3 distinct merchants
+            makeIntelligenceEntry("c1", at = baseTimeMs, amountRial = 2_000_000L, merchant = "فروشگاه لباس"),
+            makeIntelligenceEntry("c2", at = baseTimeMs + 15 * 60_000L, amountRial = 3_000_000L, merchant = "کافه"),
+            makeIntelligenceEntry("c3", at = baseTimeMs + 40 * 60_000L, amountRial = 5_000_000L, merchant = "کتاب‌فروشی"),
+            // Isolated transaction 6 hours later
+            makeIntelligenceEntry("c4", at = baseTimeMs + 360 * 60_000L, amountRial = 1_000_000L, merchant = "سوپرمارکت"),
+        )
+
+        val clusters = ImpulseClusterDetector.findClusters(entries, windowMinutes = 120)
+        assertEquals(1, clusters.size)
+
+        val cluster = clusters.first()
+        assertEquals(3, cluster.count)
+        assertEquals(40, cluster.durationMinutes)
+        assertEquals(1_000_000L, cluster.totalAmountToman) // (2M + 3M + 5M) Rial / 10
+        assertTrue(cluster.merchantSummary.contains("لباس"))
+
+        // Verify isPartOfCluster
+        assertTrue(ImpulseClusterDetector.isPartOfCluster(entries[0], entries))
+        assertTrue(ImpulseClusterDetector.isPartOfCluster(entries[1], entries))
+        assertTrue(ImpulseClusterDetector.isPartOfCluster(entries[2], entries))
+        assertFalse(ImpulseClusterDetector.isPartOfCluster(entries[3], entries))
+    }
+
+    @Test
+    fun `ImpulseClusterDetector rejects bursts when all transactions are at the same merchant`() {
+        val baseTimeMs = 1715000000000L
+        val sameMerchantEntries = listOf(
+            makeIntelligenceEntry("s1", at = baseTimeMs, amountRial = 1_000_000L, merchant = "هایپرمارکت"),
+            makeIntelligenceEntry("s2", at = baseTimeMs + 10 * 60_000L, amountRial = 2_000_000L, merchant = "هایپرمارکت"),
+            makeIntelligenceEntry("s3", at = baseTimeMs + 20 * 60_000L, amountRial = 3_000_000L, merchant = "هایپرمارکت"),
+        )
+
+        val clusters = ImpulseClusterDetector.findClusters(sameMerchantEntries, windowMinutes = 120)
+        assertTrue(clusters.isEmpty())
+        assertFalse(ImpulseClusterDetector.isPartOfCluster(sameMerchantEntries[0], sameMerchantEntries))
+    }
 }

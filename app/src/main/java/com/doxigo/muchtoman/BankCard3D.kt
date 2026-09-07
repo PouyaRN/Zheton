@@ -400,10 +400,12 @@ fun BankCard3D(
                 }
 
                 // Card Number PAN & Copy Action
-                val displayPan = formatCardPan(bankAccount?.mask ?: "۶۰۳۷ •••• •••• ۱۲۳۴")
+                val rawPan = bankAccount?.fullPan?.takeIf { it.isNotBlank() } ?: (bankAccount?.mask ?: "۶۰۳۷ •••• •••• ۱۲۳۴")
+                val displayPan = formatCardPan(rawPan)
                 val cardContext = LocalContext.current
                 val cardClipboard = LocalClipboardManager.current
-                val cardDigits = bankAccount?.mask?.filter { it.isDigit() }?.ifBlank { bankAccount.mask } ?: ""
+                val cardDigits = bankAccount?.fullPan?.filter { it.isDigit() }?.takeIf { it.isNotBlank() }
+                    ?: (bankAccount?.mask?.filter { it.isDigit() }?.ifBlank { bankAccount.mask } ?: "")
 
                 Row(
                     modifier = Modifier
@@ -411,7 +413,7 @@ fun BankCard3D(
                         .clickable {
                             if (!privacyMode && cardDigits.isNotBlank()) {
                                 cardClipboard.setText(AnnotatedString(cardDigits))
-                                android.widget.Toast.makeText(cardContext, "شماره کپی شد: $cardDigits", android.widget.Toast.LENGTH_SHORT).show()
+                                android.widget.Toast.makeText(cardContext, "شماره کارت کپی شد: $cardDigits", android.widget.Toast.LENGTH_SHORT).show()
                             }
                         }
                         .padding(vertical = 2.dp),
@@ -440,16 +442,18 @@ fun BankCard3D(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Bottom,
                 ) {
+                    val hasCustomNick = !bankAccount?.nickname.isNullOrBlank()
+                    val cardLabel = if (hasCustomNick) bankAccount?.nickname ?: "" else cardHolderName
                     Column {
                         Text(
-                            text = "صاحب کارت",
+                            text = if (hasCustomNick) "نام کارت" else "صاحب کارت",
                             color = palette.secondaryTextColor.copy(alpha = 0.8f),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Normal,
                         )
                         Spacer(Modifier.height(2.dp))
                         Text(
-                            text = cardHolderName,
+                            text = cardLabel,
                             color = palette.textColor,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
@@ -782,9 +786,10 @@ fun CardQrDialog(
     account: BankAccount,
     onDismiss: () -> Unit,
 ) {
-    val cleanDigits = toAsciiDigits(account.mask).filter { it.isDigit() }
-    val displayPan = formatCardPan(account.mask.ifBlank { "۶۰۳۷ •••• •••• ۱۲۳۴" })
-    val qrContent = cleanDigits.ifBlank { account.mask }
+    val rawPan = account.fullPan.takeIf { it.isNotBlank() } ?: account.mask
+    val cleanDigits = toAsciiDigits(rawPan).filter { it.isDigit() }
+    val displayPan = formatCardPan(rawPan.ifBlank { "۶۰۳۷ •••• •••• ۱۲۳۴" })
+    val qrContent = cleanDigits.ifBlank { rawPan }
     val bitmap = remember(qrContent) {
         runCatching { qrBitmap(qrContent, 600) }.getOrNull()
     }

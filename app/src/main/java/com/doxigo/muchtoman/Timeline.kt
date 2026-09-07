@@ -169,6 +169,7 @@ fun TimelineScreen(
     onToggleTransfer: (LedgerEntry) -> Unit = {},
     /** Tells the host to widen the ledger window while a structured filter is live. */
     onFilterWide: (Boolean) -> Unit = {},
+    privacyMode: Boolean = false,
 ) {
     val today = remember { tehranDay(System.currentTimeMillis()) }
     // Without the reveal, hidden rows leave the ledger entirely; with it, they come back
@@ -380,6 +381,7 @@ TextButton(onClick = {
             DailyOutflowSparkCard(
                 entries = visible,
                 todayEpochDay = today,
+                privacyMode = privacyMode,
             )
 
             // Failed transaction watchdog banner (Ticket 05)
@@ -492,6 +494,7 @@ TextButton(onClick = {
                                     onMarkCredit = onMarkCredit,
                                     onLinkInstallment = onLinkInstallment,
                                     onToggleTransfer = onToggleTransfer,
+                                    privacyMode = privacyMode,
                                 )
                             }
                         }
@@ -991,6 +994,7 @@ private fun DayBand(
     onMarkCredit: (LedgerEntry) -> Unit,
     onLinkInstallment: (LedgerEntry) -> Unit,
     onToggleTransfer: (LedgerEntry) -> Unit = {},
+    privacyMode: Boolean = false,
 ) {
     // Transfers move money between her own accounts. Counting them would show a day that only
     // shuffled funds as a day she earned or spent, which is the whole reason they are struck
@@ -1012,7 +1016,7 @@ private fun DayBand(
         )
         if (net != 0L) {
             Text(
-                faSignedCompact(tomanOf(net), net > 0),
+                if (privacyMode) "••••••" else faSignedCompact(tomanOf(net), net > 0),
                 // A step under the rows it summarises: the day's figure is context for them,
                 // not another entry competing with them.
                 style = figureStyle(
@@ -1045,6 +1049,7 @@ private fun DayBand(
                 onMarkCredit = onMarkCredit,
                 onLinkInstallment = onLinkInstallment,
                 onToggleTransfer = onToggleTransfer,
+                privacyMode = privacyMode,
             )
         }
     }
@@ -1063,6 +1068,7 @@ private fun TimelineRow(
     onMarkCredit: (LedgerEntry) -> Unit,
     onLinkInstallment: (LedgerEntry) -> Unit,
     onToggleTransfer: (LedgerEntry) -> Unit = {},
+    privacyMode: Boolean = false,
 ) {
     val txn = entry.txn
     val incoming = txn.direction == "in"
@@ -1179,12 +1185,18 @@ private fun TimelineRow(
         if (rial != null) {
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    faSignedCompact(tomanOf(rial), incoming),
+                    if (privacyMode) "••••••" else faSignedCompact(tomanOf(rial), incoming),
                     style = figureStyle(tone, FontWeight.Bold),
                     fontSize = 15.sp,
                     textDecoration = if (entry.transfer) TextDecoration.LineThrough else null,
                 )
-                if (state.hourlyWageToman > 0L && !incoming && !entry.transfer) {
+                if (privacyMode) {
+                    Text(
+                        "⏱️ •••",
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                    )
+                } else if (state.hourlyWageToman > 0L && !incoming && !entry.transfer) {
                     val toman = kotlin.math.abs(tomanOf(rial)).toLong()
                     val energy = calculateLifeEnergy(toman, customHourlyWageToman = state.hourlyWageToman)
                     if (energy.hours > 0 || energy.minutes >= 10) {
@@ -1465,7 +1477,9 @@ fun TransactionScreen(
     onLoadSource: suspend (LedgerEntry) -> String,
     onToggleTransfer: (LedgerEntry) -> Unit = {},
     gold18RateToman: Double? = null,
+    usdtRateToman: Double? = null,
     hourlyWageToman: Long = 0L,
+    allEntries: List<LedgerEntry> = emptyList(),
     onBack: () -> Unit,
 ) {
     val txn = entry.txn
@@ -1525,6 +1539,18 @@ fun TransactionScreen(
     }
     val choices = categoryChoices(categories, txn.direction, hiddenCategories)
 
+    val isImpulse = remember(entry.txn.ref, allEntries) {
+        ImpulseClusterDetector.isPartOfCluster(entry, allEntries)
+    }
+    val amountToman = (txn.amountRial ?: 0L) / 10L
+    val goldBench = remember(amountToman, gold18RateToman) {
+        if (!incoming && amountToman > 0L) calculateGoldSpendBenchmark(amountToman, gold18RateToman) else null
+    }
+    val usdtRate = usdtRateToman?.takeIf { it > 0.0 } ?: 95_000.0
+    val usdtUnits = remember(amountToman, usdtRate) {
+        if (!incoming && amountToman > 0L) amountToman.toDouble() / usdtRate else 0.0
+    }
+
     // The hero bleeds to both edges and under the status bar, so the gutter belongs to the
     // items rather than to the list.
     val gutter = Modifier.padding(horizontal = Space.xl)
@@ -1577,6 +1603,116 @@ fun TransactionScreen(
                         Icon(Icons.Rounded.Share, contentDescription = null)
                         Spacer(Modifier.width(Space.xs))
                         Text("اشتراک‌گذاری", fontSize = 13.sp)
+                    }
+                }
+            }
+
+            // Impulse shopping cluster detection banner
+            if (isImpulse) {
+                item(key = "impulse_spree_badge") {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(gutter)
+                            .padding(top = Space.m),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.45f)),
+                        shape = RoundedCornerShape(Radius.card),
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(Space.m),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text("⚡", fontSize = 22.sp)
+                            Spacer(Modifier.width(Space.s))
+                            Column {
+                                Text(
+                                    "خرید متوالی و پرسرعت (خوشه تکانه‌ای)",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                )
+                                Text(
+                                    "این تراکنش در یک بازه زمانی فشرده (کمتر از ۲ ساعت) همگام با چند خرید دیگر انجام شده است.",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.85f),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Opportunity cost comparison card for outflows
+            if (!incoming && amountToman > 0L && goldBench != null) {
+                item(key = "opportunity_cost_card") {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(gutter)
+                            .padding(top = Space.m),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+                        shape = RoundedCornerShape(Radius.card),
+                    ) {
+                        Column(modifier = Modifier.padding(Space.m)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("⚖️", fontSize = 16.sp)
+                                Spacer(Modifier.width(Space.s))
+                                Text(
+                                    "ارزش دارایی جایگزین (هزینه فرصت)",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                            }
+                            Spacer(Modifier.height(Space.xs))
+                            Text(
+                                "معادل این هزینه در بازار دارایی‌های امن و ضدتورمی:",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(Modifier.height(Space.s))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(Space.s),
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(Radius.field))
+                                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                                        .padding(Space.s),
+                                ) {
+                                    Column {
+                                        Text("طلای ۱۸ عیار", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Spacer(Modifier.height(2.dp))
+                                        Text(
+                                            "${faDecimal(goldBench.grams18k, if (goldBench.grams18k >= 1.0) 2 else 3)} گرم",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = Hero.gold,
+                                        )
+                                    }
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(Radius.field))
+                                        .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                                        .padding(Space.s),
+                                ) {
+                                    Column {
+                                        Text("تتر / دلار", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Spacer(Modifier.height(2.dp))
+                                        Text(
+                                            "${faDecimal(usdtUnits, if (usdtUnits >= 10.0) 1 else 2)} USDT",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.ExtraBold,
+                                            color = Color(0xFF2E9E5B),
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -2345,6 +2481,7 @@ internal fun DailyOutflowSparkCard(
     entries: List<LedgerEntry>,
     todayEpochDay: Long,
     modifier: Modifier = Modifier,
+    privacyMode: Boolean = false,
 ) {
     val dayPoints: List<DailyOutflowPoint> = remember(entries, todayEpochDay) {
         computeDailyOutflowPoints(entries, todayEpochDay, 14)
@@ -2387,7 +2524,7 @@ internal fun DailyOutflowSparkCard(
                                 .padding(horizontal = 5.dp, vertical = 2.dp),
                         ) {
                             Text(
-                                "اوج: ${faCompact(peakPoint.toman)}",
+                                if (privacyMode) "اوج: •••" else "اوج: ${faCompact(peakPoint.toman)}",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.error,
@@ -2396,7 +2533,7 @@ internal fun DailyOutflowSparkCard(
                     }
                 }
                 Text(
-                    "${faCompact(total14DayToman)} تومان",
+                    if (privacyMode) "•••••• تومان" else "${faCompact(total14DayToman)} تومان",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.error,
@@ -2429,7 +2566,7 @@ internal fun DailyOutflowSparkCard(
                 }
 
                 Text(
-                    "سقف: ${faCompact(maxDayToman)} ت",
+                    if (privacyMode) "سقف: •••" else "سقف: ${faCompact(maxDayToman)} ت",
                     fontSize = 8.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     modifier = Modifier
@@ -2535,7 +2672,7 @@ internal fun DailyOutflowSparkCard(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
-                            if (sel.toman > 0.0) "${faNumber(sel.toman)} تومان خرج" else "روز بدون خرج 🌿",
+                            if (privacyMode) "•••••• تومان" else if (sel.toman > 0.0) "${faNumber(sel.toman)} تومان خرج" else "روز بدون خرج 🌿",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (sel.toman > 0.0) MaterialTheme.colorScheme.error else Color(0xFF2E9E5B),

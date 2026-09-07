@@ -24,6 +24,8 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.background
@@ -405,7 +407,9 @@ val snackbarHostState = remember { SnackbarHostState() }
                 onLoadSource = vm::sourceOf,
                 onToggleTransfer = { e -> vm.toggleTransfer(e) },
                 gold18RateToman = state.effective["gold18"],
+                usdtRateToman = state.effective["usdt"] ?: state.effective["usd"],
                 hourlyWageToman = state.hourlyWageToman,
+                allEntries = state.ledger.entries,
                 onBack = { transactionRef = null },
             )
             return
@@ -670,6 +674,7 @@ val snackbarHostState = remember { SnackbarHostState() }
             onToggleShowHidden = { vm.setShowHidden(!state.showHidden) },
             onToggleTransfer = { entry -> vm.toggleTransfer(entry) },
             onFilterWide = { wide -> vm.setFilterWide(wide) },
+            privacyMode = privacyMode,
         )
         return@Scaffold
       }
@@ -683,6 +688,7 @@ val snackbarHostState = remember { SnackbarHostState() }
             current = state.totals.toman,
             composition = composition,
             bankAccounts = state.bankAccounts,
+            privacyMode = privacyMode,
             onSelectCategory = { catId ->
                 timelineCategoryId = catId
                 timelineSearchQuery = null
@@ -963,6 +969,7 @@ val snackbarHostState = remember { SnackbarHostState() }
             onAnchor = vm::setBankBalance,
             onToggle = vm::setBankEnabled,
             onForget = vm::forgetBankAccount,
+            onUpdateDetails = vm::updateAccountDetails,
             onAddNumber = vm::addBankNumber,
             onDismissSender = vm::dismissSender,
             onRescan = vm::rescanSms,
@@ -1089,6 +1096,7 @@ internal fun HeroField(
 
     HeroPanel {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                val context = LocalContext.current
                 Text(
                     // The name turns the header into a greeting; without one the app just
                     // says what it is.
@@ -1098,7 +1106,17 @@ internal fun HeroField(
                     color = Hero.muted,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .pointerInput(privacyMode) {
+                            detectTapGestures(
+                                onDoubleTap = {
+                                    onTogglePrivacy()
+                                    val msg = if (!privacyMode) "حالت حریم خصوصی فعال شد" else "حالت حریم خصوصی غیرفعال شد"
+                                    android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        },
                 )
                 IconButton(onClick = onTogglePrivacy) {
                     Icon(
@@ -1199,6 +1217,7 @@ internal fun HeroField(
                         maxLines = 1,
                         modifier = Modifier
                             .padding(start = Space.s)
+                            .privacyBlur(privacyMode)
                             .semantics { contentDescription = "حدود ${faRate(it)} دلار" },
                     )
                 }
@@ -1249,7 +1268,7 @@ internal fun HeroField(
                     fontSize = 15.sp,
                     lineHeight = 25.sp,
                     color = Hero.strong.copy(alpha = 0.93f),
-                    modifier = Modifier.padding(top = Space.s),
+                    modifier = Modifier.padding(top = Space.s).privacyBlur(privacyMode),
                 )
             } ?: faWordsToman(total)?.let { words ->
                 Text(
@@ -1257,7 +1276,7 @@ internal fun HeroField(
                     fontSize = 15.sp,
                     lineHeight = 25.sp,
                     color = Hero.strong.copy(alpha = 0.93f),
-                    modifier = Modifier.padding(top = Space.s),
+                    modifier = Modifier.padding(top = Space.s).privacyBlur(privacyMode),
                 )
             }
             Text(
@@ -2479,6 +2498,7 @@ private fun BankSheet(
     onAnchor: (String, Double) -> Unit,
     onToggle: (String, Boolean) -> Unit,
     onForget: (String) -> Unit,
+    onUpdateDetails: (String, String, String) -> Unit = { _, _, _ -> },
     onAddNumber: (String, String) -> Unit,
     onDismissSender: (String) -> Unit,
     onRescan: () -> Unit,
@@ -2547,6 +2567,7 @@ private fun BankSheet(
                         onAnchor = { v -> onAnchor(acc.key, v); fixing = null },
                         onToggle = { on -> onToggle(acc.bank, on) },
                         onForget = { onForget(acc.key) },
+                        onUpdateDetails = onUpdateDetails,
                         onOpenSms = { openSmsThread(context, acc.sender) },
                     )
                 }
@@ -2681,10 +2702,14 @@ private fun BankAccountRow(
     onAnchor: (Double) -> Unit,
     onToggle: (Boolean) -> Unit,
     onForget: () -> Unit,
+    onUpdateDetails: (String, String, String) -> Unit = { _, _, _ -> },
     onOpenSms: () -> Unit,
 ) {
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
     var draft by remember(account.key) { mutableStateOf("") }
+    var editingDetails by remember(account.key) { mutableStateOf(false) }
+    var nicknameDraft by remember(account.key) { mutableStateOf(account.nickname) }
+    var panDraft by remember(account.key) { mutableStateOf(account.fullPan) }
 
     Card(
         shape = RoundedCornerShape(Radius.card),
@@ -2702,13 +2727,14 @@ private fun BankAccountRow(
                 Spacer(Modifier.width(Space.s))
                 Column(Modifier.weight(1f)) {
                     RowTitle(
-                        account.bankFa,
+                        account.nickname.ifBlank { account.bankFa },
                         color = if (off) muted else MaterialTheme.colorScheme.onSurface,
                         max = 17.sp,
                     )
                     Text(
                         listOfNotNull(
-                            account.mask.takeIf { it.isNotBlank() }?.let { bidi(it) },
+                            account.bankFa.takeIf { account.nickname.isNotBlank() },
+                            (account.fullPan.takeIf { it.isNotBlank() } ?: account.mask.takeIf { it.isNotBlank() })?.let { bidi(it) },
                             faAgo(account.updatedAt, now),
                             "خاموش".takeIf { off },
                         ).joinToString("  •  "),
@@ -2795,19 +2821,77 @@ private fun BankAccountRow(
                 )
             }
 
+            if (editingDetails) {
+                Spacer(Modifier.height(Space.s))
+                Text(
+                    "نام مستعار یا برچسب کارت",
+                    fontSize = 12.sp,
+                    color = muted,
+                )
+                OutlinedTextField(
+                    value = nicknameDraft,
+                    onValueChange = { nicknameDraft = it },
+                    placeholder = { Text("مثلاً: خرج روزانه، حقوق، پس‌انداز", fontSize = 12.sp) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(Radius.field),
+                    modifier = Modifier.fillMaxWidth().padding(top = Space.xs),
+                )
+
+                Spacer(Modifier.height(Space.s))
+                Text(
+                    "شماره کامل ۱۶ رقمی کارت (جهت کپی سریع و QR)",
+                    fontSize = 12.sp,
+                    color = muted,
+                )
+                OutlinedTextField(
+                    value = panDraft,
+                    onValueChange = {
+                        val filtered = it.filter { c -> c.isDigit() || c in '۰'..'۹' }.take(16)
+                        panDraft = filtered
+                    },
+                    placeholder = { Text("۶۰۳۷۹۹••••••••••", fontSize = 12.sp) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = RoundedCornerShape(Radius.field),
+                    modifier = Modifier.fillMaxWidth().padding(top = Space.xs),
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = Space.s),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TextButton(onClick = { editingDetails = false }) {
+                        Text("انصراف", fontSize = 13.sp)
+                    }
+                    Spacer(Modifier.width(Space.s))
+                    Button(
+                        onClick = {
+                            onUpdateDetails(account.key, nicknameDraft, panDraft)
+                            editingDetails = false
+                        },
+                        shape = RoundedCornerShape(Radius.pill),
+                    ) {
+                        Text("ذخیره مشخصات", fontSize = 13.sp)
+                    }
+                }
+            }
+
             Row(Modifier.padding(top = Space.xs)) {
                 if (account.sender.isNotBlank()) {
                     TextButton(onClick = onOpenSms) {
-                        Text("دیدن پیامک‌ها", fontSize = 14.sp)
+                        Text("دیدن پیامک‌ها", fontSize = 13.sp)
                     }
+                }
+                TextButton(onClick = { editingDetails = !editingDetails }) {
+                    Text(if (editingDetails) "بستن مشخصات" else "نام و شماره کارت", fontSize = 13.sp)
                 }
                 if (fixing) {
                     TextButton(
                         onClick = { parseAmount(draft)?.let(onAnchor) },
                         enabled = parseAmount(draft) != null,
-                    ) { Text("ذخیره موجودی", fontSize = 14.sp) }
+                    ) { Text("ذخیره موجودی", fontSize = 13.sp) }
                 } else {
-                    TextButton(onClick = onFix) { Text("اصلاح موجودی", fontSize = 14.sp) }
+                    TextButton(onClick = onFix) { Text("اصلاح موجودی", fontSize = 13.sp) }
                 }
                 Spacer(Modifier.weight(1f))
                 TextButton(
@@ -2815,7 +2899,7 @@ private fun BankAccountRow(
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.error,
                     ),
-                ) { Text("حذف حساب", fontSize = 14.sp) }
+                ) { Text("حذف حساب", fontSize = 13.sp) }
             }
         }
     }

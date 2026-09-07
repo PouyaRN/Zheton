@@ -22,7 +22,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.FilterChip
@@ -78,6 +80,7 @@ fun ReportsTab(
     bankAccounts: List<BankAccount> = emptyList(),
     onSelectCategory: (String?) -> Unit = {},
     bottomInset: androidx.compose.ui.unit.Dp = 0.dp,
+    privacyMode: Boolean = false,
 ) {
     val today = remember { mutableLongStateOf(tehranDay(System.currentTimeMillis())) }
     // Recompute at midnight so "این ماه" stays live.
@@ -143,6 +146,16 @@ fun ReportsTab(
     // Micro-leak detection for micro-transactions under 50,000 Tomans
     val microLeakSummary = remember(visibleEntries) {
         MicroLeakDetector.analyze(visibleEntries, thresholdToman = 50_000L)
+    }
+
+    // Bank fee & friction tracker
+    val bankFeeSummary = remember(visibleEntries, windowDays) {
+        BankFeeTracker.analyze(visibleEntries, windowDays = windowDays)
+    }
+
+    // Spending time heatmap & behavioral patterns
+    val heatmapInsight = remember(visibleEntries, windowDays) {
+        SpendingHeatmapAnalyzer.analyze(visibleEntries, windowDays = windowDays)
     }
 
     // Idle Cash & Anti-Inflation Sweep recommendation
@@ -220,20 +233,37 @@ fun ReportsTab(
                         window = window,
                         windowDays = windowDays,
                         change = change,
+                        privacyMode = privacyMode,
                     )
+                }
+
+                // Bank Fees & Friction Card
+                if (bankFeeSummary.totalFeeToman > 0L || bankFeeSummary.feeCount > 0) {
+                    item {
+                        Spacer(Modifier.height(Space.l))
+                        BankFeesCard(summary = bankFeeSummary, privacyMode = privacyMode)
+                    }
+                }
+
+                // Spending Time Heatmap Card
+                if (heatmapInsight.peakSpendToman > 0L) {
+                    item {
+                        Spacer(Modifier.height(Space.l))
+                        SpendingHeatmapCard(insight = heatmapInsight, privacyMode = privacyMode)
+                    }
                 }
 
                 // Wealth Defense Index gauge card
                 item {
                     Spacer(Modifier.height(Space.l))
-                    WealthDefenseGaugeCard(unhedgedToman = unhedgedToman, hedgedToman = hedgedToman)
+                    WealthDefenseGaugeCard(unhedgedToman = unhedgedToman, hedgedToman = hedgedToman, privacyMode = privacyMode)
                 }
 
                 // Idle Cash Sweep Warning Card
                 if (idleCashWarning.hasIdleCash) {
                     item {
                         Spacer(Modifier.height(Space.l))
-                        IdleCashSweepCard(warning = idleCashWarning)
+                        IdleCashSweepCard(warning = idleCashWarning, privacyMode = privacyMode)
                     }
                 }
 
@@ -241,7 +271,7 @@ fun ReportsTab(
                 if (budget503020.totalExpenseRial > 0L) {
                     item {
                         Spacer(Modifier.height(Space.l))
-                        Budget503020Card(summary = budget503020)
+                        Budget503020Card(summary = budget503020, privacyMode = privacyMode)
                     }
                 }
 
@@ -249,7 +279,21 @@ fun ReportsTab(
                 if (microLeakSummary.hasLeaks) {
                     item {
                         Spacer(Modifier.height(Space.l))
-                        MicroLeakCard(leakSummary = microLeakSummary)
+                        MicroLeakCard(leakSummary = microLeakSummary, privacyMode = privacyMode)
+                    }
+                }
+
+                // Interactive Category Donut Chart with Slice Selection
+                if (snapshot.catSpend.isNotEmpty()) {
+                    item {
+                        Spacer(Modifier.height(Space.l))
+                        CategoryDonutCard(
+                            catSpend = snapshot.catSpend,
+                            categories = ledger.categories,
+                            totalExpenseRial = snapshot.expense,
+                            privacyMode = privacyMode,
+                            onSelectCategory = onSelectCategory,
+                        )
                     }
                 }
 
@@ -263,7 +307,7 @@ fun ReportsTab(
                 if (composition.isNotEmpty()) {
                     item {
                         Spacer(Modifier.height(Space.l))
-                        AssetAllocationDonutCard(composition = composition, totalToman = current)
+                        AssetAllocationDonutCard(composition = composition, totalToman = current, privacyMode = privacyMode)
                     }
                 }
 
@@ -282,7 +326,14 @@ fun ReportsTab(
                     items(snapshot.catSpend, key = { it.first ?: "uncategorized" }) { (catId, amount) ->
                         val catFa = ledger.categories.find { it.id == catId }?.nameFa ?: "دسته‌بندی نشده"
                         val isUncategorized = catId == null
-                        CategorySpendRow(catFa, amount, snapshot.expense, isUncategorized, onClick = { onSelectCategory(catId) })
+                        CategorySpendRow(
+                            nameFa = catFa,
+                            amount = amount,
+                            totalExpense = snapshot.expense,
+                            isUncategorized = isUncategorized,
+                            privacyMode = privacyMode,
+                            onClick = { onSelectCategory(catId) },
+                        )
                     }
                 }
 
@@ -300,7 +351,7 @@ fun ReportsTab(
                         if (change == null || points.size < 2) {
                             EmptyReport()
                         } else {
-                            ChangeFigure(change, window.fa, now)
+                            ChangeFigure(change, window.fa, now, privacyMode = privacyMode)
                             Spacer(Modifier.height(Space.xl))
                             var scrubPoint by remember(points) { mutableStateOf<Pair<Long, Double>?>(null) }
                             val tone = changeTone(change)
@@ -331,7 +382,7 @@ fun ReportsTab(
                                                 )
                                                 Spacer(Modifier.width(Space.s))
                                                 Text(
-                                                    "${faCompact(v, 3, pad = true)} تومان",
+                                                    if (privacyMode) "•••••• تومان" else "${faCompact(v, 3, pad = true)} تومان",
                                                     fontSize = 13.sp,
                                                     fontWeight = FontWeight.Bold,
                                                     fontFamily = ModamFigures,
@@ -350,9 +401,9 @@ fun ReportsTab(
                                     }
                                     Spacer(Modifier.height(Space.l))
                                     Row(Modifier.fillMaxWidth()) {
-                                        ChartCaption("اکنون", current)
+                                        ChartCaption("اکنون", current, privacyMode = privacyMode)
                                         Spacer(Modifier.weight(1f))
-                                        ChartCaption("شروع", sorted.getValue(change.sinceDay))
+                                        ChartCaption("شروع", sorted.getValue(change.sinceDay), privacyMode = privacyMode)
                                     }
                                 }
                             }
@@ -364,7 +415,7 @@ fun ReportsTab(
                 if (composition.isNotEmpty()) {
                     item {
                         Spacer(Modifier.height(Space.xl))
-                        CompositionBar(composition)
+                        CompositionBar(composition, privacyMode = privacyMode)
                     }
                 }
             }
@@ -409,6 +460,7 @@ private fun ExecutiveCashFlowCard(
     window: ReportWindow,
     windowDays: Int,
     change: Change?,
+    privacyMode: Boolean = false,
 ) {
     val dailyBurnToman = if (windowDays > 0) tomanOf(snapshot.expense) / windowDays else 0L
 
@@ -472,7 +524,7 @@ private fun ExecutiveCashFlowCard(
                     }
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = bidi(faCompact(tomanOf(snapshot.income))),
+                        text = if (privacyMode) "••••••" else bidi(faCompact(tomanOf(snapshot.income))),
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Black,
                         fontFamily = ModamFigures,
@@ -496,7 +548,7 @@ private fun ExecutiveCashFlowCard(
                     }
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = bidi(faCompact(tomanOf(snapshot.expense))),
+                        text = if (privacyMode) "••••••" else bidi(faCompact(tomanOf(snapshot.expense))),
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Black,
                         fontFamily = ModamFigures,
@@ -520,7 +572,7 @@ private fun ExecutiveCashFlowCard(
                     Text("تراز خالص دوره", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = bidi(faSignedCompact(tomanOf(snapshot.net), snapshot.net > 0)),
+                        text = if (privacyMode) "••••••" else bidi(faSignedCompact(tomanOf(snapshot.net), snapshot.net > 0)),
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Black,
                         fontFamily = ModamFigures,
@@ -581,7 +633,7 @@ private fun ExecutiveCashFlowCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        text = "${faRate(dailyBurnToman.toDouble())} تومان در روز",
+                        text = if (privacyMode) "•••••• تومان در روز" else "${faRate(dailyBurnToman.toDouble())} تومان در روز",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = ModamFigures,
@@ -633,6 +685,7 @@ private fun CategorySpendRow(
     amount: Long,
     totalExpense: Long,
     isUncategorized: Boolean,
+    privacyMode: Boolean = false,
     onClick: (() -> Unit)? = null,
 ) {
     val pct = if (totalExpense > 0) (amount.toDouble() / totalExpense * 100).toInt() else 0
@@ -685,7 +738,7 @@ private fun CategorySpendRow(
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(
-                bidi(faCompact(tomanOf(amount))),
+                if (privacyMode) "••••••" else bidi(faCompact(tomanOf(amount))),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onBackground,
@@ -704,6 +757,7 @@ private fun WealthDefenseGaugeCard(
     unhedgedToman: Long,
     hedgedToman: Long,
     modifier: Modifier = Modifier,
+    privacyMode: Boolean = false,
 ) {
     val defense = remember(unhedgedToman, hedgedToman) {
         PurchasingOptimizationEngine.computeWealthDefenseIndex(unhedgedToman, hedgedToman)
@@ -802,7 +856,7 @@ private fun WealthDefenseGaugeCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        "${faCompact(defense.unhedgedToman.toDouble())} تومان",
+                        if (privacyMode) "•••••• تومان" else "${faCompact(defense.unhedgedToman.toDouble())} تومان",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = ModamFigures,
@@ -816,7 +870,7 @@ private fun WealthDefenseGaugeCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        "${faCompact(defense.dailyBleedToman.toDouble())} ت / روز",
+                        if (privacyMode) "•••••• ت / روز" else "${faCompact(defense.dailyBleedToman.toDouble())} ت / روز",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = ModamFigures,
@@ -832,6 +886,7 @@ private fun WealthDefenseGaugeCard(
 private fun IdleCashSweepCard(
     warning: IdleCashWarning,
     modifier: Modifier = Modifier,
+    privacyMode: Boolean = false,
 ) {
     Surface(
         modifier = modifier
@@ -894,7 +949,7 @@ private fun IdleCashSweepCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        "${faCompact(warning.excessCashToman.toDouble())} تومان",
+                        if (privacyMode) "•••••• تومان" else "${faCompact(warning.excessCashToman.toDouble())} تومان",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = ModamFigures,
@@ -908,7 +963,7 @@ private fun IdleCashSweepCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        "${faCompact(warning.annualOpportunityLossToman.toDouble())} تومان",
+                        if (privacyMode) "•••••• تومان" else "${faCompact(warning.annualOpportunityLossToman.toDouble())} تومان",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = ModamFigures,
@@ -924,6 +979,7 @@ private fun IdleCashSweepCard(
 private fun Budget503020Card(
     summary: BudgetRule503020Summary,
     modifier: Modifier = Modifier,
+    privacyMode: Boolean = false,
 ) {
     val needColor = Color(0xFF3B82F6)
     val wantColor = Color(0xFFF97316)
@@ -1009,18 +1065,21 @@ private fun Budget503020Card(
                     amountToman = summary.needToman,
                     actualPercent = summary.needPercent,
                     color = needColor,
+                    privacyMode = privacyMode,
                 )
                 Budget503020Column(
                     title = "خواسته‌ها (۳۰٪)",
                     amountToman = summary.wantToman,
                     actualPercent = summary.wantPercent,
                     color = wantColor,
+                    privacyMode = privacyMode,
                 )
                 Budget503020Column(
                     title = "سرمایه (۲۰٪)",
                     amountToman = summary.savingsToman,
                     actualPercent = summary.savingsPercent,
                     color = savingsColor,
+                    privacyMode = privacyMode,
                 )
             }
         }
@@ -1033,6 +1092,7 @@ private fun Budget503020Column(
     amountToman: Long,
     actualPercent: Int,
     color: Color,
+    privacyMode: Boolean = false,
 ) {
     Column {
         Row(
@@ -1061,7 +1121,7 @@ private fun Budget503020Column(
             color = color,
         )
         Text(
-            "${faCompact(amountToman.toDouble())} ت",
+            if (privacyMode) "•••••• ت" else "${faCompact(amountToman.toDouble())} ت",
             fontSize = 11.sp,
             fontWeight = FontWeight.Normal,
             fontFamily = ModamFigures,
@@ -1075,6 +1135,7 @@ private fun AssetAllocationDonutCard(
     composition: List<Pair<Kind, Double>>,
     totalToman: Double,
     modifier: Modifier = Modifier,
+    privacyMode: Boolean = false,
 ) {
     if (composition.isEmpty() || totalToman <= 0.0) return
 
@@ -1163,7 +1224,7 @@ private fun AssetAllocationDonutCard(
                             color = kindColors[kind] ?: MaterialTheme.colorScheme.primary,
                         )
                         Text(
-                            text = "${faCompact(amount)} ت",
+                            text = if (privacyMode) "•••••• ت" else "${faCompact(amount)} ت",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = ModamFigures,
@@ -1221,6 +1282,7 @@ private fun AssetAllocationDonutCard(
 fun MicroLeakCard(
     leakSummary: MicroLeakSummary,
     modifier: Modifier = Modifier,
+    privacyMode: Boolean = false,
 ) {
     if (!leakSummary.hasLeaks) return
 
@@ -1287,7 +1349,7 @@ fun MicroLeakCard(
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "${faCompact(leakSummary.totalLeakToman.toDouble())} ت",
+                        if (privacyMode) "•••••• ت" else "${faCompact(leakSummary.totalLeakToman.toDouble())} ت",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.ExtraBold,
                         fontFamily = ModamFigures,
@@ -1309,7 +1371,7 @@ fun MicroLeakCard(
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "${faNumber(leakSummary.averageAmountToman.toDouble())} ت",
+                        if (privacyMode) "•••••• ت" else "${faNumber(leakSummary.averageAmountToman.toDouble())} ت",
                         fontSize = 16.sp,
                         fontWeight = FontWeight.ExtraBold,
                         fontFamily = ModamFigures,
@@ -1486,6 +1548,464 @@ fun OpportunityCostSimulatorCard(
                 lineHeight = 16.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
             )
+        }
+    }
+}
+
+/**
+ * Visual card summarizing bank service charges, Satna/Paya fees, and friction costs.
+ */
+@Composable
+private fun BankFeesCard(
+    summary: BankFeeSummary,
+    modifier: Modifier = Modifier,
+    privacyMode: Boolean = false,
+) {
+    if (summary.totalFeeToman <= 0L && summary.feeCount <= 0) return
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Radius.group))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.group)),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+    ) {
+        Column(Modifier.padding(Space.xl)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("💳", fontSize = 18.sp, modifier = Modifier.padding(end = Space.s))
+                    Column {
+                        Text(
+                            "کارمزدها و اصطکاک بانکی",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                        Text(
+                            "انتقال پایا، ساتنا، کارت‌به‌کارت و آبونمان",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                        )
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(Radius.pill))
+                        .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                ) {
+                    Text(
+                        "${faNumber(summary.feeCount.toDouble())} تراکنش",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = ModamFigures,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(Space.m))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Space.m),
+            ) {
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(Radius.card))
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
+                        .padding(Space.m),
+                ) {
+                    Text(
+                        "مجموع کارمزد پرداختی",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        if (privacyMode) "•••••• ت" else "${faCompact(summary.totalFeeToman.toDouble())} ت",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontFamily = ModamFigures,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(Radius.card))
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
+                        .padding(Space.m),
+                ) {
+                    Text(
+                        "سهم از کل مخارج",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "${faDecimal(summary.feePercentageOfSpend, 1)}٪",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontFamily = ModamFigures,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(Space.s))
+
+            Text(
+                if (privacyMode) "در این بازه ${faNumber(summary.feeCount.toDouble())} مورد کارمزد و آبونمان بانکی ثبت شده است." else summary.narrativeFa,
+                fontSize = 11.sp,
+                lineHeight = 16.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
+            )
+        }
+    }
+}
+
+/**
+ * 2D Heatmap visual matrix plotting spending concentration across days of week and time-of-day slots.
+ */
+@Composable
+private fun SpendingHeatmapCard(
+    insight: HeatmapInsight,
+    modifier: Modifier = Modifier,
+    privacyMode: Boolean = false,
+) {
+    val maxSlotSpend = remember(insight) {
+        insight.days.flatMap { it.slots.values }.maxOrNull()?.coerceAtLeast(1L) ?: 1L
+    }
+    val slotOrder = listOf(TimeSlot.MORNING, TimeSlot.AFTERNOON, TimeSlot.EVENING, TimeSlot.NIGHT)
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Radius.group))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.group)),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+    ) {
+        Column(Modifier.padding(Space.xl)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("⏰", fontSize = 18.sp, modifier = Modifier.padding(end = Space.s))
+                    Column {
+                        Text(
+                            "الگوی زمانی مخارج",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground,
+                        )
+                        Text(
+                            "توزیع هزینه‌ها بر اساس روز و ساعت",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                        )
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(Radius.pill))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                ) {
+                    Text(
+                        "${insight.peakDayNameFa} • ${insight.peakSlotTitleFa}",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(Space.l))
+
+            // 7 Columns (one for each Shamsi day) with 4 time slots
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                insight.days.forEach { day ->
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.weight(1f).padding(horizontal = 2.dp),
+                    ) {
+                        Text(
+                            day.nameFa.take(2), // e.g. شن، یک، دو، سه‌، چه‌، پن، جم
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (day.nameFa == insight.peakDayNameFa) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(4.dp))
+
+                        slotOrder.forEach { slot ->
+                            val spend = day.slots[slot] ?: 0L
+                            val ratio = (spend.toFloat() / maxSlotSpend.toFloat()).coerceIn(0f, 1f)
+                            val cellAlpha = if (spend > 0L) (0.15f + ratio * 0.85f).coerceIn(0.15f, 1f) else 0.05f
+                            val cellColor = if (spend > 0L) MaterialTheme.colorScheme.primary.copy(alpha = cellAlpha) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(18.dp)
+                                    .padding(vertical = 1.5.dp)
+                                    .clip(RoundedCornerShape(3.dp))
+                                    .background(cellColor),
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(Space.s))
+
+            // Time Slot legend below the heatmap
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                slotOrder.forEach { slot ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)),
+                        )
+                        Spacer(Modifier.width(3.dp))
+                        Text(
+                            slot.titleFa,
+                            fontSize = 9.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(Space.m))
+
+            // Peak Spend Metric Row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(Radius.card))
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
+                    .padding(horizontal = Space.m, vertical = Space.s),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "اوج خرج هفتگی (${insight.peakDayNameFa})",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    if (privacyMode) "•••••• ت" else "${faCompact(insight.peakSpendToman.toDouble())} ت",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = ModamFigures,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+
+            Spacer(Modifier.height(Space.s))
+
+            Text(
+                insight.summaryFa,
+                fontSize = 11.sp,
+                lineHeight = 16.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
+            )
+        }
+    }
+}
+
+/**
+ * Donut chart showing breakdown of expenses by category with interactive selection.
+ */
+@Composable
+private fun CategoryDonutCard(
+    catSpend: List<Pair<String?, Long>>,
+    categories: List<Category>,
+    totalExpenseRial: Long,
+    modifier: Modifier = Modifier,
+    privacyMode: Boolean = false,
+    onSelectCategory: (String?) -> Unit = {},
+) {
+    if (catSpend.isEmpty() || totalExpenseRial <= 0L) return
+
+    val categoryColors = listOf(
+        Color(0xFF3B82F6), // Blue
+        Color(0xFFF97316), // Orange
+        Color(0xFF10B981), // Emerald
+        Color(0xFF8B5CF6), // Purple
+        Color(0xFFEC4899), // Pink
+        Color(0xFFF59E0B), // Amber
+        Color(0xFF06B6D4), // Cyan
+        Color(0xFF84CC16), // Lime
+        Color(0xFF64748B), // Slate
+    )
+
+    var selectedCatId by remember { mutableStateOf<String?>(null) }
+    val activeItem = catSpend.find { it.first == selectedCatId } ?: catSpend.firstOrNull()
+    val activeCat = categories.find { it.id == activeItem?.first }
+    val activeCatName = activeCat?.nameFa ?: if (activeItem?.first == CAT_UNCATEGORISED) "دسته‌بندی‌نشده" else "سایر"
+    val activeAmountRial = activeItem?.second ?: 0L
+    val activeAmountToman = activeAmountRial / 10L
+    val activePct = if (totalExpenseRial > 0L) ((activeAmountRial.toDouble() / totalExpenseRial.toDouble()) * 100.0).toInt() else 0
+
+    val activeIndex = catSpend.indexOfFirst { it.first == activeItem?.first }.coerceAtLeast(0)
+    val activeColor = categoryColors[activeIndex % categoryColors.size]
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Radius.group))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.group)),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+    ) {
+        Column(Modifier.padding(Space.xl)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "ترکیب دسته‌بندی مخارج",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Text(
+                    "مجموع: " + (if (privacyMode) "•••••• ت" else "${faCompact((totalExpenseRial / 10L).toDouble())} ت"),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    fontFamily = ModamFigures,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+
+            Spacer(Modifier.height(Space.l))
+
+            // Donut Ring Canvas with Center Value
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Canvas(modifier = Modifier.size(160.dp)) {
+                    val strokeWidth = 24.dp.toPx()
+                    val diameter = size.minDimension - strokeWidth
+                    val topLeft = Offset(strokeWidth / 2f, strokeWidth / 2f)
+                    val arcSize = Size(diameter, diameter)
+
+                    var startAngle = -90f
+                    catSpend.forEachIndexed { index, (catId, amountRial) ->
+                        val sweep = ((amountRial.toDouble() / totalExpenseRial.toDouble()) * 360f).toFloat()
+                        val color = categoryColors[index % categoryColors.size]
+                        val isSelected = catId == activeItem?.first
+
+                        drawArc(
+                            color = if (isSelected) color else color.copy(alpha = 0.85f),
+                            startAngle = startAngle,
+                            sweepAngle = sweep.coerceAtLeast(1.5f),
+                            useCenter = false,
+                            topLeft = topLeft,
+                            size = arcSize,
+                            style = Stroke(
+                                width = if (isSelected) strokeWidth * 1.15f else strokeWidth,
+                                cap = StrokeCap.Butt,
+                            ),
+                        )
+                        startAngle += sweep
+                    }
+                }
+
+                // Center hole label
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = activeCatName,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = "${faNumber(activePct.toDouble())}٪",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = ModamFigures,
+                        color = activeColor,
+                    )
+                    Text(
+                        text = if (privacyMode) "•••••• ت" else "${faCompact(activeAmountToman.toDouble())} ت",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = ModamFigures,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(Space.l))
+
+            // Legend chips for top categories
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Space.xs),
+            ) {
+                itemsIndexed(catSpend.take(6)) { index, (catId, amountRial) ->
+                    val cat = categories.find { it.id == catId }
+                    val name = cat?.nameFa ?: if (catId == CAT_UNCATEGORISED) "دسته‌بندی‌نشده" else "سایر"
+                    val color = categoryColors[index % categoryColors.size]
+                    val pct = if (totalExpenseRial > 0L) ((amountRial.toDouble() / totalExpenseRial.toDouble()) * 100.0).toInt() else 0
+                    val isSelected = catId == activeItem?.first
+
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(Radius.pill))
+                            .clickable {
+                                if (selectedCatId == catId) {
+                                    onSelectCategory(catId)
+                                } else {
+                                    selectedCatId = catId
+                                }
+                            }
+                            .background(if (isSelected) color.copy(alpha = 0.15f) else Color.Transparent)
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(8.dp)
+                                .clip(CircleShape)
+                                .background(color),
+                        )
+                        Text(
+                            text = "$name $pct٪",
+                            fontSize = 11.sp,
+                            fontFamily = ModamFigures,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isSelected) color else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
         }
     }
 }

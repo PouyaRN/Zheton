@@ -73,7 +73,7 @@ private fun barTint(kind: Kind): Color = when (kind) {
  * the same money in the same words — just side by side instead of stacked.
  */
 @Composable
-internal fun CompositionBar(composition: List<Pair<Kind, Double>>) {
+internal fun CompositionBar(composition: List<Pair<Kind, Double>>, privacyMode: Boolean = false) {
     val total = composition.sumOf { it.second }
     Column {
         Text(
@@ -115,7 +115,8 @@ internal fun CompositionBar(composition: List<Pair<Kind, Double>>) {
                 Text(kind.fa, fontSize = 14.sp, modifier = Modifier.weight(1f))
                 Text(
                     // Parentheses, not a middot: beside Persian digits «·» reads as a zero.
-                    "${faCompact(value, 3, pad = true)} تومان (${faNumber(round(value / total * 100))}٪)",
+                    if (privacyMode) "•••••• تومان (${faNumber(round(value / total * 100))}٪)"
+                    else "${faCompact(value, 3, pad = true)} تومان (${faNumber(round(value / total * 100))}٪)",
                     fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -142,7 +143,7 @@ internal fun changeTone(change: Change): Color = when {
  * answers the same kind of question and has earned the same kind of answer.
  */
 @Composable
-internal fun ChangeFigure(change: Change, windowLabel: String, now: Long) {
+internal fun ChangeFigure(change: Change, windowLabel: String, now: Long, privacyMode: Boolean = false) {
     val gained = change.delta > 0
     val flat = abs(change.delta) < 1
     val tone = changeTone(change)
@@ -157,7 +158,7 @@ internal fun ChangeFigure(change: Change, windowLabel: String, now: Long) {
         Spacer(Modifier.height(Space.xs))
         // Auto-shrinks like the hero figure: a big delta must never wrap.
         BasicText(
-            text = if (flat) "بدون تغییر" else "${faCompact(abs(change.delta), 3, pad = true)} تومان",
+            text = if (privacyMode) "•••••• تومان" else if (flat) "بدون تغییر" else "${faCompact(abs(change.delta), 3, pad = true)} تومان",
             maxLines = 1,
             autoSize = TextAutoSize.StepBased(minFontSize = 22.sp, maxFontSize = 44.sp),
             style = figureStyle(tone, FontWeight.Black),
@@ -202,11 +203,11 @@ internal fun ChangeFigure(change: Change, windowLabel: String, now: Long) {
 }
 
 @Composable
-internal fun ChartCaption(label: String, value: Double) {
+internal fun ChartCaption(label: String, value: Double, privacyMode: Boolean = false) {
     Column {
         Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(
-            "${faCompact(value)} تومان",
+            if (privacyMode) "•••••• تومان" else "${faCompact(value)} تومان",
             fontSize = 14.sp,
             fontFamily = ModamFigures,
             fontWeight = FontWeight.Bold,
