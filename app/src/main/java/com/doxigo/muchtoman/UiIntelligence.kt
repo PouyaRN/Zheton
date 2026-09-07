@@ -56,6 +56,91 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
+ * Breathable, high-hierarchy financial health banner for the decluttered Home screen.
+ * Shows high-level inflation defense and safe daily spending at a glance, with a single-tap
+ * drill down into the full Executive Deck or Reports.
+ */
+@Composable
+internal fun CompactFinancialHealthBanner(
+    state: UiState,
+    modifier: Modifier = Modifier,
+    privacyMode: Boolean = false,
+    onOpenDetails: () -> Unit = {},
+    onOpenReports: () -> Unit = {},
+) {
+    val liquidCashToman = state.bankToman.toLong()
+    val totalWealthToman = state.totals.toman.toLong()
+    val unhedgedToman = liquidCashToman
+    val hedgedToman = (totalWealthToman - unhedgedToman).coerceAtLeast(0L)
+    val defenseIndex = if (totalWealthToman > 0) ((hedgedToman.toDouble() / totalWealthToman) * 100).toInt().coerceIn(0, 100) else 0
+
+    Panel(modifier) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onOpenDetails),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Space.m),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(Hero.gold.copy(alpha = 0.18f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("🛡️", fontSize = 16.sp)
+                }
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "هوش مالی و تاب‌آوری",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Spacer(Modifier.width(Space.s))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(Radius.pill))
+                                .background(if (defenseIndex >= 60) Hero.mint.copy(alpha = 0.2f) else Color(0xFFFFB74D).copy(alpha = 0.2f))
+                                .padding(horizontal = 6.dp, vertical = 2.dp),
+                        ) {
+                            Text(
+                                "سپر تورمی: ${faNumber(defenseIndex.toDouble())}٪",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (defenseIndex >= 60) Hero.mint else Color(0xFFFFB74D),
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        if (defenseIndex >= 60) "پرتفوی شما در برابر فرسایش تورم مستحکم است"
+                        else "بخش عمده دارایی به صورت ریال نقد در معرض افت ارزش است",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                    )
+                }
+            }
+
+            Text(
+                "تحلیل کامل ←",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = Hero.gold,
+            )
+        }
+    }
+}
+
+/**
  * Unified Studio-Grade Financial Command Deck on the Home screen.
  * Combines 4 vital financial metrics (Safe daily spend, monthly rhythm, inflation bleed, inflation shield index)
  * with real-time wealth defense allocation and tactical shortcut tools.

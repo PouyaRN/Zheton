@@ -10,6 +10,7 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 import kotlin.math.max
+import kotlin.math.pow
 import kotlin.math.roundToLong
 import kotlin.math.sqrt
 import kotlinx.serialization.Serializable
@@ -1135,6 +1136,127 @@ object IdleCashAnalyzer {
             targetAsset = target,
         )
     }
+}
+
+/**
+ * Aggregates micro-transactions under 50,000 Tomans (500,000 Rials).
+ * These friction transactions (commute, snacks, micro-fees) invisibly drain liquidity.
+ */
+data class MicroLeakSummary(
+    val hasLeaks: Boolean,
+    val totalLeakToman: Long,
+    val leakCount: Int,
+    val averageAmountToman: Long,
+    val headlineFa: String,
+    val recommendationFa: String,
+)
+
+object MicroLeakDetector {
+    fun analyze(
+        entries: List<LedgerEntry>,
+        thresholdToman: Long = 50_000L,
+    ): MicroLeakSummary {
+        val thresholdRial = thresholdToman * 10L
+        val leaks = entries.filter {
+            !it.duplicate && !it.hidden && !it.transfer &&
+                it.txn.direction == "out" &&
+                kotlin.math.abs(it.txn.signedRial ?: 0L) in 1..thresholdRial
+        }
+        val totalRial = leaks.sumOf { kotlin.math.abs(it.txn.signedRial ?: 0L) }
+        val totalToman = totalRial / 10L
+        val count = leaks.size
+        val avgToman = if (count > 0) totalToman / count else 0L
+
+        val hasLeaks = count >= 3 && totalToman >= 50_000L
+        val headline = if (hasLeaks) {
+            "شناسایی ${faNumber(count.toDouble())} تراکنش خرد زیر ${faCompact(thresholdToman.toDouble())} تومان به ارزش کل ${faCompact(totalToman.toDouble())} تومان"
+        } else {
+            "تراکنش‌های خرد در محدوده طبیعی و کنترل‌شده قرار دارند."
+        }
+        val recommendation = if (hasLeaks) {
+            "این پرداخت‌های خرد (اسنک، کارمزدهای بانکی و خریدهای سوپرمارکتی سریع) در مجموع ${faCompact(totalToman.toDouble())} تومان از نقدینگی شما را خارج کرده‌اند."
+        } else {
+            "مجموع هزینه‌های خرد شما کمتر از سطح هشدار است."
+        }
+
+        return MicroLeakSummary(
+            hasLeaks = hasLeaks,
+            totalLeakToman = totalToman,
+            leakCount = count,
+            averageAmountToman = avgToman,
+            headlineFa = headline,
+            recommendationFa = recommendation,
+        )
+    }
+}
+
+data class OpportunityCostResult(
+    val initialAmountToman: Long,
+    val monthsAgo: Int,
+    val goldValueToman: Long,
+    val goldGainToman: Long,
+    val goldGainPercent: Double,
+    val tetherValueToman: Long,
+    val tetherGainToman: Long,
+    val tetherGainPercent: Double,
+    val narrativeFa: String,
+)
+
+object OpportunityCostSimulator {
+    fun simulate(
+        amountToman: Long,
+        monthsAgo: Int,
+        goldAnnualRate: Double = 0.55,
+        usdAnnualRate: Double = 0.45,
+    ): OpportunityCostResult {
+        if (amountToman <= 0L || monthsAgo <= 0) {
+            return OpportunityCostResult(
+                initialAmountToman = amountToman,
+                monthsAgo = monthsAgo,
+                goldValueToman = amountToman,
+                goldGainToman = 0L,
+                goldGainPercent = 0.0,
+                tetherValueToman = amountToman,
+                tetherGainToman = 0L,
+                tetherGainPercent = 0.0,
+                narrativeFa = "مبلغ و بازه زمانی باید مثبت باشند.",
+            )
+        }
+        val years = monthsAgo.toDouble() / 12.0
+        val goldMultiplier = (1.0 + goldAnnualRate).pow(years)
+        val usdMultiplier = (1.0 + usdAnnualRate).pow(years)
+
+        val goldVal = (amountToman * goldMultiplier).toLong()
+        val goldGain = goldVal - amountToman
+        val goldPct = ((goldVal - amountToman).toDouble() / amountToman) * 100.0
+
+        val usdtVal = (amountToman * usdMultiplier).toLong()
+        val usdtGain = usdtVal - amountToman
+        val usdtPct = ((usdtVal - amountToman).toDouble() / amountToman) * 100.0
+
+        val narrative = "اگر این ${faCompact(amountToman.toDouble())} تومان را ${faNumber(monthsAgo.toDouble())} ماه پیش در صندوق طلای بورس سرمایه‌گذاری می‌کردید، امروز ارزش آن به ${faCompact(goldVal.toDouble())} تومان می‌رسید (${faCompact(goldGain.toDouble())} تومان بازدهی)."
+
+        return OpportunityCostResult(
+            initialAmountToman = amountToman,
+            monthsAgo = monthsAgo,
+            goldValueToman = goldVal,
+            goldGainToman = goldGain,
+            goldGainPercent = goldPct,
+            tetherValueToman = usdtVal,
+            tetherGainToman = usdtGain,
+            tetherGainPercent = usdtPct,
+            narrativeFa = narrative,
+        )
+    }
+}
+
+fun calculateAccountRunwayDays(
+    checkingBalanceToman: Long,
+    averageDailyBurnToman: Long,
+): Int? {
+    if (averageDailyBurnToman <= 0L) return null
+    if (checkingBalanceToman <= 0L) return 0
+    return (checkingBalanceToman / averageDailyBurnToman).toInt().coerceAtLeast(0)
 }
 
 

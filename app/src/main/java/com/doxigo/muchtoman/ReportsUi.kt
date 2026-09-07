@@ -133,9 +133,16 @@ fun ReportsTab(
     }
 
     // 50/30/20 Structural Budget Classification for the selected window
-    val budget503020 = remember(ledger.allEntries, windowStart) {
-        val visible = ledger.allEntries.filter { !it.duplicate && !it.hidden && !it.transfer && it.txn.day >= windowStart }
-        BudgetRule503020Summary.compute(visible)
+    val visibleEntries = remember(ledger.allEntries, windowStart) {
+        ledger.allEntries.filter { !it.duplicate && !it.hidden && !it.transfer && it.txn.day >= windowStart }
+    }
+    val budget503020 = remember(visibleEntries) {
+        BudgetRule503020Summary.compute(visibleEntries)
+    }
+
+    // Micro-leak detection for micro-transactions under 50,000 Tomans
+    val microLeakSummary = remember(visibleEntries) {
+        MicroLeakDetector.analyze(visibleEntries, thresholdToman = 50_000L)
     }
 
     // Idle Cash & Anti-Inflation Sweep recommendation
@@ -236,6 +243,20 @@ fun ReportsTab(
                         Spacer(Modifier.height(Space.l))
                         Budget503020Card(summary = budget503020)
                     }
+                }
+
+                // Micro-Leak Radar Card
+                if (microLeakSummary.hasLeaks) {
+                    item {
+                        Spacer(Modifier.height(Space.l))
+                        MicroLeakCard(leakSummary = microLeakSummary)
+                    }
+                }
+
+                // Reverse Opportunity Cost Simulator Card
+                item {
+                    Spacer(Modifier.height(Space.l))
+                    OpportunityCostSimulatorCard(checkingCashToman = unhedgedToman)
                 }
 
                 // Asset Allocation Donut chart
@@ -1189,6 +1210,282 @@ private fun AssetAllocationDonutCard(
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Visual card alerting the user to small invisible micro-leaks (transactions < 50k Tomans).
+ */
+@Composable
+fun MicroLeakCard(
+    leakSummary: MicroLeakSummary,
+    modifier: Modifier = Modifier,
+) {
+    if (!leakSummary.hasLeaks) return
+
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = RoundedCornerShape(Radius.card),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(Space.l)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🔍", fontSize = 18.sp, modifier = Modifier.padding(end = Space.s))
+                    Column {
+                        Text(
+                            "رادار نشتی‌های ریز مالی",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            "مبالغ زیر ۵۰ هزار تومان (اسنک، کارمزد، شارژ)",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        )
+                    }
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(Radius.pill))
+                        .background(Color(0xFFFFB74D).copy(alpha = 0.15f))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                ) {
+                    Text(
+                        "${faNumber(leakSummary.leakCount.toDouble())} تراکنش خرد",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFF57C00),
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(Space.m))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Space.m),
+            ) {
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(Radius.card))
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
+                        .padding(Space.m),
+                ) {
+                    Text(
+                        "مجموع نشتی خرد",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "${faCompact(leakSummary.totalLeakToman.toDouble())} ت",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontFamily = ModamFigures,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
+
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(Radius.card))
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
+                        .padding(Space.m),
+                ) {
+                    Text(
+                        "میانگین هر خرید خرد",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "${faNumber(leakSummary.averageAmountToman.toDouble())} ت",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontFamily = ModamFigures,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(Space.s))
+            Text(
+                leakSummary.recommendationFa,
+                fontSize = 11.sp,
+                lineHeight = 16.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
+            )
+        }
+    }
+}
+
+/**
+ * Interactive reverse opportunity cost simulator comparing cash holding against gold and Tether.
+ */
+@Composable
+fun OpportunityCostSimulatorCard(
+    modifier: Modifier = Modifier,
+    checkingCashToman: Long = 0L,
+) {
+    var selectedMonths by remember { mutableStateOf(6) }
+    var selectedAmountToman by remember {
+        mutableStateOf(if (checkingCashToman > 1_000_000L) checkingCashToman else 10_000_000L)
+    }
+
+    val result = remember(selectedAmountToman, selectedMonths) {
+        OpportunityCostSimulator.simulate(
+            amountToman = selectedAmountToman,
+            monthsAgo = selectedMonths,
+        )
+    }
+
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = RoundedCornerShape(Radius.card),
+        modifier = modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.padding(Space.l)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("💡", fontSize = 18.sp, modifier = Modifier.padding(end = Space.s))
+                    Column {
+                        Text(
+                            "شبیه‌ساز معکوس هزینه فرصت",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            "مقایسه نگهداری ریال با طلا و تتر",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(Space.m))
+
+            // Horizon selection chips
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Space.xs),
+            ) {
+                listOf(3 to "۳ ماه پیش", 6 to "۶ ماه پیش", 12 to "۱ سال پیش").forEach { (months, label) ->
+                    FilterChip(
+                        selected = selectedMonths == months,
+                        onClick = { selectedMonths = months },
+                        label = { Text(label, fontSize = 11.sp) },
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(Space.s))
+
+            // Amount selection chips
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Space.xs),
+            ) {
+                listOf(
+                    5_000_000L to "۵ م ت",
+                    10_000_000L to "۱۰ م ت",
+                    25_000_000L to "۲۵ م ت",
+                    50_000_000L to "۵۰ م ت",
+                ).forEach { (amt, label) ->
+                    FilterChip(
+                        selected = selectedAmountToman == amt,
+                        onClick = { selectedAmountToman = amt },
+                        label = { Text(label, fontSize = 11.sp) },
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(Space.m))
+
+            // Results comparison row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Space.m),
+            ) {
+                // Gold Fund Result
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(Radius.card))
+                        .background(Hero.gold.copy(alpha = 0.12f))
+                        .border(1.dp, Hero.gold.copy(alpha = 0.3f), RoundedCornerShape(Radius.card))
+                        .padding(Space.m),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("🥇 صندوق طلا", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Hero.gold)
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "${faCompact(result.goldValueToman.toDouble())} ت",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontFamily = ModamFigures,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        "+${faNumber(result.goldGainPercent.toInt().toDouble())}٪ بازدهی",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF2E9E5B),
+                    )
+                }
+
+                // Tether Result
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(Radius.card))
+                        .background(Hero.mint.copy(alpha = 0.12f))
+                        .border(1.dp, Hero.mint.copy(alpha = 0.3f), RoundedCornerShape(Radius.card))
+                        .padding(Space.m),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("💵 تتر (دلار)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Hero.mint)
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "${faCompact(result.tetherValueToman.toDouble())} ت",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontFamily = ModamFigures,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        "+${faNumber(result.tetherGainPercent.toInt().toDouble())}٪ بازدهی",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFF2E9E5B),
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(Space.s))
+            Text(
+                result.narrativeFa,
+                fontSize = 11.sp,
+                lineHeight = 16.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
+            )
         }
     }
 }

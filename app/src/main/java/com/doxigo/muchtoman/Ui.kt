@@ -265,6 +265,7 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
     var showQuickAdd by remember { mutableStateOf(false) }
     var showCommitmentsHubSheet by remember { mutableStateOf(false) }
     var showAddCommitmentSheet by remember { mutableStateOf(false) }
+    var showExecutiveDeckSheet by remember { mutableStateOf(false) }
 
     // The permanent-delete undo door. One host, and the window's lifetime rides on the state
     // itself: when it nulls (the window elapsed or she hit Undo) the snackbar just leaves.
@@ -560,6 +561,39 @@ val snackbarHostState = remember { SnackbarHostState() }
         )
     }
 
+    if (showExecutiveDeckSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showExecutiveDeckSheet = false },
+            containerColor = MaterialTheme.colorScheme.surface,
+        ) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Space.m)
+                    .padding(bottom = Space.xl),
+            ) {
+                item {
+                    HomeFinancialExecutiveDeck(
+                        state = state,
+                        privacyMode = privacyMode,
+                        onOpenGoldBubble = {
+                            showExecutiveDeckSheet = false
+                            showGoldBubbleSheet = true
+                        },
+                        onOpenRecurring = {
+                            showExecutiveDeckSheet = false
+                            showCommitmentsHubSheet = true
+                        },
+                        onOpenWishlist = {
+                            showExecutiveDeckSheet = false
+                            showWishlistSheet = true
+                        },
+                    )
+                }
+            }
+        }
+    }
+
     // Anywhere but home, back goes home. This is the whole reason the bar exists: before it,
     // there was no way out of a screen except a «بستن» she had to find in the corner. The lite
     // edition is one tab, so it is already home and back means back, as it did in v1.0.4.
@@ -734,16 +768,16 @@ val snackbarHostState = remember { SnackbarHostState() }
                 }
             }
 
-            // Unified Studio-Grade Financial Command Deck
-            item(key = "home_financial_executive_deck") {
-                HomeFinancialExecutiveDeck(
-                    state = state,
-                    modifier = Modifier.padding(edge).padding(top = Space.l),
-                    privacyMode = privacyMode,
-                    onOpenGoldBubble = { showGoldBubbleSheet = true },
-                    onOpenRecurring = { showCommitmentsHubSheet = true },
-                    onOpenWishlist = { showWishlistSheet = true },
-                )
+            // Sleek Financial Health & Resilience Banner (Decluttered Home Dashboard)
+            item(key = "home_financial_health_banner") {
+                Box(modifier = Modifier.padding(edge).padding(top = Space.l)) {
+                    CompactFinancialHealthBanner(
+                        state = state,
+                        privacyMode = privacyMode,
+                        onOpenDetails = { showExecutiveDeckSheet = true },
+                        onOpenReports = { tab = Tab.REPORTS },
+                    )
+                }
             }
 
             // Active Commitments Hub (BNPL, Loans, Sayad Checks)
@@ -1259,6 +1293,67 @@ internal fun HeroField(
                             color = if (selected) Hero.gold else Hero.muted,
                         )
                     }
+                }
+            }
+
+            // 2-Second Financial Vital Signs: Immediate Answer to "How much did I spend today?"
+            val todayDay = remember { tehranDay(System.currentTimeMillis()) }
+            val todaySpentToman = remember(state.ledger.allEntries, todayDay) {
+                val rial = state.ledger.allEntries
+                    .filter { !it.duplicate && !it.hidden && !it.transfer && it.txn.direction == "out" && it.txn.day == todayDay }
+                    .sumOf { kotlin.math.abs(it.txn.signedRial ?: 0L) }
+                rial / 10L
+            }
+
+            Spacer(Modifier.height(Space.s))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Hero.well.copy(alpha = 0.65f))
+                    .clickable(onClick = onReport)
+                    .padding(horizontal = Space.m, vertical = 7.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(if (todaySpentToman > 0L) Color(0xFFFF7043) else Hero.mint)
+                    )
+                    Spacer(Modifier.width(Space.s))
+                    Text(
+                        "خرج امروز:",
+                        fontSize = 12.sp,
+                        color = Hero.muted,
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        if (todaySpentToman > 0L) "${faCompact(todaySpentToman.toDouble())} تومان" else "امروز خرجی ثبت نشده",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = ModamFigures,
+                        color = if (todaySpentToman > 0L) Hero.strong else Hero.mint,
+                        modifier = Modifier.privacyBlur(privacyMode),
+                    )
+                }
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "خرج ماه: ${faCompact(tomanOf(state.story.month.spentRial))}",
+                        fontSize = 11.sp,
+                        fontFamily = ModamFigures,
+                        color = Hero.muted,
+                        modifier = Modifier.privacyBlur(privacyMode),
+                    )
+                    Icon(
+                        Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = Hero.gold,
+                        modifier = Modifier.size(16.dp),
+                    )
                 }
             }
 
@@ -4564,6 +4659,22 @@ fun ObligationDetailScreen(
                         "${faNumber(totalRemaining / 10.0)} تومان",
                         bold = true,
                     )
+                    val remainingToman = totalRemaining / 10.0
+                    val remainingCount = (obligation.installmentCount - paidCount).coerceAtLeast(0)
+                    val avgMonths = (remainingCount + 1.0) / 2.0
+                    val reliefToman = if (remainingToman > 0 && avgMonths > 0) {
+                        val discount = Math.pow(1.0 + 0.45, avgMonths / 12.0)
+                        (remainingToman - (remainingToman / discount)).toLong().coerceAtLeast(0L)
+                    } else 0L
+                    if (reliefToman > 0L) {
+                        Spacer(Modifier.height(Space.xs))
+                        DetailRow(
+                            "سود از تورم (کاهش ارزش بدهی)",
+                            "-${faNumber(reliefToman.toDouble())} تومان",
+                            bold = true,
+                            valueColor = Hero.mint,
+                        )
+                    }
                 }
             }
 
@@ -4705,7 +4816,12 @@ fun ObligationDetailScreen(
 }
 
 @Composable
-private fun DetailRow(label: String, value: String, bold: Boolean = false) {
+private fun DetailRow(
+    label: String,
+    value: String,
+    bold: Boolean = false,
+    valueColor: Color = Color.Unspecified,
+) {
     Row(
         Modifier.fillMaxWidth().padding(vertical = Space.xs),
         verticalAlignment = Alignment.CenterVertically,
@@ -4721,13 +4837,16 @@ private fun DetailRow(label: String, value: String, bold: Boolean = false) {
             fontSize = 14.sp,
             fontFamily = ModamFigures,
             fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
+            color = valueColor,
         )
     }
 }
 
 private fun formatDate(millis: Long): String {
-    val jalali = jalaliOf(millis)
-    return "${jalali.year}/${jalali.month}/${jalali.day}"
+    if (millis <= 0L) return ""
+    val jalali = jalaliOf(tehranDay(millis))
+    val monthName = MONTHS.getOrElse(jalali.month - 1) { "" }
+    return "${faNumber(jalali.day.toDouble())} $monthName ${jalali.year}"
 }
 
 /**

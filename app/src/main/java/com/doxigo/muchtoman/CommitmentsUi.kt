@@ -176,8 +176,10 @@ fun CommitmentsCard(
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (item.nextDueDays > 0) {
+                            val shamsiDate = formatShamsiDate(item.nextDueTimestamp)
                             Text(
-                                "${faNumber(item.nextDueDays.toDouble())} روز تا سررسید",
+                                if (shamsiDate.isNotBlank()) "$shamsiDate (${faNumber(item.nextDueDays.toDouble())} روز)"
+                                else "${faNumber(item.nextDueDays.toDouble())} روز تا سررسید",
                                 fontSize = 11.sp,
                                 color = if (item.nextDueDays <= 5) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -382,21 +384,42 @@ private fun CommitmentItemRow(
             ) {
                 val monthsFuture = (item.nextDueDays / 30).coerceAtLeast(1)
                 val reliefToman = item.inflationReliefToman(monthsFuture)
-                Text(
-                    if (item.isSettled) "تسویه شده"
-                    else "سپر تورمی: -${faNumber(reliefToman.toDouble())} تومان",
-                    fontSize = 11.sp,
-                    color = if (item.isSettled) Hero.mint else Hero.mint,
-                    fontWeight = FontWeight.Medium,
-                )
+                val shamsiDue = formatShamsiDate(item.nextDueTimestamp)
 
-                Text(
-                    if (privacyMode) "••••••"
-                    else "مانده: ${faNumber(item.remainingAmountToman.toDouble())} تومان",
-                    fontSize = 13.sp,
-                    fontFamily = ModamFigures,
-                    fontWeight = FontWeight.Bold,
-                )
+                Column {
+                    if (!item.isSettled && shamsiDue.isNotBlank()) {
+                        Text(
+                            "سررسید: $shamsiDue (${faNumber(item.nextDueDays.toDouble())} روز)",
+                            fontSize = 11.sp,
+                            color = if (item.nextDueDays <= 5) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Text(
+                        if (item.isSettled) "تسویه شده ✓"
+                        else if (reliefToman > 0L) "سود از تورم: -${faNumber(reliefToman.toDouble())} تومان"
+                        else "بدون تخفیف تورمی",
+                        fontSize = 11.sp,
+                        color = if (item.isSettled) Hero.mint else Color(0xFF00C853),
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        if (privacyMode) "••••••"
+                        else "مانده: ${faNumber(item.remainingAmountToman.toDouble())} تومان",
+                        fontSize = 13.sp,
+                        fontFamily = ModamFigures,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    if (item.installmentCount > 1) {
+                        Text(
+                            "${faNumber(item.paidInstallmentCount.toDouble())} از ${faNumber(item.installmentCount.toDouble())} قسط",
+                            fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        )
+                    }
+                }
             }
         }
     }
@@ -550,4 +573,14 @@ fun AddCommitmentSheet(
             }
         }
     }
+}
+
+/**
+ * Returns a human-friendly Shamsi date string like «۱۵ اردیبهشت ۱۴۰۳» from epoch millis.
+ */
+fun formatShamsiDate(millis: Long): String {
+    if (millis <= 0L) return ""
+    val jalali = jalaliOf(tehranDay(millis))
+    val monthName = MONTHS.getOrElse(jalali.month - 1) { "" }
+    return "${faNumber(jalali.day.toDouble())} $monthName ${jalali.year}"
 }

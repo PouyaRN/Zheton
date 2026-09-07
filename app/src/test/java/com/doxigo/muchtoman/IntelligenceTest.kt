@@ -676,4 +676,115 @@ class IntelligenceTest {
         assertEquals(0L, safeWarning.excessCashToman)
         assertEquals(0L, safeWarning.annualOpportunityLossToman)
     }
+
+    // ── Ticket 14: Micro-Leak Detector & Reverse Opportunity Simulator Tests ─
+
+    private fun makeLeakEntry(
+        ref: String,
+        merchant: String,
+        amountRial: Long,
+        direction: String = "out",
+        transfer: Boolean = false,
+    ) = LedgerEntry(
+        txn = Txn(
+            ref = ref, srcHash = "h", seq = 0, at = 19800L * 86400000L, day = 19800L,
+            bank = "MELLAT", accountId = "acc", direction = direction, amountRial = amountRial,
+            signedRial = if (direction == "out") -amountRial else amountRial,
+            balanceRial = null, feeRial = null, mask = "", instrument = "card",
+            merchant = merchant, merchantNorm = merchant, refNo = "", printedAt = "",
+            channel = "pos", unitPrinted = "none", inferred = false, parserVer = PARSER_VERSION,
+        ),
+        categoryId = "cat_test",
+        categoryFa = "آزمایشی",
+        confidence = 100,
+        needsReview = false,
+        duplicate = false,
+        transfer = transfer,
+    )
+
+    @Test
+    fun `MicroLeakDetector detects micro-expenses under threshold and aggregates correctly`() {
+        val entries = listOf(
+            // Micro-leak 1: 25,000 Tomans = 250,000 Rial (snack)
+            makeLeakEntry("l1", "سوپرمارکت", 250_000L),
+            // Micro-leak 2: 12,000 Tomans = 120,000 Rial (card fee / fee)
+            makeLeakEntry("l2", "کارمزد بانکی", 120_000L),
+            // Micro-leak 3: 20,000 Tomans = 200,000 Rial (coffee / quick drink)
+            makeLeakEntry("l3", "کافه", 200_000L),
+            // Micro-leak 4: 15,000 Tomans = 150,000 Rial (micro-transit)
+            makeLeakEntry("l4", "تاکسی", 150_000L),
+            // Normal expense > 50,000 Tomans: 300,000 Tomans = 3,000,000 Rial
+            makeLeakEntry("l5", "فروشگاه بزرگ", 3_000_000L),
+            // Inbound transaction: salary (ignored)
+            makeLeakEntry("l6", "واریز", 10_000_000L, direction = "in"),
+            // Transfer transaction (ignored)
+            makeLeakEntry("l7", "انتقال بین حسابی", 30_000L, transfer = true),
+        )
+
+        val summary = MicroLeakDetector.analyze(entries, thresholdToman = 50_000L)
+
+        assertTrue(summary.hasLeaks)
+        assertEquals(4, summary.leakCount)
+        assertEquals(72_000L, summary.totalLeakToman) // 25k + 12k + 20k + 15k
+        assertEquals(18_000L, summary.averageAmountToman)
+        assertTrue(summary.headlineFa.contains("تراکنش خرد"))
+        assertTrue(summary.recommendationFa.contains("تومان"))
+    }
+
+    @Test
+    fun `MicroLeakDetector returns false when no micro-leaks exist`() {
+        val entries = listOf(
+            makeLeakEntry("l1", "رستوران", 1_000_000L),
+        )
+
+        val summary = MicroLeakDetector.analyze(entries, thresholdToman = 50_000L)
+        assertFalse(summary.hasLeaks)
+        assertEquals(0, summary.leakCount)
+        assertEquals(0L, summary.totalLeakToman)
+    }
+
+    @Test
+    fun `OpportunityCostSimulator calculates historical gold and usdt compound gains accurately`() {
+        val initialCash = 10_000_000L // 10M Toman
+        val months = 12 // 1 full year
+
+        // Gold: 55% annual, USD: 45% annual
+        val result = OpportunityCostSimulator.simulate(
+            amountToman = initialCash,
+            monthsAgo = months,
+            goldAnnualRate = 0.55,
+            usdAnnualRate = 0.45,
+        )
+
+        assertEquals(initialCash, result.initialAmountToman)
+        assertEquals(months, result.monthsAgo)
+        // 10M * 1.55 = 15.5M Toman gold value
+        assertEquals(15_500_000L, result.goldValueToman)
+        assertEquals(5_500_000L, result.goldGainToman)
+        assertEquals(55.0, result.goldGainPercent, 0.01)
+
+        // 10M * 1.45 = 14.5M Toman tether value
+        assertEquals(14_500_000L, result.tetherValueToman)
+        assertEquals(4_500_000L, result.tetherGainToman)
+        assertEquals(45.0, result.tetherGainPercent, 0.01)
+
+        assertTrue(result.narrativeFa.contains("طلا"))
+    }
+
+    @Test
+    fun `calculateAccountRunwayDays returns correct days of liquidity`() {
+        // Checking cash = 15M Toman, daily burn = 1M Toman/day => 15 days
+        val runway = calculateAccountRunwayDays(
+            checkingBalanceToman = 15_000_000L,
+            averageDailyBurnToman = 1_000_000L,
+        )
+        assertEquals(15, runway)
+
+        // Zero burn defaults to null
+        val zeroBurnRunway = calculateAccountRunwayDays(
+            checkingBalanceToman = 15_000_000L,
+            averageDailyBurnToman = 0L,
+        )
+        assertNull(zeroBurnRunway)
+    }
 }

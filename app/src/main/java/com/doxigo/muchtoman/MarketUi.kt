@@ -75,11 +75,12 @@ import androidx.compose.ui.unit.sp
 import kotlin.math.abs
 
 enum class MarketCategory(val labelFa: String) {
-    ALL("همه بازارها"),
+    ALL("همه"),
+    WATCHLIST("دیده‌بان من ⭐"),
     GOLD_COIN("طلا و سکه"),
     CURRENCY("ارز آزاد"),
+    BOURSE("صندوق‌ها"),
     CRYPTO("رمزارز"),
-    BOURSE("صندوق‌های طلا و بورس"),
     HOLDINGS("دارایی‌های من"),
 }
 
@@ -261,13 +262,30 @@ fun MarketAndAssetsScreen(
     }
 
     // Filter items according to search and category
-    val filteredItems = remember(marketItems, selectedCategory, searchQuery) {
-        marketItems.filter { item ->
-            val matchCategory = selectedCategory == MarketCategory.ALL || item.category == selectedCategory
-            val matchSearch = searchQuery.isBlank() ||
+    var pinnedAssetIds by remember {
+        mutableStateOf(setOf("usd", "gold18", "coin_emami", "usdt"))
+    }
+    var showArbitrageRadar by remember { mutableStateOf(false) }
+
+    val filteredItems = remember(marketItems, selectedCategory, searchQuery, pinnedAssetIds) {
+        val list = when (selectedCategory) {
+            MarketCategory.ALL -> {
+                val pinned = marketItems.filter { it.id in pinnedAssetIds }
+                val unpinned = marketItems.filter { it.id !in pinnedAssetIds }
+                pinned + unpinned
+            }
+            MarketCategory.WATCHLIST -> marketItems.filter { it.id in pinnedAssetIds }
+            MarketCategory.HOLDINGS -> emptyList()
+            else -> marketItems.filter { it.category == selectedCategory }
+        }
+        if (searchQuery.isBlank()) {
+            list
+        } else {
+            list.filter { item ->
                 item.faName.contains(searchQuery, ignoreCase = true) ||
-                item.enTicker.contains(searchQuery, ignoreCase = true)
-            matchCategory && matchSearch
+                    item.enTicker.contains(searchQuery, ignoreCase = true) ||
+                    item.id.contains(searchQuery, ignoreCase = true)
+            }
         }
     }
 
@@ -331,17 +349,6 @@ fun MarketAndAssetsScreen(
                 }
             }
 
-            // Live Arbitrage and Bubble Indicator Card
-            item(key = "arbitrage_radar") {
-                MarketArbitrageRadar(
-                    usdtToman = usdtToman,
-                    usdCashToman = usdCashToman,
-                    emamiCoinToman = emamiCoinToman,
-                    robCoinToman = robCoinToman,
-                    gold18Toman = gold18Toman,
-                )
-            }
-
             // Category Filter Pills
             item(key = "category_tabs") {
                 LazyRow(
@@ -367,6 +374,65 @@ fun MarketAndAssetsScreen(
                             shape = RoundedCornerShape(12.dp),
                         )
                     }
+                }
+            }
+
+            // Collapsible Arbitrage and Bubble Indicator Card
+            item(key = "arbitrage_radar_toggle") {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = Space.m, vertical = Space.xs)
+                        .clickable { showArbitrageRadar = !showArbitrageRadar },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                    ),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = Space.m, vertical = Space.s),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .clip(CircleShape)
+                                    .background(Hero.gold.copy(alpha = 0.2f)),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text("⚡", fontSize = 12.sp)
+                            }
+                            Spacer(Modifier.width(Space.s))
+                            Text(
+                                "رادار آربیتراژ و حباب طلا و تتر",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                        Text(
+                            if (showArbitrageRadar) "بستن ▲" else "مشاهده تحلیل ▼",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Hero.gold,
+                        )
+                    }
+                }
+            }
+
+            if (showArbitrageRadar) {
+                item(key = "arbitrage_radar") {
+                    MarketArbitrageRadar(
+                        usdtToman = usdtToman,
+                        usdCashToman = usdCashToman,
+                        emamiCoinToman = emamiCoinToman,
+                        robCoinToman = robCoinToman,
+                        gold18Toman = gold18Toman,
+                    )
                 }
             }
 
@@ -432,12 +498,37 @@ fun MarketAndAssetsScreen(
                 }
             } else {
                 // Ticker List for Market Items
-                items(filteredItems, key = { it.id }) { item ->
-                    MarketAssetRow(
-                        item = item,
-                        isSelected = item.id == selectedAssetId,
-                        onSelect = { selectedAssetId = item.id },
-                    )
+                if (filteredItems.isEmpty()) {
+                    item(key = "empty_market_items") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(Space.xl),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                if (selectedCategory == MarketCategory.WATCHLIST)
+                                    "هنوز دارایی‌ای به دیده‌بان سنجاق نشده است. با زدن ستاره در کنار هر دارایی آن را به دیده‌بان اضافه کنید."
+                                else "موردی یافت نشد",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+                    }
+                } else {
+                    items(filteredItems, key = { it.id }) { item ->
+                        val isPinned = item.id in pinnedAssetIds
+                        MarketAssetRow(
+                            item = item,
+                            isSelected = item.id == selectedAssetId,
+                            isPinned = isPinned,
+                            onSelect = { selectedAssetId = item.id },
+                            onTogglePin = {
+                                pinnedAssetIds = if (isPinned) pinnedAssetIds - item.id else pinnedAssetIds + item.id
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -927,10 +1018,40 @@ fun MiniSparkline(
 }
 
 @Composable
+private fun StarIcon(
+    filled: Boolean,
+    tint: Color,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier = modifier) {
+        val path = Path()
+        val cX = size.width / 2f
+        val cY = size.height / 2f
+        val outerR = size.minDimension / 2f * 0.9f
+        val innerR = outerR * 0.42f
+        for (i in 0 until 10) {
+            val r = if (i % 2 == 0) outerR else innerR
+            val angle = (i * 36.0 - 90.0) * (Math.PI / 180.0)
+            val x = cX + (r * kotlin.math.cos(angle)).toFloat()
+            val y = cY + (r * kotlin.math.sin(angle)).toFloat()
+            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+        }
+        path.close()
+        if (filled) {
+            drawPath(path, color = tint)
+        } else {
+            drawPath(path, color = tint, style = Stroke(width = 1.5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+        }
+    }
+}
+
+@Composable
 private fun MarketAssetRow(
     item: MarketItem,
     isSelected: Boolean,
+    isPinned: Boolean = false,
     onSelect: () -> Unit,
+    onTogglePin: () -> Unit = {},
 ) {
     Card(
         modifier = Modifier
@@ -956,8 +1077,18 @@ private fun MarketAssetRow(
             Row(
                 modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Space.m),
+                horizontalArrangement = Arrangement.spacedBy(Space.s),
             ) {
+                IconButton(
+                    onClick = onTogglePin,
+                    modifier = Modifier.size(28.dp),
+                ) {
+                    StarIcon(
+                        filled = isPinned,
+                        tint = if (isPinned) Hero.gold else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
                 SleekAssetBadge(assetId = item.id, size = 36.dp)
                 Column {
                     Text(
