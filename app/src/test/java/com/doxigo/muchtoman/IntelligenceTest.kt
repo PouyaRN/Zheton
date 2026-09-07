@@ -404,4 +404,81 @@ class IntelligenceTest {
         assertEquals(100_000.0, points[12].toman, 0.001)
         assertEquals(0.0, points[0].toman, 0.001)
     }
+
+    @Test
+    fun `PurchasingOptimizationEngine directs micro budget to Gold ETF without bubble`() {
+        val advice = PurchasingOptimizationEngine.computeBestBuyAdvice(
+            budgetToman = 10_000_000L,
+            halfCoinBubblePercent = 28.0,
+            quarterCoinBubblePercent = 38.0,
+        )
+        assertEquals(AssetClass.GOLD_ETF, advice.primaryRecommendation)
+        assertEquals(2, advice.allocations.size)
+        assertEquals(AssetClass.GOLD_ETF, advice.allocations[0].asset)
+        assertEquals(70, advice.allocations[0].percentage)
+        assertEquals(7_000_000L, advice.allocations[0].amountToman)
+        assertEquals(AssetClass.USDT_STABLECOIN, advice.allocations[1].asset)
+        assertEquals(30, advice.allocations[1].percentage)
+        assertEquals(3_000_000L, advice.allocations[1].amountToman)
+        assertEquals(2, advice.warningsFa.size)
+    }
+
+    @Test
+    fun `PurchasingOptimizationEngine directs medium budget to Bahar Azadi coin and Gold ETF`() {
+        val advice = PurchasingOptimizationEngine.computeBestBuyAdvice(
+            budgetToman = 100_000_000L,
+            halfCoinBubblePercent = 5.0,
+            quarterCoinBubblePercent = 8.0,
+        )
+        assertEquals(AssetClass.GOLD_COIN_BAHAR, advice.primaryRecommendation)
+        assertEquals(3, advice.allocations.size)
+        assertEquals(AssetClass.GOLD_COIN_BAHAR, advice.allocations[0].asset)
+        assertEquals(60, advice.allocations[0].percentage)
+        assertEquals(60_000_000L, advice.allocations[0].amountToman)
+        assertEquals(0, advice.warningsFa.size)
+    }
+
+    @Test
+    fun `PurchasingOptimizationEngine directs macro budget to physical property`() {
+        val advice = PurchasingOptimizationEngine.computeBestBuyAdvice(
+            budgetToman = 2_000_000_000L,
+        )
+        assertEquals(AssetClass.PHYSICAL_PROPERTY, advice.primaryRecommendation)
+        assertEquals(3, advice.allocations.size)
+        assertEquals(AssetClass.PHYSICAL_PROPERTY, advice.allocations[0].asset)
+        assertEquals(70, advice.allocations[0].percentage)
+        assertEquals(1_400_000_000L, advice.allocations[0].amountToman)
+    }
+
+    @Test
+    fun `PurchasingOptimizationEngine computes wealth defense index and daily bleed`() {
+        // Fully hedged
+        val protected = PurchasingOptimizationEngine.computeWealthDefenseIndex(
+            unhedgedToman = 0L,
+            hedgedToman = 500_000_000L,
+            annualInflationRate = 0.45,
+        )
+        assertEquals(100, protected.score)
+        assertEquals(0L, protected.dailyBleedToman)
+        assertEquals(0L, protected.annualLossToman)
+
+        // Fully unhedged (sitting in bank Rial account)
+        val vulnerable = PurchasingOptimizationEngine.computeWealthDefenseIndex(
+            unhedgedToman = 100_000_000L,
+            hedgedToman = 0L,
+            annualInflationRate = 0.45,
+        )
+        assertEquals(0, vulnerable.score)
+        org.junit.Assert.assertTrue(vulnerable.dailyBleedToman > 0L)
+        assertEquals(45_000_000L, vulnerable.annualLossToman)
+
+        // Balanced 60% hedged
+        val balanced = PurchasingOptimizationEngine.computeWealthDefenseIndex(
+            unhedgedToman = 40_000_000L,
+            hedgedToman = 60_000_000L,
+            annualInflationRate = 0.45,
+        )
+        assertEquals(60, balanced.score)
+        assertEquals(0.6, balanced.hedgedRatio, 0.001)
+    }
 }

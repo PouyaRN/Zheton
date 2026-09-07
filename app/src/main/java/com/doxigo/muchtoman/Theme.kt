@@ -129,12 +129,16 @@ object Hero {
     val hairline = Color(0x1FFFFFFF)
 }
 
-/** Theme choices: follow phone, light, dark, or AMOLED pitch black. */
+/** Theme choices: follow phone, light, dark, AMOLED, or modern studio palettes. */
 enum class ThemeMode(val fa: String) {
     SYSTEM("خودکار"),
     LIGHT("روشن"),
     DARK("تیره"),
     AMOLED("آمولد"),
+    OBSIDIAN_EMERALD("زمرد"),
+    ROYAL_AMETHYST("ارغوانی"),
+    NORDIC_SLATE("نوردیک"),
+    CYBER_GOLD("سایبرگلد"),
 }
 
 /** One spacing scale. Anything not on it is a decision someone has to defend. */
@@ -302,6 +306,166 @@ val AmoledDarkColors = darkColorScheme(
     scrim = Color(0xFF000000),
 )
 
+val ObsidianEmeraldColors = darkColorScheme(
+    primary = Color(0xFF10B981),
+    onPrimary = Color(0xFF042F20),
+    primaryContainer = Color(0xFF064E3B),
+    onPrimaryContainer = Color(0xFFA7F3D0),
+
+    secondary = Color(0xFF34D399),
+    onSecondary = Color(0xFF022B1E),
+    secondaryContainer = Color(0xFF065F46),
+    onSecondaryContainer = Color(0xFFD1FAE5),
+
+    tertiary = Color(0xFFFBBF24),
+    onTertiary = Color(0xFF3B2400),
+    tertiaryContainer = Color(0xFF6B4500),
+    onTertiaryContainer = Color(0xFFFDE68A),
+
+    background = Color(0xFF060B08),
+    onBackground = Color(0xFFE6F4EA),
+
+    surface = Color(0xFF0B1410),
+    onSurface = Color(0xFFE6F4EA),
+    surfaceVariant = Color(0xFF13221C),
+    onSurfaceVariant = Color(0xFFA3C4B8),
+
+    surfaceContainerLowest = Color(0xFF040806),
+    surfaceContainerLow = Color(0xFF08100C),
+    surfaceContainer = Color(0xFF0E1A15),
+    surfaceContainerHigh = Color(0xFF152620),
+    surfaceContainerHighest = Color(0xFF1C3129),
+
+    outline = Color(0xFF2E594A),
+    outlineVariant = Color(0xFF1A352B),
+
+    error = Color(0xFFF87171),
+    onError = Color(0xFF450A0A),
+    errorContainer = Color(0xFF7F1D1D),
+    onErrorContainer = Color(0xFFFECACA),
+    scrim = Color(0xFF000000),
+)
+
+val RoyalAmethystColors = darkColorScheme(
+    primary = Color(0xFFA78BFA),
+    onPrimary = Color(0xFF2E1065),
+    primaryContainer = Color(0xFF4C1D95),
+    onPrimaryContainer = Color(0xFFDDD6FE),
+
+    secondary = Color(0xFFFBBF24),
+    onSecondary = Color(0xFF451A03),
+    secondaryContainer = Color(0xFF78350F),
+    onSecondaryContainer = Color(0xFFFEF3C7),
+
+    tertiary = Color(0xFF34D399),
+    onTertiary = Color(0xFF022C22),
+    tertiaryContainer = Color(0xFF065F46),
+    onTertiaryContainer = Color(0xFFA7F3D0),
+
+    background = Color(0xFF080612),
+    onBackground = Color(0xFFEDE9FE),
+
+    surface = Color(0xFF100D22),
+    onSurface = Color(0xFFEDE9FE),
+    surfaceVariant = Color(0xFF1C1738),
+    onSurfaceVariant = Color(0xFFC4B5FD),
+
+    surfaceContainerLowest = Color(0xFF05040B),
+    surfaceContainerLow = Color(0xFF0D0A1C),
+    surfaceContainer = Color(0xFF16122E),
+    surfaceContainerHigh = Color(0xFF211C42),
+    surfaceContainerHighest = Color(0xFF2B2554),
+
+    outline = Color(0xFF5B4D8A),
+    outlineVariant = Color(0xFF2E264E),
+
+    error = Color(0xFFF87171),
+    onError = Color(0xFF450A0A),
+    errorContainer = Color(0xFF7F1D1D),
+    onErrorContainer = Color(0xFFFECACA),
+    scrim = Color(0xFF000000),
+)
+
+val NordicSlateColors = darkColorScheme(
+    primary = Color(0xFF38BDF8),
+    onPrimary = Color(0xFF082F49),
+    primaryContainer = Color(0xFF0369A1),
+    onPrimaryContainer = Color(0xFFBAE6FD),
+
+    secondary = Color(0xFF818CF8),
+    onSecondary = Color(0xFF1E1B4B),
+    secondaryContainer = Color(0xFF3730A3),
+    onSecondaryContainer = Color(0xFFC7D2FE),
+
+    tertiary = Color(0xFF34D399),
+    onTertiary = Color(0xFF022C22),
+    tertiaryContainer = Color(0xFF065F46),
+    onTertiaryContainer = Color(0xFFA7F3D0),
+
+    background = Color(0xFF060B11),
+    onBackground = Color(0xFFE0F2FE),
+
+    surface = Color(0xFF0C1420),
+    onSurface = Color(0xFFE0F2FE),
+    surfaceVariant = Color(0xFF142032),
+    onSurfaceVariant = Color(0xFF94A3B8),
+
+    surfaceContainerLowest = Color(0xFF04070B),
+    surfaceContainerLow = Color(0xFF080F18),
+    surfaceContainer = Color(0xFF101B2B),
+    surfaceContainerHigh = Color(0xFF18283E),
+    surfaceContainerHighest = Color(0xFF213652),
+
+    outline = Color(0xFF334E68),
+    outlineVariant = Color(0xFF1C2D3D),
+
+    error = Color(0xFFF87171),
+    onError = Color(0xFF450A0A),
+    errorContainer = Color(0xFF7F1D1D),
+    onErrorContainer = Color(0xFFFECACA),
+    scrim = Color(0xFF000000),
+)
+
+val CyberGoldColors = darkColorScheme(
+    primary = Color(0xFFFACC15),
+    onPrimary = Color(0xFF3A2E00),
+    primaryContainer = Color(0xFF715B00),
+    onPrimaryContainer = Color(0xFFFEF08A),
+
+    secondary = Color(0xFFE2E8F0),
+    onSecondary = Color(0xFF1E293B),
+    secondaryContainer = Color(0xFF334155),
+    onSecondaryContainer = Color(0xFFF1F5F9),
+
+    tertiary = Color(0xFF38BDF8),
+    onTertiary = Color(0xFF082F49),
+    tertiaryContainer = Color(0xFF075985),
+    onTertiaryContainer = Color(0xFFBAE6FD),
+
+    background = Color(0xFF09090B),
+    onBackground = Color(0xFFFAFAFA),
+
+    surface = Color(0xFF131316),
+    onSurface = Color(0xFFFAFAFA),
+    surfaceVariant = Color(0xFF222227),
+    onSurfaceVariant = Color(0xFFA1A1AA),
+
+    surfaceContainerLowest = Color(0xFF060608),
+    surfaceContainerLow = Color(0xFF0E0E10),
+    surfaceContainer = Color(0xFF18181C),
+    surfaceContainerHigh = Color(0xFF222228),
+    surfaceContainerHighest = Color(0xFF2C2C33),
+
+    outline = Color(0xFF52525B),
+    outlineVariant = Color(0xFF27272A),
+
+    error = Color(0xFFF87171),
+    onError = Color(0xFF450A0A),
+    errorContainer = Color(0xFF7F1D1D),
+    onErrorContainer = Color(0xFFFECACA),
+    scrim = Color(0xFF000000),
+)
+
 @Composable
 fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -> Unit) {
     val systemDark = isSystemInDarkTheme()
@@ -310,6 +474,10 @@ fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -
         ThemeMode.LIGHT -> LightColors
         ThemeMode.DARK -> DarkColors
         ThemeMode.AMOLED -> AmoledDarkColors
+        ThemeMode.OBSIDIAN_EMERALD -> ObsidianEmeraldColors
+        ThemeMode.ROYAL_AMETHYST -> RoyalAmethystColors
+        ThemeMode.NORDIC_SLATE -> NordicSlateColors
+        ThemeMode.CYBER_GOLD -> CyberGoldColors
     }
     val base = Typography()
     // Roboto has no real Persian coverage, so every style gets Modam — and zero tracking.

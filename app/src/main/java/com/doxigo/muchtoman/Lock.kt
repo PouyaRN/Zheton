@@ -468,15 +468,29 @@ private fun SectionLabel(text: String) {
     )
 }
 
-/** Three choices, not a switch: a two-state toggle cannot express "follow the phone". */
+/** Choice of classic and studio luxury themes. */
 @Composable
-private fun ThemePicker(current: ThemeMode, onChange: (ThemeMode) -> Unit) = SegmentedChoice(
-    options = ThemeMode.entries,
-    selected = current,
-    label = { it.fa },
-    onSelect = onChange,
-    fontSize = 16.sp,
-)
+private fun ThemePicker(current: ThemeMode, onChange: (ThemeMode) -> Unit) {
+    val row1 = listOf(ThemeMode.SYSTEM, ThemeMode.LIGHT, ThemeMode.DARK, ThemeMode.AMOLED)
+    val row2 = listOf(ThemeMode.OBSIDIAN_EMERALD, ThemeMode.ROYAL_AMETHYST, ThemeMode.NORDIC_SLATE, ThemeMode.CYBER_GOLD)
+
+    Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+        SegmentedChoice(
+            options = row1,
+            selected = current,
+            label = { it.fa },
+            onSelect = onChange,
+            fontSize = 13.sp,
+        )
+        SegmentedChoice(
+            options = row2,
+            selected = current,
+            label = { it.fa },
+            onSelect = onChange,
+            fontSize = 13.sp,
+        )
+    }
+}
 
 /** One switched setting: emoji, what it does, what it currently means, and the switch. */
 @Composable

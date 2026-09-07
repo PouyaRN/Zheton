@@ -8,8 +8,24 @@ class ThemeTest {
     @Test
     fun `ThemeMode values include SYSTEM, LIGHT, DARK, and AMOLED`() {
         val names = ThemeMode.entries.map { it.name }
-        assertEquals(listOf("SYSTEM", "LIGHT", "DARK", "AMOLED"), names)
+        assertEquals(
+            listOf(
+                "SYSTEM",
+                "LIGHT",
+                "DARK",
+                "AMOLED",
+                "OBSIDIAN_EMERALD",
+                "ROYAL_AMETHYST",
+                "NORDIC_SLATE",
+                "CYBER_GOLD",
+            ),
+            names,
+        )
         assertEquals("آمولد", ThemeMode.AMOLED.fa)
+        assertEquals("زمرد", ThemeMode.OBSIDIAN_EMERALD.fa)
+        assertEquals("ارغوانی", ThemeMode.ROYAL_AMETHYST.fa)
+        assertEquals("نوردیک", ThemeMode.NORDIC_SLATE.fa)
+        assertEquals("سایبرگلد", ThemeMode.CYBER_GOLD.fa)
     }
 
     @Test

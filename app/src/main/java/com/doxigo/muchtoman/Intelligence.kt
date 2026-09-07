@@ -467,7 +467,17 @@ enum class AssetClass(val titleFa: String, val riskLevelFa: String) {
     GOLD_COIN_BAHAR("سکه تمام بهار آزادی", "ریسک متوسط - حباب کمتر از امامی"),
     USDT_STABLECOIN("تتر (دلار دیجیتال)", "نقدینگی دلاری و حفظ قدرت خرید"),
     REAL_ESTATE_FUND("صندوق املاک و مستغلات بورس", "ریسک پایین - سپر تورمی مسکن متری"),
-    PHYSICAL_PROPERTY("خرید قطعی ملک و آپارتمان", "سرمایه‌گذاری بنیادی بلندمدت")
+    PHYSICAL_PROPERTY("خرید قطعی ملک و آپارتمان", "سرمایه‌گذاری بنیادی بلندمدت");
+
+    val fa: String get() = titleFa
+    val icon: String get() = when (this) {
+        GOLD_ETF -> "📊"
+        MELTED_GOLD_18K -> "🥇"
+        GOLD_COIN_BAHAR -> "🪙"
+        USDT_STABLECOIN -> "💵"
+        REAL_ESTATE_FUND -> "🏢"
+        PHYSICAL_PROPERTY -> "🏠"
+    }
 }
 
 data class AllocationSlice(
@@ -476,7 +486,10 @@ data class AllocationSlice(
     val amountToman: Long,
     val rationaleFa: String,
     val actionableStepsFa: String
-)
+) {
+    val asset: AssetClass get() = assetClass
+    val executionVenueFa: String get() = actionableStepsFa
+}
 
 data class BestBuyAdvice(
     val userBudgetToman: Long,
@@ -488,7 +501,70 @@ data class BestBuyAdvice(
     val realEstateContextFa: String?
 )
 
+data class DefenseIndexResult(
+    val score: Int,
+    val levelFa: String,
+    val hedgedRatio: Double,
+    val unhedgedToman: Long,
+    val totalWealthToman: Long,
+    val dailyBleedToman: Long,
+    val annualLossToman: Long,
+)
+
 object PurchasingOptimizationEngine {
+
+    fun computeBestBuyAdvice(
+        budgetToman: Long,
+        halfCoinBubblePercent: Double = 32.0,
+        quarterCoinBubblePercent: Double = 42.0,
+        usdtRateToman: Double = 226_700.0,
+    ): BestBuyAdvice {
+        val safeBudget = max(1_000_000L, budgetToman)
+        val warnings = mutableListOf<String>()
+        if (quarterCoinBubblePercent > 10.0) {
+            warnings.add("هشدار حباب: ربع سکه دارای ${faNumber(quarterCoinBubblePercent)}٪ حباب سفته‌بازی است. خرید سکه فیزیکی توصیه نمی‌شود.")
+        }
+        if (halfCoinBubblePercent > 10.0) {
+            warnings.add("هشدار حباب: نیم سکه یا سکه امامی دارای ${faNumber(halfCoinBubblePercent)}٪ حباب قیمتی است؛ ترجیحاً صندوق طلا یا آب‌شده بخرید.")
+        }
+        val baseAdvice = computeBestBuy(budgetToman = safeBudget, usdtToman = usdtRateToman)
+        return baseAdvice.copy(warningsFa = warnings)
+    }
+
+    fun computeWealthDefenseIndex(
+        unhedgedToman: Long,
+        hedgedToman: Long,
+        annualInflationRate: Double = 0.45,
+    ): DefenseIndexResult {
+        val safeUnhedged = unhedgedToman.coerceAtLeast(0L)
+        val safeHedged = hedgedToman.coerceAtLeast(0L)
+        val total = safeUnhedged + safeHedged
+
+        val hedgedRatio = if (total > 0L) safeHedged.toDouble() / total else 0.0
+        val score = (hedgedRatio * 100.0).toInt().coerceIn(0, 100)
+
+        val levelFa = when {
+            score >= 80 -> "سپر دفاعی مستحکم 🛡️"
+            score >= 60 -> "پوشش مناسب و پایدار ⚖️"
+            score >= 40 -> "پوشش متوسط — نیازمند تقویت ⚠️"
+            score >= 20 -> "در معرض افت جدی ارزش 🔻"
+            else -> "هشدار ریزش قدرت خرید 🚨"
+        }
+
+        val dailyInflationRate = Math.pow(1.0 + annualInflationRate, 1.0 / 365.0) - 1.0
+        val dailyBleedToman = (safeUnhedged * dailyInflationRate).toLong()
+        val annualLossToman = (safeUnhedged * annualInflationRate).toLong()
+
+        return DefenseIndexResult(
+            score = score,
+            levelFa = levelFa,
+            hedgedRatio = hedgedRatio,
+            unhedgedToman = safeUnhedged,
+            totalWealthToman = total,
+            dailyBleedToman = dailyBleedToman,
+            annualLossToman = annualLossToman,
+        )
+    }
 
     fun computeBestBuy(
         budgetToman: Long,
@@ -860,5 +936,6 @@ object MarketFluctuationEngine {
         return prices.map { (it - min) / span }
     }
 }
+
 
 

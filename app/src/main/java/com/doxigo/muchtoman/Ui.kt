@@ -711,6 +711,19 @@ val snackbarHostState = remember { SnackbarHostState() }
                 )
             }
 
+            // Interactive 3D Iranian Bank Card Deck
+            if (state.bankAccounts.isNotEmpty()) {
+                item(key = "bank_card_deck") {
+                    Box(modifier = Modifier.padding(edge).padding(top = Space.l)) {
+                        BankCardDeck(
+                            accounts = state.bankAccounts,
+                            cardHolderName = state.name.ifBlank { "کاربر مهربان" },
+                            onCardClick = { banks = true },
+                        )
+                    }
+                }
+            }
+
             // Obligations card — always rendered; shows empty state when no data.
             item(key = "obligations") {
                 ObligationsCard(
@@ -879,6 +892,7 @@ val snackbarHostState = remember { SnackbarHostState() }
             accounts = state.bankAccounts,
             disabled = state.disabledBanks,
             strangers = state.strangeSenders,
+            userName = state.name,
             onAnchor = vm::setBankBalance,
             onToggle = vm::setBankEnabled,
             onForget = vm::forgetBankAccount,
@@ -2288,6 +2302,7 @@ private fun BankSheet(
     accounts: List<BankAccount>,
     disabled: Set<String>,
     strangers: List<StrangeSender>,
+    userName: String = "",
     onAnchor: (String, Double) -> Unit,
     onToggle: (String, Boolean) -> Unit,
     onForget: (String) -> Unit,
@@ -2337,6 +2352,16 @@ private fun BankSheet(
                     .fillMaxWidth()
                     .weight(1f),
             ) {
+                if (accounts.isNotEmpty()) {
+                    item(key = "sheet_3d_cards") {
+                        BankCardDeck(
+                            accounts = accounts,
+                            cardHolderName = userName.ifBlank { "کاربر مهربان" },
+                            modifier = Modifier.padding(bottom = Space.m),
+                        )
+                    }
+                }
+
                 items(accounts, key = { it.key }) { acc ->
                     BankAccountRow(
                         account = acc,
