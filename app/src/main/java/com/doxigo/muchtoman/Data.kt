@@ -501,6 +501,9 @@ class Store(context: Context) {
         get() = sanitizeRates(read("rates", Rates()), BuildConfig.RATES_URL)
         set(v) = write("rates", v)
 
+    /** Historical observation store for polled rates. */
+    val rateHistoryStore = MarketRateHistoryStore(prefs)
+
     /**
      * Last successful TSETMC snapshot. Kept apart from [cachedRates] because that is the
      * Worker's payload and this is the one thing the phone fetches for itself — and because

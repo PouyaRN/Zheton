@@ -25,7 +25,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.heightIn
@@ -369,6 +372,12 @@ TextButton(onClick = {
                     }
                 }
             }
+
+            // 14-day spending outflow sparkline chart
+            DailyOutflowSparkCard(
+                entries = visible,
+                todayEpochDay = today,
+            )
 
             // Failed transaction watchdog banner (Ticket 05)
             val failedWatchdogs = remember(visible) {
@@ -2129,6 +2138,100 @@ internal fun FailedTxnWatchdogBanner(
                         fontSize = 11.sp,
                         color = if (item.status == WatchdogStatus.OVERDUE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Visual spending velocity & 14-day daily outflow sparkline card.
+ */
+internal data class DailyOutflowPoint(val day: Long, val toman: Double)
+
+@Composable
+internal fun DailyOutflowSparkCard(
+    entries: List<LedgerEntry>,
+    todayEpochDay: Long,
+    modifier: Modifier = Modifier,
+) {
+    val dayPoints: List<DailyOutflowPoint> = remember(entries, todayEpochDay) {
+        val expenseEntries = entries.filter { it.txn.direction == "out" && !it.duplicate && !it.transfer }
+        (13 downTo 0).map { daysAgo ->
+            val d = todayEpochDay - daysAgo
+            var sumRial = 0L
+            for (e in expenseEntries) {
+                if (e.txn.day == d) {
+                    sumRial += (e.txn.amountRial ?: 0L)
+                }
+            }
+            DailyOutflowPoint(day = d, toman = sumRial / 10.0)
+        }
+    }
+
+    val total14DayToman = remember(dayPoints) { dayPoints.sumOf { it.toman } }
+    if (total14DayToman <= 0.0) return
+
+    val maxDayToman = remember(dayPoints) { dayPoints.maxOf { it.toman }.coerceAtLeast(1.0) }
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = Space.xl, vertical = Space.xs),
+        shape = RoundedCornerShape(Radius.card),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+    ) {
+        Column(modifier = Modifier.padding(Space.m)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "روند مخارج ۱۴ روز گذشته",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    "${faCompact(total14DayToman)} تومان",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
+
+            Spacer(Modifier.height(Space.s))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.Bottom,
+            ) {
+                for (point in dayPoints) {
+                    val heightRatio = (point.toman / maxDayToman).toFloat().coerceIn(0.08f, 1f)
+                    val isToday = point.day == todayEpochDay
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Bottom,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .fillMaxHeight(heightRatio)
+                                .clip(RoundedCornerShape(3.dp))
+                                .background(
+                                    if (isToday) Hero.gold
+                                    else if (point.toman > 0.0) MaterialTheme.colorScheme.primary.copy(alpha = 0.75f)
+                                    else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.25f),
+                                ),
+                        )
+                    }
                 }
             }
         }

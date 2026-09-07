@@ -1,15 +1,21 @@
 package com.doxigo.muchtoman
 
+import android.content.SharedPreferences
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.roundToLong
 import kotlin.math.sqrt
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 // ════════════════════════════════════════════════════════════════════════════════
 // 1. CURRENCY LENS & PUBLIC PRIVACY MODE (Ticket 01)
@@ -635,10 +641,86 @@ data class FluctuationSeries(
     val changePercent: Double,
 )
 
+@Serializable
+data class RateObservation(
+    val timestampMs: Long,
+    val priceToman: Double,
+)
+
+class MarketRateHistoryStore(
+    private val prefs: SharedPreferences? = null,
+) {
+    private val memoryStore = ConcurrentHashMap<String, MutableList<RateObservation>>()
+    private val json = Json { ignoreUnknownKeys = true }
+
+    init {
+        loadFromPrefs()
+    }
+
+    @Synchronized
+    fun recordRate(assetId: String, priceToman: Double, timestampMs: Long = System.currentTimeMillis()) {
+        if (priceToman <= 0.0) return
+        val list = memoryStore.getOrPut(assetId) { mutableListOf() }
+        list.add(RateObservation(timestampMs, priceToman))
+        if (list.size > 200) {
+            list.removeAt(0)
+        }
+        persistToPrefs()
+    }
+
+    @Synchronized
+    fun recordAllSnapshot(rates: Map<String, Double>, timestampMs: Long = System.currentTimeMillis()) {
+        var modified = false
+        for ((asset, price) in rates) {
+            if (price > 0.0) {
+                val list = memoryStore.getOrPut(asset) { mutableListOf() }
+                list.add(RateObservation(timestampMs, price))
+                if (list.size > 200) {
+                    list.removeAt(0)
+                }
+                modified = true
+            }
+        }
+        if (modified) {
+            persistToPrefs()
+        }
+    }
+
+    @Synchronized
+    fun getHistory(assetId: String, sinceMs: Long = 0L): List<RateObservation> {
+        val list = memoryStore[assetId] ?: return emptyList()
+        return if (sinceMs <= 0L) {
+            list.toList()
+        } else {
+            list.filter { it.timestampMs >= sinceMs }
+        }
+    }
+
+    private fun loadFromPrefs() {
+        val p = prefs ?: return
+        runCatching {
+            val jsonStr = p.getString("market_rate_history", null) ?: return
+            val loaded: Map<String, List<RateObservation>> = json.decodeFromString(jsonStr)
+            for ((k, v) in loaded) {
+                memoryStore[k] = v.toMutableList()
+            }
+        }
+    }
+
+    private fun persistToPrefs() {
+        val p = prefs ?: return
+        runCatching {
+            val mapToSave = memoryStore.toMap()
+            val jsonStr = json.encodeToString(mapToSave)
+            p.edit().putString("market_rate_history", jsonStr).apply()
+        }
+    }
+}
+
 object MarketFluctuationEngine {
     /**
      * Computes a realistic, smooth price curve for an asset over [interval], ending exactly at [currentPriceToman].
-     * If [historicalSnapshots] are provided (from local database or user history), they are incorporated.
+     * If [historicalSnapshots] or [historyStore] are provided, actual observed historical prices are incorporated.
      */
     fun computeSeries(
         assetId: String,
@@ -646,6 +728,7 @@ object MarketFluctuationEngine {
         interval: FluctuationInterval,
         nowMs: Long = System.currentTimeMillis(),
         historicalSnapshots: Map<Long, Double> = emptyMap(),
+        historyStore: MarketRateHistoryStore? = null,
     ): FluctuationSeries {
         if (currentPriceToman <= 0.0) {
             val emptyPoint = FluctuationPoint(nowMs, 0.0, "اکنون")
@@ -661,6 +744,10 @@ object MarketFluctuationEngine {
                 changePercent = 0.0,
             )
         }
+
+        val durationMs = interval.durationHours * 3600_000L
+        val startTimeMs = nowMs - durationMs
+        val history = historyStore?.getHistory(assetId, sinceMs = startTimeMs) ?: emptyList()
 
         // Expected macro net return in Iranian markets for this interval
         val defaultChangePct = when (interval) {
@@ -680,15 +767,17 @@ object MarketFluctuationEngine {
             FluctuationInterval.ALL -> 118.0
         }
 
+        val startPrice = if (history.size >= 2) {
+            history.first().priceToman
+        } else {
+            currentPriceToman / (1.0 + defaultChangePct / 100.0)
+        }
+
         // Asset-specific pseudo seed based on name hash for reproducible realistic curves
         val seed = abs(assetId.hashCode()) % 1000 + 1
 
         val count = interval.pointCount
-        val durationMs = interval.durationHours * 3600_000L
         val stepMs = durationMs / (count - 1).coerceAtLeast(1)
-        val startTimeMs = nowMs - durationMs
-
-        val startPrice = currentPriceToman / (1.0 + defaultChangePct / 100.0)
 
         val points = mutableListOf<FluctuationPoint>()
         for (i in 0 until count) {
@@ -702,8 +791,16 @@ object MarketFluctuationEngine {
 
             // Damping factor so the last point lands exactly at currentPriceToman
             val damping = 1.0 - progress
+
+            // Check if there is an actual recorded price near timestamp t
+            val nearestObs = if (history.isNotEmpty()) {
+                history.minByOrNull { abs(it.timestampMs - t) }?.takeIf { abs(it.timestampMs - t) <= stepMs }
+            } else null
+
             val price = if (i == count - 1) {
                 currentPriceToman
+            } else if (nearestObs != null) {
+                nearestObs.priceToman
             } else {
                 (trend + (oscillation1 + oscillation2) * damping).coerceAtLeast(startPrice * 0.5)
             }

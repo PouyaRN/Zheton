@@ -251,11 +251,12 @@ fun MarketAndAssetsScreen(
     val currentSelectedPrice = effective[selectedAssetId] ?: marketItems.firstOrNull { it.id == selectedAssetId }?.currentPriceToman ?: usdCashToman
     val selectedItem = marketItems.firstOrNull { it.id == selectedAssetId } ?: marketItems.firstOrNull()
 
-    val chartSeries = remember(selectedAssetId, currentSelectedPrice, selectedInterval) {
+    val chartSeries = remember(selectedAssetId, currentSelectedPrice, selectedInterval, state.rateHistoryStore) {
         MarketFluctuationEngine.computeSeries(
             assetId = selectedAssetId,
             currentPriceToman = currentSelectedPrice,
             interval = selectedInterval,
+            historyStore = state.rateHistoryStore,
         )
     }
 

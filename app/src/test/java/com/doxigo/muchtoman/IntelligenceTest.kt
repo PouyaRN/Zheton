@@ -333,4 +333,46 @@ class IntelligenceTest {
             assertTrue(point in 0.0..1.0)
         }
     }
+
+    // ── MarketRateHistoryStore Tests ─────────────────────────────────
+
+    @Test
+    fun `MarketRateHistoryStore records and retrieves points in chronological order`() {
+        val store = MarketRateHistoryStore()
+        val now = 1_000_000L
+
+        store.recordRate("usd", 70_000.0, timestampMs = now)
+        store.recordRate("usd", 70_500.0, timestampMs = now + 60_000L)
+        store.recordRate("usd", 71_000.0, timestampMs = now + 120_000L)
+
+        val history = store.getHistory("usd")
+        assertEquals(3, history.size)
+        assertEquals(70_000.0, history[0].priceToman, 0.001)
+        assertEquals(71_000.0, history[2].priceToman, 0.001)
+
+        val series = MarketFluctuationEngine.computeSeries(
+            assetId = "usd",
+            currentPriceToman = 71_000.0,
+            interval = FluctuationInterval.DAY_1,
+            historyStore = store,
+        )
+        assertNotNull(series)
+        assertEquals(FluctuationInterval.DAY_1.pointCount, series.points.size)
+        assertEquals(71_000.0, series.points.last().priceToman, 0.001)
+    }
+
+    @Test
+    fun `MarketRateHistoryStore recordAllSnapshot records non-zero valid rates`() {
+        val store = MarketRateHistoryStore()
+        val rates = mapOf(
+            "usd" to 70_000.0,
+            "usdt" to 70_200.0,
+            "gold18" to 0.0, // Should be ignored
+        )
+
+        store.recordAllSnapshot(rates)
+        assertEquals(1, store.getHistory("usd").size)
+        assertEquals(1, store.getHistory("usdt").size)
+        assertEquals(0, store.getHistory("gold18").size)
+    }
 }

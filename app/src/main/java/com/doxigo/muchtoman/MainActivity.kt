@@ -81,6 +81,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             showHidden = store.showHidden,
             strangeSenders = store.strangeSenders,
             dismissedUpdate = store.dismissedUpdate,
+            rateHistoryStore = store.rateHistoryStore,
         )
     )
     val state: StateFlow<UiState> = _state.asStateFlow()
@@ -158,6 +159,10 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             fetchRates(BuildConfig.RATES_URL).onSuccess { fetched ->
                 val fresh = mergeRates(fetched, store.cachedRates)
                 store.cachedRates = fresh
+                store.rateHistoryStore.recordAllSnapshot(
+                    fresh.toman,
+                    timestampMs = if (fresh.updatedAt > 0L) fresh.updatedAt else System.currentTimeMillis(),
+                )
                 _state.update { it.copy(rates = fresh) }
             }.onFailure { e ->
                 // Keep showing the cached rates; an old number beats a blank screen. The
@@ -1976,6 +1981,7 @@ data class UiState(
     val obligations: List<InstallmentObligation> = emptyList(),
     val obligationPayments: Map<String, List<InstallmentPayment>> = emptyMap(),
     val reservations: List<Reservation> = emptyList(),
+    val rateHistoryStore: MarketRateHistoryStore = MarketRateHistoryStore(),
 ) {
     val coins: List<Coin> get() = rates.coins
 
