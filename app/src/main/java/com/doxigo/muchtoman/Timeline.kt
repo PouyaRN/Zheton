@@ -2181,7 +2181,15 @@ fun ManualTxnSheet(
 
             // Categories
             Text("دسته‌بندی (اختیاری)", fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Spacer(Modifier.height(Space.xs))
+            selectedCatId?.let { catId ->
+                val necessity = NecessityType.classifyCategory(catId)
+                Text(
+                    "طبقه‌بندی بودجه ۵۰/۳۰/۲۰: ${necessity.emoji} ${necessity.titleFa} (هدف: ${faNumber(necessity.targetPercent.toDouble())}٪)",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 2.dp, bottom = Space.xs),
+                )
+            } ?: Spacer(Modifier.height(Space.xs))
             val availableCats = categoryChoices(categories, if (isExpense) "out" else "in")
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(Space.xs),
