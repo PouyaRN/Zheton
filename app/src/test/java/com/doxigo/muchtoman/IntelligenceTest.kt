@@ -481,4 +481,64 @@ class IntelligenceTest {
         assertEquals(60, balanced.score)
         assertEquals(0.6, balanced.hedgedRatio, 0.001)
     }
+
+    // ── Ticket 08: 1-Year Historical Chart & Bank Card Deck Tests ───
+
+    @Test
+    fun `MarketFluctuationEngine generates realistic 1-year historical cycle series when history is short`() {
+        val nowMs = 1715000000000L
+        val currentPrice = 100_000.0
+
+        val series = MarketFluctuationEngine.computeSeries(
+            assetId = "usd",
+            currentPriceToman = currentPrice,
+            interval = FluctuationInterval.YEAR_1,
+            nowMs = nowMs,
+        )
+
+        assertEquals(FluctuationInterval.YEAR_1.pointCount, series.points.size)
+        assertEquals(currentPrice, series.points.last().priceToman, 0.001)
+        assertTrue("Start price should reflect 1Y macro inflation baseline", series.startPriceToman < currentPrice)
+        assertTrue("Change percent should be positive over 1 year", series.changePercent > 0.0)
+        assertTrue("High price should be at least current price", series.highPriceToman >= currentPrice)
+        assertTrue("Low price should be positive", series.lowPriceToman > 0.0)
+        assertEquals("این ماه", series.points.last().labelFa)
+        assertTrue("Early points should have months ago label", series.points.first().labelFa.contains("ماه قبل"))
+    }
+
+    @Test
+    fun `MarketFluctuationEngine integrates historicalSnapshots into series`() {
+        val nowMs = 1715000000000L
+        val today = (nowMs / (24 * 3600_000L)).toInt()
+        val currentPrice = 90_000.0
+
+        // Snapshot 100 days ago
+        val pastDay = (today - 100).toLong()
+        val pastPrice = 65_000.0
+        val snapshots = mapOf(pastDay to pastPrice)
+
+        val series = MarketFluctuationEngine.computeSeries(
+            assetId = "usd",
+            currentPriceToman = currentPrice,
+            interval = FluctuationInterval.YEAR_1,
+            historicalSnapshots = snapshots,
+            nowMs = nowMs,
+        )
+
+        assertEquals(FluctuationInterval.YEAR_1.pointCount, series.points.size)
+        assertEquals(currentPrice, series.points.last().priceToman, 0.001)
+        assertTrue(series.points.any { it.priceToman in 60_000.0..70_000.0 })
+    }
+
+    @Test
+    fun `formatCardPan converts card numbers to 4-block Persian groups`() {
+        val pan = "6037991823456789"
+        val formatted = formatCardPan(pan)
+        assertEquals("۶۰۳۷  ۹۹۱۸  ۲۳۴۵  ۶۷۸۹", formatted)
+
+        val mask = "6037 •••• •••• 1234"
+        val formattedMask = formatCardPan(mask)
+        assertTrue(formattedMask.contains("۶۰۳۷"))
+        assertTrue(formattedMask.contains("۱۲۳۴"))
+    }
 }

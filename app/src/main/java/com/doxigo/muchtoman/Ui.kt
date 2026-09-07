@@ -312,7 +312,7 @@ val snackbarHostState = remember { SnackbarHostState() }
     // The tabs that start at the paper rather than at the field, plus every pushed screen.
     val paperUnderStatusBar = !state.locked && (
         settings || transactionRef != null ||
-            tab == Tab.LEDGER || tab == Tab.GOALS || tab == Tab.REPORTS || tab == Tab.ASSETS ||
+            tab == Tab.LEDGER || tab == Tab.REPORTS || tab == Tab.ASSETS ||
             !heroUnderStatusBar
         )
     val lightScheme = MaterialTheme.colorScheme.background.luminance() > 0.5f
@@ -581,23 +581,6 @@ val snackbarHostState = remember { SnackbarHostState() }
         )
         return@Scaffold
       }
-      if (tab == Tab.GOALS) {
-        val recentMerchants = remember(state.ledger.allEntries) {
-            state.ledger.allEntries
-                .filter { it.txn.direction == "out" && it.txn.merchantNorm.isNotBlank() }
-                .map { it.txn.merchantNorm }
-                .distinct()
-        }
-        GoalsScreen(
-            goals = state.ledger.goals,
-            categories = state.ledger.categories,
-            merchants = recentMerchants,
-            onAdd = vm::addGoal,
-            onDelete = vm::deleteGoal,
-            bottomInset = pad.calculateBottomPadding(),
-        )
-        return@Scaffold
-      }
       if (tab == Tab.REPORTS) {
         val composition = remember(state.listHoldings, state.coins, state.effective, state.stocks) {
             compositionByKind(state.listHoldings, state.coins, state.effective, state.stocks)
@@ -691,27 +674,7 @@ val snackbarHostState = remember { SnackbarHostState() }
                 }
             }
 
-            // Cash burn and runway intelligence (Tickets 02, 03, 04, 06)
-            item(key = "cash_burn_runway") {
-                CashBurnAndRunwayCard(
-                    state = state,
-                    modifier = Modifier.padding(edge).padding(top = Space.l),
-                    privacyMode = privacyMode,
-                    onOpenGoldBubble = { showGoldBubbleSheet = true },
-                    onOpenRecurring = { showRecurringSheet = true },
-                    onOpenWishlist = { showWishlistSheet = true },
-                )
-            }
-
-            // Dynamic Wealth Defense & Purchasing Optimizer (Ticket 07: Real-time Asset Allocation against USD surge)
-            item(key = "wealth_defense_advisor") {
-                WealthDefenseAdvisorCard(
-                    state = state,
-                    modifier = Modifier.padding(edge).padding(top = Space.l),
-                )
-            }
-
-            // Interactive 3D Iranian Bank Card Deck
+            // Interactive 3D Iranian Bank Card Deck — front and center
             if (state.bankAccounts.isNotEmpty()) {
                 item(key = "bank_card_deck") {
                     Box(modifier = Modifier.padding(edge).padding(top = Space.l)) {
@@ -724,35 +687,49 @@ val snackbarHostState = remember { SnackbarHostState() }
                 }
             }
 
-            // Obligations card — always rendered; shows empty state when no data.
-            item(key = "obligations") {
-                ObligationsCard(
+            // Dynamic Wealth Defense & Purchasing Optimizer (Real-time Asset Allocation against inflation)
+            item(key = "wealth_defense_advisor") {
+                WealthDefenseAdvisorCard(
                     state = state,
                     modifier = Modifier.padding(edge).padding(top = Space.l),
-                    onOpenObligation = { selectedObligation = it },
-                    onAddObligation = { addingObligation = true },
                 )
             }
 
-            // Reservations card — always rendered; shows empty state when no data.
-            item(key = "reservations") {
-                ReservationsCard(
+            // Cash burn and runway intelligence
+            item(key = "cash_burn_runway") {
+                CashBurnAndRunwayCard(
                     state = state,
                     modifier = Modifier.padding(edge).padding(top = Space.l),
-                    onRelease = vm::releaseReservation,
-                    onDelete = vm::deleteReservation,
+                    privacyMode = privacyMode,
+                    onOpenGoldBubble = { showGoldBubbleSheet = true },
+                    onOpenRecurring = { showRecurringSheet = true },
+                    onOpenWishlist = { showWishlistSheet = true },
                 )
             }
 
-            // Add reservation button — always shown on home screen.
-            item(key = "add_reservation") {
-                OutlinedButton(
-                    onClick = { addingReservation = true },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = Space.xl).padding(top = Space.l),
-                ) {
-                    Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(Space.s))
-                    Text("افزودن رزرو")
+            // Active Obligations — only rendered when there are active obligations to attend to
+            val activeObligations = state.obligations.filter { !it.archived }
+            if (activeObligations.isNotEmpty()) {
+                item(key = "obligations") {
+                    ObligationsCard(
+                        state = state,
+                        modifier = Modifier.padding(edge).padding(top = Space.l),
+                        onOpenObligation = { selectedObligation = it },
+                        onAddObligation = { addingObligation = true },
+                    )
+                }
+            }
+
+            // Active Reservations — only rendered when there are funds actively reserved
+            val activeReservations = state.reservations.filter { !it.released }
+            if (activeReservations.isNotEmpty()) {
+                item(key = "reservations") {
+                    ReservationsCard(
+                        state = state,
+                        modifier = Modifier.padding(edge).padding(top = Space.l),
+                        onRelease = vm::releaseReservation,
+                        onDelete = vm::deleteReservation,
+                    )
                 }
             }
 

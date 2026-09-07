@@ -825,6 +825,12 @@ object MarketFluctuationEngine {
         val startTimeMs = nowMs - durationMs
         val history = historyStore?.getHistory(assetId, sinceMs = startTimeMs) ?: emptyList()
 
+        // Combine with historical day snapshots if available
+        val snapshotObs = historicalSnapshots.map { (day, toman) ->
+            RateObservation(day * DAY_MS, toman)
+        }.filter { it.timestampMs in startTimeMs..nowMs }
+        val combinedHistory = (history + snapshotObs).sortedBy { it.timestampMs }
+
         // Expected macro net return in Iranian markets for this interval
         val defaultChangePct = when (interval) {
             FluctuationInterval.DAY_1 -> when {
@@ -843,8 +849,11 @@ object MarketFluctuationEngine {
             FluctuationInterval.ALL -> 118.0
         }
 
-        val startPrice = if (history.size >= 2) {
-            history.first().priceToman
+        // Only use history's start price if it actually covers the requested timeframe interval
+        val earliest = combinedHistory.firstOrNull()
+        val historyCoversInterval = earliest != null && (earliest.timestampMs - startTimeMs) <= (durationMs * 0.35)
+        val startPrice = if (historyCoversInterval && earliest.priceToman > 0.0) {
+            earliest.priceToman
         } else {
             currentPriceToman / (1.0 + defaultChangePct / 100.0)
         }
@@ -869,13 +878,13 @@ object MarketFluctuationEngine {
             val damping = 1.0 - progress
 
             // Check if there is an actual recorded price near timestamp t
-            val nearestObs = if (history.isNotEmpty()) {
-                history.minByOrNull { abs(it.timestampMs - t) }?.takeIf { abs(it.timestampMs - t) <= stepMs }
+            val nearestObs = if (combinedHistory.isNotEmpty()) {
+                combinedHistory.minByOrNull { abs(it.timestampMs - t) }?.takeIf { abs(it.timestampMs - t) <= stepMs }
             } else null
 
             val price = if (i == count - 1) {
                 currentPriceToman
-            } else if (nearestObs != null) {
+            } else if (nearestObs != null && nearestObs.priceToman > 0.0) {
                 nearestObs.priceToman
             } else {
                 (trend + (oscillation1 + oscillation2) * damping).coerceAtLeast(startPrice * 0.5)
@@ -886,13 +895,17 @@ object MarketFluctuationEngine {
                     val hour = ((t / 3600_000L) % 24).toInt()
                     "${hour}:۰۰"
                 }
-                FluctuationInterval.WEEK_1, FluctuationInterval.MONTH_1 -> {
-                    val dayNum = ((t / (24 * 3600_000L)) % 30).toInt() + 1
-                    "$dayNum روز قبل"
+                FluctuationInterval.WEEK_1 -> {
+                    val daysAgo = ((nowMs - t) / (24 * 3600_000L)).toInt()
+                    if (daysAgo <= 0) "امروز" else "$daysAgo روز قبل"
+                }
+                FluctuationInterval.MONTH_1 -> {
+                    val daysAgo = ((nowMs - t) / (24 * 3600_000L)).toInt()
+                    if (daysAgo <= 0) "امروز" else "$daysAgo روز قبل"
                 }
                 else -> {
-                    val monthNum = ((t / (30L * 24 * 3600_000L)) % 12).toInt() + 1
-                    "$monthNum ماه قبل"
+                    val monthsAgo = ((nowMs - t) / (30L * 24 * 3600_000L)).toInt()
+                    if (monthsAgo <= 0) "این ماه" else "$monthsAgo ماه قبل"
                 }
             }
             points.add(FluctuationPoint(timestampMs = t, priceToman = price, labelFa = label))

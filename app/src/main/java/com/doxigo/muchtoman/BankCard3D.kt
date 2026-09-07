@@ -38,6 +38,11 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -139,6 +144,7 @@ fun BankCard3D(
     modifier: Modifier = Modifier,
     cardHolderName: String = "کارت اصلی شتاب",
     onClick: () -> Unit = {},
+    enable3DTiltDrag: Boolean = true,
 ) {
     val bankName = bankAccount?.bankFa ?: "کارت شتاب"
     val palette = remember(bankName) { BankCardThemes.resolve(bankName) }
@@ -174,27 +180,31 @@ fun BankCard3D(
 
     val density = LocalDensity.current
 
+    val dragModifier = if (enable3DTiltDrag) {
+        Modifier.pointerInput(Unit) {
+            detectDragGestures(
+                onDragStart = {},
+                onDragEnd = {
+                    dragX = 0f
+                    dragY = 0f
+                },
+                onDragCancel = {
+                    dragX = 0f
+                    dragY = 0f
+                },
+                onDrag = { change, dragAmount ->
+                    change.consume()
+                    dragX += dragAmount.x
+                    dragY += dragAmount.y
+                },
+            )
+        }
+    } else Modifier
+
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .pointerInput(Unit) {
-                detectDragGestures(
-                    onDragStart = {},
-                    onDragEnd = {
-                        dragX = 0f
-                        dragY = 0f
-                    },
-                    onDragCancel = {
-                        dragX = 0f
-                        dragY = 0f
-                    },
-                    onDrag = { change, dragAmount ->
-                        change.consume()
-                        dragX += dragAmount.x
-                        dragY += dragAmount.y
-                    },
-                )
-            },
+            .then(dragModifier),
     ) {
         // Shadow layer giving physical elevation
         Box(
@@ -575,7 +585,8 @@ fun formatCardPan(raw: String): String {
 }
 
 /**
- * Interactive carousel/deck of 3D Iranian bank cards with dynamic dots and card switching.
+ * Interactive fluid carousel/deck of 3D Iranian bank cards with native snapping,
+ * 3D perspective scroll tilt, and dynamic bank-accented indicator pills.
  */
 @Composable
 fun BankCardDeck(
@@ -586,38 +597,82 @@ fun BankCardDeck(
 ) {
     if (accounts.isEmpty()) return
 
-    var selectedIndex by remember { mutableIntStateOf(0) }
-    val safeIndex = selectedIndex.coerceIn(0, accounts.size - 1)
-    val currentAccount = accounts[safeIndex]
+    if (accounts.size == 1) {
+        val singleAccount = accounts.first()
+        BankCard3D(
+            bankAccount = singleAccount,
+            cardHolderName = cardHolderName,
+            modifier = modifier.padding(horizontal = 20.dp),
+            onClick = { onCardClick(singleAccount) },
+            enable3DTiltDrag = true,
+        )
+        return
+    }
+
+    val pagerState = rememberPagerState(pageCount = { accounts.size })
+    val coroutineScope = rememberCoroutineScope()
+    val density = LocalDensity.current
 
     Column(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        BankCard3D(
-            bankAccount = currentAccount,
-            cardHolderName = cardHolderName,
-            onClick = { onCardClick(currentAccount) },
-        )
+        HorizontalPager(
+            state = pagerState,
+            contentPadding = PaddingValues(horizontal = 20.dp),
+            pageSpacing = 12.dp,
+            modifier = Modifier.fillMaxWidth(),
+        ) { page ->
+            val account = accounts[page]
+            val pageOffset = ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction)
+            val clampedOffset = pageOffset.coerceIn(-1f, 1f)
 
-        if (accounts.size > 1) {
-            Spacer(Modifier.height(12.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer {
+                        // Dynamic 3D depth and tilt during page transition
+                        cameraDistance = 14f * density.density
+                        rotationY = clampedOffset * -16f
+                        scaleX = 1f - (abs(clampedOffset) * 0.08f)
+                        scaleY = 1f - (abs(clampedOffset) * 0.08f)
+                        alpha = 1f - (abs(clampedOffset) * 0.3f)
+                    },
             ) {
-                accounts.forEachIndexed { index, acc ->
-                    val isSelected = index == safeIndex
-                    val palette = remember(acc.bankFa) { BankCardThemes.resolve(acc.bankFa) }
-                    Box(
-                        modifier = Modifier
-                            .height(6.dp)
-                            .width(if (isSelected) 22.dp else 8.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(if (isSelected) palette.accentColor else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                            .clickable { selectedIndex = index },
-                    )
-                }
+                BankCard3D(
+                    bankAccount = account,
+                    cardHolderName = cardHolderName,
+                    onClick = { onCardClick(account) },
+                    enable3DTiltDrag = false, // HorizontalPager handles swipe gesture cleanly
+                )
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        // Dynamic bank indicator pills
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            accounts.forEachIndexed { index, acc ->
+                val isSelected = index == pagerState.currentPage
+                val palette = remember(acc.bankFa) { BankCardThemes.resolve(acc.bankFa) }
+                Box(
+                    modifier = Modifier
+                        .height(6.dp)
+                        .width(if (isSelected) 24.dp else 8.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(
+                            if (isSelected) palette.accentColor
+                            else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                        )
+                        .clickable {
+                            coroutineScope.launch {
+                                pagerState.animateScrollToPage(index)
+                            }
+                        },
+                )
             }
         }
     }

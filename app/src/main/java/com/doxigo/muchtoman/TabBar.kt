@@ -66,7 +66,6 @@ import androidx.compose.ui.unit.sp
 enum class Tab(val fa: String) {
     HOME("خانه"),
     LEDGER("دفتر"),
-    GOALS("هدف‌ها"),
     ASSETS("بازار"),
     REPORTS("گزارش‌ها"),
 }
@@ -197,7 +196,6 @@ private fun DrawScope.drawTabIcon(tab: Tab, tint: Color) {
         when (tab) {
             Tab.HOME -> drawHome(tint)
             Tab.LEDGER -> drawLedger(tint)
-            Tab.GOALS -> drawGoals(tint)
             Tab.ASSETS -> drawAssets(tint)
             Tab.REPORTS -> drawReports(tint)
         }

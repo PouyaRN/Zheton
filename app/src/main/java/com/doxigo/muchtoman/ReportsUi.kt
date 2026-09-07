@@ -647,41 +647,51 @@ private fun ReportsPurchasingAdvisorCard(
 
             Spacer(Modifier.height(Space.s))
 
-            // Budget quick selector chips
+            // Studio-grade budget quick segmented selector
             Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Space.xs),
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+                    .padding(3.dp),
+                horizontalArrangement = Arrangement.spacedBy(3.dp),
             ) {
                 quickBudgets.forEach { b ->
                     val isSelected = b == selectedBudget
-                    FilterChip(
-                        selected = isSelected,
-                        onClick = { selectedBudget = b },
-                        label = {
-                            Text(
-                                if (b == unhedgedToman) "نقدینگی من" else "${faCompact(b.toDouble())} ت",
-                                fontSize = 10.sp,
-                                fontFamily = ModamFigures,
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(
+                                if (isSelected) MaterialTheme.colorScheme.primary
+                                else Color.Transparent
                             )
-                        },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                            selectedLabelColor = MaterialTheme.colorScheme.primary,
-                        ),
-                    )
+                            .clickable { selectedBudget = b }
+                            .padding(vertical = 6.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = if (b == unhedgedToman && b >= 1_000_000L) "نقدینگی من" else "${faCompact(b.toDouble())} ت",
+                            fontSize = 11.sp,
+                            fontFamily = ModamFigures,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
                 }
             }
 
-            Spacer(Modifier.height(Space.m))
+            Spacer(Modifier.height(Space.s))
 
             Text(
                 advice.headlineFa,
-                fontSize = 14.sp,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = MaterialTheme.colorScheme.primary,
             )
 
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(2.dp))
 
             Text(
                 advice.summaryFa,

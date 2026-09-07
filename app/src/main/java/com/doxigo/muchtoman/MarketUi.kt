@@ -251,12 +251,13 @@ fun MarketAndAssetsScreen(
     val currentSelectedPrice = effective[selectedAssetId] ?: marketItems.firstOrNull { it.id == selectedAssetId }?.currentPriceToman ?: usdCashToman
     val selectedItem = marketItems.firstOrNull { it.id == selectedAssetId } ?: marketItems.firstOrNull()
 
-    val chartSeries = remember(selectedAssetId, currentSelectedPrice, selectedInterval, state.rateHistoryStore) {
+    val chartSeries = remember(selectedAssetId, currentSelectedPrice, selectedInterval, state.rateHistoryStore, state.history) {
         MarketFluctuationEngine.computeSeries(
             assetId = selectedAssetId,
             currentPriceToman = currentSelectedPrice,
             interval = selectedInterval,
             historyStore = state.rateHistoryStore,
+            historicalSnapshots = state.history,
         )
     }
 
@@ -512,6 +513,7 @@ private fun MarketGlanceBar(
     ) {
         item {
             GlanceCard(
+                assetId = "usdt",
                 title = "تتر دیجیتال",
                 priceFa = "${faNumber(usdtToman)} ت",
                 changeFa = "+۱.۲٪",
@@ -522,6 +524,7 @@ private fun MarketGlanceBar(
         }
         item {
             GlanceCard(
+                assetId = "usd",
                 title = "دلار بازار آزاد",
                 priceFa = "${faNumber(usdCashToman)} ت",
                 changeFa = "+۰.۹٪",
@@ -532,6 +535,7 @@ private fun MarketGlanceBar(
         }
         item {
             GlanceCard(
+                assetId = "gold18",
                 title = "طلای ۱۸ عیار",
                 priceFa = "${faNumber(gold18Toman)} ت",
                 changeFa = "+۱.۸٪",
@@ -542,6 +546,7 @@ private fun MarketGlanceBar(
         }
         item {
             GlanceCard(
+                assetId = "coin_emami",
                 title = "سکه تمام امامی",
                 priceFa = "${faCompact(emamiCoinToman)} ت",
                 changeFa = "+۲.۴٪",
@@ -555,6 +560,7 @@ private fun MarketGlanceBar(
 
 @Composable
 private fun GlanceCard(
+    assetId: String,
     title: String,
     priceFa: String,
     changeFa: String,
@@ -564,9 +570,9 @@ private fun GlanceCard(
 ) {
     Card(
         modifier = Modifier
-            .width(140.dp)
+            .width(148.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
@@ -576,7 +582,7 @@ private fun GlanceCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(badge, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                SleekAssetBadge(assetId = assetId, size = 26.dp)
                 Text(
                     changeFa,
                     fontSize = 11.sp,
@@ -584,9 +590,9 @@ private fun GlanceCard(
                     color = if (isPositive) Color(0xFF0F9D58) else Color(0xFFD93025),
                 )
             }
-            Spacer(Modifier.height(Space.xs))
+            Spacer(Modifier.height(Space.s))
             Text(title, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Spacer(Modifier.height(Space.xs))
+            Spacer(Modifier.height(2.dp))
             Text(priceFa, fontWeight = FontWeight.Black, fontSize = 13.sp)
         }
     }
@@ -616,17 +622,23 @@ fun MarketFluctuationCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top,
             ) {
-                Column {
-                    Text(
-                        item.faName,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Black,
-                    )
-                    Text(
-                        item.enTicker,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Space.m),
+                ) {
+                    SleekAssetBadge(assetId = item.id, size = 42.dp)
+                    Column {
+                        Text(
+                            item.faName,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Black,
+                        )
+                        Text(
+                            item.enTicker,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
 
                 Column(horizontalAlignment = Alignment.End) {
@@ -768,11 +780,16 @@ fun MarketSplineChart(
 
         val minPrice = series.lowPriceToman
         val maxPrice = series.highPriceToman
-        val span = (maxPrice - minPrice).takeIf { it > 0.0 } ?: 1.0
+        val hasVariation = maxPrice > minPrice
+        val span = if (hasVariation) (maxPrice - minPrice) else 1.0
 
         val n = series.points.size
         fun getX(i: Int): Float = (i.toFloat() / (n - 1).coerceAtLeast(1).toFloat()) * w
-        fun getY(price: Double): Float = padTop + ((maxPrice - price) / span).toFloat() * usableH
+        fun getY(price: Double): Float = if (!hasVariation) {
+            padTop + usableH / 2f
+        } else {
+            padTop + ((maxPrice - price) / span).toFloat() * usableH
+        }
 
         // Draw baseline dashed guides
         val dashEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
@@ -935,29 +952,36 @@ private fun MarketAssetRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             // Left (in RTL, Right): Title & details
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    item.faName,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Spacer(Modifier.height(2.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Space.m),
+            ) {
+                SleekAssetBadge(assetId = item.id, size = 36.dp)
+                Column {
                     Text(
-                        item.enTicker,
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        item.faName,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
-                    if (item.secondaryInfoFa.isNotBlank()) {
-                        Spacer(Modifier.width(Space.s))
+                    Spacer(Modifier.height(2.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            "• ${item.secondaryInfoFa}",
+                            item.enTicker,
                             fontSize = 11.sp,
-                            fontWeight = if (item.bubblePercent != null && item.bubblePercent > 15.0) FontWeight.Bold else FontWeight.Normal,
-                            color = if (item.bubblePercent != null && item.bubblePercent > 15.0) Color(0xFFD93025) else Hero.muted,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        if (item.secondaryInfoFa.isNotBlank()) {
+                            Spacer(Modifier.width(Space.s))
+                            Text(
+                                "• ${item.secondaryInfoFa}",
+                                fontSize = 11.sp,
+                                fontWeight = if (item.bubblePercent != null && item.bubblePercent > 15.0) FontWeight.Bold else FontWeight.Normal,
+                                color = if (item.bubblePercent != null && item.bubblePercent > 15.0) Color(0xFFD93025) else Hero.muted,
+                            )
+                        }
                     }
                 }
             }

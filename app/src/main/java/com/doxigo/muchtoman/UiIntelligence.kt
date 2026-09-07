@@ -815,12 +815,15 @@ internal fun WealthDefenseAdvisorCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("🛡️", fontSize = 18.sp, modifier = Modifier.padding(end = Space.xs))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Space.xs),
+            ) {
+                Text("🛡️", fontSize = 16.sp)
                 Text(
                     "دستیار ضد تورم و خرید بهینه",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
+                    fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
             }
@@ -829,10 +832,10 @@ internal fun WealthDefenseAdvisorCard(
                 modifier = Modifier
                     .clip(RoundedCornerShape(Radius.pill))
                     .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
-                    .padding(horizontal = Space.s, vertical = 2.dp),
+                    .padding(horizontal = Space.s, vertical = 3.dp),
             ) {
                 Text(
-                    "بودجه: ${faNumber(advice.userBudgetToman.toDouble())} ت",
+                    "بودجه: ${faCompact(advice.userBudgetToman.toDouble())} ت",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.primary,
@@ -843,23 +846,26 @@ internal fun WealthDefenseAdvisorCard(
         Spacer(Modifier.height(Space.s))
 
         // Primary Recommendation Headline
-        Text(
-            advice.headlineFa,
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 15.sp,
-            color = MaterialTheme.colorScheme.primary,
-            lineHeight = 22.sp,
-        )
-
-        Spacer(Modifier.height(4.dp))
+        if (advice.headlineFa.isNotBlank()) {
+            Text(
+                advice.headlineFa,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 14.sp,
+                color = MaterialTheme.colorScheme.primary,
+                lineHeight = 20.sp,
+            )
+            Spacer(Modifier.height(4.dp))
+        }
 
         // Summary Explanation
-        Text(
-            advice.summaryFa,
-            fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            lineHeight = 18.sp,
-        )
+        if (advice.summaryFa.isNotBlank()) {
+            Text(
+                advice.summaryFa,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 18.sp,
+            )
+        }
 
         Spacer(Modifier.height(Space.m))
 
