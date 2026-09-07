@@ -400,6 +400,7 @@ val snackbarHostState = remember { SnackbarHostState() }
                 onDeletePermanently = { e -> vm.deletePermanently(listOf(e)) },
                 onLoadSource = vm::sourceOf,
                 onToggleTransfer = { e -> vm.toggleTransfer(e) },
+                gold18RateToman = state.effective["gold18"],
                 onBack = { transactionRef = null },
             )
             return

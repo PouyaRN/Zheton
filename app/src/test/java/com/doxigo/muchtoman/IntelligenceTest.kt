@@ -229,6 +229,31 @@ class IntelligenceTest {
     }
 
     @Test
+    fun `calculateGoldSpendBenchmark converts expense to grams of 18k gold`() {
+        val goldRateToman = 4_500_000.0 // 4.5M Toman per gram
+        val expenseToman = 9_000_000L // Exactly 2 grams
+
+        val benchmark = calculateGoldSpendBenchmark(expenseToman, goldRateToman)
+        assertEquals(2.0, benchmark.grams18k, 0.001)
+        assertEquals(goldRateToman, benchmark.goldRateToman, 0.001)
+        assertTrue(benchmark.formattedGramsFa.contains("گرم طلا ۱۸ عیار"))
+
+        // Fractional grams test
+        val smallExpenseToman = 450_000L // 0.1 grams
+        val fractionalBenchmark = calculateGoldSpendBenchmark(smallExpenseToman, goldRateToman)
+        assertEquals(0.1, fractionalBenchmark.grams18k, 0.001)
+
+        // Zero expense test
+        val zeroBenchmark = calculateGoldSpendBenchmark(0L, goldRateToman)
+        assertEquals(0.0, zeroBenchmark.grams18k, 0.001)
+
+        // Fallback rate when null or non-positive
+        val fallbackBenchmark = calculateGoldSpendBenchmark(9_000_000L, null)
+        assertTrue(fallbackBenchmark.goldRateToman > 0.0)
+        assertTrue(fallbackBenchmark.grams18k > 0.0)
+    }
+
+    @Test
     fun `WishlistItem tracks cooling period remaining hours`() {
         val now = 1720000000000L
         val itemRecent = WishlistItem(

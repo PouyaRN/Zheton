@@ -1451,6 +1451,7 @@ fun TransactionScreen(
     onDeletePermanently: (LedgerEntry) -> Unit = {},
     onLoadSource: suspend (LedgerEntry) -> String,
     onToggleTransfer: (LedgerEntry) -> Unit = {},
+    gold18RateToman: Double? = null,
     onBack: () -> Unit,
 ) {
     val txn = entry.txn
@@ -1501,6 +1502,10 @@ fun TransactionScreen(
             val energy = calculateLifeEnergy(amountToman)
             if (energy.hours > 0 || energy.minutes > 0) {
                 add("ارزش زمان کاری" to "معادل ${energy.formattedFa} کار")
+            }
+            val goldBenchmark = calculateGoldSpendBenchmark(amountToman, gold18RateToman)
+            if (goldBenchmark.grams18k > 0.0) {
+                add("معادل طلای ۱۸ عیار" to "معادل ${goldBenchmark.formattedGramsFa}")
             }
         }
     }

@@ -433,6 +433,49 @@ fun calculateLifeEnergy(
     return LifeEnergyDuration(hours, minutes, text)
 }
 
+/**
+ * Result of benchmarking a Toman expenditure against physical 18K gold.
+ * Enables users to evaluate purchasing decisions in a hard-currency anchor that ignores nominal Rial inflation.
+ */
+data class GoldSpendBenchmark(
+    val grams18k: Double,
+    val formattedGramsFa: String,
+    val goldRateToman: Double,
+)
+
+/**
+ * Converts a Toman expense into its physical equivalent in grams of 18-karat gold (طلا ۱۸ عیار).
+ * If no gold rate is provided or rate <= 0, falls back to the canonical baseline rate (~4.5M Toman/g).
+ */
+fun calculateGoldSpendBenchmark(
+    expenseToman: Long,
+    gold18RateToman: Double?,
+): GoldSpendBenchmark {
+    val rate = if (gold18RateToman != null && gold18RateToman > 0.0) {
+        gold18RateToman
+    } else {
+        4_500_000.0 // Default fallback 18k gold spot price
+    }
+
+    if (expenseToman <= 0L) {
+        return GoldSpendBenchmark(0.0, "۰ گرم طلا", rate)
+    }
+
+    val grams = expenseToman.toDouble() / rate
+    val formatted = if (grams >= 1.0) {
+        "${faDecimal(grams, 2)} گرم طلا ۱۸ عیار"
+    } else {
+        // Less than 1 gram: show 3 decimals or milligrams if very small
+        "${faDecimal(grams, 3)} گرم طلا ۱۸ عیار"
+    }
+
+    return GoldSpendBenchmark(
+        grams18k = grams,
+        formattedGramsFa = formatted,
+        goldRateToman = rate,
+    )
+}
+
 enum class WishlistState {
     COOLING,    // Within 48-hour delay
     RECONSIDERED, // User chose not to purchase (money saved!)
