@@ -5,4 +5,7 @@
     <string name="widget_chart_description">نمودار یک ماه گذشته</string>
     <!-- Shown under the widget's name in the picker (API 31+). -->
     <string name="widget_description">جمع دارایی‌ها روی صفحهٔ اصلی، با تغییر امروز و نمودار ماه گذشته.</string>
+    <string name="widget_glance_label">چند تومان (داشبورد هوشمند)</string>
+    <string name="widget_glance_description">نمایش زنده دارایی، خرج امروز، نرخ طلا و تتر، سررسید اقساط و ثبت سریع ۱-کلیک.</string>
+    <string name="tile_quick_add_label">ثبت سریع خرج</string>
 </resources>

@@ -76,6 +76,24 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".QuickAddActivity"
+            android:exported="true"
+            android:theme="@style/Theme.MuchToman.Translucent">
+            <intent-filter>
+                <action android:name="com.doxigo.muchtoman.action.QUICK_ADD" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="muchtoman"
+                    android:host="quick_add" />
+            </intent-filter>
+        </activity>
+
         <receiver
             android:name=".TotalWidget"
             android:exported="false">
@@ -86,6 +104,28 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_total_info" />
         </receiver>
+
+        <receiver
+            android:name=".ChandTomanGlanceWidgetReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_glance_info" />
+        </receiver>
+
+        <service
+            android:name=".QuickAddTileService"
+            android:label="@string/tile_quick_add_label"
+            android:icon="@drawable/ic_toman"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
 
         <provider
             android:name="androidx.core.content.FileProvider"

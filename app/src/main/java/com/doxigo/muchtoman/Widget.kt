@@ -20,6 +20,7 @@ import android.widget.RemoteViews
 import androidx.annotation.FontRes
 import androidx.annotation.LayoutRes
 import androidx.core.content.res.ResourcesCompat
+import androidx.glance.appwidget.updateAll
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -317,7 +318,12 @@ private fun readModel(context: Context, now: Long): WidgetModel {
  */
 fun updateTotalWidget(context: Context) {
     val app = context.applicationContext
-    WIDGET_SCOPE.launch { drawTotalWidget(app) }
+    WIDGET_SCOPE.launch {
+        drawTotalWidget(app)
+        runCatching {
+            ChandTomanGlanceWidget().updateAll(app)
+        }
+    }
 }
 
 /**
@@ -326,6 +332,9 @@ fun updateTotalWidget(context: Context) {
  */
 suspend fun updateTotalWidgetAndWait(context: Context) = withContext(WIDGET_DISPATCHER) {
     drawTotalWidget(context.applicationContext)
+    runCatching {
+        ChandTomanGlanceWidget().updateAll(context.applicationContext)
+    }
 }
 
 /**
