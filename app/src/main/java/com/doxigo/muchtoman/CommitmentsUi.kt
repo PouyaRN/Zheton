@@ -43,6 +43,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -226,6 +227,10 @@ fun CommitmentsHubSheet(
         Column(
             Modifier
                 .fillMaxWidth()
+                // Same guard as the other sheets: without it the hub's list handed its
+                // leftover fling to the sheet spring and the whole sheet jumped at the end
+                // of every scroll.
+                .nestedScroll(SheetFlingGuard)
                 .padding(horizontal = Space.l)
                 .padding(bottom = Space.xl)
         ) {

@@ -84,6 +84,8 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             commitments = store.commitments,
             rateHistoryStore = store.rateHistoryStore,
             hourlyWageToman = store.hourlyWageToman,
+            cycleMode = store.cycleMode,
+            cycleAnchorDay = store.cycleAnchorDay,
         )
     )
     val state: StateFlow<UiState> = _state.asStateFlow()
@@ -408,6 +410,19 @@ class AppVm(app: Application) : AndroidViewModel(app) {
     fun setHourlyWageToman(wage: Long) {
         store.hourlyWageToman = wage
         _state.update { it.copy(hourlyWageToman = wage) }
+    }
+
+    /** The window one financial month spans: calendar month or a payday-anchored cycle. */
+    fun setCycleMode(mode: CycleMode) {
+        store.cycleMode = mode
+        _state.update { it.copy(cycleMode = mode) }
+    }
+
+    /** The Jalali day each payday-anchored cycle starts on (1..31, capped at month length). */
+    fun setCycleAnchorDay(day: Int) {
+        val clamped = day.coerceIn(1, 31)
+        store.cycleAnchorDay = clamped
+        _state.update { it.copy(cycleAnchorDay = clamped) }
     }
 
     /**
@@ -2085,6 +2100,8 @@ data class UiState(
     val commitments: List<Commitment> = emptyList(),
     val rateHistoryStore: MarketRateHistoryStore = MarketRateHistoryStore(),
     val hourlyWageToman: Long = 0L,
+    val cycleMode: CycleMode = CycleMode.JALALI_MONTH,
+    val cycleAnchorDay: Int = 1,
 ) {
     val coins: List<Coin> get() = rates.coins
 
@@ -2095,7 +2112,7 @@ data class UiState(
      * behind the runway are not free, and the summary reads them several times over.
      */
     val story: HomeStory by lazy {
-        buildStory(ledger.entries, Math.round(bankToman * 10.0), tehranDay(System.currentTimeMillis()))
+        buildStory(ledger.entries, Math.round(bankToman * 10.0), tehranDay(System.currentTimeMillis()), CycleSpec(cycleMode, cycleAnchorDay))
     }
     val stocks: List<Stock> get() = tse.stocks
 
@@ -2150,6 +2167,17 @@ data class UiState(
 
     /** Reads both of the above, so as a get() it paid for both of them again every time. */
     val totals: Totals by lazy { computeTotals(listHoldings, effective) }
+
+    /**
+     * The money she should not think of as spendable: gold, coins, currency and every other
+     * priced holding outside the bank accounts. The gap between the two hero figures —
+     * کل دارایی and نقدینگی آزاد — is this, and naming it keeps long-term savings from
+     * reading as wallet money.
+     */
+    val illiquidToman: Double by lazy {
+        val liquid = bankTotal(bankAccounts, disabledBanks)
+        (totals.toman - liquid).coerceAtLeast(0.0)
+    }
 }
 
 /**

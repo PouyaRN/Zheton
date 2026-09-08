@@ -77,6 +77,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.DateRange
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
@@ -361,6 +362,10 @@ val snackbarHostState = remember { SnackbarHostState() }
             onWidgetLockChange = vm::setWidgetLock,
             hourlyWageToman = state.hourlyWageToman,
             onHourlyWageChange = vm::setHourlyWageToman,
+            cycleMode = state.cycleMode,
+            cycleAnchorDay = state.cycleAnchorDay,
+            onCycleModeChange = vm::setCycleMode,
+            onCycleAnchorChange = vm::setCycleAnchorDay,
             onForceRescanSms = { days -> vm.forceRescanSms(days) },
             onCategoriesManage = { settings = false; categoriesManaged = true },
             onBack = { settings = false },
@@ -695,6 +700,7 @@ val snackbarHostState = remember { SnackbarHostState() }
                 tab = Tab.LEDGER
             },
             bottomInset = pad.calculateBottomPadding(),
+            cycle = CycleSpec(state.cycleMode, state.cycleAnchorDay),
         )
         return@Scaffold
       }
@@ -770,7 +776,7 @@ val snackbarHostState = remember { SnackbarHostState() }
                     Box(modifier = Modifier.padding(edge).padding(top = Space.l)) {
                         BankCardDeck(
                             accounts = state.bankAccounts,
-                            cardHolderName = state.name.ifBlank { "کاربر مهربان" },
+                            cardHolderName = state.name,
                             onCardClick = { banks = true },
                             privacyMode = privacyMode,
                         )
@@ -875,6 +881,31 @@ val snackbarHostState = remember { SnackbarHostState() }
                 if (state.totals.missing.isNotEmpty()) {
                     item(key = "missing") {
                         MissingNote(state.totals.missing, state.coins, state.stocks)
+                    }
+                }
+
+                // The two doors feedback said were buried: registering what she owns, and the
+                // installments hub. Chips, not cards — they are entrances, not content, and
+                // they sit after the story so the glance stays first.
+                item(key = "quick_actions") {
+                    Row(
+                        Modifier
+                            .padding(edge)
+                            .padding(top = Space.m),
+                        horizontalArrangement = Arrangement.spacedBy(Space.m),
+                    ) {
+                        HomeQuickAction(
+                            label = "ثبت دارایی",
+                            icon = Icons.Rounded.Add,
+                            onClick = { adding = true; vm.refreshStocksForPicker() },
+                            modifier = Modifier.weight(1f),
+                        )
+                        HomeQuickAction(
+                            label = "مدیریت اقساط",
+                            icon = Icons.Rounded.DateRange,
+                            onClick = { showCommitmentsHubSheet = true },
+                            modifier = Modifier.weight(1f),
+                        )
                     }
                 }
             } else if (state.listHoldings.isEmpty()) {
@@ -1286,6 +1317,21 @@ internal fun HeroField(
                 color = Hero.muted,
                 modifier = Modifier.padding(top = Space.xs).privacyBlur(privacyMode),
             )
+
+            // The two perspectives are only honest when the gap between them is named: the
+            // difference is gold and long-term holdings, not money she can tap for lunch.
+            // Shown on both sides of the toggle, because either side can mislead alone.
+            val illiquidToman = state.illiquidToman
+            if (illiquidToman > 0.0 && !portfolio) {
+                Spacer(Modifier.height(Space.xs))
+                Text(
+                    if (showLiquidPerspective) "طلا و پس‌انداز بلندمدتت جدا حساب می‌شه"
+                    else "${faCompact(illiquidToman)} از این رقم طلا و دارایی بلندمدته، نه پول نقد",
+                    fontSize = 12.sp,
+                    color = Hero.muted,
+                    modifier = Modifier.privacyBlur(privacyMode),
+                )
+            }
 
             // Currency Lens Selector Pill Strip (Ticket 01)
             Row(
@@ -1725,6 +1771,46 @@ private fun HeroAction(
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
             color = Hero.muted,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/**
+ * One wide chip under the home story: an entrance to a feature, not content of its own.
+ * Quieter than [HeroAction] on purpose — these exist so ثبت دارایی and the installments hub
+ * stop being buried, not to start competing with the numbers above them.
+ */
+@Composable
+private fun HomeQuickAction(
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier
+            .clip(RoundedCornerShape(Radius.pill))
+            .background(Hero.well)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = Space.m, vertical = Space.s)
+            .semantics { contentDescription = label },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = Hero.gold,
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(Modifier.width(Space.s))
+        Text(
+            label,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = Hero.strong,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
@@ -2549,7 +2635,7 @@ private fun BankSheet(
                     item(key = "sheet_3d_cards") {
                         BankCardDeck(
                             accounts = accounts,
-                            cardHolderName = userName.ifBlank { "کاربر مهربان" },
+                            cardHolderName = userName,
                             modifier = Modifier.padding(bottom = Space.m),
                             onCardClick = {},
                             privacyMode = false,
@@ -4252,7 +4338,87 @@ private fun EditSheet(
             if (source == AmountSource.MANUAL) {
                 SheetLabel("چقدر ${bidi(type.unitFa)} داری؟")
                 val amountInvalid = manualAmount == null && (text.isNotBlank() || manualSubmitted)
-                OutlinedTextField(
+                val goldGramEntry = type.id == "gold18"
+                if (goldGramEntry) {
+                    // The bazaar weighs طلا in حبه and odd grams, not clean decimals. Two
+                    // small fields compose the total; typing into the big one still wins,
+                    // because it is re-derived from the small ones the moment either moves.
+                    var kernelText by remember(key) { mutableStateOf("") }
+                    var gramText by remember(key) { mutableStateOf("") }
+                    fun composeFromParts() {
+                        GoldInput.totalGrams(gramText, kernelText)?.let { total ->
+                            text = trimNumber(total, type.dec)
+                            manualSubmitted = false
+                        }
+                    }
+                    fun partsFromTotal() {
+                        val total = parseAmount(text) ?: return
+                        val (kernels, grams) = GoldInput.split(total)
+                        kernelText = if (kernels > 0) kernels.toString() else ""
+                        gramText = if (grams > 0.0) trimNumber(grams, 3) else ""
+                    }
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(Space.m),
+                    ) {
+                        OutlinedTextField(
+                            value = kernelText,
+                            onValueChange = { input ->
+                                kernelText = toAsciiDigits(input).filter { it.isDigit() }.take(3)
+                                composeFromParts()
+                            },
+                            singleLine = true,
+                            label = { Text("حبه", fontSize = 13.sp) },
+                            placeholder = { Text("مثلاً ۳") },
+                            textStyle = TextStyle(
+                                fontFamily = ModamFigures,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                            ),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            shape = RoundedCornerShape(Radius.field),
+                            modifier = Modifier
+                                .weight(1f)
+                                .semantics { contentDescription = "تعداد حبه" },
+                        )
+                        OutlinedTextField(
+                            value = gramText,
+                            onValueChange = { input ->
+                                gramText = input
+                                composeFromParts()
+                            },
+                            singleLine = true,
+                            label = { Text("گرم اضافه", fontSize = 13.sp) },
+                            placeholder = { Text("مثلاً ۰٫۰۴") },
+                            textStyle = TextStyle(
+                                fontFamily = ModamFigures,
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.Bold,
+                            ),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            shape = RoundedCornerShape(Radius.field),
+                            modifier = Modifier
+                                .weight(1f)
+                                .semantics { contentDescription = "گرم اضافه" },
+                        )
+                    }
+                    // The composed total, readable back in the words she used — and the
+                    // bridge in the other direction: edit the total by hand and the parts
+                    // re-split to match, so the two entries never disagree.
+                    val totalNow = parseAmount(text)
+                    if (totalNow != null && totalNow > 0.0) {
+                        Text(
+                            "${faHeld(totalNow, type.dec)} گرم (${GoldInput.splitFa(totalNow)})",
+                            fontSize = 13.sp,
+                            color = muted,
+                            modifier = Modifier.padding(top = Space.xs, start = Space.xs),
+                        )
+                    }
+                    TextButton(onClick = { partsFromTotal() }) {
+                        Text("بازخوانی از مقدار کل", fontSize = 13.sp)
+                    }
+                } else {
+                    OutlinedTextField(
                 value = text,
                 onValueChange = { text = it; manualSubmitted = false },
                 singleLine = true,
@@ -4280,6 +4446,7 @@ private fun EditSheet(
                     // The visible prompt above is not programmatically attached; this is.
                     .semantics { contentDescription = "چقدر ${type.unitFa} داری؟" },
                 )
+                }
 
             // The figure she just typed, in words — the guard against an extra zero.
             if (manualAmount != null && manualAmount % 1.0 == 0.0 && manualAmount >= 1000) {

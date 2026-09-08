@@ -205,6 +205,10 @@ fun SettingsScreen(
     onWidgetLockChange: (Boolean) -> Unit,
     hourlyWageToman: Long = 0L,
     onHourlyWageChange: (Long) -> Unit = {},
+    cycleMode: CycleMode = CycleMode.JALALI_MONTH,
+    cycleAnchorDay: Int = 1,
+    onCycleModeChange: (CycleMode) -> Unit = {},
+    onCycleAnchorChange: (Int) -> Unit = {},
     onForceRescanSms: (Int) -> Unit = {},
     onCategoriesManage: () -> Unit,
     onBack: () -> Unit,
@@ -527,6 +531,21 @@ fun SettingsScreen(
                 }
             }
 
+            SectionLabel("چرخهٔ مالی ماه")
+            Text(
+                "اگر حقوقت آخر ماه می‌رسه، ماه تقویمی از روز بعد از حقوق شروع می‌شه و همه‌جا کسری نشون می‌ده. روز واریز حقوق رو انتخاب کن تا درآمد و خرج از همون روز حساب بشه.",
+                fontSize = 13.sp,
+                lineHeight = 20.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = Space.s, start = Space.xs, end = Space.xs),
+            )
+            CyclePicker(
+                mode = cycleMode,
+                anchorDay = cycleAnchorDay,
+                onModeChange = onCycleModeChange,
+                onAnchorChange = onCycleAnchorChange,
+            )
+
             // The answer to "which version do you have?" over the phone, without her having
             // to find the system app-info page. A fixed gap, not weight(1f): inside a scrolling
             // column a weighted spacer has nothing to push against.
@@ -671,6 +690,59 @@ fun SettingCard(
                     .align(Alignment.BottomStart)
                     .padding(start = Space.l + 44.dp + Space.m),
             )
+        }
+    }
+}
+
+/**
+ * Choosing the shape of the financial month: the plain calendar month, or a cycle that starts on
+ * payday. Anchors read as Persian ordinals so the ۲۹ام is a payday, not a spreadsheet cell; 31
+ * quietly means «آخر ماه» because in the short months that is exactly what it lands on.
+ */
+@Composable
+private fun CyclePicker(
+    mode: CycleMode,
+    anchorDay: Int,
+    onModeChange: (CycleMode) -> Unit,
+    onAnchorChange: (Int) -> Unit,
+) {
+    val anchors = remember { listOf(28, 29, 30, 31) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+        SegmentedChoice(
+            options = listOf(CycleMode.JALALI_MONTH, CycleMode.ANCHOR),
+            selected = mode,
+            label = {
+                if (it == CycleMode.JALALI_MONTH) "ماه تقویمی"
+                else "چرخهٔ حقوق"
+            },
+            onSelect = onModeChange,
+            fontSize = 13.sp,
+        )
+        androidx.compose.animation.AnimatedVisibility(
+            visible = mode == CycleMode.ANCHOR,
+            enter = androidx.compose.animation.expandVertically() + androidx.compose.animation.fadeIn(),
+            exit = androidx.compose.animation.shrinkVertically() + androidx.compose.animation.fadeOut(),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+                SegmentedChoice(
+                    options = anchors,
+                    selected = anchorDay.takeIf { it in anchors } ?: 29,
+                    label = { day ->
+                        if (day == 31) "آخر ماه" else "${faNumber(day.toLong())}ام"
+                    },
+                    onSelect = onAnchorChange,
+                    fontSize = 13.sp,
+                )
+                val now = tehranDay(System.currentTimeMillis())
+                val start = jalaliOf(cycleWindow(now, CycleSpec(CycleMode.ANCHOR, anchorDay)).startDay)
+                Text(
+                    "چرخهٔ فعلی از ${faNumber(start.year.toLong())}/${faNumber(start.month.toLong())}/${faNumber(start.day.toLong())} شروع می‌شه.",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = Space.xs),
+                )
+            }
         }
     }
 }

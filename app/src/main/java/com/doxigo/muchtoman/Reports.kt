@@ -247,7 +247,26 @@ data class HomeStory(
     val attention: Insight? get() = insights.firstOrNull { it.tone == Insight.Tone.ATTENTION }
 }
 
-fun buildStory(entries: List<LedgerEntry>, liquidRial: Long, today: Long): HomeStory {
+fun buildStory(entries: List<LedgerEntry>, liquidRial: Long, today: Long): HomeStory =
+    buildStory(entries, liquidRial, today, CycleSpec())
+
+/** [buildStory] over the user's own cycle: a salary on the 29th owns the month it pays for. */
+fun buildStory(entries: List<LedgerEntry>, liquidRial: Long, today: Long, spec: CycleSpec): HomeStory {
+    if (spec.mode == CycleMode.JALALI_MONTH) return calendarStory(entries, liquidRial, today)
+    val window = cycleWindow(today, spec)
+    val month = cycleMonthReport(entries, window)
+    val previous = cycleMonthReport(entries, cycleWindow(window.startDay - 1, spec))
+    val buffer = bufferDays(entries, liquidRial, today)
+    return HomeStory(
+        month = month,
+        previous = previous,
+        insights = narrate(month, previous.takeIf { it.transactions > 0 }, entries, buffer),
+        wins = quietWins(month, previous.takeIf { it.transactions > 0 }, buffer),
+        bufferDays = buffer,
+    )
+}
+
+private fun calendarStory(entries: List<LedgerEntry>, liquidRial: Long, today: Long): HomeStory {
     val here = jalaliOf(today)
     val month = monthReport(entries, here.year, here.month)
     val (py, pm) = previousMonth(here.year, here.month)
@@ -259,6 +278,31 @@ fun buildStory(entries: List<LedgerEntry>, liquidRial: Long, today: Long): HomeS
         insights = narrate(month, previous.takeIf { it.transactions > 0 }, entries, buffer),
         wins = quietWins(month, previous.takeIf { it.transactions > 0 }, buffer),
         bufferDays = buffer,
+    )
+}
+
+/** A [MonthReport] over an arbitrary half-open day window, dated by the day it is asked for. */
+private fun cycleMonthReport(entries: List<LedgerEntry>, window: CycleWindow): MonthReport {
+    val inWindow = spendable(entries).filter { it.txn.day >= window.startDay && it.txn.day < window.endDay }
+    var income = 0L
+    var spent = 0L
+    val byCategory = mutableMapOf<String, Long>()
+    for (entry in inWindow) {
+        val signed = entry.txn.signedRial ?: continue
+        if (signed > 0) income += signed
+        else {
+            spent += -signed
+            byCategory[entry.categoryFa] = (byCategory[entry.categoryFa] ?: 0L) + -signed
+        }
+    }
+    return MonthReport(
+        year = jalaliOf(window.startDay).year,
+        month = jalaliOf(window.startDay).month,
+        incomeRial = income,
+        spentRial = spent,
+        byCategory = byCategory.toList().sortedByDescending { it.second },
+        transactions = inWindow.size,
+        handledAutomatically = inWindow.count { !it.needsReview },
     )
 }
 

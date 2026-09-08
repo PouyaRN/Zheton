@@ -652,6 +652,16 @@ class Store(context: Context) {
         get() = prefs.getLong("hourlyWageToman", 0L)
         set(v) { prefs.edit().putLong("hourlyWageToman", v).apply() }
 
+    /** Which window one financial month spans; see [CycleMode]. */
+    var cycleMode: CycleMode
+        get() = if (prefs.getBoolean("cycleAnchored", false)) CycleMode.ANCHOR else CycleMode.JALALI_MONTH
+        set(v) = prefs.edit().putBoolean("cycleAnchored", v == CycleMode.ANCHOR).apply()
+
+    /** Payday anchor: the Jalali day each cycle starts on. Used when [cycleMode] is [CycleMode.ANCHOR]. */
+    var cycleAnchorDay: Int
+        get() = prefs.getInt("cycleAnchorDay", 1).coerceIn(1, 31)
+        set(v) = prefs.edit().putInt("cycleAnchorDay", v.coerceIn(1, 31)).apply()
+
     private inline fun <reified T> read(key: String, fallback: T): T =
         prefs.getString(key, null)?.let {
             runCatching { JSON.decodeFromString<T>(it) }.getOrNull()

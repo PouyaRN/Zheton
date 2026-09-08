@@ -443,7 +443,13 @@ fun BankCard3D(
                     verticalAlignment = Alignment.Bottom,
                 ) {
                     val hasCustomNick = !bankAccount?.nickname.isNullOrBlank()
-                    val cardLabel = if (hasCustomNick) bankAccount?.nickname ?: "" else cardHolderName
+                    // No invented names: when she has not set one, a dash keeps the layout
+                    // honest instead of a placeholder pretending to be her.
+                    val cardLabel = when {
+                        hasCustomNick -> bankAccount?.nickname ?: ""
+                        cardHolderName.isNotBlank() -> cardHolderName
+                        else -> "—"
+                    }
                     Column {
                         Text(
                             text = if (hasCustomNick) "نام کارت" else "صاحب کارت",
@@ -880,7 +886,7 @@ fun CardQrDialog(
 fun BankCardDeck(
     accounts: List<BankAccount>,
     modifier: Modifier = Modifier,
-    cardHolderName: String = "کاربر مهربان",
+    cardHolderName: String = "",
     onCardClick: (BankAccount) -> Unit = {},
     privacyMode: Boolean = false,
 ) {

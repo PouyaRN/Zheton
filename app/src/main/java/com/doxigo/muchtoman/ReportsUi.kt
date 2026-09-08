@@ -81,6 +81,8 @@ fun ReportsTab(
     onSelectCategory: (String?) -> Unit = {},
     bottomInset: androidx.compose.ui.unit.Dp = 0.dp,
     privacyMode: Boolean = false,
+    /** The user's chosen financial-month window; the month view follows it. */
+    cycle: CycleSpec = CycleSpec(),
 ) {
     val today = remember { mutableLongStateOf(tehranDay(System.currentTimeMillis())) }
     // Recompute at midnight so "این ماه" stays live.
@@ -95,9 +97,9 @@ fun ReportsTab(
     var window by remember { mutableStateOf(ReportWindow.MONTH) }
 
     // Compute the window start date
-    val windowStart = remember(today.longValue, window) {
+    val windowStart = remember(today.longValue, window, cycle) {
         when (window) {
-            ReportWindow.MONTH -> jalaliMonthStart(today.longValue)
+            ReportWindow.MONTH -> cycleWindow(today.longValue, cycle).startDay
             ReportWindow.THREE_MONTH -> jalaliMonthsBack(today.longValue, 3)
             ReportWindow.SIX_MONTH -> jalaliMonthsBack(today.longValue, 6)
             ReportWindow.YEAR -> jalaliMonthsBack(today.longValue, 12)
@@ -105,12 +107,9 @@ fun ReportsTab(
         }
     }
 
-    val windowDays = remember(window, today.longValue, windowStart) {
+    val windowDays = remember(window, today.longValue, windowStart, cycle) {
         when (window) {
-            ReportWindow.MONTH -> {
-                val jal = jalaliOf(today.longValue)
-                jal.day.coerceAtLeast(1)
-            }
+            ReportWindow.MONTH -> (cycleWindow(today.longValue, cycle).endDay - windowStart).toInt().coerceAtLeast(1)
             ReportWindow.THREE_MONTH -> 90
             ReportWindow.SIX_MONTH -> 180
             ReportWindow.YEAR -> 365

@@ -13,6 +13,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Canvas
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -2263,6 +2264,10 @@ fun ManualTxnSheet(
         Column(
             Modifier
                 .fillMaxWidth()
+                // The sheet's own settle spring was eating the list's leftover fling and
+                // bouncing: every scroll to the end jittered. The guard swallows upward
+                // leftovers exactly as it does on the other sheets.
+                .nestedScroll(SheetFlingGuard)
                 .padding(horizontal = Space.l)
                 .padding(bottom = Space.xl)
                 .verticalScroll(rememberScrollState())
