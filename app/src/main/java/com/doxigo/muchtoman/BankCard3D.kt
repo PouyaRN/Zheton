@@ -7,6 +7,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -73,6 +74,80 @@ data class BankCardPalette(
 )
 
 object BankCardThemes {
+    /** Preset themes the card editor offers as one-tap swatches, beyond each bank's own. */
+    val PRESETS: List<Pair<String, BankCardPalette>> = listOf(
+        "emerald" to BankCardPalette(
+            backgroundGradient = listOf(Color(0xFF064E3B), Color(0xFF059669), Color(0xFF065F46)),
+            accentColor = Color(0xFF6EE7B7),
+            textColor = Color(0xFFFFFFFF),
+            secondaryTextColor = Color(0xFFA7F3D0),
+        ),
+        "sunset" to BankCardPalette(
+            backgroundGradient = listOf(Color(0xFF7C2D12), Color(0xFFEA580C), Color(0xFF9A3412)),
+            accentColor = Color(0xFFFDBA74),
+            textColor = Color(0xFFFFFFFF),
+            secondaryTextColor = Color(0xFFFFEDD5),
+        ),
+        "royal" to BankCardPalette(
+            backgroundGradient = listOf(Color(0xFF1E1B4B), Color(0xFF4338CA), Color(0xFF312E81)),
+            accentColor = Color(0xFFA5B4FC),
+            textColor = Color(0xFFFFFFFF),
+            secondaryTextColor = Color(0xFFE0E7FF),
+        ),
+        "rose" to BankCardPalette(
+            backgroundGradient = listOf(Color(0xFF4C0519), Color(0xFFBE185D), Color(0xFF831843)),
+            accentColor = Color(0xFFF9A8D4),
+            textColor = Color(0xFFFFFFFF),
+            secondaryTextColor = Color(0xFFFCE7F3),
+        ),
+        "graphite" to BankCardPalette(
+            backgroundGradient = listOf(Color(0xFF111827), Color(0xFF374151), Color(0xFF1F2937)),
+            accentColor = Color(0xFF9CA3AF),
+            textColor = Color(0xFFFFFFFF),
+            secondaryTextColor = Color(0xFFE5E7EB),
+        ),
+        "ocean" to BankCardPalette(
+            backgroundGradient = listOf(Color(0xFF0C4A6E), Color(0xFF0284C7), Color(0xFF075985)),
+            accentColor = Color(0xFF7DD3FC),
+            textColor = Color(0xFFFFFFFF),
+            secondaryTextColor = Color(0xFFE0F2FE),
+        ),
+    )
+
+    /**
+     * Parses the stored [theme] of a [com.doxigo.muchtoman.BankAccount]: a preset id, or
+     * «c:0xAARRGGBB,0xAARRGGBB» (or «#RRGGBB,#RRGGBB») for her own two-stop gradient
+     * (accent/text derived from the stops so contrast is never left to chance).
+     * Null = no custom theme, use the bank's.
+     */
+    fun custom(theme: String): BankCardPalette? {
+        val t = theme.trim()
+        if (t.isEmpty()) return null
+        PRESETS.firstOrNull { it.first.equals(t, ignoreCase = true) }?.let { return it.second }
+        val raw = if (t.startsWith("c:")) t.removePrefix("c:") else t
+        val stops = raw.split(',').mapNotNull { parseHexColor(it) }
+        if (stops.size != 2) return null
+        val (dark, light) = stops
+        val luminance = 0.299 * dark.red + 0.587 * dark.green + 0.114 * dark.blue
+        val ink = if (luminance > 0.5f) Color(0xFF101418) else Color(0xFFFFFFFF)
+        return BankCardPalette(
+            backgroundGradient = listOf(dark.copy(0.96f), light, dark),
+            accentColor = light,
+            textColor = ink,
+            secondaryTextColor = ink.copy(alpha = 0.72f),
+        )
+    }
+
+    private fun parseHexColor(hex: String): Color? = runCatching {
+        val clean = hex.trim().removePrefix("#")
+        val argb = when (clean.length) {
+            6 -> 0xFF000000 or clean.toLong(16)
+            8 -> clean.toLong(16)
+            else -> return null
+        }
+        Color(argb)
+    }.getOrNull()
+
     val MELLI = BankCardPalette(
         backgroundGradient = listOf(Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)),
         accentColor = Color(0xFF4FC3F7),
@@ -158,9 +233,10 @@ object BankCardThemes {
     )
 
     /**
-     * Resolves bank theme from bank name or leading BIN digits (first 6 digits of card PAN).
+     * Resolves bank theme from bank name, leading BIN digits, or an explicit theme override.
      */
-    fun resolve(bankName: String, pan: String = ""): BankCardPalette {
+    fun resolve(bankName: String, pan: String = "", theme: String = ""): BankCardPalette {
+        custom(theme)?.let { return it }
         val cleanPan = toAsciiDigits(pan).filter { it.isDigit() }
         val bin = if (cleanPan.length >= 6) cleanPan.substring(0, 6) else ""
 
@@ -185,17 +261,22 @@ object BankCardThemes {
  * An interactive 3D physical Iranian bank card with real-time perspective tilt physics,
  * metallic holographic sheen, EMV smart chip, Shetab network insignia, and masked PAN.
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun BankCard3D(
     bankAccount: BankAccount?,
     modifier: Modifier = Modifier,
     cardHolderName: String = "کارت اصلی شتاب",
     onClick: () -> Unit = {},
+    onLongClick: () -> Unit = {},
     enable3DTiltDrag: Boolean = true,
     privacyMode: Boolean = false,
 ) {
     val bankName = bankAccount?.bankFa ?: "کارت شتاب"
-    val palette = remember(bankName, bankAccount?.mask) { BankCardThemes.resolve(bankName, bankAccount?.mask ?: "") }
+    // Her own theme wins; blank/unknown falls through to the bank's own colours.
+    val palette = remember(bankName, bankAccount?.mask, bankAccount?.theme) {
+        BankCardThemes.resolve(bankName, bankAccount?.mask ?: "", bankAccount?.theme ?: "")
+    }
     val balanceToman = bankAccount?.balance ?: 0.0
 
     // Raw drag offsets in pixels
@@ -285,6 +366,12 @@ fun BankCard3D(
                     this.shape = RoundedCornerShape(20.dp)
                     this.clip = true
                 }
+                // Tap opens the account behind the card; holding opens the card editor —
+                // the gesture she tries first on a thing that looks like a card.
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongClick,
+                )
                 .background(Brush.linearGradient(palette.backgroundGradient))
                 .border(
                     width = 1.dp,
@@ -405,7 +492,7 @@ fun BankCard3D(
                 val cardContext = LocalContext.current
                 val cardClipboard = LocalClipboardManager.current
                 val cardDigits = bankAccount?.fullPan?.filter { it.isDigit() }?.takeIf { it.isNotBlank() }
-                    ?: (bankAccount?.mask?.filter { it.isDigit() }?.ifBlank { bankAccount.mask } ?: "")
+                    ?: (bankAccount?.mask?.filter { it.isDigit() }?.ifBlank { bankAccount?.mask.orEmpty() } ?: "")
 
                 Row(
                     modifier = Modifier
@@ -432,6 +519,18 @@ fun BankCard3D(
                         CardCopyIcon(
                             tint = palette.accentColor.copy(alpha = 0.85f),
                             modifier = Modifier.size(15.dp),
+                        )
+                    }
+                    // Her entered expiry, straight from the editor — never guessed, absent
+                    // until she sets it.
+                    val exp = bankAccount?.expiry
+                    if (!privacyMode && !exp.isNullOrBlank()) {
+                        Text(
+                            text = "انقضا $exp",
+                            color = palette.secondaryTextColor,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            fontFamily = ModamFigures,
                         )
                     }
                 }
@@ -888,6 +987,7 @@ fun BankCardDeck(
     modifier: Modifier = Modifier,
     cardHolderName: String = "",
     onCardClick: (BankAccount) -> Unit = {},
+    onCardLongPress: (BankAccount) -> Unit = {},
     privacyMode: Boolean = false,
 ) {
     if (accounts.isEmpty()) return
@@ -922,6 +1022,7 @@ fun BankCardDeck(
                 cardHolderName = cardHolderName,
                 modifier = Modifier.padding(horizontal = 20.dp),
                 onClick = { onCardClick(singleAccount) },
+                onLongClick = { onCardLongPress(singleAccount) },
                 enable3DTiltDrag = true,
                 privacyMode = privacyMode,
             )
@@ -1046,6 +1147,7 @@ fun BankCardDeck(
                     bankAccount = account,
                     cardHolderName = cardHolderName,
                     onClick = { onCardClick(account) },
+                    onLongClick = { onCardLongPress(account) },
                     enable3DTiltDrag = false, // HorizontalPager handles swipe gesture cleanly
                     privacyMode = privacyMode,
                 )
@@ -1061,7 +1163,9 @@ fun BankCardDeck(
         ) {
             sortedAccounts.forEachIndexed { index, acc ->
                 val isSelected = index == pagerState.currentPage
-                val palette = remember(acc.bankFa, acc.mask) { BankCardThemes.resolve(acc.bankFa, acc.mask) }
+                val palette = remember(acc.bankFa, acc.mask, acc.theme) {
+                    BankCardThemes.resolve(acc.bankFa, acc.mask, acc.theme)
+                }
                 Box(
                     modifier = Modifier
                         .height(6.dp)

@@ -252,6 +252,37 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             if (it.key == key) it.copy(excluded = excluded) else it
         })
 
+    /**
+     * Files the row away in بایگانی: off Home, off بازار, off the totals — but still hers,
+     * one tap from coming back. Not the same as [setExcluded], which keeps the row in view;
+     * and never applied to the bank row, whose existence belongs to the accounts sheet.
+     */
+    fun setArchived(key: String, archived: Boolean) =
+        persist(_state.value.holdings.map {
+            if (it.key == key && it.typeId != BANK_ID) it.copy(archived = archived) else it
+        })
+
+    /**
+     * Writes the manage-list order: [key] moves to [toIndex] within the visible section,
+     * and every row between shifts by one. Only relative order is kept — the numbers are
+     * renumbered densely from zero so gaps never accumulate through repeated drags.
+     */
+    fun reorderHolding(key: String, toIndex: Int) {
+        val rows = _state.value.holdings
+        val visible = rows.filter { !it.archived }
+        val clamped = toIndex.coerceIn(0, visible.lastIndex.coerceAtLeast(0))
+        val reordered = visible.toMutableList().apply {
+            val from = indexOfFirst { it.key == key }
+            if (from < 0) return
+            add(clamped, removeAt(from))
+        }
+        val newOrder = reordered.withIndex().associate { (i, h) -> h.key to i }
+        persist(rows.map { h ->
+            val at = newOrder[h.key]
+            if (at != null) h.copy(order = at) else h
+        })
+    }
+
     fun removeHolding(key: String) {
         persist(_state.value.holdings.filterNot { it.key == key })
         _state.update {
@@ -261,6 +292,8 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             )
         }
     }
+
+    fun deleteHolding(key: String) = removeHolding(key)
 
     fun clearWalletError(key: String) {
         if (key !in _state.value.walletErrors) return
@@ -1996,10 +2029,23 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun updateAccountDetails(key: String, nickname: String, fullPan: String) {
+    fun updateAccountDetails(
+        key: String,
+        nickname: String,
+        fullPan: String,
+        expiry: String = "",
+        theme: String? = null,
+    ) {
         val next = store.bankAccounts.map { acct ->
             if (acct.key == key) {
-                acct.copy(nickname = nickname.trim(), fullPan = fullPan.trim())
+                val base = acct.copy(
+                    nickname = nickname.trim(),
+                    fullPan = fullPan.trim(),
+                    expiry = expiry.trim(),
+                )
+                // Null = the editor was not given a theme row at all, so whatever is
+                // stored stays; empty string = she picked «رنگ خود بانک», clearing it.
+                if (theme == null) base else base.copy(theme = theme.trim())
             } else acct
         }
         store.bankAccounts = next
@@ -2162,7 +2208,15 @@ data class UiState(
 
     /** See [com.doxigo.muchtoman.listHoldings] — shared with the widget and the daily worker. */
     val listHoldings: List<Holding> by lazy {
-        listHoldings(holdings, smsEnabled, bankAccounts, disabledBanks)
+        listHoldings(
+            // Filed-away rows vanish from every screen at once: Home, بازار, the widget and
+            // the daily snapshot all read this list. The manage list reads [holdings], where
+            // they wait in بایگانی to be restored.
+            holdings.filterNot { it.archived },
+            smsEnabled,
+            bankAccounts,
+            disabledBanks,
+        )
     }
 
     /** Reads both of the above, so as a get() it paid for both of them again every time. */

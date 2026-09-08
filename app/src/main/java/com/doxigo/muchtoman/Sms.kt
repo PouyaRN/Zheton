@@ -137,6 +137,16 @@ data class BankAccount(
     val sender: String = "",
     val nickname: String = "",
     val fullPan: String = "",
+    /**
+     * Card expiry as she typed it, «MM/YY» in the Persian calendar sense used on Iranian
+     * cards (month/two-digit year). Blank until she enters it; never guessed from SMS.
+     */
+    val expiry: String = "",
+    /**
+     * Which visual theme the card wears: empty = the bank's own theme from [com.doxigo.muchtoman.BankCardThemes.resolve],
+     * otherwise the id of a preset or «c:0xFFRRGGBB,0xFFRRGGBB» for a custom two-stop gradient.
+     */
+    val theme: String = "",
 ) {
     /** The bank alone: see [applyBankSms] for why the printed identifier cannot key an account. */
     val key: String get() = bank

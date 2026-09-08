@@ -48,6 +48,18 @@ data class Holding(
      * asset id was the identity; [key], not this, is what anything else should compare.
      */
     val id: String = "",
+    /**
+     * Filed away, not owned: hidden from Home, بازار and the totals until she restores it,
+     * in the بایگانی section of the manage list. Distinct from [excluded], which keeps the
+     * row visible and only takes it out of the sum.
+     */
+    val archived: Boolean = false,
+    /**
+     * Where she dragged this row in the manage list, counting from the top of its own
+     * section. Zero on everything that never saw the reorder handle, which sorts exactly
+     * as holdings always did — catalogue order for fixed assets, add order for coins.
+     */
+    val order: Int = 0,
 ) {
     /** What to print for this holding. Never blank: the asset's own name is the fallback. */
     fun nameOr(default: String): String = label.ifBlank { default }
@@ -133,7 +145,7 @@ fun computeTotals(holdings: List<Holding>, rates: Map<String, Double>): Totals {
     var sum = 0.0
     val missing = mutableListOf<String>()
     for (h in holdings) {
-        if (h.excluded) continue // set aside on purpose — not summed, and not "missing" either
+        if (h.excluded || h.archived) continue // set aside or filed away — not summed, not "missing"
         val rate = rates[h.typeId]
         val value = rate?.let { h.amount * it }
         val next = value?.let { sum + it }

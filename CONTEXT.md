@@ -30,6 +30,10 @@ This document defines the canonical terms and bounded context concepts for Chand
 
 ## 2. Bank Cards & Payment Identity
 
+### **Bank Card (کارت بانکی)**
+- The presentable face of a [Bank Account](#bank-account-mask-شناسه-ماسک-کارت): one card per SMS-tracked account, never a standalone record. Decorative and identity fields (full PAN, expiry, nickname, visual theme) attach to the account; the account's parsed balance and transactions stay the source of truth for money math.
+- The CVV2 is deliberately never stored, shown, or asked for. PAN and expiry render masked by default and reveal only with privacy mode off.
+
 ### **Bank Account Mask (شناسه ماسک کارت)**
 - The 16-digit or masked PAN (Primary Account Number) of an Iranian debit/credit card conforming to Shetab (شتاب) BIN standards.
 - Displayed with standard 4-digit grouping (`xxxx  xxxx  xxxx  xxxx`) and normalized to ASCII digits when copied to clipboard.

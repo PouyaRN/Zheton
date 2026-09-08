@@ -62,6 +62,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -85,6 +86,7 @@ import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -253,6 +255,9 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
     var editing by remember { mutableStateOf<Editing?>(null) }
     var settings by remember { mutableStateOf(false) }
     var banks by remember { mutableStateOf(false) }
+    // The card whose editor is open: set by long-pressing a 3D card, or from the account's
+    // row inside the accounts sheet. One editor, two doors.
+    var cardEditorKey by remember { mutableStateOf<String?>(null) }
     var transactionRef by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedObligation by remember { mutableStateOf<InstallmentObligation?>(null) }
     var addingObligation by remember { mutableStateOf(false) }
@@ -711,6 +716,8 @@ val snackbarHostState = remember { SnackbarHostState() }
             onRefresh = { vm.refreshAll() },
             onAddHolding = { adding = true; vm.refreshStocksForPicker() },
             onEditHolding = { h -> editing = Editing(h.typeId, h.key) },
+            onDeleteHolding = { key -> vm.deleteHolding(key) },
+            onArchiveHolding = { key, archived -> vm.setArchived(key, archived) },
             bottomInset = pad.calculateBottomPadding(),
         )
         return@Scaffold
@@ -778,6 +785,7 @@ val snackbarHostState = remember { SnackbarHostState() }
                             accounts = state.bankAccounts,
                             cardHolderName = state.name,
                             onCardClick = { banks = true },
+                            onCardLongPress = { cardEditorKey = it.key },
                             privacyMode = privacyMode,
                         )
                     }
@@ -1008,6 +1016,21 @@ val snackbarHostState = remember { SnackbarHostState() }
         )
     }
 
+    // The card editor, reachable on its own: long-press a 3D card on Home, or «ویرایش کارت»
+    // on the account's row in the sheet. It edits the same fields as the sheet's inline form.
+    cardEditorKey?.let { key ->
+        state.bankAccounts.firstOrNull { it.key == key }?.let { acc ->
+            CardEditorSheet(
+                account = acc,
+                onSave = { nickname, pan, expiry, theme ->
+                    vm.updateAccountDetails(key, nickname, pan, expiry, theme)
+                    cardEditorKey = null
+                },
+                onDismiss = { cardEditorKey = null },
+            )
+        } ?: run { cardEditorKey = null }
+    }
+
     if (adding) {
         val available = remember(state.coins, state.stocks) { catalog(state.coins, state.stocks) }
         PickTypeSheet(
@@ -1033,11 +1056,21 @@ val snackbarHostState = remember { SnackbarHostState() }
             walletError = state.walletErrors[key],
             onWalletEdit = { vm.clearWalletError(key) },
             onExcluded = { on -> vm.setExcluded(key, on) },
-            onSaveManual = { amount -> vm.setHolding(key, typeId, amount); editing = null },
+            onSaveManual = { amount ->
+                vm.setHolding(key, typeId, amount)
+                editing = null
+                // Post-add landing: switch to the assets tab so she sees the row she just
+                // created, killing the "I added it, where did it go?" gap.
+                tab = Tab.ASSETS
+            },
             onSaveWallet = { option, address, onSuccess ->
-                vm.connectWallet(key, typeId, option, address, onSuccess)
+                vm.connectWallet(key, typeId, option, address) {
+                    onSuccess()
+                    tab = Tab.ASSETS
+                }
             },
             onDelete = { vm.removeHolding(key); editing = null },
+            onArchive = { archived -> vm.setArchived(key, archived) },
             onRate = { r -> vm.setOverride(typeId, r) },
             onLabel = { name -> vm.setLabel(key, name) },
             onDismiss = { editing = null },
@@ -2584,7 +2617,7 @@ private fun BankSheet(
     onAnchor: (String, Double) -> Unit,
     onToggle: (String, Boolean) -> Unit,
     onForget: (String) -> Unit,
-    onUpdateDetails: (String, String, String) -> Unit = { _, _, _ -> },
+    onUpdateDetails: (String, String, String, String, String?) -> Unit = { _, _, _, _, _ -> },
     onAddNumber: (String, String) -> Unit,
     onDismissSender: (String) -> Unit,
     onRescan: () -> Unit,
@@ -2788,7 +2821,7 @@ private fun BankAccountRow(
     onAnchor: (Double) -> Unit,
     onToggle: (Boolean) -> Unit,
     onForget: () -> Unit,
-    onUpdateDetails: (String, String, String) -> Unit = { _, _, _ -> },
+    onUpdateDetails: (String, String, String, String, String?) -> Unit = { _, _, _, _, _ -> },
     onOpenSms: () -> Unit,
 ) {
     val muted = MaterialTheme.colorScheme.onSurfaceVariant
@@ -2796,6 +2829,8 @@ private fun BankAccountRow(
     var editingDetails by remember(account.key) { mutableStateOf(false) }
     var nicknameDraft by remember(account.key) { mutableStateOf(account.nickname) }
     var panDraft by remember(account.key) { mutableStateOf(account.fullPan) }
+    var expiryDraft by remember(account.key) { mutableStateOf(account.expiry) }
+    var themeDraft by remember(account.key) { mutableStateOf(account.theme) }
 
     Card(
         shape = RoundedCornerShape(Radius.card),
@@ -2942,6 +2977,73 @@ private fun BankAccountRow(
                     modifier = Modifier.fillMaxWidth().padding(top = Space.xs),
                 )
 
+                Spacer(Modifier.height(Space.s))
+                Text(
+                    "تاریخ انقضا (ماه/سال، مثل ۰۷/۰۵)",
+                    fontSize = 12.sp,
+                    color = muted,
+                )
+                OutlinedTextField(
+                    value = expiryDraft,
+                    onValueChange = {
+                        // Digits and the one slash, «MM/YY» — anything else never enters.
+                        val digits = it.filter { c -> c.isDigit() || c in '۰'..'۹' }.take(4)
+                        expiryDraft = if (digits.length >= 3) {
+                            digits.substring(0, 2) + "/" + digits.substring(2)
+                        } else digits
+                    },
+                    placeholder = { Text("۰۷/۰۵", fontSize = 12.sp) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = RoundedCornerShape(Radius.field),
+                    modifier = Modifier.fillMaxWidth().padding(top = Space.xs),
+                )
+
+                Spacer(Modifier.height(Space.s))
+                Text(
+                    "رنگ کارت",
+                    fontSize = 12.sp,
+                    color = muted,
+                )
+                Spacer(Modifier.height(Space.xs))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(Space.s),
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                ) {
+                    // «رنگ خود بانک» clears the override — the theme the bank taught the app.
+                    val bankSelected = themeDraft.isBlank()
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(CircleShape)
+                            .background(Brush.linearGradient(listOf(Color(0xFF1A1C20), Color(0xFF3A3D44))))
+                            .border(
+                                if (bankSelected) 3.dp else 1.dp,
+                                if (bankSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                                CircleShape,
+                            )
+                            .clickable { themeDraft = "" },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text("بانک", fontSize = 9.sp, color = Color.White)
+                    }
+                    BankCardThemes.PRESETS.forEach { (id, preset) ->
+                        val selected = themeDraft == id
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(Brush.linearGradient(preset.backgroundGradient))
+                                .border(
+                                    if (selected) 3.dp else 1.dp,
+                                    if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                                    CircleShape,
+                                )
+                                .clickable { themeDraft = id },
+                        )
+                    }
+                }
+
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(top = Space.s),
                     horizontalArrangement = Arrangement.End,
@@ -2952,7 +3054,7 @@ private fun BankAccountRow(
                     Spacer(Modifier.width(Space.s))
                     Button(
                         onClick = {
-                            onUpdateDetails(account.key, nicknameDraft, panDraft)
+                            onUpdateDetails(account.key, nicknameDraft, panDraft, expiryDraft, themeDraft)
                             editingDetails = false
                         },
                         shape = RoundedCornerShape(Radius.pill),
@@ -4130,6 +4232,7 @@ private fun EditSheet(
     onSaveManual: (Double) -> Unit,
     onSaveWallet: (WalletOption, String, () -> Unit) -> Unit,
     onDelete: () -> Unit,
+    onArchive: (Boolean) -> Unit = {},
     onRate: (Double?) -> Unit,
     onLabel: (String) -> Unit,
     onDismiss: () -> Unit,
@@ -4195,6 +4298,30 @@ private fun EditSheet(
     val scope = rememberCoroutineScope()
     fun close(then: () -> Unit) = scope.launch { sheetState.hide(); then() }
 
+    if (confirmDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text("حذف «${holding?.nameOr(type.fa) ?: type.fa}»؟") },
+            text = { Text("این دارایی از فهرستت حذف می‌شود و ارزش آن از جمع کل دارایی‌ها کسر خواهد شد.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        confirmDelete = false
+                        close(onDelete)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                ) {
+                    Text("حذف دارایی")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) {
+                    Text("انصراف")
+                }
+            },
+        )
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -4233,6 +4360,15 @@ private fun EditSheet(
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
+                }
+                // Unconditional top-bar delete: discoverable without scrolling the sheet,
+                // and available even on a fresh holding that has no amount entered yet.
+                IconButton(onClick = { confirmDelete = true }) {
+                    Icon(
+                        Icons.Rounded.Delete,
+                        contentDescription = "حذف دارایی",
+                        tint = MaterialTheme.colorScheme.error,
+                    )
                 }
             }
 
@@ -4816,28 +4952,40 @@ private fun EditSheet(
                 )
             }
 
-            if (current != null) {
-                // One stray tap must not erase a holding: the first tap only changes the
-                // label to a question, the second actually deletes.
+            if (holding != null) {
                 TextButton(
-                    onClick = { if (confirmDelete) close(onDelete) else confirmDelete = true },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error,
-                    ),
+                    onClick = {
+                        onArchive(!holding.archived)
+                        onDismiss()
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = Space.xs),
                 ) {
                     Text(
-                        if (confirmDelete) "مطمئنی؟ برای حذف دوباره بزن"
-                        else "حذف این دارایی",
+                        if (holding.archived) "بازیابی از بایگانی" else "انتقال به بایگانی",
                         fontSize = 15.sp,
-                        fontWeight = if (confirmDelete) FontWeight.Bold else FontWeight.Normal,
-                        // Announced, or the two-tap safeguard is invisible to TalkBack — a
-                        // second double-tap deletes with no confirmation ever perceived.
-                        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                        fontWeight = FontWeight.Normal,
                     )
                 }
+            }
+
+            // Delete button: works whether an amount is saved or not, so an asset
+            // added by accident can be deleted immediately. Triggers the confirm dialog.
+            TextButton(
+                onClick = { confirmDelete = true },
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error,
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = Space.xs),
+            ) {
+                Text(
+                    "حذف این دارایی",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Normal,
+                )
             }
 
             Spacer(Modifier.height(Space.l))
@@ -5431,6 +5579,178 @@ private fun LinkInstallmentPicker(
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * The card editor as its own sheet: the same fields the accounts sheet's inline form edits —
+ * nickname, full PAN, expiry, colour — one level closer, so long-pressing the card on Home
+ * lands here directly. CVV is deliberately absent: the app never stores it (ADR 0004).
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CardEditorSheet(
+    account: BankAccount,
+    onSave: (nickname: String, pan: String, expiry: String, theme: String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val context = LocalContext.current
+    val clipboard = LocalClipboardManager.current
+    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+    var nicknameDraft by remember(account.key) { mutableStateOf(account.nickname) }
+    var panDraft by remember(account.key) { mutableStateOf(account.fullPan) }
+    var expiryDraft by remember(account.key) { mutableStateOf(account.expiry) }
+    var themeDraft by remember(account.key) { mutableStateOf(account.theme) }
+    var revealPan by remember(account.key) { mutableStateOf(false) }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        shape = RoundedCornerShape(topStart = Radius.sheet, topEnd = Radius.sheet),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Column(
+            Modifier
+                .nestedScroll(SheetFlingGuard)
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .imePadding()
+                .padding(horizontal = Space.xl),
+        ) {
+            Text(
+                "ویرایش کارت ${account.bankFa}",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier.semantics { heading() },
+            )
+            Text(
+                "این مشخصات فقط روی کارت همین حساب می‌نشیند؛ موجودی و تراکنش‌ها از پیامک بانک می‌آیند.",
+                fontSize = 12.sp,
+                color = muted,
+                modifier = Modifier.padding(top = Space.xs),
+            )
+
+            Spacer(Modifier.height(Space.l))
+            Text("نام کارت", fontSize = 12.sp, color = muted)
+            OutlinedTextField(
+                value = nicknameDraft,
+                onValueChange = { nicknameDraft = it },
+                placeholder = { Text("مثلاً: حقوق، خرج روزانه، پس‌انداز", fontSize = 12.sp) },
+                singleLine = true,
+                shape = RoundedCornerShape(Radius.field),
+                modifier = Modifier.fillMaxWidth().padding(top = Space.xs),
+            )
+
+            Spacer(Modifier.height(Space.s))
+            Text("شماره ۱۶ رقمی کارت", fontSize = 12.sp, color = muted)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = if (revealPan) panDraft else if (panDraft.isBlank()) "" else "•••• •••• •••• " + panDraft.takeLast(4),
+                    onValueChange = { input ->
+                        val digits = input.filter { c -> c.isDigit() || c in '۰'..'۹' }
+                        // When masked, typing replaces from the tail so edits land on the
+                        // real number; when revealed, the field is the source of truth.
+                        panDraft = if (revealPan) digits.take(16)
+                        else (digits + panDraft.drop(digits.length)).take(16)
+                    },
+                    placeholder = { Text("۶۰۳۷۹۹••••••••••", fontSize = 12.sp) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = RoundedCornerShape(Radius.field),
+                    modifier = Modifier.weight(1f).padding(top = Space.xs),
+                )
+                TextButton(onClick = { revealPan = !revealPan }) {
+                    Text(if (revealPan) "پنهان" else "نمایش", fontSize = 12.sp)
+                }
+            }
+            if (panDraft.filter { it.isDigit() }.length == 16) {
+                TextButton(
+                    onClick = {
+                        clipboard.setText(AnnotatedString(panDraft))
+                        android.widget.Toast.makeText(context, "شماره کارت کپی شد", android.widget.Toast.LENGTH_SHORT).show()
+                    },
+                    contentPadding = PaddingValues(horizontal = Space.s),
+                ) {
+                    Text("کپی شماره کارت", fontSize = 12.sp)
+                }
+            }
+
+            Spacer(Modifier.height(Space.s))
+            Text("تاریخ انقضا (ماه/سال، مثل ۰۷/۰۵)", fontSize = 12.sp, color = muted)
+            OutlinedTextField(
+                value = expiryDraft,
+                onValueChange = {
+                    val digits = it.filter { c -> c.isDigit() || c in '۰'..'۹' }.take(4)
+                    expiryDraft = if (digits.length >= 3) {
+                        digits.substring(0, 2) + "/" + digits.substring(2)
+                    } else digits
+                },
+                placeholder = { Text("۰۷/۰۵", fontSize = 12.sp) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                shape = RoundedCornerShape(Radius.field),
+                modifier = Modifier.fillMaxWidth().padding(top = Space.xs),
+            )
+
+            Spacer(Modifier.height(Space.s))
+            Text("رنگ کارت", fontSize = 12.sp, color = muted)
+            Spacer(Modifier.height(Space.xs))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(Space.s),
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+            ) {
+                val bankSelected = themeDraft.isBlank()
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(Brush.linearGradient(listOf(Color(0xFF1A1C20), Color(0xFF3A3D44))))
+                        .border(
+                            if (bankSelected) 3.dp else 1.dp,
+                            if (bankSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                            CircleShape,
+                        )
+                        .clickable { themeDraft = "" },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text("بانک", fontSize = 9.sp, color = Color.White)
+                }
+                BankCardThemes.PRESETS.forEach { (id, preset) ->
+                    val selected = themeDraft == id
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(CircleShape)
+                            .background(Brush.linearGradient(preset.backgroundGradient))
+                            .border(
+                                if (selected) 3.dp else 1.dp,
+                                if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                                CircleShape,
+                            )
+                            .clickable { themeDraft = id },
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(Space.l))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(onClick = onDismiss) {
+                    Text("انصراف", fontSize = 13.sp)
+                }
+                Spacer(Modifier.width(Space.s))
+                Button(
+                    onClick = { onSave(nicknameDraft, panDraft, expiryDraft, themeDraft) },
+                    shape = RoundedCornerShape(Radius.pill),
+                ) {
+                    Text("ذخیره", fontSize = 13.sp)
+                }
+            }
+            Spacer(Modifier.height(Space.l))
         }
     }
 }

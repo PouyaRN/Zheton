@@ -6,6 +6,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
@@ -36,6 +38,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -103,6 +107,8 @@ fun MarketAndAssetsScreen(
     onRefresh: () -> Unit,
     onAddHolding: () -> Unit,
     onEditHolding: (Holding) -> Unit,
+    onDeleteHolding: (String) -> Unit = {},
+    onArchiveHolding: (String, Boolean) -> Unit = { _, _ -> },
     bottomInset: Dp,
     modifier: Modifier = Modifier,
 ) {
@@ -292,6 +298,9 @@ fun MarketAndAssetsScreen(
             }
         }
     }
+
+    val activeHoldings = remember(state.holdings) { state.holdings.filterNot { it.archived } }
+    val archivedHoldings = remember(state.holdings) { state.holdings.filter { it.archived } }
 
     Surface(
         color = MaterialTheme.colorScheme.background,
@@ -492,12 +501,38 @@ fun MarketAndAssetsScreen(
                         }
                     }
                 } else {
-                    items(state.holdings, key = { it.key }) { holding ->
+                    items(activeHoldings, key = { it.key }) { holding ->
                         HoldingMarketRow(
                             holding = holding,
                             rate = effective[holding.typeId],
                             onClick = { onEditHolding(holding) },
+                            onDelete = { onDeleteHolding(holding.key) },
+                            onArchive = { onArchiveHolding(holding.key, true) },
                         )
+                    }
+
+                    if (archivedHoldings.isNotEmpty()) {
+                        item(key = "archived_holdings_header") {
+                            Text(
+                                "بایگانی‌شده (${archivedHoldings.size})",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = Space.m, vertical = Space.s),
+                            )
+                        }
+                        items(archivedHoldings, key = { it.key }) { holding ->
+                            HoldingMarketRow(
+                                holding = holding,
+                                rate = effective[holding.typeId],
+                                isArchived = true,
+                                onClick = { onEditHolding(holding) },
+                                onDelete = { onDeleteHolding(holding.key) },
+                                onArchive = { onArchiveHolding(holding.key, false) },
+                            )
+                        }
                     }
                 }
             } else {
@@ -1164,52 +1199,93 @@ private fun MarketAssetRow(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun HoldingMarketRow(
     holding: Holding,
     rate: Double?,
+    isArchived: Boolean = false,
     onClick: () -> Unit,
+    onDelete: () -> Unit = {},
+    onArchive: () -> Unit = {},
 ) {
-    Card(
+    var menuOpen by remember { mutableStateOf(false) }
+
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = Space.m, vertical = Space.xs)
-            .clip(RoundedCornerShape(12.dp))
-            .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            .padding(horizontal = Space.m, vertical = Space.xs),
     ) {
-        Row(
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Space.m),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+                .clip(RoundedCornerShape(12.dp))
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = { menuOpen = true },
+                ),
+            colors = CardDefaults.cardColors(
+                containerColor = if (isArchived)
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                else MaterialTheme.colorScheme.surface,
+            ),
         ) {
-            Column {
-                Text(holding.label.ifBlank { holding.typeId }, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                Text(
-                    "مقدار: ${faDecimal(holding.amount, 2)}",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            Column(horizontalAlignment = Alignment.End) {
-                val totalToman = rate?.let { it * holding.amount } ?: 0.0
-                Text(
-                    "${faCompact(totalToman)} ت",
-                    fontWeight = FontWeight.Black,
-                    fontSize = 15.sp,
-                    color = Hero.gold,
-                )
-                if (rate != null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(Space.m),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column {
                     Text(
-                        "نرخ: ${faNumber(rate)} ت",
-                        fontSize = 11.sp,
+                        holding.label.ifBlank { holding.typeId },
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = if (isArchived) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        "مقدار: ${faDecimal(holding.amount, 2)}",
+                        fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
+
+                Column(horizontalAlignment = Alignment.End) {
+                    val totalToman = rate?.let { it * holding.amount } ?: 0.0
+                    Text(
+                        "${faCompact(totalToman)} ت",
+                        fontWeight = FontWeight.Black,
+                        fontSize = 15.sp,
+                        color = if (isArchived) MaterialTheme.colorScheme.onSurfaceVariant else Hero.gold,
+                    )
+                    if (rate != null) {
+                        Text(
+                            "نرخ: ${faNumber(rate)} ت",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
+        }
+
+        DropdownMenu(
+            expanded = menuOpen,
+            onDismissRequest = { menuOpen = false },
+        ) {
+            DropdownMenuItem(
+                text = { Text("ویرایش دارایی") },
+                onClick = { menuOpen = false; onClick() },
+            )
+            DropdownMenuItem(
+                text = { Text(if (isArchived) "بازیابی از بایگانی" else "انتقال به بایگانی") },
+                onClick = { menuOpen = false; onArchive() },
+            )
+            DropdownMenuItem(
+                text = { Text("حذف دارایی", color = MaterialTheme.colorScheme.error) },
+                onClick = { menuOpen = false; onDelete() },
+            )
         }
     }
 }

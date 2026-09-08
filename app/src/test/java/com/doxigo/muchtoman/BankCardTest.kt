@@ -96,4 +96,49 @@ class BankCardTest {
         assertEquals(activeAccount, sorted[0])
         assertEquals(dormantAccount, sorted[1])
     }
+
+    @Test
+    fun `BankCardThemes resolve respects explicit theme preset or custom gradient stops`() {
+        // Explicit preset override
+        val customTheme = BankCardThemes.resolve("بانک ملی ایران", theme = "royal")
+        val royalPreset = BankCardThemes.PRESETS.first { it.first == "royal" }.second
+        assertEquals(royalPreset.accentColor, customTheme.accentColor)
+
+        // Custom two-stop hex gradient
+        val hexTheme = BankCardThemes.resolve("بانک ملی ایران", theme = "#1A1A24,#E5A93C")
+        assertEquals(androidx.compose.ui.graphics.Color(0xFFE5A93C), hexTheme.accentColor)
+
+        // Bank fallback when theme is blank
+        val fallbackTheme = BankCardThemes.resolve("بانک ملی ایران", theme = "")
+        assertEquals(BankCardThemes.MELLI.accentColor, fallbackTheme.accentColor)
+    }
+
+    @Test
+    fun `BankAccount preserves card nickname, expiry, and custom theme`() {
+        val account = BankAccount(
+            bank = "بانک ملت",
+            mask = "610433••••••1234",
+            balance = 5_000_000.0,
+            nickname = "کارت حقوق",
+            fullPan = "6104337712345678",
+            expiry = "06/07",
+            theme = "nordic",
+        )
+        assertEquals("کارت حقوق", account.nickname)
+        assertEquals("6104337712345678", account.fullPan)
+        assertEquals("06/07", account.expiry)
+        assertEquals("nordic", account.theme)
+    }
+
+    @Test
+    fun `computeTotals excludes archived holdings from total wealth calculation`() {
+        val activeHolding = Holding(typeId = "usd", amount = 100.0, archived = false)
+        val archivedHolding = Holding(typeId = "eur", amount = 50.0, archived = true)
+        val rates = mapOf("usd" to 100_000.0, "eur" to 110_000.0)
+
+        val totals = computeTotals(listOf(activeHolding, archivedHolding), rates)
+        // Only active holding (100 * 100_000 = 10_000_000) should be counted
+        assertEquals(10_000_000.0, totals.toman, 0.001)
+        assertTrue(totals.missing.isEmpty())
+    }
 }
