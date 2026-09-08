@@ -22,6 +22,10 @@ This document defines the canonical terms and bounded context concepts for Chand
 ### **Daily Safe Spend / Daily Burn Rate (خرج امن روزانه / نرخ سوخت روزانه)**
 - The maximum discretionary spending amount permitted per remaining day in the active financial cycle to prevent balance exhaustion before the next anticipated cash injection.
 
+### **Financial Cycle (چرخهٔ مالی ماه)**
+- The income-aligned window (Jalali calendar month, or anchored to the user's payday via «مدیریت دوره‌ها → چرخهٔ مالی ماه») over which monthly income, expenses, burn rate, and runway are computed. Configured in Settings as `CycleSpec(mode, anchorDay)`; anchor days cap to the real month length (e.g. anchor 30 in Esfand clamps to the 29th).
+- **Known boundary:** Goals category caps (GoalKind.CAP) and the Savings goals' `startsOn` reset/count from the Jalali calendar month, not the anchored cycle. The 50/30/20 rule follows the cycle (it reads the Reports MONTH window). Making CAP caps cycle-aware is a deliberate open follow-up.
+
 ---
 
 ## 2. Bank Cards & Payment Identity
