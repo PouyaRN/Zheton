@@ -26,7 +26,7 @@ class QuickAddTileService : TileService() {
             )
             startActivityAndCollapse(pendingIntent)
         } else {
-            @Suppress("DEPRECATION")
+            @Suppress("DEPRECATION", "StartActivityAndCollapseDeprecated")
             startActivityAndCollapse(intent)
         }
     }
