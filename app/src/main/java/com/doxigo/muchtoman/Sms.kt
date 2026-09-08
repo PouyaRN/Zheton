@@ -138,6 +138,11 @@ data class BankAccount(
     val nickname: String = "",
     val fullPan: String = "",
     /**
+     * International Bank Account Number (SHEBA), starting with «IR» followed by 24 digits.
+     * Blank until entered by the user; used for rapid clipboard copying and wire transfers.
+     */
+    val sheba: String = "",
+    /**
      * Card expiry as she typed it, «MM/YY» in the Persian calendar sense used on Iranian
      * cards (month/two-digit year). Blank until she enters it; never guessed from SMS.
      */

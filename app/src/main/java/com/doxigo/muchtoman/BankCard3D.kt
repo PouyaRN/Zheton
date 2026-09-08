@@ -55,6 +55,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.Image
@@ -76,6 +79,32 @@ data class BankCardPalette(
 object BankCardThemes {
     /** Preset themes the card editor offers as one-tap swatches, beyond each bank's own. */
     val PRESETS: List<Pair<String, BankCardPalette>> = listOf(
+        "gold" to BankCardPalette(
+            backgroundGradient = listOf(Color(0xFF8A6220), Color(0xFFD4AF37), Color(0xFFF9E498), Color(0xFFAA771C)),
+            accentColor = Color(0xFFFFDF73),
+            textColor = Color(0xFF1A1202),
+            secondaryTextColor = Color(0xFF3D2E0B),
+            chipGoldPrimary = Color(0xFFFFFFFF),
+            chipGoldSecondary = Color(0xFFD4AF37),
+        ),
+        "obsidian" to BankCardPalette(
+            backgroundGradient = listOf(Color(0xFF0D0D11), Color(0xFF1E1F24), Color(0xFF141519)),
+            accentColor = Color(0xFFFFD54F),
+            textColor = Color(0xFFFFFFFF),
+            secondaryTextColor = Color(0xFFB0BEC5),
+        ),
+        "hologram" to BankCardPalette(
+            backgroundGradient = listOf(Color(0xFF4A00E0), Color(0xFF8E2DE2), Color(0xFFF27121)),
+            accentColor = Color(0xFF00FFFF),
+            textColor = Color(0xFFFFFFFF),
+            secondaryTextColor = Color(0xFFE0E7FF),
+        ),
+        "titanium" to BankCardPalette(
+            backgroundGradient = listOf(Color(0xFF232526), Color(0xFF414345), Color(0xFF5A5C60)),
+            accentColor = Color(0xFF81D4FA),
+            textColor = Color(0xFFFFFFFF),
+            secondaryTextColor = Color(0xFFCFD8DC),
+        ),
         "emerald" to BankCardPalette(
             backgroundGradient = listOf(Color(0xFF064E3B), Color(0xFF059669), Color(0xFF065F46)),
             accentColor = Color(0xFF6EE7B7),
@@ -225,6 +254,132 @@ object BankCardThemes {
         secondaryTextColor = Color(0xFFE1BEE7),
     )
 
+    val MASKAN = BankCardPalette(
+        backgroundGradient = listOf(Color(0xFF2E1505), Color(0xFF662D0B), Color(0xFF9E400B)),
+        accentColor = Color(0xFFFFB74D),
+        textColor = Color(0xFFFFFFFF),
+        secondaryTextColor = Color(0xFFFFE0B2),
+    )
+
+    val AYANDEH = BankCardPalette(
+        backgroundGradient = listOf(Color(0xFF220A33), Color(0xFF4A148C), Color(0xFF6A1B9A)),
+        accentColor = Color(0xFFCE93D8),
+        textColor = Color(0xFFFFFFFF),
+        secondaryTextColor = Color(0xFFF3E5F5),
+    )
+
+    val SHAHR = BankCardPalette(
+        backgroundGradient = listOf(Color(0xFF33080B), Color(0xFF7F131B), Color(0xFFA81C26)),
+        accentColor = Color(0xFFFF8A80),
+        textColor = Color(0xFFFFFFFF),
+        secondaryTextColor = Color(0xFFFFCDD2),
+    )
+
+    val MEHR_IRAN = BankCardPalette(
+        backgroundGradient = listOf(Color(0xFF032620), Color(0xFF004D40), Color(0xFF00695C)),
+        accentColor = Color(0xFF80CBC4),
+        textColor = Color(0xFFFFFFFF),
+        secondaryTextColor = Color(0xFFE0F2F1),
+    )
+
+    val PARSIAN = BankCardPalette(
+        backgroundGradient = listOf(Color(0xFF260D1E), Color(0xFF5B1038), Color(0xFF88124C)),
+        accentColor = Color(0xFFF48FB1),
+        textColor = Color(0xFFFFFFFF),
+        secondaryTextColor = Color(0xFFFCE4EC),
+    )
+
+    val EGHTESAD_NOVIN = BankCardPalette(
+        backgroundGradient = listOf(Color(0xFF241814), Color(0xFF4E342E), Color(0xFF6D4C41)),
+        accentColor = Color(0xFFFFCC80),
+        textColor = Color(0xFFFFFFFF),
+        secondaryTextColor = Color(0xFFD7CCC8),
+    )
+
+    val POST_BANK = BankCardPalette(
+        backgroundGradient = listOf(Color(0xFF0B2410), Color(0xFF1B5E20), Color(0xFF2E7D32)),
+        accentColor = Color(0xFFA5D6A7),
+        textColor = Color(0xFFFFFFFF),
+        secondaryTextColor = Color(0xFFE8F5E9),
+    )
+
+    val KHAVARMIANEH = BankCardPalette(
+        backgroundGradient = listOf(Color(0xFF1A2126), Color(0xFF263238), Color(0xFF37474F)),
+        accentColor = Color(0xFF90A4AE),
+        textColor = Color(0xFFFFFFFF),
+        secondaryTextColor = Color(0xFFCFD8DC),
+    )
+
+    val SINA = BankCardPalette(
+        backgroundGradient = listOf(Color(0xFF08261F), Color(0xFF124F40), Color(0xFF1A6B57)),
+        accentColor = Color(0xFF80CBC4),
+        textColor = Color(0xFFFFFFFF),
+        secondaryTextColor = Color(0xFFE0F2F1),
+    )
+
+    val SARMAYEH = BankCardPalette(
+        backgroundGradient = listOf(Color(0xFF081C30), Color(0xFF103A63), Color(0xFF18538C)),
+        accentColor = Color(0xFF90CAF9),
+        textColor = Color(0xFFFFFFFF),
+        secondaryTextColor = Color(0xFFE3F2FD),
+    )
+
+    val DEY = BankCardPalette(
+        backgroundGradient = listOf(Color(0xFF032626), Color(0xFF006064), Color(0xFF00838F)),
+        accentColor = Color(0xFF80DEEA),
+        textColor = Color(0xFFFFFFFF),
+        secondaryTextColor = Color(0xFFE0F7FA),
+    )
+
+    val GARDESHGARI = BankCardPalette(
+        backgroundGradient = listOf(Color(0xFF241C1A), Color(0xFF4E3833), Color(0xFF6D5048)),
+        accentColor = Color(0xFFFFAB91),
+        textColor = Color(0xFFFFFFFF),
+        secondaryTextColor = Color(0xFFD7CCC8),
+    )
+
+    val IRAN_ZAMIN = BankCardPalette(
+        backgroundGradient = listOf(Color(0xFF1F1E24), Color(0xFF373540), Color(0xFF504D5C)),
+        accentColor = Color(0xFFB0BEC5),
+        textColor = Color(0xFFFFFFFF),
+        secondaryTextColor = Color(0xFFECEFF1),
+    )
+
+    val KARAFARIN = BankCardPalette(
+        backgroundGradient = listOf(Color(0xFF282708), Color(0xFF595712), Color(0xFF827F1C)),
+        accentColor = Color(0xFFE6EE9C),
+        textColor = Color(0xFFFFFFFF),
+        secondaryTextColor = Color(0xFFF9FBE7),
+    )
+
+    val SANAT_MADAN = BankCardPalette(
+        backgroundGradient = listOf(Color(0xFF1C252B), Color(0xFF37474F), Color(0xFF455A64)),
+        accentColor = Color(0xFFB0BEC5),
+        textColor = Color(0xFFFFFFFF),
+        secondaryTextColor = Color(0xFFECEFF1),
+    )
+
+    val TOSEE_TAAVON = BankCardPalette(
+        backgroundGradient = listOf(Color(0xFF0E240D), Color(0xFF1E4C1C), Color(0xFF2E6B2C)),
+        accentColor = Color(0xFFAED581),
+        textColor = Color(0xFFFFFFFF),
+        secondaryTextColor = Color(0xFFDCEDC8),
+    )
+
+    val TOSEE_SADERAT = BankCardPalette(
+        backgroundGradient = listOf(Color(0xFF0B192C), Color(0xFF103359), Color(0xFF154A82)),
+        accentColor = Color(0xFF90CAF9),
+        textColor = Color(0xFFFFFFFF),
+        secondaryTextColor = Color(0xFFE3F2FD),
+    )
+
+    val MELAL = BankCardPalette(
+        backgroundGradient = listOf(Color(0xFF1D0D2E), Color(0xFF3A1A5C), Color(0xFF562788)),
+        accentColor = Color(0xFFD1C4E9),
+        textColor = Color(0xFFFFFFFF),
+        secondaryTextColor = Color(0xFFEDE7F6),
+    )
+
     val DEFAULT = BankCardPalette(
         backgroundGradient = listOf(Color(0xFF1A1C20), Color(0xFF24272C), Color(0xFF121417)),
         accentColor = Color(0xFF81D4FA),
@@ -242,16 +397,35 @@ object BankCardThemes {
 
         return when {
             bin.startsWith("603799") || bankName.contains("ملی") || bankName.equals("MELLI", ignoreCase = true) -> MELLI
-            bin.startsWith("610433") || bankName.contains("ملت") || bankName.equals("MELLAT", ignoreCase = true) -> MELLAT
+            bin.startsWith("610433") || bin.startsWith("991975") || bankName.contains("ملت") || bankName.equals("MELLAT", ignoreCase = true) -> MELLAT
+            bin.startsWith("621986") && (bankName.contains("بلو") || bankName.equals("BLU", ignoreCase = true)) -> BLU
+            bin.startsWith("8600") || bankName.contains("بلو") || bankName.equals("BLU", ignoreCase = true) -> BLU
             bin.startsWith("621986") || bankName.contains("سامان") || bankName.equals("SAMAN", ignoreCase = true) -> SAMAN
             bin.startsWith("502229") || bin.startsWith("639347") || bankName.contains("پاسارگاد") || bankName.equals("PASARGAD", ignoreCase = true) -> PASARGAD
-            bin.startsWith("622106") || bankName.contains("بلو") || bankName.equals("BLU", ignoreCase = true) -> BLU
+            bin.startsWith("622106") || bin.startsWith("639194") || bankName.contains("پارسیان") || bankName.equals("PARSIAN", ignoreCase = true) -> PARSIAN
             bin.startsWith("585983") || bin.startsWith("627353") || bankName.contains("تجارت") || bankName.equals("TEJARAT", ignoreCase = true) -> TEJARAT
             bin.startsWith("504172") || bankName.contains("رسالت") || bankName.equals("RESALAT", ignoreCase = true) -> RESALAT
-            bin.startsWith("589210") || bin.startsWith("671500") || bankName.contains("سپه") || bankName.equals("SEPAH", ignoreCase = true) -> SEPAH
-            bin.startsWith("603770") || bankName.contains("کشاورزی") || bankName.equals("KESHAVARZI", ignoreCase = true) -> KESHAVARZI
+            bin.startsWith("589210") || bin.startsWith("671500") || bin.startsWith("627381") || bin.startsWith("639599") || bin.startsWith("505801") || bankName.contains("سپه") || bankName.equals("SEPAH", ignoreCase = true) -> SEPAH
+            bin.startsWith("603770") || bin.startsWith("639217") || bankName.contains("کشاورزی") || bankName.equals("KESHAVARZI", ignoreCase = true) -> KESHAVARZI
             bin.startsWith("603769") || bankName.contains("صادرات") || bankName.equals("SADERAT", ignoreCase = true) -> SADERAT
             bin.startsWith("589463") || bankName.contains("رفاه") || bankName.equals("REFAH", ignoreCase = true) -> REFAH
+            bin.startsWith("628023") || bankName.contains("مسکن") || bankName.equals("MASKAN", ignoreCase = true) -> MASKAN
+            bin.startsWith("636214") || bankName.contains("آینده") || bankName.equals("AYANDEH", ignoreCase = true) -> AYANDEH
+            bin.startsWith("502806") || bankName.contains("شهر") || bankName.equals("SHAHR", ignoreCase = true) -> SHAHR
+            bin.startsWith("606373") || bankName.contains("مهر") || bankName.equals("MEHR_IRAN", ignoreCase = true) -> MEHR_IRAN
+            bin.startsWith("627412") || bankName.contains("اقتصاد نوین") || bankName.equals("EGHTESAD_NOVIN", ignoreCase = true) -> EGHTESAD_NOVIN
+            bin.startsWith("627760") || bankName.contains("پست") || bankName.equals("POST_BANK", ignoreCase = true) -> POST_BANK
+            bin.startsWith("585947") || bankName.contains("خاورمیانه") || bankName.equals("KHAVARMIANEH", ignoreCase = true) -> KHAVARMIANEH
+            bin.startsWith("639346") || bankName.contains("سینا") || bankName.equals("SINA", ignoreCase = true) -> SINA
+            bin.startsWith("639607") || bankName.contains("سرمایه") || bankName.equals("SARMAYEH", ignoreCase = true) -> SARMAYEH
+            bin.startsWith("502938") || bankName.contains("دی") || bankName.equals("DEY", ignoreCase = true) -> DEY
+            bin.startsWith("505416") || bankName.contains("گردشگری") || bankName.equals("GARDESHGARI", ignoreCase = true) -> GARDESHGARI
+            bin.startsWith("505785") || bankName.contains("ایران زمین") || bankName.equals("IRAN_ZAMIN", ignoreCase = true) -> IRAN_ZAMIN
+            bin.startsWith("627488") || bin.startsWith("502910") || bankName.contains("کارآفرین") || bankName.equals("KARAFARIN", ignoreCase = true) -> KARAFARIN
+            bin.startsWith("627961") || bankName.contains("صنعت و معدن") || bankName.equals("SANAT_MADAN", ignoreCase = true) -> SANAT_MADAN
+            bin.startsWith("502908") || bankName.contains("توسعه تعاون") || bankName.equals("TOSEE_TAAVON", ignoreCase = true) -> TOSEE_TAAVON
+            bin.startsWith("627648") || bin.startsWith("207177") || bankName.contains("توسعه صادرات") || bankName.equals("TOSEE_SADERAT", ignoreCase = true) -> TOSEE_SADERAT
+            bin.startsWith("606256") || bankName.contains("ملل") || bankName.equals("MELAL", ignoreCase = true) -> MELAL
             else -> DEFAULT
         }
     }
@@ -488,11 +662,14 @@ fun BankCard3D(
 
                 // Card Number PAN & Copy Action
                 val rawPan = bankAccount?.fullPan?.takeIf { it.isNotBlank() } ?: (bankAccount?.mask ?: "۶۰۳۷ •••• •••• ۱۲۳۴")
-                val displayPan = formatCardPan(rawPan)
+                // LTR Unicode isolate keeps the 4-block layout in physical card order even
+                // inside the RTL tree, so the BIN stays on the left the way Shetab prints it.
+                val displayPan = formatCardPanLtr(rawPan)
                 val cardContext = LocalContext.current
                 val cardClipboard = LocalClipboardManager.current
-                val cardDigits = bankAccount?.fullPan?.filter { it.isDigit() }?.takeIf { it.isNotBlank() }
-                    ?: (bankAccount?.mask?.filter { it.isDigit() }?.ifBlank { bankAccount?.mask.orEmpty() } ?: "")
+                val cardDigits = toAsciiDigits(bankAccount?.fullPan?.takeIf { it.isNotBlank() } ?: (bankAccount?.mask?.filter { it.isDigit() } ?: ""))
+                    .filter { it.isDigit() }
+                val cardSheba = bankAccount?.sheba.orEmpty()
 
                 Row(
                     modifier = Modifier
@@ -526,11 +703,40 @@ fun BankCard3D(
                     val exp = bankAccount?.expiry
                     if (!privacyMode && !exp.isNullOrBlank()) {
                         Text(
-                            text = "انقضا $exp",
+                            text = "\u2066$exp\u2069",
                             color = palette.secondaryTextColor,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium,
                             fontFamily = ModamFigures,
+                        )
+                    }
+                }
+
+                // SHEBA (IBAN) line: one tap copies the clean 26-char IR string.
+                if (!privacyMode && cardSheba.isNotBlank()) {
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .clickable {
+                                val clean = cleanSheba(cardSheba)
+                                cardClipboard.setText(AnnotatedString(clean))
+                                android.widget.Toast.makeText(cardContext, "شماره شبا کپی شد", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                            .padding(vertical = 1.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Text(
+                            text = "\u2066${formatSheba(cardSheba)}\u2069",
+                            color = palette.secondaryTextColor,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium,
+                            fontFamily = ModamFigures,
+                            letterSpacing = 1.sp,
+                        )
+                        CardCopyIcon(
+                            tint = palette.accentColor.copy(alpha = 0.7f),
+                            modifier = Modifier.size(11.dp),
                         )
                     }
                 }
@@ -802,6 +1008,102 @@ fun formatCardPan(raw: String): String {
     }
 
     return convertPersian(clean)
+}
+
+/** Formats a PAN or mask into 4 digit blocks wrapped in Left-to-Right Unicode isolate markers. */
+fun formatCardPanLtr(raw: String): String {
+    val formatted = formatCardPan(raw)
+    return "\u2066$formatted\u2069"
+}
+
+/** Mod-10 Luhn checksum validator for Iranian 16-digit Shetab card numbers. */
+fun isValidLuhn(pan: String): Boolean {
+    val clean = toAsciiDigits(pan).filter { it.isDigit() }
+    if (clean.length != 16) return false
+    var sum = 0
+    for (i in 0 until 16) {
+        var d = clean[i] - '0'
+        if (i % 2 == 0) {
+            d *= 2
+            if (d > 9) d -= 9
+        }
+        sum += d
+    }
+    return sum % 10 == 0
+}
+
+/** Normalizes a SHEBA string to canonical uppercase ASCII without spaces or hyphens. */
+fun cleanSheba(sheba: String): String {
+    return toAsciiDigits(sheba).replace(" ", "").replace("-", "").uppercase()
+}
+
+/** ISO 7064 Mod 97-10 validator for Iranian SHEBA / IBAN numbers. */
+fun isValidSheba(sheba: String): Boolean {
+    val clean = cleanSheba(sheba)
+    if (!clean.matches(Regex("^IR[0-9]{24}$"))) return false
+    val rearranged = clean.substring(4) + "1827" + clean.substring(2, 4)
+    var remainder = 0
+    for (c in rearranged) {
+        remainder = (remainder * 10 + (c - '0')) % 97
+    }
+    return remainder == 1
+}
+
+/** Formats a 26-character SHEBA into standardized spaced blocks: IRxx  xxxx  xxxx  xxxx  xxxx  xxxx  xx. */
+fun formatSheba(sheba: String): String {
+    val clean = cleanSheba(sheba)
+    if (!clean.startsWith("IR")) return sheba
+    val digits = clean.removePrefix("IR")
+    val chunks = mutableListOf("IR" + digits.take(2))
+    var remaining = digits.drop(2)
+    while (remaining.isNotEmpty()) {
+        chunks.add(remaining.take(4))
+        remaining = remaining.drop(4)
+    }
+    return chunks.joinToString("  ")
+}
+
+/**
+ * VisualTransformation for Iranian 16-digit card input with automated 4-digit block spacing.
+ */
+class ShetabPanVisualTransformation(val separator: String = "  ") : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val trimmed = text.text.take(16)
+        val out = StringBuilder()
+        for (i in trimmed.indices) {
+            out.append(trimmed[i])
+            if ((i + 1) % 4 == 0 && i + 1 != trimmed.length) {
+                out.append(separator)
+            }
+        }
+
+        val offsetMapping = object : OffsetMapping {
+            override fun originalToTransformed(offset: Int): Int {
+                val clamped = offset.coerceIn(0, trimmed.length)
+                val spaces = if (clamped <= 0) 0 else ((clamped - 1) / 4) * separator.length
+                return (clamped + spaces).coerceIn(0, out.length)
+            }
+
+            override fun transformedToOriginal(offset: Int): Int {
+                var orig = 0
+                var trans = 0
+                while (orig < trimmed.length && trans < offset) {
+                    orig++
+                    trans++
+                    if (orig % 4 == 0 && orig != trimmed.length) {
+                        if (trans + separator.length <= offset) {
+                            trans += separator.length
+                        } else {
+                            break
+                        }
+                    }
+                }
+                return orig.coerceIn(0, trimmed.length)
+            }
+        }
+
+        return TransformedText(AnnotatedString(out.toString()), offsetMapping)
+    }
 }
 
 /**
@@ -1231,6 +1533,39 @@ fun BankCardDeck(
                             .height(14.dp)
                             .background(MaterialTheme.colorScheme.outlineVariant)
                     )
+
+                    if (activeAccount.sheba.isNotBlank()) {
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(Radius.pill))
+                                .clickable {
+                                    val clean = cleanSheba(activeAccount.sheba)
+                                    clipboardManager.setText(AnnotatedString(clean))
+                                    android.widget.Toast.makeText(context, "شماره شبا کپی شد", android.widget.Toast.LENGTH_SHORT).show()
+                                }
+                                .padding(horizontal = Space.s, vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            CardCopyIcon(
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(13.dp),
+                            )
+                            Text(
+                                text = "کپی شبا",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+
+                        Box(
+                            Modifier
+                                .width(1.dp)
+                                .height(14.dp)
+                                .background(MaterialTheme.colorScheme.outlineVariant)
+                        )
+                    }
 
                     Row(
                         modifier = Modifier

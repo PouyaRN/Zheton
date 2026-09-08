@@ -2035,6 +2035,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         fullPan: String,
         expiry: String = "",
         theme: String? = null,
+        sheba: String? = null,
     ) {
         val next = store.bankAccounts.map { acct ->
             if (acct.key == key) {
@@ -2043,9 +2044,12 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     fullPan = fullPan.trim(),
                     expiry = expiry.trim(),
                 )
+                // SHEBA, like theme, is optional: null = caller never offered the field,
+                // empty = explicit clear. Canonical form strips spacing and casing.
+                val withSheba = if (sheba == null) base else base.copy(sheba = cleanSheba(sheba))
                 // Null = the editor was not given a theme row at all, so whatever is
                 // stored stays; empty string = she picked «رنگ خود بانک», clearing it.
-                if (theme == null) base else base.copy(theme = theme.trim())
+                if (theme == null) withSheba else withSheba.copy(theme = theme.trim())
             } else acct
         }
         store.bankAccounts = next

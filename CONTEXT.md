@@ -31,15 +31,16 @@ This document defines the canonical terms and bounded context concepts for Chand
 ## 2. Bank Cards & Payment Identity
 
 ### **Bank Card (کارت بانکی)**
-- The presentable face of a [Bank Account](#bank-account-mask-شناسه-ماسک-کارت): one card per SMS-tracked account, never a standalone record. Decorative and identity fields (full PAN, expiry, nickname, visual theme) attach to the account; the account's parsed balance and transactions stay the source of truth for money math.
+- The presentable face of a [Bank Account](#bank-account-mask-شناسه-ماسک-کارت): one card per SMS-tracked account, never a standalone record. Decorative and identity fields (full PAN, SHEBA, expiry, nickname, visual theme) attach to the account; the account's parsed balance and transactions stay the source of truth for money math.
+- Rendered strictly Left-to-Right (LTR) for PAN and SHEBA blocks regardless of UI layout direction, conforming to physical Iranian bank card standards.
 - The CVV2 is deliberately never stored, shown, or asked for. PAN and expiry render masked by default and reveal only with privacy mode off.
 
 ### **Bank Account Mask (شناسه ماسک کارت)**
 - The 16-digit or masked PAN (Primary Account Number) of an Iranian debit/credit card conforming to Shetab (شتاب) BIN standards.
-- Displayed with standard 4-digit grouping (`xxxx  xxxx  xxxx  xxxx`) and normalized to ASCII digits when copied to clipboard.
+- Displayed Left-to-Right with standard 4-digit grouping (`xxxx  xxxx  xxxx  xxxx`) and normalized to ASCII digits when copied to clipboard.
 
 ### **SHEBA / IBAN (شماره شبا)**
-- The 24-digit International Bank Account Number starting with `IR`, utilized for SATNA and PAYA interbank clearing.
+- The 26-character International Bank Account Number starting with `IR` followed by 24 digits, utilized for SATNA and PAYA interbank clearing. Attaches to the Bank Account for rapid clipboard export.
 
 ### **BIN Matching (تطبیق پیش‌شماره بانکی)**
 - Algorithmic recognition of the issuing Iranian bank based on the first 6 digits of the PAN (e.g., `603799` for Bank Melli, `610433` for Bank Mellat, `621986` for Bank Saman, `502229` for Pasargad, `622106` for BluBank).

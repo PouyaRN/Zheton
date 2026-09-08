@@ -140,6 +140,9 @@ class QuickAddActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val store = Store(applicationContext)
+        // A widget shortcut can preselect a category (e.g. بنزین) so the tap-to-log path
+        // is one fewer decision inside the dialog.
+        val presetCategoryId = intent?.getStringExtra(EXTRA_CATEGORY_ID)
 
         setContent {
             MuchTomanTheme(mode = store.themeMode) {
@@ -159,6 +162,7 @@ class QuickAddActivity : ComponentActivity() {
                             contentAlignment = Alignment.Center,
                         ) {
                             QuickAddDialogContent(
+                                presetCategoryId = presetCategoryId,
                                 onDismiss = { finish() },
                                 onSaved = { formattedAmount ->
                                     Toast.makeText(
@@ -174,6 +178,11 @@ class QuickAddActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    companion object {
+        /** Optional preselected category id passed by the Quick Add widget. */
+        const val EXTRA_CATEGORY_ID = "com.doxigo.muchtoman.extra.CATEGORY_ID"
     }
 }
 
@@ -198,12 +207,13 @@ private val QUICK_AMOUNTS_TOMAN = listOf(
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun QuickAddDialogContent(
+    presetCategoryId: String? = null,
     onDismiss: () -> Unit,
     onSaved: (String) -> Unit,
 ) {
     var isExpense by remember { mutableStateOf(true) }
     var amountText by remember { mutableStateOf("") }
-    var selectedCategoryId by remember { mutableStateOf<String?>("cat_groceries") }
+    var selectedCategoryId by remember { mutableStateOf<String?>(presetCategoryId ?: "cat_groceries") }
     var note by remember { mutableStateOf("") }
     var isSaving by remember { mutableStateOf(false) }
 

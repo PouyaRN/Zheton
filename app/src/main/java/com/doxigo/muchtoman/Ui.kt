@@ -87,6 +87,9 @@ import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -1022,8 +1025,8 @@ val snackbarHostState = remember { SnackbarHostState() }
         state.bankAccounts.firstOrNull { it.key == key }?.let { acc ->
             CardEditorSheet(
                 account = acc,
-                onSave = { nickname, pan, expiry, theme ->
-                    vm.updateAccountDetails(key, nickname, pan, expiry, theme)
+                onSave = { nickname, pan, expiry, theme, sheba ->
+                    vm.updateAccountDetails(key, nickname, pan, expiry, theme, sheba)
                     cardEditorKey = null
                 },
                 onDismiss = { cardEditorKey = null },
@@ -5592,7 +5595,7 @@ private fun LinkInstallmentPicker(
 @Composable
 private fun CardEditorSheet(
     account: BankAccount,
-    onSave: (nickname: String, pan: String, expiry: String, theme: String) -> Unit,
+    onSave: (nickname: String, pan: String, expiry: String, theme: String, sheba: String) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -5603,6 +5606,7 @@ private fun CardEditorSheet(
     var panDraft by remember(account.key) { mutableStateOf(account.fullPan) }
     var expiryDraft by remember(account.key) { mutableStateOf(account.expiry) }
     var themeDraft by remember(account.key) { mutableStateOf(account.theme) }
+    var shebaDraft by remember(account.key) { mutableStateOf(account.sheba) }
     var revealPan by remember(account.key) { mutableStateOf(false) }
 
     ModalBottomSheet(
@@ -5645,35 +5649,75 @@ private fun CardEditorSheet(
 
             Spacer(Modifier.height(Space.s))
             Text("شماره ۱۶ رقمی کارت", fontSize = 12.sp, color = muted)
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                 OutlinedTextField(
-                    value = if (revealPan) panDraft else if (panDraft.isBlank()) "" else "•••• •••• •••• " + panDraft.takeLast(4),
+                    value = if (revealPan) panDraft else if (panDraft.isBlank()) "" else panDraft,
                     onValueChange = { input ->
-                        val digits = input.filter { c -> c.isDigit() || c in '۰'..'۹' }
-                        // When masked, typing replaces from the tail so edits land on the
-                        // real number; when revealed, the field is the source of truth.
-                        panDraft = if (revealPan) digits.take(16)
-                        else (digits + panDraft.drop(digits.length)).take(16)
+                        val digits = toAsciiDigits(input).filter { it.isDigit() }
+                        panDraft = digits.take(16)
                     },
-                    placeholder = { Text("۶۰۳۷۹۹••••••••••", fontSize = 12.sp) },
+                    visualTransformation = ShetabPanVisualTransformation(),
+                    placeholder = { Text("6037 9912 3456 7890", fontSize = 12.sp) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     shape = RoundedCornerShape(Radius.field),
-                    modifier = Modifier.weight(1f).padding(top = Space.xs),
+                    modifier = Modifier.fillMaxWidth().padding(top = Space.xs),
                 )
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = { revealPan = !revealPan }) {
                     Text(if (revealPan) "پنهان" else "نمایش", fontSize = 12.sp)
                 }
+                if (panDraft.filter { it.isDigit() }.length == 16) {
+                    TextButton(
+                        onClick = {
+                            clipboard.setText(AnnotatedString(toAsciiDigits(panDraft).filter { it.isDigit() }))
+                            android.widget.Toast.makeText(context, "شماره کارت کپی شد", android.widget.Toast.LENGTH_SHORT).show()
+                        },
+                        contentPadding = PaddingValues(horizontal = Space.s),
+                    ) {
+                        Text("کپی شماره کارت", fontSize = 12.sp)
+                    }
+                }
+                if (panDraft.filter { it.isDigit() }.length == 16 && !isValidLuhn(panDraft)) {
+                    Text(
+                        "این شماره معتبر به نظر نمی‌رسد",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(start = Space.s),
+                    )
+                }
             }
-            if (panDraft.filter { it.isDigit() }.length == 16) {
-                TextButton(
-                    onClick = {
-                        clipboard.setText(AnnotatedString(panDraft))
-                        android.widget.Toast.makeText(context, "شماره کارت کپی شد", android.widget.Toast.LENGTH_SHORT).show()
+
+            Spacer(Modifier.height(Space.s))
+            Text("شماره شبا (اختیاری، ۲۶ رقم با IR)", fontSize = 12.sp, color = muted)
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                OutlinedTextField(
+                    value = shebaDraft,
+                    onValueChange = { input ->
+                        shebaDraft = input.filter { c -> c.isLetterOrDigit() || c == ' ' || c == '-' }.take(34)
                     },
-                    contentPadding = PaddingValues(horizontal = Space.s),
-                ) {
-                    Text("کپی شماره کارت", fontSize = 12.sp)
+                    placeholder = { Text("IR82 0170 0000 0012 3456 7890 12", fontSize = 11.sp) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
+                    shape = RoundedCornerShape(Radius.field),
+                    modifier = Modifier.fillMaxWidth().padding(top = Space.xs),
+                )
+            }
+            if (shebaDraft.isNotBlank()) {
+                val clean = cleanSheba(shebaDraft)
+                if (clean.length == 26 && !isValidSheba(clean)) {
+                    Text(
+                        "این شبا معتبر به نظر نمی‌رسد",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                } else if (clean.length == 26) {
+                    Text(
+                        "\u2066${formatSheba(clean)}\u2069",
+                        fontSize = 11.sp,
+                        color = muted,
+                    )
                 }
             }
 
@@ -5744,7 +5788,7 @@ private fun CardEditorSheet(
                 }
                 Spacer(Modifier.width(Space.s))
                 Button(
-                    onClick = { onSave(nicknameDraft, panDraft, expiryDraft, themeDraft) },
+                    onClick = { onSave(nicknameDraft, panDraft, expiryDraft, themeDraft, shebaDraft) },
                     shape = RoundedCornerShape(Radius.pill),
                 ) {
                     Text("ذخیره", fontSize = 13.sp)

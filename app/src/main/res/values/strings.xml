@@ -7,5 +7,17 @@
     <string name="widget_description">جمع دارایی‌ها روی صفحهٔ اصلی، با تغییر امروز و نمودار ماه گذشته.</string>
     <string name="widget_glance_label">چند تومان (داشبورد هوشمند)</string>
     <string name="widget_glance_description">نمایش زنده دارایی، خرج امروز، نرخ طلا و تتر، سررسید اقساط و ثبت سریع ۱-کلیک.</string>
+    <string name="widget_market_ticker_label">چند تومان (تابلوی بازار)</string>
+    <string name="widget_market_ticker_description">نرخ زنده طلا، سکه، دلار و تتر روی صفحه اصلی؛ انتخاب ارزها در اپ.</string>
+    <string name="widget_mini_ticker_label">چند تومان (مینی‌ویجت تک‌نرخی)</string>
+    <string name="widget_mini_ticker_description">یک نرخ مشخص — مثلاً گرم طلا یا دلار — در یک خانه صفحه اصلی.</string>
+    <string name="widget_safe_spend_label">چند تومان (خرج امن روزانه)</string>
+    <string name="widget_safe_spend_description">خرج مجاز امروز، نوار مصرف بودجه ماه و روزهای باقی‌مانده تا پایان چرخه.</string>
+    <string name="widget_liquid_gold_label">چند تومان (موجودی و معادل طلا)</string>
+    <string name="widget_liquid_gold_description">موجودی نقد عملیاتی، معادل گرم طلای ۱۸ عیار و خونریزی تورمی روزانه.</string>
+    <string name="widget_quick_add_label">چند تومان (ثبت سریع هزینه)</string>
+    <string name="widget_quick_add_description">میانبرهای تک‌لمسی برای ثبت فوری هزینه با دسته‌بندی آماده (خواربار، کافه، بنزین و...).</string>
+    <string name="widget_quick_cards_label">چند تومان (کپی سریع کارت‌ها)</string>
+    <string name="widget_quick_cards_description">کارت‌های فعال با کپی تک‌لمسی شماره کارت و شبا، مستقیم از صفحه اصلی.</string>
     <string name="tile_quick_add_label">ثبت سریع خرج</string>
 </resources>

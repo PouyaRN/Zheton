@@ -1,7 +1,9 @@
 package com.doxigo.muchtoman
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -117,5 +119,110 @@ class GlanceWidgetTest {
 
         assertTrue(goldFormatted.contains("۴٫۶ میلیون") || goldFormatted.contains("۴٫۵۸ میلیون") || goldFormatted.contains("میلیون"))
         assertTrue(tetherFormatted.contains("۸۷٫۲ هزار") || tetherFormatted.contains("۸۷ هزار") || tetherFormatted.contains("هزار"))
+    }
+
+    @Test
+    fun `marketTickers filters to pinned keys in catalog order`() {
+        val effective = mapOf(
+            "gold18" to 6_680_000.0,
+            "usd" to 60_200.0,
+            "usdt" to 61_300.0,
+            "coin_emami" to 58_000_000.0,
+            "eur" to 65_000.0,
+        )
+
+        val pinned = setOf("usd", "gold18")
+        val tickers = marketTickers(effective, pinned)
+
+        // Catalog order wins: gold18 comes before usd even though usd was "picked" first.
+        assertEquals(listOf("gold18", "usd"), tickers.map { it.key })
+        assertEquals("گرم طلا", tickers[0].label)
+        assertEquals("دلار", tickers[1].label)
+        assertEquals(6_680_000.0, tickers[0].rateToman, 0.001)
+    }
+
+    @Test
+    fun `marketTickers drops unpinned and missing rates`() {
+        val effective = mapOf("gold18" to 6_680_000.0, "usd" to 0.0)
+        val tickers = marketTickers(effective, setOf("gold18", "usd", "usdt"))
+
+        // usd is pinned but zero, usdt pinned but absent: neither renders.
+        assertEquals(listOf("gold18"), tickers.map { it.key })
+    }
+
+    @Test
+    fun `marketTickers returns empty list when nothing is pinned`() {
+        val effective = mapOf("gold18" to 6_680_000.0)
+        assertTrue(marketTickers(effective, emptySet()).isEmpty())
+    }
+
+    @Test
+    fun `runwayWidgetState projects safe spend and gold peg with masked lock`() {
+        // Anchor mid-month: day 10 of a 31-day month → 22 days remaining, ~32% progress.
+        val epochMs = 1_700_000_000_000L
+        val state = runwayWidgetState(
+            liquidCashToman = 28_000_000L,
+            upcomingObligationsToman = 5_000_000L,
+            reservationsToman = 1_000_000L,
+            goldRateToman = 6_400_000.0,
+            isMasked = false,
+            todayEpochMs = epochMs,
+        )
+
+        assertEquals(22_000_000L, state.safeToSpendToman)
+        assertEquals(22_000_000L / state.daysRemaining, state.dailyAllowanceToman)
+        assertTrue(state.daysRemaining >= 1)
+        assertTrue(state.monthProgressPercent in 0..100)
+        assertEquals(28_000_000L / 6_400_000.0, state.goldGrams ?: 0.0, 0.001)
+        assertTrue(state.dailyBleedToman > 0)
+        assertFalse(state.isMasked)
+        assertFalse(state.isOverdrawn)
+    }
+
+    @Test
+    fun `runwayWidgetState flags overdrawn budget`() {
+        val state = runwayWidgetState(
+            liquidCashToman = 2_000_000L,
+            upcomingObligationsToman = 9_000_000L,
+            reservationsToman = 0L,
+            goldRateToman = null,
+            isMasked = false,
+        )
+
+        assertTrue(state.isOverdrawn)
+        assertEquals(0L, state.dailyAllowanceToman)
+        assertEquals(-7_000_000L, state.safeToSpendToman)
+        assertNull(state.goldGrams)
+    }
+
+    @Test
+    fun `quickCardRows projects full pan and sheba or hides everything when masked`() {
+        val accounts = listOf(
+            BankAccount(
+                bank = "MELLAT",
+                mask = "610433••••••1234",
+                balance = 15_000_000.0,
+                nickname = "کارت حقوق",
+                fullPan = "۶۱۰۴۳۳۷۷۱۲۳۴۵۶۷۸",
+                sheba = "IR820170000000123456789012",
+            ),
+            BankAccount(
+                bank = "SAMAN",
+                mask = "621986••••••9012",
+                balance = 2_000_000.0,
+            ),
+        )
+
+        val rows = quickCardRows(accounts, isMasked = false)
+        assertEquals(2, rows.size)
+        assertEquals("کارت حقوق", rows[0].label)
+        assertEquals("6104337712345678", rows[0].fullPanDigits)
+        assertEquals("IR820170000000123456789012", rows[0].sheba)
+        // Second card has no full PAN: copy button hidden, mask shown instead.
+        assertTrue(rows[1].fullPanDigits.isEmpty())
+        assertTrue(rows[1].maskedPan.isNotBlank())
+
+        // Widget lock hides the whole deck.
+        assertTrue(quickCardRows(accounts, isMasked = true).isEmpty())
     }
 }
