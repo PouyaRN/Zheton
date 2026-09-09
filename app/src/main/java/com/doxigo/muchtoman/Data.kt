@@ -609,14 +609,15 @@ class Store(context: Context) {
         get() = read("disabledBanks", emptySet())
         set(v) = write("disabledBanks", v)
 
-    /**
-     * Built-in categories she never uses. The rows stay (builtins are structural — seed puts
-     * them back on every launch), only the offering goes: pickers, chips and filters to leave
-     * them out. Transactions already classified into one keep showing its name.
-     */
+    /** Built-in categories she never uses. */
     var hiddenCategories: Set<String>
         get() = read("hiddenCategories", emptySet())
         set(v) = write("hiddenCategories", v)
+
+    /** Persisted modular dashboard widget slots configuration. */
+    var widgetSlots: List<com.doxigo.muchtoman.widget.engine.WidgetSlot>
+        get() = com.doxigo.muchtoman.widget.engine.WidgetEngineDefaults.mergeWithDefaults(read("widgetSlots", emptyList()))
+        set(v) = write("widgetSlots", v)
 
     /** Whether the timeline shows rows she has hidden, struck through, for restore. */
     var showHidden: Boolean

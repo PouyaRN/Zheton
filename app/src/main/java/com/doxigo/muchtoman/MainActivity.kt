@@ -86,6 +86,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             hourlyWageToman = store.hourlyWageToman,
             cycleMode = store.cycleMode,
             cycleAnchorDay = store.cycleAnchorDay,
+            widgetSlots = store.widgetSlots,
         )
     )
     val state: StateFlow<UiState> = _state.asStateFlow()
@@ -424,6 +425,11 @@ class AppVm(app: Application) : AndroidViewModel(app) {
     fun setThemeMode(mode: ThemeMode) {
         store.themeMode = mode
         _state.update { it.copy(themeMode = mode) }
+    }
+
+    fun updateWidgetSlots(slots: List<com.doxigo.muchtoman.widget.engine.WidgetSlot>) {
+        store.widgetSlots = slots
+        _state.update { it.copy(widgetSlots = slots) }
     }
 
     /** Locked state is session-only; the *preference* is what persists. */
@@ -2152,6 +2158,7 @@ data class UiState(
     val hourlyWageToman: Long = 0L,
     val cycleMode: CycleMode = CycleMode.JALALI_MONTH,
     val cycleAnchorDay: Int = 1,
+    val widgetSlots: List<com.doxigo.muchtoman.widget.engine.WidgetSlot> = com.doxigo.muchtoman.widget.engine.WidgetEngineDefaults.defaultSlots,
 ) {
     val coins: List<Coin> get() = rates.coins
 

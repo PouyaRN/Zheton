@@ -726,6 +726,22 @@ val snackbarHostState = remember { SnackbarHostState() }
         return@Scaffold
       }
 
+      if (tab == Tab.HOME) {
+        com.doxigo.muchtoman.widget.engine.CommandCenterScreen(
+            state = state,
+            slots = state.widgetSlots,
+            onSaveSlots = { vm.updateWidgetSlots(it) },
+            onRefresh = { vm.refreshAll() },
+            onOpenLedger = { tab = Tab.LEDGER },
+            onOpenMarkets = { tab = Tab.ASSETS },
+            onOpenReports = { tab = Tab.REPORTS },
+            onEntryClick = { entry -> transactionRef = entry.txn.ref },
+            privacyMode = privacyMode,
+            bottomInset = pad.calculateBottomPadding(),
+        )
+        return@Scaffold
+      }
+
       Box(Modifier.fillMaxSize()) {
         // Pulling the list down refetches, exactly like the به‌روزرسانی button — the button
         // stays, because a labelled control is still the one she can be told about by phone.
