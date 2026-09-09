@@ -188,40 +188,42 @@ object Radius {
 }
 
 /**
- * ANDIS brutalist precision radius tokens.
- * Eliminates oversized rounded corners in favor of crisp, engineered corners.
+ * ANDIS Neobank & Fintech Radius Geometry (Revolut / N26 / Monzo style).
  */
 object AndisRadius {
     val sharp = 0.dp
-    val xs = 2.dp
-    val sm = 4.dp
-    val md = 8.dp
-    val card = 12.dp
+    val xs = 4.dp
+    val sm = 8.dp
+    val md = 12.dp
+    val card = 16.dp
+    val cardElevated = 20.dp
     val pill = 999.dp
 }
 
 /**
- * ANDIS Obsidian Editorial Design System Colors.
- * Luxury fintech, Swiss information design, 95% monochrome, and restrained neon lime.
+ * ANDIS Neobank Design System Colors — Revolut × N26 × Monzo × Apple Card.
+ * Deep obsidian, midnight navy surfaces, electric cyan, emerald, and soft coral.
  */
 data class AndisColors(
-    val background: Color = Color(0xFF060708),
-    val backgroundSecondary: Color = Color(0xFF0A0D0F),
-    val surfacePrimary: Color = Color(0xFF0E1214),
-    val surfaceElevated: Color = Color(0xFF13181B),
-    val surfaceSecondary: Color = Color(0xFF13181B),
-    val border: Color = Color(0xFF1C2327),
-    val borderStrong: Color = Color(0xFF283136),
-    val borderActive: Color = Color(0xFF283136),
-    val textPrimary: Color = Color(0xFFF3F4F4),
-    val textSecondary: Color = Color(0xFFA0A7AB),
-    val textMuted: Color = Color(0xFF656D72),
-    val disabled: Color = Color(0xFF3F464A),
-    val accentLime: Color = Color(0xFFD4FF00),
-    val danger: Color = Color(0xFFFF4D4D),
-    val warning: Color = Color(0xFFE5A93C),
-    val ghostLed: Color = Color(0x18F3F4F4),
-    val ghostLedDark: Color = Color(0x121C2327),
+    val background: Color = Color(0xFF070A0F),
+    val backgroundSecondary: Color = Color(0xFF0B1017),
+    val surfacePrimary: Color = Color(0xFF0F1622),
+    val surfaceElevated: Color = Color(0xFF162030),
+    val surfaceSecondary: Color = Color(0xFF162030),
+    val border: Color = Color(0xFF1E293B),
+    val borderStrong: Color = Color(0xFF334155),
+    val borderActive: Color = Color(0xFF38BDF8),
+    val textPrimary: Color = Color(0xFFF8FAFC),
+    val textSecondary: Color = Color(0xFF94A3B8),
+    val textMuted: Color = Color(0xFF64748B),
+    val disabled: Color = Color(0xFF475569),
+    val accentCyan: Color = Color(0xFF00D2FF),
+    val accentLime: Color = Color(0xFF38BDF8), // Electric cyan/refined blue accent
+    val emerald: Color = Color(0xFF10B981),   // Income/positive
+    val danger: Color = Color(0xFFF43F5E),    // Soft coral/red expense
+    val warning: Color = Color(0xFFF59E0B),   // Warm amber
+    val ghostLed: Color = Color(0x18F8FAFC),
+    val ghostLedDark: Color = Color(0x121E293B),
 )
 
 val LocalAndisColors = staticCompositionLocalOf { AndisColors() }
@@ -354,43 +356,43 @@ private val LightColors = lightColorScheme(
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFFD4FF00),            // Functional neon lime
-    onPrimary = Color(0xFF060708),
-    primaryContainer = Color(0xFF0E1214),
-    onPrimaryContainer = Color(0xFFD4FF00),
+    primary = Color(0xFF38BDF8),            // Electric cyan / refined blue
+    onPrimary = Color(0xFF070A0F),
+    primaryContainer = Color(0xFF0F1622),
+    onPrimaryContainer = Color(0xFF38BDF8),
 
-    secondary = Color(0xFFF3F4F4),
-    onSecondary = Color(0xFF060708),
-    secondaryContainer = Color(0xFF13181B),
-    onSecondaryContainer = Color(0xFFF3F4F4),
+    secondary = Color(0xFFF8FAFC),
+    onSecondary = Color(0xFF070A0F),
+    secondaryContainer = Color(0xFF162030),
+    onSecondaryContainer = Color(0xFFF8FAFC),
 
-    // Gain stays lime in Nothing OS financial terminal
-    tertiary = Color(0xFFD4FF00),
-    onTertiary = Color(0xFF060708),
-    tertiaryContainer = Color(0xFF0E1214),
-    onTertiaryContainer = Color(0xFFD4FF00),
+    // Gain stays emerald green
+    tertiary = Color(0xFF10B981),
+    onTertiary = Color(0xFF070A0F),
+    tertiaryContainer = Color(0xFF0F1622),
+    onTertiaryContainer = Color(0xFF10B981),
 
-    background = Color(0xFF060708),
-    onBackground = Color(0xFFF3F4F4),
+    background = Color(0xFF070A0F),
+    onBackground = Color(0xFFF8FAFC),
 
-    surface = Color(0xFF0E1214),
-    onSurface = Color(0xFFF3F4F4),
-    surfaceVariant = Color(0xFF13181B),
-    onSurfaceVariant = Color(0xFFA0A7AB),
+    surface = Color(0xFF0F1622),
+    onSurface = Color(0xFFF8FAFC),
+    surfaceVariant = Color(0xFF162030),
+    onSurfaceVariant = Color(0xFF94A3B8),
 
-    surfaceContainerLowest = Color(0xFF060708),
-    surfaceContainerLow = Color(0xFF0A0D0F),
-    surfaceContainer = Color(0xFF0E1214),
-    surfaceContainerHigh = Color(0xFF13181B),
-    surfaceContainerHighest = Color(0xFF1C2327),
+    surfaceContainerLowest = Color(0xFF070A0F),
+    surfaceContainerLow = Color(0xFF0B1017),
+    surfaceContainer = Color(0xFF0F1622),
+    surfaceContainerHigh = Color(0xFF162030),
+    surfaceContainerHighest = Color(0xFF1E293B),
 
-    outline = Color(0xFF1C2327),
-    outlineVariant = Color(0xFF283136),
+    outline = Color(0xFF1E293B),
+    outlineVariant = Color(0xFF334155),
 
-    error = Color(0xFFFF4D4D),
-    onError = Color(0xFF060708),
-    errorContainer = Color(0xFF2A0F0F),
-    onErrorContainer = Color(0xFFFF8B85),
+    error = Color(0xFFF43F5E),
+    onError = Color(0xFF070A0F),
+    errorContainer = Color(0xFF2A0F17),
+    onErrorContainer = Color(0xFFFDA4AF),
     scrim = Color(0xFF000000),
 )
 
@@ -655,15 +657,15 @@ fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -
         }
         ThemeMode.ANDIS_TERMINAL,
         ThemeMode.DARK -> HeroPalette(
-            top = Color(0xFF060708),
-            bottom = Color(0xFF0A0D0F),
-            gold = Color(0xFFD4FF00),
-            muted = Color(0xFFA0A7AB),
-            strong = Color(0xFFF3F4F4),
-            mint = Color(0xFFD4FF00),
-            warn = Color(0xFFFF4D4D),
-            well = Color(0xFF0E1214),
-            hairline = Color(0xFF1C2327),
+            top = Color(0xFF0F1622),
+            bottom = Color(0xFF070A0F),
+            gold = Color(0xFF38BDF8),
+            muted = Color(0xFF94A3B8),
+            strong = Color(0xFFF8FAFC),
+            mint = Color(0xFF10B981),
+            warn = Color(0xFFF43F5E),
+            well = Color(0xFF162030),
+            hairline = Color(0xFF1E293B),
         )
         ThemeMode.LIGHT -> HeroPalette(
             top = Color(0xFF1E293B),

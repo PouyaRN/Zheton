@@ -92,16 +92,20 @@ This document defines the canonical terms and bounded context concepts for Chand
 
 ---
 
-## 6. Unified Market-Style Design Architecture (الگوی طراحی بازار)
+## 6. Premium Neobank & Fintech Architecture (Revolut / N26 / Monzo Model)
 
-### **Market-Parity Design Language (زبان طراحی منطبق بر بازار)**
-- The design system governing the entire application, derived from `MarketUi.kt`. Characterized by polished elevation cards (`RoundedCornerShape(14.dp/16.dp)`), interactive spline charts with timeframe pickers and touch-scrubbing, horizontal glance carousels, sleek colored badges, and high-legibility Persian typography.
+### **Neobank Visual Paradigm (الگوی نئوبانک‌های پیشرو)**
+- The design philosophy inspired by Revolut 10, N26, Monzo, and Apple Card: deep obsidian background (`#070A0F`), layered midnight navy surfaces (`#0F1622`, `#162030`), electric cyan/blue primary accents (`#00D2FF` / `#38BDF8`), sophisticated emerald gains (`#10B981`), and soft coral/red expenses (`#F43F5E`).
 
-### **Interactive Net Worth Spline Card (کارت تعاملی ارزش خالص)**
-- The hero centerpiece of the Home screen, mirroring `MarketFluctuationCard`: displaying the total net worth in bold Persian digits, timeframe interval selectors (`۱ روز` تا `۱ سال`), touch-scrubbed spline trajectory, and high/low/range statistics chips.
+### **Financial Hero Display (نمایشگر مرکزی دارایی)**
+- Clean, prominent balance header displaying net worth in bold Persian numerals (`ModamFigures`, `tnum`), period performance pill, and high-priority quick action controls (افزودن, انتقال, کارت‌ها, گزارش).
 
-### **Glance Carousel Bar (نوار نگاه سریع)**
-- A horizontal scrolling tray of high-priority financial metrics (`GlanceCard`) providing immediate glance visibility into total liquidity, bank totals, gold rates, and currency pegs.
+### **Hub & Pocket System (سیستم جیب‌ها و فضاهای مالی / Pots & Spaces)**
+- Structured separation between operational liquid cash, bank card instruments, reserved goals (Pots), and investment allocations.
+
+### **Transaction Stream Ergonomics (ارگونومی جریان تراکنش‌ها)**
+- High-contrast, clean chronological stream with circular merchant/bank avatars, bilingual categorization, clear green/white amounts, and instant 1-tap detail drill-down.
+
 
 
 
