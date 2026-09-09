@@ -1,35 +1,44 @@
 package com.doxigo.muchtoman
 
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.Alignment
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -43,6 +52,11 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.inset
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -99,96 +113,173 @@ fun TabBar(
     modifier: Modifier = Modifier,
     onQuickAdd: (() -> Unit)? = null,
 ) {
+    val haptic = LocalHapticFeedback.current
+    val density = LocalDensity.current
+
+    // Coordinates mapping: Tab -> Pair(xDp, widthDp)
+    var tabBounds by remember { mutableStateOf<Map<Tab, Pair<Dp, Dp>>>(emptyMap()) }
+
+    val selectedBounds = tabBounds[selected]
+    val targetOffset = selectedBounds?.first ?: 0.dp
+    val targetWidth = selectedBounds?.second ?: 0.dp
+
+    // Continuous spring animation for the floating capsule pill
+    val animatedPillOffset by animateDpAsState(
+        targetValue = targetOffset,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "gliding_pill_offset",
+    )
+    val animatedPillWidth by animateDpAsState(
+        targetValue = targetWidth,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioLowBouncy,
+            stiffness = Spring.StiffnessMediumLow,
+        ),
+        label = "gliding_pill_width",
+    )
+
     Surface(
         modifier = modifier
             .background(MaterialTheme.colorScheme.background)
             .navigationBarsPadding()
             .padding(horizontal = Space.m, vertical = Space.s),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
-        shadowElevation = 3.dp,
+        shadowElevation = 6.dp,
     ) {
-        NavigationBar(
-            containerColor = Color.Transparent,
-            tonalElevation = 0.dp,
-            windowInsets = WindowInsets(0),
-            modifier = Modifier.height(68.dp),
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(68.dp)
+                .padding(horizontal = 4.dp, vertical = 4.dp),
         ) {
-            val half = tabs.size / 2
-            tabs.forEachIndexed { index, tab ->
-                if (onQuickAdd != null && index == half) {
-                    // Central high-velocity quick entry action FAB
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Surface(
-                            onClick = onQuickAdd,
-                            shape = CircleShape,
-                            color = Hero.gold,
-                            shadowElevation = 4.dp,
-                            modifier = Modifier.size(44.dp),
+            // Gliding capsule pill indicator
+            if (targetWidth > 0.dp) {
+                Box(
+                    modifier = Modifier
+                        .offset(x = animatedPillOffset)
+                        .width(animatedPillWidth)
+                        .fillMaxHeight()
+                        .padding(vertical = 2.dp, horizontal = 2.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(Hero.top)
+                        .border(1.dp, Hero.gold.copy(alpha = 0.25f), RoundedCornerShape(16.dp)),
+                )
+            }
+
+            // Tab items row
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                val half = tabs.size / 2
+                tabs.forEachIndexed { index, tab ->
+                    if (onQuickAdd != null && index == half) {
+                        // Central high-velocity quick entry action FAB
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                            contentAlignment = Alignment.Center,
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Canvas(modifier = Modifier.size(20.dp)) {
-                                    val stroke = 2.4.dp.toPx()
-                                    // Horizontal plus bar
-                                    drawLine(
-                                        color = Color(0xFF050607),
-                                        start = Offset(0f, size.height / 2),
-                                        end = Offset(size.width, size.height / 2),
-                                        strokeWidth = stroke,
-                                        cap = StrokeCap.Round,
-                                    )
-                                    // Vertical plus bar
-                                    drawLine(
-                                        color = Color(0xFF050607),
-                                        start = Offset(size.width / 2, 0f),
-                                        end = Offset(size.width / 2, size.height),
-                                        strokeWidth = stroke,
-                                        cap = StrokeCap.Round,
-                                    )
+                            Surface(
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    onQuickAdd()
+                                },
+                                shape = CircleShape,
+                                color = Hero.gold,
+                                shadowElevation = 4.dp,
+                                modifier = Modifier.size(44.dp),
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Canvas(modifier = Modifier.size(20.dp)) {
+                                        val stroke = 2.4.dp.toPx()
+                                        // Horizontal plus bar
+                                        drawLine(
+                                            color = Color(0xFF050607),
+                                            start = Offset(0f, size.height / 2),
+                                            end = Offset(size.width, size.height / 2),
+                                            strokeWidth = stroke,
+                                            cap = StrokeCap.Round,
+                                        )
+                                        // Vertical plus bar
+                                        drawLine(
+                                            color = Color(0xFF050607),
+                                            start = Offset(size.width / 2, 0f),
+                                            end = Offset(size.width / 2, size.height),
+                                            strokeWidth = stroke,
+                                            cap = StrokeCap.Round,
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                val badge = if (tab == Tab.LEDGER) ledgerBadge else 0
-                val isSelected = tab == selected
-                val iconScale by animateFloatAsState(
-                    targetValue = if (isSelected) 1.08f else 1.0f,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessMedium,
-                    ),
-                    label = "tab_icon_scale",
-                )
-                NavigationBarItem(
-                    selected = isSelected,
-                    onClick = { onSelect(tab) },
-                    icon = {
-                        BadgedBox(
-                            badge = {
-                                if (badge > 0) {
-                                    Badge(
-                                        containerColor = Hero.gold,
-                                        contentColor = Color(0xFF050607),
-                                    ) {
-                                        Text(
-                                            faNumber(badge.coerceAtMost(99).toDouble()),
-                                            style = figureStyle(Color(0xFF050607)),
-                                            fontSize = 10.sp,
-                                        )
+                    val badge = if (tab == Tab.LEDGER) ledgerBadge else 0
+                    val isSelected = tab == selected
+                    val iconScale by animateFloatAsState(
+                        targetValue = if (isSelected) 1.08f else 1.0f,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMedium,
+                        ),
+                        label = "tab_icon_scale",
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .onGloballyPositioned { coords ->
+                                val parent = coords.parentCoordinates
+                                if (parent != null) {
+                                    val pos = coords.positionInParent()
+                                    val xDp = with(density) { pos.x.toDp() }
+                                    val widthDp = with(density) { coords.size.width.toDp() }
+                                    if (tabBounds[tab] != Pair(xDp, widthDp)) {
+                                        tabBounds = tabBounds + (tab to Pair(xDp, widthDp))
                                     }
                                 }
+                            }
+                            .clip(RoundedCornerShape(16.dp))
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                            ) {
+                                if (!isSelected) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    onSelect(tab)
+                                }
                             },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
                         ) {
-                            val tint = if (isSelected) Hero.gold else MaterialTheme.colorScheme.onSurfaceVariant
-                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            BadgedBox(
+                                badge = {
+                                    if (badge > 0) {
+                                        Badge(
+                                            containerColor = Hero.gold,
+                                            contentColor = Color(0xFF050607),
+                                        ) {
+                                            Text(
+                                                faNumber(badge.coerceAtMost(99).toDouble()),
+                                                style = figureStyle(Color(0xFF050607)),
+                                                fontSize = 10.sp,
+                                            )
+                                        }
+                                    }
+                                },
+                            ) {
+                                val tint = if (isSelected) Hero.gold else MaterialTheme.colorScheme.onSurfaceVariant
                                 Canvas(
                                     Modifier
                                         .size(22.dp)
@@ -198,41 +289,44 @@ fun TabBar(
                                             compositingStrategy = CompositingStrategy.Offscreen
                                         },
                                 ) { drawTabIcon(tab, tint) }
-
-                                if (isSelected) {
-                                    Spacer(Modifier.height(2.dp))
-                                    Box(
-                                        Modifier
-                                            .size(3.dp)
-                                            .background(Hero.gold, CircleShape)
-                                    )
-                                }
                             }
-                        }
-                    },
-                    label = {
-                        Text(
-                            tab.fa,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = TextStyle(
-                                fontFamily = Modam,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                fontSize = 11.sp,
+
+                            Spacer(Modifier.height(3.dp))
+
+                            Text(
+                                tab.fa,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = TextStyle(
+                                    fontFamily = Modam,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    fontSize = 11.sp,
+                                    color = if (isSelected) Hero.gold else MaterialTheme.colorScheme.onSurfaceVariant,
+                                ),
                             )
-                        )
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        indicatorColor = Hero.top,
-                        selectedIconColor = Hero.gold,
-                        selectedTextColor = Hero.gold,
-                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    ),
-                )
+                        }
+                    }
+                }
             }
         }
     }
+}
+
+@Composable
+fun GlidingTabBar(
+    selected: Tab,
+    onSelect: (Tab) -> Unit,
+    modifier: Modifier = Modifier,
+    ledgerBadge: Int = 0,
+    onQuickAdd: (() -> Unit)? = null,
+) {
+    TabBar(
+        selected = selected,
+        ledgerBadge = ledgerBadge,
+        onSelect = onSelect,
+        modifier = modifier,
+        onQuickAdd = onQuickAdd,
+    )
 }
 
 /**
