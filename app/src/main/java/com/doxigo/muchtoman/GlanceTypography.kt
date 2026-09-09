@@ -10,33 +10,34 @@ import android.graphics.RectF
 import android.graphics.Shader
 import android.graphics.Typeface
 import android.os.Build
+import android.util.Log
 import android.util.LruCache
 import android.util.TypedValue
-import androidx.annotation.FontRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.core.content.res.ResourcesCompat
 import androidx.compose.ui.unit.dp
+import androidx.core.content.res.ResourcesCompat
 import androidx.glance.GlanceModifier
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.layout.ContentScale
 import androidx.glance.layout.height
-import java.util.concurrent.ConcurrentHashMap
+import androidx.glance.layout.width
 import kotlin.math.ceil
 
-enum class ModamWeight(@FontRes val fontRes: Int) {
-    REGULAR(R.font.modam),
-    MEDIUM(R.font.modam_medium),
-    SEMIBOLD(R.font.modam_semibold),
-    HEAVY(R.font.modam_heavy),
+enum class ModamWeight(val wght: Int, val wdth: Int) {
+    REGULAR(400, 100),
+    MEDIUM(500, 100),
+    SEMIBOLD(600, 90),
+    HEAVY(900, 90),
 }
 
 object GlanceTypographyEngine {
+    private const val TAG = "GlanceTypography"
     private const val TABULAR = "tnum"
-    private val typefaceCache = ConcurrentHashMap<Int, Typeface>()
+    private var baseModamTypeface: Typeface? = null
 
     // LRU Cache for rendered text and component bitmaps to avoid allocations on widget broadcasts
     private val bitmapCache = object : LruCache<String, Bitmap>(128) {
@@ -45,9 +46,14 @@ object GlanceTypographyEngine {
         }
     }
 
-    fun getTypeface(context: Context, @FontRes fontRes: Int): Typeface {
-        return typefaceCache.getOrPut(fontRes) {
-            runCatching { ResourcesCompat.getFont(context, fontRes) }.getOrNull() ?: Typeface.DEFAULT
+    /**
+     * Loads the raw TrueType font directly (res/font/modam.ttf) bypassing any XML wrappers.
+     */
+    fun getModamTypeface(context: Context): Typeface {
+        return baseModamTypeface ?: synchronized(this) {
+            baseModamTypeface ?: (runCatching {
+                ResourcesCompat.getFont(context.applicationContext, R.font.modam)
+            }.getOrNull() ?: Typeface.DEFAULT).also { baseModamTypeface = it }
         }
     }
 
@@ -80,7 +86,7 @@ object GlanceTypographyEngine {
             bitmapCache.get(cacheKey)?.let { return it }
         }
 
-        val tf = getTypeface(context, weight.fontRes)
+        val tf = getModamTypeface(context)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.SUBPIXEL_TEXT_FLAG).apply {
             typeface = tf
             textSize = spToPx(context, sp)
@@ -88,8 +94,9 @@ object GlanceTypographyEngine {
             if (tabular) {
                 fontFeatureSettings = TABULAR
             }
-            if (narrow && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                fontVariationSettings = "'wdth' 90"
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val wdth = if (narrow) 90 else weight.wdth
+                fontVariationSettings = "'wght' ${weight.wght}, 'wdth' $wdth"
             }
         }
 
@@ -99,6 +106,7 @@ object GlanceTypographyEngine {
         val height = ceil(fm.bottom - fm.top).toInt().coerceAtLeast(1)
 
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        bitmap.density = context.resources.displayMetrics.densityDpi
         Canvas(bitmap).drawText(text, 0f, -fm.top, paint)
 
         synchronized(bitmapCache) {
@@ -124,10 +132,13 @@ object GlanceTypographyEngine {
 
         val d = context.resources.displayMetrics
         val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.SUBPIXEL_TEXT_FLAG).apply {
-            typeface = getTypeface(context, R.font.modam_semibold)
+            typeface = getModamTypeface(context)
             textSize = spToPx(context, sp)
             fontFeatureSettings = TABULAR
             color = tone
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                fontVariationSettings = "'wght' 600, 'wdth' 90"
+            }
         }
 
         val fm = paint.fontMetrics
@@ -141,15 +152,16 @@ object GlanceTypographyEngine {
         val h = ceil(padY * 2 + (fm.bottom - fm.top)).toInt().coerceAtLeast(1)
 
         val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        bitmap.density = context.resources.displayMetrics.densityDpi
         val canvas = Canvas(bitmap)
 
-        // Pill background wash (15% opacity)
-        val bgWash = fade(tone, 0x24)
+        // Pill background wash (18% opacity)
+        val bgWash = fade(tone, 0x2E)
         canvas.drawRoundRect(
             RectF(0f, 0f, w.toFloat(), h.toFloat()),
             h / 2f,
             h / 2f,
-            Paint(Paint.ANTI_ALIAS_FLAG).apply { color = bgWash }
+            Paint(Paint.ANTI_ALIAS_FLAG).apply { color = bgWash },
         )
 
         // RTL: Caret sits on the right leading edge
@@ -205,10 +217,13 @@ object GlanceTypographyEngine {
         }
 
         val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.SUBPIXEL_TEXT_FLAG).apply {
-            typeface = getTypeface(context, R.font.modam_semibold)
+            typeface = getModamTypeface(context)
             textSize = spToPx(context, sp)
             fontFeatureSettings = TABULAR
             this.color = color
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                fontVariationSettings = "'wght' 600, 'wdth' 90"
+            }
         }
 
         val fm = paint.fontMetrics
@@ -216,79 +231,12 @@ object GlanceTypographyEngine {
         val h = ceil(fm.bottom - fm.top).toInt().coerceAtLeast(1)
 
         val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        bitmap.density = context.resources.displayMetrics.densityDpi
         Canvas(bitmap).drawText(displayText, 0f, -fm.top, paint)
 
         synchronized(bitmapCache) {
             bitmapCache.put(cacheKey, bitmap)
         }
-        return bitmap
-    }
-
-    /**
-     * Renders a smooth financial trajectory sparkline with subtle gradient area.
-     */
-    fun renderSparklineBitmap(
-        context: Context,
-        points: List<Pair<Long, Double>>,
-        tone: Int,
-        widthPx: Int,
-        heightPx: Int,
-    ): Bitmap {
-        val w = widthPx.coerceAtLeast(1)
-        val h = heightPx.coerceAtLeast(1)
-
-        if (points.isEmpty()) {
-            return Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        }
-
-        val d = context.resources.displayMetrics.density
-        val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-
-        val minV = points.minOf { it.second }
-        val maxV = points.maxOf { it.second }
-        val span = (maxV - minV).takeIf { it > 0.0 } ?: 1.0
-        val d0 = points.first().first
-        val dSpan = (points.last().first - d0).coerceAtLeast(1L).toFloat()
-        val padY = h * 0.12f
-
-        fun px(day: Long) = (day - d0) / dSpan * w
-        fun py(v: Double) =
-            if (maxV == minV) h / 2f
-            else (h - padY) - (((v - minV) / span).toFloat() * (h - 2 * padY))
-
-        val line = Path()
-        points.forEachIndexed { i, (day, v) ->
-            if (i == 0) line.moveTo(px(day), py(v)) else line.lineTo(px(day), py(v))
-        }
-
-        val area = Path().apply {
-            addPath(line)
-            lineTo(w.toFloat(), h.toFloat())
-            lineTo(0f, h.toFloat())
-            close()
-        }
-
-        canvas.drawPath(
-            area,
-            Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                shader = LinearGradient(
-                    0f, 0f, 0f, h.toFloat(),
-                    fade(tone, 0x44), fade(tone, 0x00),
-                    Shader.TileMode.CLAMP,
-                )
-            },
-        )
-        canvas.drawPath(
-            line,
-            Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = tone
-                style = Paint.Style.STROKE
-                strokeWidth = 2.2f * d
-                strokeCap = Paint.Cap.ROUND
-                strokeJoin = Paint.Join.ROUND
-            },
-        )
         return bitmap
     }
 
@@ -306,6 +254,7 @@ object GlanceTypographyEngine {
         val w = widthPx.coerceAtLeast(1)
         val h = heightPx.coerceAtLeast(1)
         val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        bitmap.density = context.resources.displayMetrics.densityDpi
         val canvas = Canvas(bitmap)
         val r = h / 2f
 
@@ -313,7 +262,7 @@ object GlanceTypographyEngine {
         canvas.drawRoundRect(
             RectF(0f, 0f, w.toFloat(), h.toFloat()),
             r, r,
-            Paint(Paint.ANTI_ALIAS_FLAG).apply { color = bgTone }
+            Paint(Paint.ANTI_ALIAS_FLAG).apply { color = bgTone },
         )
 
         // Active fill (RTL or LTR, width bounded)
@@ -322,7 +271,7 @@ object GlanceTypographyEngine {
         canvas.drawRoundRect(
             RectF(w - fillW, 0f, w.toFloat(), h.toFloat()),
             r, r,
-            Paint(Paint.ANTI_ALIAS_FLAG).apply { color = activeTone }
+            Paint(Paint.ANTI_ALIAS_FLAG).apply { color = activeTone },
         )
 
         return bitmap
@@ -356,10 +305,14 @@ fun GlanceModamText(
         narrow = narrow,
     )
 
+    val d = context.resources.displayMetrics
+    val widthDp = (bitmap.width / d.density).dp
+    val heightDp = (bitmap.height / d.density).dp
+
     Image(
         provider = ImageProvider(bitmap),
         contentDescription = contentDescription,
-        modifier = modifier,
+        modifier = modifier.width(widthDp).height(heightDp),
     )
 }
 
@@ -384,10 +337,14 @@ fun GlanceModamPill(
         up = up,
     )
 
+    val d = context.resources.displayMetrics
+    val widthDp = (bitmap.width / d.density).dp
+    val heightDp = (bitmap.height / d.density).dp
+
     Image(
         provider = ImageProvider(bitmap),
         contentDescription = contentDescription,
-        modifier = modifier,
+        modifier = modifier.width(widthDp).height(heightDp),
     )
 }
 
@@ -412,10 +369,14 @@ fun GlanceModamPan(
         color = color.toArgb(),
     )
 
+    val d = context.resources.displayMetrics
+    val widthDp = (bitmap.width / d.density).dp
+    val heightDp = (bitmap.height / d.density).dp
+
     Image(
         provider = ImageProvider(bitmap),
         contentDescription = contentDescription,
-        modifier = modifier,
+        modifier = modifier.width(widthDp).height(heightDp),
     )
 }
 
@@ -428,7 +389,7 @@ fun GlanceProgressGauge(
     activeTone: Color,
     bgTone: Color = Color(0xFF26231C),
     modifier: GlanceModifier = GlanceModifier,
-    heightDp: Float = 5f,
+    heightDp: Float = 6f,
 ) {
     val context = LocalContext.current
     val d = context.resources.displayMetrics

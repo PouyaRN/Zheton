@@ -26,8 +26,8 @@ android {
         applicationId = "com.doxigo.muchtoman"
         minSdk = 24
         targetSdk = 37
-        // CI passes these from the git tag; local builds default to latest release version.
-        versionCode = providers.gradleProperty("muchtoman.versionCode").orNull?.toInt() ?: 210
+        // High versionCode to guarantee safe upgrade over any existing build
+        versionCode = providers.gradleProperty("muchtoman.versionCode").orNull?.toInt() ?: 2000000500
         versionName = providers.gradleProperty("muchtoman.versionName").orNull ?: "1.0.5"
         buildConfigField("boolean", "LITE", "false")
     }

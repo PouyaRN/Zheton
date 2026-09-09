@@ -136,7 +136,8 @@ class ChandTomanGlanceWidget : GlanceAppWidget() {
 @Composable
 private fun ChandTomanWidgetBody(context: Context, state: GlanceWidgetState) {
     val darkSurface = Color(0xFF13110E)
-    val cardSurface = Color(0xFF1B1914)
+    val cardSurface = Color(0xFF1B1813)
+    val chipSurface = Color(0xFF221E17)
     val goldColor = Color(0xFFF7C948)
     val mintColor = Color(0xFF3BE0A8)
     val warnColor = Color(0xFFFFB4A6)
@@ -151,20 +152,20 @@ private fun ChandTomanWidgetBody(context: Context, state: GlanceWidgetState) {
             .fillMaxSize()
             .background(darkSurface)
             .cornerRadius(22.dp)
-            .padding(14.dp)
+            .padding(12.dp)
             .clickable(actionStartActivity(mainComponent)),
     ) {
         Column(
             modifier = GlanceModifier.fillMaxSize(),
         ) {
-            // Header: App title + Market Rates Ticker
+            // Header: App title + Market Rates Ticker chips
             Row(
                 modifier = GlanceModifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 GlanceModamText(
                     text = "چند تومان",
-                    sp = 13.5f,
+                    sp = 14f,
                     color = goldColor,
                     weight = ModamWeight.HEAVY,
                 )
@@ -173,22 +174,36 @@ private fun ChandTomanWidgetBody(context: Context, state: GlanceWidgetState) {
 
                 // Gold & Tether rates chips
                 if (state.goldRateToman != null && state.goldRateToman > 0) {
-                    GlanceModamText(
-                        text = "طلا: ${faCompact(state.goldRateToman)}",
-                        sp = 10f,
-                        color = mutedColor,
-                        weight = ModamWeight.MEDIUM,
-                    )
+                    Box(
+                        modifier = GlanceModifier
+                            .background(chipSurface)
+                            .cornerRadius(6.dp)
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                    ) {
+                        GlanceModamText(
+                            text = "طلا: ${faCompact(state.goldRateToman)}",
+                            sp = 9.5f,
+                            color = goldColor,
+                            weight = ModamWeight.MEDIUM,
+                        )
+                    }
                 }
 
                 if (state.tetherRateToman != null && state.tetherRateToman > 0) {
-                    Spacer(GlanceModifier.width(8.dp))
-                    GlanceModamText(
-                        text = "تتر: ${faCompact(state.tetherRateToman)}",
-                        sp = 10f,
-                        color = mutedColor,
-                        weight = ModamWeight.MEDIUM,
-                    )
+                    Spacer(GlanceModifier.width(6.dp))
+                    Box(
+                        modifier = GlanceModifier
+                            .background(chipSurface)
+                            .cornerRadius(6.dp)
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                    ) {
+                        GlanceModamText(
+                            text = "تتر: ${faCompact(state.tetherRateToman)}",
+                            sp = 9.5f,
+                            color = mintColor,
+                            weight = ModamWeight.MEDIUM,
+                        )
+                    }
                 }
             }
 
@@ -217,7 +232,7 @@ private fun ChandTomanWidgetBody(context: Context, state: GlanceWidgetState) {
 
                     GlanceModamText(
                         text = totalStr,
-                        sp = 21f,
+                        sp = 23f,
                         color = if (state.isMasked) goldColor else textWhite,
                         weight = ModamWeight.HEAVY,
                         narrow = true,
@@ -229,22 +244,22 @@ private fun ChandTomanWidgetBody(context: Context, state: GlanceWidgetState) {
                     val deltaLabel = "${if (isPositive) "+" else ""}${faDecimal(abs(state.deltaPercent), 1)}٪ ${state.deltaSince}".trim()
                     GlanceModamPill(
                         text = deltaLabel,
-                        sp = 10.5f,
+                        sp = 11f,
                         tone = if (isPositive) mintColor else warnColor,
                         up = if (abs(state.deltaPercent) < 0.01) null else isPositive,
                     )
                 }
             }
 
-            Spacer(GlanceModifier.height(10.dp))
+            Spacer(GlanceModifier.height(8.dp))
 
             // Info Card: Today's Spend & Installment Countdown
             Box(
                 modifier = GlanceModifier
                     .fillMaxWidth()
                     .background(cardSurface)
-                    .cornerRadius(12.dp)
-                    .padding(horizontal = 10.dp, vertical = 7.dp),
+                    .cornerRadius(10.dp)
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
             ) {
                 Row(
                     modifier = GlanceModifier.fillMaxWidth(),
@@ -276,16 +291,16 @@ private fun ChandTomanWidgetBody(context: Context, state: GlanceWidgetState) {
                 }
             }
 
-            Spacer(GlanceModifier.height(8.dp))
+            Spacer(GlanceModifier.height(7.dp))
 
             // 1-Tap Quick Action Row
             Box(
                 modifier = GlanceModifier
                     .fillMaxWidth()
-                    .background(Color(0xFF262012))
-                    .cornerRadius(12.dp)
+                    .background(Color(0xFF282112))
+                    .cornerRadius(10.dp)
                     .clickable(actionStartActivity(quickAddComponent))
-                    .padding(vertical = 7.dp),
+                    .padding(vertical = 6.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 GlanceModamText(
