@@ -113,8 +113,8 @@ fun promptUnlock(activity: FragmentActivity, onSuccess: () -> Unit) {
     )
     prompt.authenticate(
         BiometricPrompt.PromptInfo.Builder()
-            .setTitle("قفل چقدر تومن")
-            .setSubtitle("برای دیدن دارایی‌هات، هویتت رو تأیید کن")
+            .setTitle("قفل اندیس // ANDIS OS")
+            .setSubtitle("برای مشاهده دارایی‌ها، هویت خود را تأیید کنید")
             .setAllowedAuthenticators(authenticators)
             .build()
     )
@@ -154,7 +154,7 @@ fun LockScreen(onUnlock: () -> Unit) {
             }
             Spacer(Modifier.height(Space.xxl))
             Text(
-                "چقدر تومن قفل شده",
+                "اندیس قفل شده",
                 fontSize = 26.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = Hero.strong,

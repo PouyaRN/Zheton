@@ -1074,9 +1074,9 @@ private fun TimelineRow(
     val txn = entry.txn
     val incoming = txn.direction == "in"
     val tone = when {
-        entry.transfer -> MaterialTheme.colorScheme.onSurfaceVariant
-        incoming -> Color(0xFF2E9E5B)
-        else -> MaterialTheme.colorScheme.onBackground
+        entry.transfer -> AndisTheme.colors.textMuted
+        incoming -> AndisTheme.colors.accentLime
+        else -> AndisTheme.colors.textPrimary
     }
     var menuOpen by remember { mutableStateOf(false) }
     val isCreditLinked = state.obligations.any { it.linkedTxnRef == txn.ref }
