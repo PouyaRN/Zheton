@@ -6,7 +6,7 @@
     android:background="@drawable/widget_bg"
     android:layoutDirection="rtl"
     android:orientation="vertical"
-    android:padding="8dp">
+    android:padding="10dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -17,28 +17,30 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:fontFamily="@font/modam_semibold"
             android:text="کارت‌های شتاب شما"
             android:textColor="#F7C948"
-            android:textSize="11sp"
-            android:textStyle="bold" />
+            android:textSize="11.5sp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:fontFamily="@font/modam"
             android:text="کپی با یک لمس"
             android:textColor="#93B7B0"
-            android:textSize="8sp" />
+            android:textSize="9sp" />
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="6dp"
         android:layout_weight="1"
-        android:background="#221F19"
+        android:background="#1B1914"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="8dp">
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="6dp">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -49,40 +51,54 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:fontFamily="@font/modam_semibold"
                 android:text="کارت حقوق"
                 android:textColor="#FAF9F6"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+                android:textSize="10.5sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="603799••••1234"
+                android:fontFamily="@font/modam_semibold"
+                android:text="6037  9918  2345  6789"
                 android:textColor="#93B7B0"
-                android:textSize="9sp" />
+                android:textSize="10.5sp" />
         </LinearLayout>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="#322A14"
-            android:paddingHorizontal="6dp"
-            android:paddingVertical="3dp"
-            android:text="کپی شماره"
+            android:background="#262012"
+            android:fontFamily="@font/modam_medium"
+            android:paddingHorizontal="7dp"
+            android:paddingVertical="4dp"
+            android:text="کپی کارت"
             android:textColor="#F7C948"
-            android:textSize="9sp"
-            android:textStyle="bold" />
+            android:textSize="9.5sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:background="#142922"
+            android:fontFamily="@font/modam_medium"
+            android:paddingHorizontal="7dp"
+            android:paddingVertical="4dp"
+            android:text="کپی شبا"
+            android:textColor="#3BE0A8"
+            android:textSize="9.5sp" />
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="4dp"
+        android:layout_marginTop="5dp"
         android:layout_weight="1"
-        android:background="#221F19"
+        android:background="#1B1914"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="8dp">
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="6dp">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -93,28 +109,29 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:fontFamily="@font/modam_semibold"
                 android:text="کارت روزمره"
                 android:textColor="#FAF9F6"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+                android:textSize="10.5sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="621986••••9012"
+                android:fontFamily="@font/modam_semibold"
+                android:text="6219  8610  9988  9012"
                 android:textColor="#93B7B0"
-                android:textSize="9sp" />
+                android:textSize="10.5sp" />
         </LinearLayout>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="#322A14"
-            android:paddingHorizontal="6dp"
-            android:paddingVertical="3dp"
-            android:text="کپی شماره"
+            android:background="#262012"
+            android:fontFamily="@font/modam_medium"
+            android:paddingHorizontal="7dp"
+            android:paddingVertical="4dp"
+            android:text="کپی کارت"
             android:textColor="#F7C948"
-            android:textSize="9sp"
-            android:textStyle="bold" />
+            android:textSize="9.5sp" />
     </LinearLayout>
 </LinearLayout>

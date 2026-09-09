@@ -7,40 +7,40 @@
     android:layoutDirection="rtl"
     android:gravity="center"
     android:orientation="horizontal"
-    android:padding="6dp">
+    android:padding="8dp">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:background="#322A14"
-        android:paddingHorizontal="8dp"
-        android:paddingVertical="4dp"
-        android:text="＋خواربار"
+        android:background="#262012"
+        android:fontFamily="@font/modam_semibold"
+        android:paddingHorizontal="9dp"
+        android:paddingVertical="5dp"
+        android:text="＋ خواربار"
         android:textColor="#F7C948"
-        android:textSize="10sp"
-        android:textStyle="bold" />
+        android:textSize="10.5sp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="4dp"
-        android:background="#322A14"
-        android:paddingHorizontal="8dp"
-        android:paddingVertical="4dp"
-        android:text="＋کافه"
+        android:layout_marginStart="5dp"
+        android:background="#262012"
+        android:fontFamily="@font/modam_semibold"
+        android:paddingHorizontal="9dp"
+        android:paddingVertical="5dp"
+        android:text="＋ کافه"
         android:textColor="#F7C948"
-        android:textSize="10sp"
-        android:textStyle="bold" />
+        android:textSize="10.5sp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="4dp"
-        android:background="#322A14"
-        android:paddingHorizontal="8dp"
-        android:paddingVertical="4dp"
-        android:text="＋بنزین"
+        android:layout_marginStart="5dp"
+        android:background="#262012"
+        android:fontFamily="@font/modam_semibold"
+        android:paddingHorizontal="9dp"
+        android:paddingVertical="5dp"
+        android:text="＋ بنزین"
         android:textColor="#F7C948"
-        android:textSize="10sp"
-        android:textStyle="bold" />
+        android:textSize="10.5sp" />
 </LinearLayout>

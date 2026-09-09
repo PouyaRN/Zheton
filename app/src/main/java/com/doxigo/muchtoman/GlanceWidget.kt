@@ -818,15 +818,15 @@ class QuickAddGlanceWidget : GlanceAppWidget() {
 @Composable
 private fun QuickAddBody(context: Context) {
     val goldColor = Color(0xFFF7C948)
-    val darkSurface = Color(0xFF161410)
-    val chipSurface = Color(0xFF322A14)
+    val darkSurface = Color(0xFF13110E)
+    val chipSurface = Color(0xFF262012)
 
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
             .background(darkSurface)
-            .cornerRadius(16.dp)
-            .padding(6.dp),
+            .cornerRadius(18.dp)
+            .padding(8.dp),
         contentAlignment = Alignment.Center,
     ) {
         Row(
@@ -839,7 +839,7 @@ private fun QuickAddBody(context: Context) {
                     modifier = GlanceModifier
                         .background(chipSurface)
                         .cornerRadius(10.dp)
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .padding(horizontal = 9.dp, vertical = 5.dp)
                         .clickable(
                             actionStartActivity(
                                 Intent(context, QuickAddActivity::class.java).apply {
@@ -848,17 +848,14 @@ private fun QuickAddBody(context: Context) {
                             ),
                         ),
                 ) {
-                    Text(
-                        text = "＋${chip.label}",
-                        style = TextStyle(
-                            color = ColorProvider(goldColor),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                        ),
-                        maxLines = 1,
+                    GlanceModamText(
+                        text = "＋ ${chip.label}",
+                        sp = 10.5f,
+                        color = goldColor,
+                        weight = ModamWeight.SEMIBOLD,
                     )
                 }
-                Spacer(GlanceModifier.width(4.dp))
+                Spacer(GlanceModifier.width(5.dp))
             }
         }
     }

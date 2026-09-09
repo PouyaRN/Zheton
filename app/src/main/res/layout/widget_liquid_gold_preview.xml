@@ -6,43 +6,47 @@
     android:background="@drawable/widget_bg"
     android:layoutDirection="rtl"
     android:orientation="vertical"
-    android:padding="10dp">
+    android:padding="12dp">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:fontFamily="@font/modam_medium"
         android:text="موجودی نقد عملیاتی"
         android:textColor="#93B7B0"
-        android:textSize="10sp" />
+        android:textSize="10.5sp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="2dp"
+        android:layout_marginTop="3dp"
+        android:fontFamily="@font/modam_heavy"
         android:text="۲۸,۴۵۰,۰۰۰ تومان"
         android:textColor="#FAF9F6"
-        android:textSize="16sp"
-        android:textStyle="bold" />
+        android:textSize="18sp" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="5dp"
+        android:layout_marginTop="6dp"
+        android:gravity="center_vertical"
         android:orientation="horizontal">
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="≈ ۴.۲۶ گرم طلای ۱۸"
+            android:fontFamily="@font/modam_semibold"
+            android:text="معادل ۴٫۲۶ گرم طلای ۱۸"
             android:textColor="#F7C948"
-            android:textSize="10sp" />
+            android:textSize="10.5sp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="خونریزی روزانه: ۳۵− ت"
+            android:fontFamily="@font/modam"
+            android:text="خونریزی: ۳۵− ت"
             android:textColor="#FF9E80"
-            android:textSize="9sp" />
+            android:textSize="9.5sp" />
     </LinearLayout>
 </LinearLayout>

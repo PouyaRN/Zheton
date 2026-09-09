@@ -11,21 +11,23 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:gravity="center_vertical"
         android:orientation="horizontal">
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:fontFamily="@font/modam_heavy"
             android:text="چند تومان"
             android:textColor="#F7C948"
-            android:textSize="13sp"
-            android:textStyle="bold" />
+            android:textSize="13.5sp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="طلا ۱۸ | تتر"
+            android:fontFamily="@font/modam_medium"
+            android:text="طلا: ۶.۶۸ م | تتر: ۶۱.۳ هـ"
             android:textColor="#93B7B0"
             android:textSize="10sp" />
     </LinearLayout>
@@ -34,38 +36,43 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
+        android:fontFamily="@font/modam_medium"
         android:text="جمع دارایی خالص"
         android:textColor="#93B7B0"
-        android:textSize="11sp" />
+        android:textSize="10.5sp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
+        android:fontFamily="@font/modam_heavy"
         android:text="۱۲۵,۴۰۰,۰۰۰ تومان"
         android:textColor="#FAF9F6"
-        android:textSize="18sp"
-        android:textStyle="bold" />
+        android:textSize="20sp" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:background="#221F19"
-        android:padding="6dp"
-        android:orientation="horizontal">
+        android:background="#1B1914"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="10dp"
+        android:paddingVertical="7dp">
 
         <TextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:fontFamily="@font/modam_medium"
             android:text="خرج امروز: ۳۵۰,۰۰۰ ت"
             android:textColor="#FF9E80"
-            android:textSize="11sp" />
+            android:textSize="10.5sp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:fontFamily="@font/modam_medium"
             android:text="قسط بعدی: ۴ روز"
             android:textColor="#F7C948"
             android:textSize="10sp" />
@@ -75,12 +82,12 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:background="#322A14"
+        android:background="#262012"
+        android:fontFamily="@font/modam_semibold"
         android:gravity="center"
-        android:padding="6dp"
+        android:paddingVertical="7dp"
         android:text="＋ ثبت سریع هزینه یا درآمد"
         android:textColor="#F7C948"
-        android:textSize="11sp"
-        android:textStyle="bold" />
+        android:textSize="11.5sp" />
 
 </LinearLayout>
