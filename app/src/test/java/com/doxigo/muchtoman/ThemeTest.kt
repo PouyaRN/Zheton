@@ -11,6 +11,7 @@ class ThemeTest {
         assertEquals(
             listOf(
                 "SYSTEM",
+                "ANDIS_TERMINAL",
                 "LIGHT",
                 "DARK",
                 "AMOLED",
@@ -21,6 +22,7 @@ class ThemeTest {
             ),
             names,
         )
+        assertEquals("اندیس", ThemeMode.ANDIS_TERMINAL.fa)
         assertEquals("آمولد", ThemeMode.AMOLED.fa)
         assertEquals("زمرد", ThemeMode.OBSIDIAN_EMERALD.fa)
         assertEquals("ارغوانی", ThemeMode.ROYAL_AMETHYST.fa)

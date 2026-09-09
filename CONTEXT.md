@@ -89,3 +89,23 @@ This document defines the canonical terms and bounded context concepts for Chand
 
 ### **Opportunity Cost Index / Regret Metric (هزینه فرصت خرید)**
 - The counterfactual valuation of a discretionary expenditure had that capital been allocated to Gold ETFs (e.g., Ayar / Kahroba) or US Dollar reserves over a 3- to 6-month horizon.
+
+---
+
+## 6. ANDIS Financial OS & Widget Architecture
+
+### **ANDIS (اندیس)**
+- The financial operating system identity uniting Nothing OS dot-matrix aesthetics, Swiss grid systems, and high-density financial terminal design over Iranian rial/toman economics.
+
+### **Financial Widget (ویجت مالی)**
+- A self-contained, composable financial visual unit supporting three layout densities (`compact`, `standard`, `expanded`) within a responsive grid (4-column mobile, 8-column tablet, 12-column desktop).
+
+### **Widget Grid Manifest (مانیفست چینش ویجت‌ها)**
+- The persisted user configuration governing widget ordering, visibility, pinning, and slot sizing across dashboard surfaces.
+
+### **Functional Neon Lime (`#D4FF00`)**
+- The high-contrast accent signal reserved strictly for positive financial delta, active states, progress completion, and critical interactive metrics—never applied decoratively.
+
+### **Dot-Matrix Semantic Language (زبان نقطه‌ای)**
+- Geometric dot arrays and segmented indicators utilized for progress bars, loading skeletons, category allocations, and status beacons.
+

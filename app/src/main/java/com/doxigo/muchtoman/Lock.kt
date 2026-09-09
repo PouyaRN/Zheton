@@ -597,10 +597,18 @@ private fun SectionLabel(text: String) {
 /** Choice of classic and studio luxury themes. */
 @Composable
 private fun ThemePicker(current: ThemeMode, onChange: (ThemeMode) -> Unit) {
-    val row1 = listOf(ThemeMode.SYSTEM, ThemeMode.LIGHT, ThemeMode.DARK, ThemeMode.AMOLED)
+    val row0 = listOf(ThemeMode.SYSTEM, ThemeMode.ANDIS_TERMINAL)
+    val row1 = listOf(ThemeMode.LIGHT, ThemeMode.DARK, ThemeMode.AMOLED)
     val row2 = listOf(ThemeMode.OBSIDIAN_EMERALD, ThemeMode.ROYAL_AMETHYST, ThemeMode.NORDIC_SLATE, ThemeMode.CYBER_GOLD)
 
     Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+        SegmentedChoice(
+            options = row0,
+            selected = current,
+            label = { it.fa },
+            onSelect = onChange,
+            fontSize = 13.sp,
+        )
         SegmentedChoice(
             options = row1,
             selected = current,

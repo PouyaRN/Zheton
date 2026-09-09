@@ -147,6 +147,7 @@ object Hero {
 /** Theme choices: follow phone, light, dark, AMOLED, or modern studio palettes. */
 enum class ThemeMode(val fa: String) {
     SYSTEM("خودکار"),
+    ANDIS_TERMINAL("اندیس"),
     LIGHT("روشن"),
     DARK("تیره"),
     AMOLED("آمولد"),
@@ -170,15 +171,59 @@ object Space {
 object Radius {
     /** Fully round. Pills, chips, action circles. */
     val pill = 999.dp
-    val field = 18.dp
-    val card = 24.dp
+    val field = 10.dp
+    val card = 12.dp
 
     /** The container a band of rows sits in, as one object rather than a stack of cards. */
-    val group = 28.dp
+    val group = 14.dp
 
     /** Only the two bottom corners; the field runs off the top of the screen. */
-    val hero = 36.dp
-    val sheet = 32.dp
+    val hero = 16.dp
+    val sheet = 18.dp
+}
+
+/**
+ * ANDIS brutalist precision radius tokens.
+ * Eliminates oversized rounded corners in favor of crisp, engineered corners.
+ */
+object AndisRadius {
+    val sharp = 0.dp
+    val xs = 2.dp
+    val sm = 4.dp
+    val md = 8.dp
+    val card = 12.dp
+    val pill = 999.dp
+}
+
+/**
+ * ANDIS Design System Colors — Nothing OS × Financial Terminal.
+ * Near-black technical background, precision surfaces, and functional neon lime (#D4FF00).
+ */
+data class AndisColors(
+    val background: Color = Color(0xFF050607),
+    val surfacePrimary: Color = Color(0xFF0A0D0F),
+    val surfaceSecondary: Color = Color(0xFF101316),
+    val border: Color = Color(0xFF1A1F22),
+    val borderActive: Color = Color(0xFF2A3238),
+    val textPrimary: Color = Color(0xFFF1F3F4),
+    val textSecondary: Color = Color(0xFF8A9298),
+    val textMuted: Color = Color(0xFF535A60),
+    val accentLime: Color = Color(0xFFD4FF00),
+    val danger: Color = Color(0xFFFF443A),
+    val warning: Color = Color(0xFFFFB800),
+    val ghostLed: Color = Color(0x18F1F3F4),
+    val ghostLedDark: Color = Color(0x121A1F22),
+)
+
+val LocalAndisColors = staticCompositionLocalOf { AndisColors() }
+
+object AndisTheme {
+    val colors: AndisColors
+        @Composable
+        get() = LocalAndisColors.current
+
+    val space = Space
+    val radius = AndisRadius
 }
 
 /**
@@ -241,83 +286,83 @@ private val LightColors = lightColorScheme(
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFFF2C64D),
-    onPrimary = Color(0xFF2C2004),
-    primaryContainer = Color(0xFF14453E),
-    onPrimaryContainer = Color(0xFFCFE7E1),
+    primary = Color(0xFFD4FF00),            // Functional neon lime
+    onPrimary = Color(0xFF050607),
+    primaryContainer = Color(0xFF101316),
+    onPrimaryContainer = Color(0xFFD4FF00),
 
-    secondary = Color(0xFFE8C77E),
-    onSecondary = Color(0xFF2E1F00),
-    secondaryContainer = Color(0xFF4A3A12),
-    onSecondaryContainer = Color(0xFFF8E8C4),
+    secondary = Color(0xFFF1F3F4),
+    onSecondary = Color(0xFF050607),
+    secondaryContainer = Color(0xFF101316),
+    onSecondaryContainer = Color(0xFFF1F3F4),
 
-    // Gain stays green in the dark too.
-    tertiary = Color(0xFF3BE0A8),
-    onTertiary = Color(0xFF00311F),
-    tertiaryContainer = Color(0xFF064832),
-    onTertiaryContainer = Color(0xFFB6F2D8),
+    // Gain stays lime in Nothing OS financial terminal
+    tertiary = Color(0xFFD4FF00),
+    onTertiary = Color(0xFF050607),
+    tertiaryContainer = Color(0xFF101316),
+    onTertiaryContainer = Color(0xFFD4FF00),
 
-    background = Color(0xFF070C0B),
-    onBackground = Color(0xFFE8EEEC),
+    background = Color(0xFF050607),
+    onBackground = Color(0xFFF1F3F4),
 
-    surface = Color(0xFF121A18),
-    onSurface = Color(0xFFE8EEEC),
-    surfaceVariant = Color(0xFF26302E),
-    onSurfaceVariant = Color(0xFFA9BCB7),
+    surface = Color(0xFF0A0D0F),
+    onSurface = Color(0xFFF1F3F4),
+    surfaceVariant = Color(0xFF101316),
+    onSurfaceVariant = Color(0xFF8A9298),
 
-    surfaceContainerLowest = Color(0xFF050908),
-    surfaceContainerLow = Color(0xFF0E1615),
-    surfaceContainer = Color(0xFF141D1B),
-    surfaceContainerHigh = Color(0xFF1A2422),
-    surfaceContainerHighest = Color(0xFF212C2A),
+    surfaceContainerLowest = Color(0xFF050607),
+    surfaceContainerLow = Color(0xFF0A0D0F),
+    surfaceContainer = Color(0xFF101316),
+    surfaceContainerHigh = Color(0xFF14191C),
+    surfaceContainerHighest = Color(0xFF1A1F22),
 
-    outline = Color(0xFF849691),
-    outlineVariant = Color(0xFF33403D),
+    outline = Color(0xFF1A1F22),
+    outlineVariant = Color(0xFF2E383E),
 
-    error = Color(0xFFFFB4AB),
-    onError = Color(0xFF5F1410),
-    errorContainer = Color(0xFF7A2820),
-    onErrorContainer = Color(0xFFFFDAD5),
+    error = Color(0xFFFF443A),
+    onError = Color(0xFF050607),
+    errorContainer = Color(0xFF2A0F0F),
+    onErrorContainer = Color(0xFFFF8B85),
     scrim = Color(0xFF000000),
 )
 
 val AmoledDarkColors = darkColorScheme(
-    primary = Color(0xFFF2C64D),
-    onPrimary = Color(0xFF2C2004),
-    primaryContainer = Color(0xFF0E3832),
-    onPrimaryContainer = Color(0xFFCFE7E1),
+    primary = Color(0xFFD4FF00),
+    onPrimary = Color(0xFF000000),
+    primaryContainer = Color(0xFF0A0D0F),
+    onPrimaryContainer = Color(0xFFD4FF00),
 
-    secondary = Color(0xFFE8C77E),
-    onSecondary = Color(0xFF2E1F00),
-    secondaryContainer = Color(0xFF382C0A),
-    onSecondaryContainer = Color(0xFFF8E8C4),
+    secondary = Color(0xFFF1F3F4),
+    onSecondary = Color(0xFF000000),
+    secondaryContainer = Color(0xFF0A0D0F),
+    onSecondaryContainer = Color(0xFFF1F3F4),
 
-    tertiary = Color(0xFF3BE0A8),
-    onTertiary = Color(0xFF00311F),
-    tertiaryContainer = Color(0xFF043826),
-    onTertiaryContainer = Color(0xFFB6F2D8),
+    tertiary = Color(0xFFD4FF00),
+    onTertiary = Color(0xFF000000),
+    tertiaryContainer = Color(0xFF0A0D0F),
+    onTertiaryContainer = Color(0xFFD4FF00),
 
     background = Color(0xFF000000),
-    onBackground = Color(0xFFF0F5F3),
+    onBackground = Color(0xFFF1F3F4),
 
     surface = Color(0xFF000000),
-    onSurface = Color(0xFFF0F5F3),
-    surfaceVariant = Color(0xFF161E1C),
-    onSurfaceVariant = Color(0xFFB0C4BF),
+    onSurface = Color(0xFFF1F3F4),
+    surfaceVariant = Color(0xFF0A0D0F),
+    onSurfaceVariant = Color(0xFF8A9298),
 
     surfaceContainerLowest = Color(0xFF000000),
-    surfaceContainerLow = Color(0xFF080D0C),
-    surfaceContainer = Color(0xFF101715),
-    surfaceContainerHigh = Color(0xFF17201E),
-    surfaceContainerHighest = Color(0xFF1E2826),
+    surfaceContainerLow = Color(0xFF050607),
+    surfaceContainer = Color(0xFF0A0D0F),
+    surfaceContainerHigh = Color(0xFF101316),
+    surfaceContainerHighest = Color(0xFF1A1F22),
 
-    outline = Color(0xFF8E9F9B),
-    outlineVariant = Color(0xFF2A3633),
+    outline = Color(0xFF1A1F22),
+    outlineVariant = Color(0xFF2E383E),
 
-    error = Color(0xFFFFB4AB),
-    onError = Color(0xFF5F1410),
-    errorContainer = Color(0xFF7A2820),
-    onErrorContainer = Color(0xFFFFDAD5),
+    error = Color(0xFFFF443A),
+    onError = Color(0xFF000000),
+    errorContainer = Color(0xFF2A0F0F),
+    onErrorContainer = Color(0xFFFF8B85),
     scrim = Color(0xFF000000),
 )
 
@@ -486,6 +531,7 @@ fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -
     val systemDark = isSystemInDarkTheme()
     val colorScheme = when (mode) {
         ThemeMode.SYSTEM -> if (systemDark) DarkColors else LightColors
+        ThemeMode.ANDIS_TERMINAL -> DarkColors
         ThemeMode.LIGHT -> LightColors
         ThemeMode.DARK -> DarkColors
         ThemeMode.AMOLED -> AmoledDarkColors
@@ -520,11 +566,15 @@ fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -
     val heroPalette = when (mode) {
         ThemeMode.SYSTEM -> if (systemDark) {
             HeroPalette(
-                top = Color(0xFF16221E),
-                bottom = Color(0xFF090E0C),
-                gold = Color(0xFFFBBF24),
-                muted = Color(0xFF8FA8A1),
-                strong = Color(0xFFF0FDF4),
+                top = Color(0xFF050607),
+                bottom = Color(0xFF0A0D0F),
+                gold = Color(0xFFD4FF00),
+                muted = Color(0xFF8A9298),
+                strong = Color(0xFFF1F3F4),
+                mint = Color(0xFFD4FF00),
+                warn = Color(0xFFFF443A),
+                well = Color(0xFF101316),
+                hairline = Color(0xFF1A1F22),
             )
         } else {
             HeroPalette(
@@ -535,6 +585,18 @@ fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -
                 strong = Color(0xFFF8FAFC),
             )
         }
+        ThemeMode.ANDIS_TERMINAL,
+        ThemeMode.DARK -> HeroPalette(
+            top = Color(0xFF050607),
+            bottom = Color(0xFF0A0D0F),
+            gold = Color(0xFFD4FF00),
+            muted = Color(0xFF8A9298),
+            strong = Color(0xFFF1F3F4),
+            mint = Color(0xFFD4FF00),
+            warn = Color(0xFFFF443A),
+            well = Color(0xFF101316),
+            hairline = Color(0xFF1A1F22),
+        )
         ThemeMode.LIGHT -> HeroPalette(
             top = Color(0xFF1E293B),
             bottom = Color(0xFF0F172A),
@@ -542,19 +604,14 @@ fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -
             muted = Color(0xFF94A3B8),
             strong = Color(0xFFF8FAFC),
         )
-        ThemeMode.DARK -> HeroPalette(
-            top = Color(0xFF16221E),
-            bottom = Color(0xFF090E0C),
-            gold = Color(0xFFFBBF24),
-            muted = Color(0xFF8FA8A1),
-            strong = Color(0xFFF0FDF4),
-        )
         ThemeMode.AMOLED -> HeroPalette(
             top = Color(0xFF000000),
-            bottom = Color(0xFF0A0A0A),
-            gold = Color(0xFFFFD700),
-            muted = Color(0xFF71717A),
-            strong = Color(0xFFFFFFFF),
+            bottom = Color(0xFF050607),
+            gold = Color(0xFFD4FF00),
+            muted = Color(0xFF8A9298),
+            strong = Color(0xFFF1F3F4),
+            mint = Color(0xFFD4FF00),
+            warn = Color(0xFFFF443A),
             well = Color(0x1FFFFFFF),
             hairline = Color(0x28FFFFFF),
         )
@@ -599,6 +656,7 @@ fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -
 
     CompositionLocalProvider(
         LocalHeroPalette provides heroPalette,
+        LocalAndisColors provides AndisColors(),
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
@@ -606,4 +664,12 @@ fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -
             content = content,
         )
     }
+}
+
+/**
+ * ANDIS Financial OS Root Theme wrapper.
+ */
+@Composable
+fun AndisTheme(content: @Composable () -> Unit) {
+    MuchTomanTheme(mode = ThemeMode.ANDIS_TERMINAL, content = content)
 }
