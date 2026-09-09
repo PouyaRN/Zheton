@@ -21,16 +21,85 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
 import com.doxigo.muchtoman.AndisTheme
 import com.doxigo.muchtoman.Modam
 import com.doxigo.muchtoman.ModamFigures
 import com.doxigo.muchtoman.TABULAR
 
 enum class FinancialValueSize(val amountSize: TextUnit, val unitSize: TextUnit, val weight: FontWeight) {
+    MONUMENTAL(44.sp, 16.sp, FontWeight.Black),
     HERO(34.sp, 14.sp, FontWeight.Black),
     LARGE(24.sp, 12.sp, FontWeight.ExtraBold),
     MEDIUM(18.sp, 11.sp, FontWeight.Bold),
     COMPACT(15.sp, 10.sp, FontWeight.SemiBold),
+}
+
+/**
+ * Monumental Editorial Financial Value.
+ * 44sp commanding presence with sub-aligned Persian currency unit and optional delta.
+ */
+@Composable
+fun MonumentalValue(
+    amount: String,
+    modifier: Modifier = Modifier,
+    unit: String = "تومان",
+    deltaPercent: Double? = null,
+    deltaPeriod: String = "این ماه",
+    color: Color = AndisTheme.colors.textPrimary,
+    privacyMode: Boolean = false,
+) {
+    val displayAmount = if (privacyMode) "••••••••" else amount
+
+    Column(modifier = modifier) {
+        Row(
+            verticalAlignment = Alignment.Bottom
+        ) {
+            Text(
+                text = displayAmount,
+                style = TextStyle(
+                    fontFamily = ModamFigures,
+                    fontWeight = FontWeight.Black,
+                    fontSize = 44.sp,
+                    fontFeatureSettings = TABULAR,
+                    letterSpacing = (-0.5).sp,
+                    color = color,
+                    textDirection = TextDirection.Ltr
+                )
+            )
+            if (unit.isNotEmpty()) {
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = unit,
+                    style = TextStyle(
+                        fontFamily = Modam,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 15.sp,
+                        color = AndisTheme.colors.textSecondary
+                    ),
+                    modifier = Modifier.padding(bottom = 6.dp)
+                )
+            }
+        }
+
+        if (deltaPercent != null) {
+            Spacer(Modifier.height(4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                FinancialDelta(deltaPercent = deltaPercent, showBackground = false)
+                Spacer(Modifier.width(6.dp))
+                Text(
+                    text = deltaPeriod,
+                    style = TextStyle(
+                        fontFamily = Modam,
+                        fontWeight = FontWeight.Normal,
+                        fontSize = 12.sp,
+                        color = AndisTheme.colors.textMuted
+                    )
+                )
+            }
+        }
+    }
 }
 
 /**

@@ -26,6 +26,77 @@ import com.doxigo.muchtoman.AndisTheme
  * Smooth or stepped technical line graph with gradient fade.
  */
 @Composable
+fun SubtleLineChart(
+    data: List<Double>,
+    modifier: Modifier = Modifier,
+    lineColor: Color = AndisTheme.colors.accentLime,
+    lineWidth: Dp = 1.2.dp,
+    showArea: Boolean = true,
+) {
+    if (data.size < 2) return
+
+    Canvas(
+        modifier = modifier
+            .fillMaxWidth()
+            .drawWithCache {
+                val width = size.width
+                val height = size.height
+
+                val min = data.minOrNull() ?: 0.0
+                val max = data.maxOrNull() ?: 1.0
+                val range = (max - min).coerceAtLeast(0.0001)
+
+                val points = data.mapIndexed { index, value ->
+                    val x = (index.toFloat() / (data.size - 1)) * width
+                    val y = height - (((value - min) / range).toFloat() * (height * 0.78f) + (height * 0.11f))
+                    Offset(x, y)
+                }
+
+                val strokePath = Path().apply {
+                    moveTo(points.first().x, points.first().y)
+                    for (i in 1 until points.size) {
+                        val p0 = points[i - 1]
+                        val p1 = points[i]
+                        val cx = (p0.x + p1.x) / 2f
+                        cubicTo(cx, p0.y, cx, p1.y, p1.x, p1.y)
+                    }
+                }
+
+                val fillPath = Path().apply {
+                    addPath(strokePath)
+                    lineTo(width, height)
+                    lineTo(0f, height)
+                    close()
+                }
+
+                val fillBrush = Brush.verticalGradient(
+                    colors = listOf(lineColor.copy(alpha = 0.08f), Color.Transparent),
+                    startY = 0f,
+                    endY = height
+                )
+
+                val lastPoint = points.last()
+
+                onDrawBehind {
+                    if (showArea) {
+                        drawPath(fillPath, brush = fillBrush)
+                    }
+                    drawPath(
+                        strokePath,
+                        color = lineColor,
+                        style = Stroke(width = lineWidth.toPx(), cap = StrokeCap.Round)
+                    )
+                    drawCircle(
+                        color = lineColor,
+                        radius = 2.5.dp.toPx(),
+                        center = lastPoint
+                    )
+                }
+            }
+    ) {}
+}
+
+@Composable
 fun Sparkline(
     data: List<Double>,
     modifier: Modifier = Modifier,

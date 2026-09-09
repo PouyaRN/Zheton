@@ -27,6 +27,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.doxigo.muchtoman.AndisTheme
+import com.doxigo.muchtoman.HairlineDivider
 import com.doxigo.muchtoman.Modam
 import com.doxigo.muchtoman.ModamFigures
 import com.doxigo.muchtoman.TABULAR
@@ -35,6 +36,126 @@ enum class WidgetDensity {
     COMPACT,
     STANDARD,
     EXPANDED,
+}
+
+/**
+ * Open Editorial Section.
+ * Replaces repetitive boxed cards with open typography, generous negative space, and hairline dividers.
+ */
+@Composable
+fun EditorialSection(
+    title: String,
+    modifier: Modifier = Modifier,
+    technicalLabel: String? = null,
+    showTopDivider: Boolean = true,
+    action: (@Composable () -> Unit)? = null,
+    content: @Composable () -> Unit,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp)
+    ) {
+        if (showTopDivider) {
+            HairlineDivider()
+            Spacer(Modifier.height(14.dp))
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = title,
+                    style = TextStyle(
+                        fontFamily = Modam,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 17.sp,
+                        color = AndisTheme.colors.textPrimary
+                    )
+                )
+                if (technicalLabel != null) {
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = technicalLabel.uppercase(),
+                        style = TextStyle(
+                            fontFamily = ModamFigures,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 10.sp,
+                            letterSpacing = 0.8.sp,
+                            color = AndisTheme.colors.textMuted
+                        )
+                    )
+                }
+            }
+            if (action != null) {
+                action()
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+        content()
+    }
+}
+
+/**
+ * Clean Unboxed Key-Value Row for Financial Terminal views.
+ */
+@Composable
+fun EditorialRow(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    unit: String = "",
+    sublabel: String? = null,
+    delta: Double? = null,
+    onClick: (() -> Unit)? = null,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column {
+            Text(
+                text = label,
+                style = TextStyle(
+                    fontFamily = Modam,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                    color = AndisTheme.colors.textPrimary
+                )
+            )
+            if (sublabel != null) {
+                Text(
+                    text = sublabel,
+                    style = TextStyle(
+                        fontFamily = Modam,
+                        fontSize = 11.sp,
+                        color = AndisTheme.colors.textMuted
+                    )
+                )
+            }
+        }
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            FinancialValue(
+                amount = value,
+                unit = unit,
+                size = FinancialValueSize.COMPACT,
+                color = AndisTheme.colors.textPrimary
+            )
+            if (delta != null) {
+                Spacer(Modifier.width(8.dp))
+                FinancialDelta(deltaPercent = delta, showBackground = false)
+            }
+        }
+    }
 }
 
 /**
