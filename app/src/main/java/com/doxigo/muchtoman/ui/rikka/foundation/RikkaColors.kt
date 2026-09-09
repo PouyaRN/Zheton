@@ -9,6 +9,7 @@ data class RikkaColors(
     val background: Color,
     val onBackground: Color,
     val surface: Color,
+    val surfaceElevated: Color = Color(0xFF162030),
     val onSurface: Color,
     val primary: Color,
     val onPrimary: Color,
