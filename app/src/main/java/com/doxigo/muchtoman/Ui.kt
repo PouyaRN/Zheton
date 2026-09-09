@@ -727,30 +727,41 @@ val snackbarHostState = remember { SnackbarHostState() }
       }
 
       if (tab == Tab.CARDS) {
+        val context = androidx.compose.ui.platform.LocalContext.current
         LazyColumn(
-            modifier = Modifier.fillMaxSize().background(AndisTheme.colors.background),
-            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 16.dp, bottom = pad.calculateBottomPadding() + 80.dp),
+            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 0.dp, bottom = pad.calculateBottomPadding() + 80.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
                 Row(
-                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = Space.m, vertical = Space.m),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "حساب‌ها و کارت‌ها",
-                        style = TextStyle(
-                            fontFamily = Modam,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 18.sp,
-                            color = AndisTheme.colors.textPrimary
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "حساب‌ها و کارت‌های بانکی",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Black,
+                            )
+                            Spacer(Modifier.width(Space.s))
+                            Box(
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .background(Hero.gold.copy(alpha = 0.2f))
+                                    .padding(horizontal = 8.dp, vertical = 2.dp),
+                            ) {
+                                Text("${fa(state.bankAccounts.size)} کارت", color = Hero.gold, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                            }
+                        }
+                        Text(
+                            text = "مدیریت کارت‌های شتاب، کپی شماره شبا و موجودی لحظه‌ای",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
-                    )
-                    com.doxigo.muchtoman.widget.primitives.DotMatrixBadge(
-                        text = "${fa(state.bankAccounts.size)} CARDS",
-                        activeColor = AndisTheme.colors.accentLime
-                    )
+                    }
                 }
             }
 
@@ -764,10 +775,62 @@ val snackbarHostState = remember { SnackbarHostState() }
             }
 
             item {
-                com.doxigo.muchtoman.widget.library.AccountsWidget(
-                    state = state,
-                    privacyMode = privacyMode
-                )
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = Space.m, vertical = Space.xs),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                ) {
+                    Column(modifier = Modifier.padding(Space.m)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "موجودی حساب‌های متصل",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                "جمع: ${faCompact(state.bankToman)} ت",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Black,
+                                color = Hero.gold
+                            )
+                        }
+
+                        if (state.bankAccounts.isNotEmpty()) {
+                            Spacer(Modifier.height(12.dp))
+                            state.bankAccounts.forEachIndexed { index, acc ->
+                                if (index > 0) Spacer(Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.4f))
+                                        .padding(12.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Column {
+                                        Text(acc.bankFa, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                        val pan = if (privacyMode) "••••  ••••" else formatCardPanLtr(acc.mask)
+                                        Text(pan, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        if (acc.sheba.isNotBlank()) {
+                                            Text(acc.sheba, fontSize = 10.sp, color = Hero.gold)
+                                        }
+                                    }
+                                    Column(horizontalAlignment = Alignment.End) {
+                                        val bal = if (privacyMode) "••••••••" else "${faNumber(acc.balance)} ت"
+                                        Text(bal, fontWeight = FontWeight.Black, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                                        Text("به‌روزرسانی پیامک", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
         return@Scaffold
