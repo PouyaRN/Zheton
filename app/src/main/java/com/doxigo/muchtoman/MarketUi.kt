@@ -83,6 +83,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.doxigo.muchtoman.ui.haptics.LocalFintechHaptics
 import kotlin.math.abs
 
 enum class MarketCategory(val labelFa: String) {
@@ -875,7 +876,7 @@ fun KineticSplineChart(
 ) {
     val heroGold = Hero.gold
     val heroTop = Hero.top
-    val haptic = LocalHapticFeedback.current
+    val fintechHaptics = LocalFintechHaptics.current
     var scrubIndex by remember(series) { mutableStateOf<Int?>(null) }
 
     // Path tracing entrance animation
@@ -897,7 +898,7 @@ fun KineticSplineChart(
                 val down = awaitFirstDown(requireUnconsumed = false)
                 val idx = findClosestIndex(down.position.x, size.width.toFloat(), series.points.size)
                 scrubIndex = idx
-                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                fintechHaptics.tick()
                 onScrub(idx?.let { series.points[it] })
                 do {
                     val event = awaitPointerEvent()
@@ -906,7 +907,7 @@ fun KineticSplineChart(
                         val currentIdx = findClosestIndex(change.position.x, size.width.toFloat(), series.points.size)
                         if (currentIdx != scrubIndex) {
                             scrubIndex = currentIdx
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            fintechHaptics.tick()
                             onScrub(currentIdx?.let { series.points[it] })
                         }
                     }
@@ -962,7 +963,7 @@ fun KineticSplineChart(
             pathEffect = dashEffect,
         )
 
-        // Construct smooth cubic bezier path
+        // Construct smooth Catmull-Rom spline path
         val fullPath = Path()
         val fullFill = Path()
 
@@ -978,10 +979,16 @@ fun KineticSplineChart(
             val nextX = getX(i + 1)
             val nextY = getY(series.points[i + 1].priceToman)
 
-            val ctrl1X = currX + (nextX - currX) / 2f
-            val ctrl1Y = currY
-            val ctrl2X = currX + (nextX - currX) / 2f
-            val ctrl2Y = nextY
+            val prevX = if (i > 0) getX(i - 1) else currX
+            val prevY = if (i > 0) getY(series.points[i - 1].priceToman) else currY
+            val futureX = if (i + 2 < n) getX(i + 2) else nextX
+            val futureY = if (i + 2 < n) getY(series.points[i + 2].priceToman) else nextY
+
+            // Catmull-Rom tangent conversion to cubic Bezier
+            val ctrl1X = currX + (nextX - prevX) / 6f
+            val ctrl1Y = currY + (nextY - prevY) / 6f
+            val ctrl2X = nextX - (futureX - currX) / 6f
+            val ctrl2Y = nextY - (futureY - currY) / 6f
 
             fullPath.cubicTo(ctrl1X, ctrl1Y, ctrl2X, ctrl2Y, nextX, nextY)
             fullFill.cubicTo(ctrl1X, ctrl1Y, ctrl2X, ctrl2Y, nextX, nextY)

@@ -889,31 +889,24 @@ val snackbarHostState = remember { SnackbarHostState() }
                 )
             }
 
-            // Horizontal Glance Carousel (matches MarketUi GlanceBar)
-            item(key = "home_glance_bar") {
-                Box(modifier = Modifier.padding(top = Space.s)) {
-                    HomeGlanceBar(
-                        totalToman = state.totals.toman,
-                        bankToman = state.bankToman,
-                        gold18Toman = effective["gold18"] ?: 0.0,
-                        usdCashToman = effective["usd"] ?: 0.0,
-                        onSelectNetWorth = { tab = Tab.REPORTS },
-                        onSelectBank = { tab = Tab.CARDS },
-                        onSelectGold = { tab = Tab.ASSETS },
-                        onSelectUsd = { tab = Tab.ASSETS },
-                    )
-                }
-            }
+            // Tier 1: Modern 4-Tile Bento Grid Cockpit (Revolut 10 / Apple Card inspired)
+            item(key = "home_bento_cockpit") {
+                val activeCommitments = state.commitments.filter { !it.isSettled }
+                val activeObligations = state.obligations.filter { !it.archived }
+                val commitmentsCount = activeCommitments.size + activeObligations.size
+                val upcomingDueDays: Int? = activeCommitments.map { it.nextDueDays }.minOrNull()
 
-            // Interactive Spline Chart Card (matches MarketFluctuationCard directly)
-            item(key = "home_spline_chart_card") {
-                var selectedNetWorthInterval by remember { mutableStateOf(FluctuationInterval.MONTH_1) }
-                NetWorthFluctuationCard(
-                    currentToman = state.totals.toman,
-                    history = state.history,
+                HomeBentoCockpit(
+                    bankToman = state.bankToman,
+                    gold18Toman = effective["gold18"] ?: 0.0,
+                    commitmentsCount = commitmentsCount,
+                    upcomingDueDays = upcomingDueDays,
+                    monthlySpentToman = state.story.month.spentRial / 10.0,
                     privacyMode = privacyMode,
-                    selectedInterval = selectedNetWorthInterval,
-                    onSelectInterval = { selectedNetWorthInterval = it },
+                    onNavigateCards = { tab = Tab.CARDS },
+                    onNavigateAssets = { tab = Tab.ASSETS },
+                    onNavigateCommitments = { tab = Tab.CARDS },
+                    onNavigateReports = { tab = Tab.REPORTS },
                 )
             }
 
@@ -5827,7 +5820,35 @@ private fun CardEditorSheet(
                 modifier = Modifier.padding(top = Space.xs),
             )
 
-            Spacer(Modifier.height(Space.l))
+            val fintechHaptics = com.doxigo.muchtoman.ui.haptics.LocalFintechHaptics.current
+
+            // Live 3D Bank Card Studio Interactive Preview
+            val previewAccount = remember(account, nicknameDraft, panDraft, expiryDraft, themeDraft, shebaDraft) {
+                account.copy(
+                    nickname = nicknameDraft,
+                    mask = panDraft.ifBlank { account.mask },
+                    theme = themeDraft,
+                    sheba = shebaDraft,
+                    expiry = expiryDraft,
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = Space.m),
+                contentAlignment = Alignment.Center,
+            ) {
+                BankCard3D(
+                    bankAccount = previewAccount,
+                    cardHolderName = nicknameDraft.ifBlank { account.bankFa },
+                    enable3DTiltDrag = true,
+                    privacyMode = !revealPan,
+                    modifier = Modifier.fillMaxWidth(0.96f),
+                )
+            }
+
+            Spacer(Modifier.height(Space.s))
             Text("نام کارت", fontSize = 12.sp, color = muted)
             OutlinedTextField(
                 value = nicknameDraft,
@@ -5947,7 +5968,10 @@ private fun CardEditorSheet(
                             if (bankSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
                             CircleShape,
                         )
-                        .clickable { themeDraft = "" },
+                        .clickable {
+                            fintechHaptics.click()
+                            themeDraft = ""
+                        },
                     contentAlignment = Alignment.Center,
                 ) {
                     Text("بانک", fontSize = 9.sp, color = Color.White)
@@ -5964,7 +5988,10 @@ private fun CardEditorSheet(
                                 if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
                                 CircleShape,
                             )
-                            .clickable { themeDraft = id },
+                            .clickable {
+                                fintechHaptics.click()
+                                themeDraft = id
+                            },
                     )
                 }
             }
@@ -5979,7 +6006,10 @@ private fun CardEditorSheet(
                 }
                 Spacer(Modifier.width(Space.s))
                 Button(
-                    onClick = { onSave(nicknameDraft, panDraft, expiryDraft, themeDraft, shebaDraft) },
+                    onClick = {
+                        fintechHaptics.heavyClick()
+                        onSave(nicknameDraft, panDraft, expiryDraft, themeDraft, shebaDraft)
+                    },
                     shape = RoundedCornerShape(Radius.pill),
                 ) {
                     Text("ذخیره", fontSize = 13.sp)

@@ -28,6 +28,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.withStyle
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Shape
+import com.doxigo.muchtoman.ui.haptics.ProvideFintechHaptics
+import com.doxigo.muchtoman.ui.rikka.foundation.LocalContentColor
+import com.doxigo.muchtoman.ui.rikka.foundation.LocalRikkaColors
+import com.doxigo.muchtoman.ui.rikka.foundation.RikkaColors
 
 /**
  * Modam, as one variable font file with two axes: wght 200–900 and wdth 70–100.
@@ -149,13 +161,18 @@ object Hero {
     val defaultGold = Color(0xFFF7C948)
 }
 
-/** Theme choices: follow phone, light, dark, AMOLED, or modern studio palettes. */
+/** Theme choices: follow phone, light, dark, AMOLED, or iconic global fintech presets. */
 enum class ThemeMode(val fa: String) {
     SYSTEM("خودکار"),
     ANDIS_TERMINAL("اندیس"),
     LIGHT("روشن"),
     DARK("تیره"),
     AMOLED("آمولد"),
+    APPLE_TITANIUM("اپل تیتانیوم"),
+    REVOLUT_OBSIDIAN("رولوت ابسیدین"),
+    CASH_APP_NEON("کش‌اپ نئون"),
+    MONZO_OCEANIC("مانزو اقیانوسی"),
+    DUBAI_GOLD("دبی گلد"),
     OBSIDIAN_EMERALD("زمرد"),
     ROYAL_AMETHYST("ارغوانی"),
     NORDIC_SLATE("نوردیک"),
@@ -297,6 +314,59 @@ object AndisTheme {
 }
 
 /**
+ * Vanguard Obsidian Design System Tokens (Revolut 10 / Apple Card inspired).
+ * Deep obsidian black canvas, graphite surfaces, and hairline borders.
+ */
+object VanguardTokens {
+    val Canvas = Color(0xFF0A0A0C)
+    val Surface = Color(0xFF14171A)
+    val SurfaceElevated = Color(0xFF1A1E23)
+    val BorderHairline = Color(0xFF22272E)
+    val BorderStrong = Color(0xFF333B44)
+    val TextPrimary = Color(0xFFF8FAFC)
+    val TextSecondary = Color(0xFF94A3B8)
+    val TextMuted = Color(0xFF64748B)
+
+    // Standardized Radii Scale
+    val rXs = 4.dp
+    val rSm = 8.dp
+    val rMd = 12.dp
+    val rLg = 16.dp
+    val rXl = 24.dp
+    val rPill = 999.dp
+}
+
+/**
+ * Adaptive Glassmorphism Surface supporting hardware acceleration and subtle micro-gradients.
+ * Provides consistent frosted appearance without blurring child text or interactive elements.
+ */
+@Composable
+fun GlassSurface(
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(16.dp),
+    containerColor: Color = MaterialTheme.colorScheme.surface.copy(alpha = 0.75f),
+    borderColor: Color = MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
+    borderWidth: Dp = 1.dp,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        containerColor.copy(alpha = 0.88f),
+                        containerColor.copy(alpha = 0.72f),
+                    )
+                ),
+                shape
+            )
+            .border(borderWidth, borderColor, shape),
+        content = content
+    )
+}
+
+/**
  * Material 3's expressive easing set. Everything that enters decelerates hard from an
  * already-visible state; everything that leaves accelerates away.
  */
@@ -357,40 +427,40 @@ private val LightColors = lightColorScheme(
 
 private val DarkColors = darkColorScheme(
     primary = Color(0xFF38BDF8),            // Electric cyan / refined blue
-    onPrimary = Color(0xFF070A0F),
-    primaryContainer = Color(0xFF0F1622),
+    onPrimary = VanguardTokens.Canvas,
+    primaryContainer = VanguardTokens.Surface,
     onPrimaryContainer = Color(0xFF38BDF8),
 
     secondary = Color(0xFFF8FAFC),
-    onSecondary = Color(0xFF070A0F),
-    secondaryContainer = Color(0xFF162030),
+    onSecondary = VanguardTokens.Canvas,
+    secondaryContainer = VanguardTokens.SurfaceElevated,
     onSecondaryContainer = Color(0xFFF8FAFC),
 
     // Gain stays emerald green
     tertiary = Color(0xFF10B981),
-    onTertiary = Color(0xFF070A0F),
-    tertiaryContainer = Color(0xFF0F1622),
+    onTertiary = VanguardTokens.Canvas,
+    tertiaryContainer = VanguardTokens.Surface,
     onTertiaryContainer = Color(0xFF10B981),
 
-    background = Color(0xFF070A0F),
-    onBackground = Color(0xFFF8FAFC),
+    background = VanguardTokens.Canvas,
+    onBackground = VanguardTokens.TextPrimary,
 
-    surface = Color(0xFF0F1622),
-    onSurface = Color(0xFFF8FAFC),
-    surfaceVariant = Color(0xFF162030),
-    onSurfaceVariant = Color(0xFF94A3B8),
+    surface = VanguardTokens.Surface,
+    onSurface = VanguardTokens.TextPrimary,
+    surfaceVariant = VanguardTokens.SurfaceElevated,
+    onSurfaceVariant = VanguardTokens.TextSecondary,
 
-    surfaceContainerLowest = Color(0xFF070A0F),
-    surfaceContainerLow = Color(0xFF0B1017),
-    surfaceContainer = Color(0xFF0F1622),
-    surfaceContainerHigh = Color(0xFF162030),
-    surfaceContainerHighest = Color(0xFF1E293B),
+    surfaceContainerLowest = VanguardTokens.Canvas,
+    surfaceContainerLow = Color(0xFF0E1114),
+    surfaceContainer = VanguardTokens.Surface,
+    surfaceContainerHigh = VanguardTokens.SurfaceElevated,
+    surfaceContainerHighest = VanguardTokens.BorderHairline,
 
-    outline = Color(0xFF1E293B),
-    outlineVariant = Color(0xFF334155),
+    outline = VanguardTokens.BorderHairline,
+    outlineVariant = VanguardTokens.BorderStrong,
 
     error = Color(0xFFF43F5E),
-    onError = Color(0xFF070A0F),
+    onError = VanguardTokens.Canvas,
     errorContainer = Color(0xFF2A0F17),
     onErrorContainer = Color(0xFFFDA4AF),
     scrim = Color(0xFF000000),
@@ -596,6 +666,191 @@ val CyberGoldColors = darkColorScheme(
     scrim = Color(0xFF000000),
 )
 
+val AppleTitaniumColors = darkColorScheme(
+    primary = Color(0xFFE5E5EA),
+    onPrimary = Color(0xFF000000),
+    primaryContainer = Color(0xFF1C1C1E),
+    onPrimaryContainer = Color(0xFFFFFFFF),
+
+    secondary = Color(0xFFD1D1D6),
+    onSecondary = Color(0xFF000000),
+    secondaryContainer = Color(0xFF2C2C2E),
+    onSecondaryContainer = Color(0xFFFFFFFF),
+
+    tertiary = Color(0xFF30D158),
+    onTertiary = Color(0xFF000000),
+    tertiaryContainer = Color(0xFF1C1C1E),
+    onTertiaryContainer = Color(0xFF30D158),
+
+    background = Color(0xFF000000),
+    onBackground = Color(0xFFFFFFFF),
+
+    surface = Color(0xFF141416),
+    onSurface = Color(0xFFFFFFFF),
+    surfaceVariant = Color(0xFF1C1C1E),
+    onSurfaceVariant = Color(0xFF8E8E93),
+
+    surfaceContainerLowest = Color(0xFF000000),
+    surfaceContainerLow = Color(0xFF0C0C0E),
+    surfaceContainer = Color(0xFF141416),
+    surfaceContainerHigh = Color(0xFF1C1C1E),
+    surfaceContainerHighest = Color(0xFF2C2C2E),
+
+    outline = Color(0xFF2C2C2E),
+    outlineVariant = Color(0xFF3A3A3C),
+
+    error = Color(0xFFFF453A),
+    onError = Color(0xFF000000),
+)
+
+val RevolutObsidianColors = darkColorScheme(
+    primary = Color(0xFF0075FF),
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFF14181D),
+    onPrimaryContainer = Color(0xFF38BDF8),
+
+    secondary = Color(0xFFF8FAFC),
+    onSecondary = Color(0xFF0E1114),
+    secondaryContainer = Color(0xFF1B2026),
+    onSecondaryContainer = Color(0xFFF8FAFC),
+
+    tertiary = Color(0xFF10B981),
+    onTertiary = Color(0xFF0E1114),
+    tertiaryContainer = Color(0xFF14181D),
+    onTertiaryContainer = Color(0xFF10B981),
+
+    background = Color(0xFF0E1114),
+    onBackground = Color(0xFFF8FAFC),
+
+    surface = Color(0xFF14181D),
+    onSurface = Color(0xFFF8FAFC),
+    surfaceVariant = Color(0xFF1B2026),
+    onSurfaceVariant = Color(0xFF94A3B8),
+
+    surfaceContainerLowest = Color(0xFF0A0C0E),
+    surfaceContainerLow = Color(0xFF0E1114),
+    surfaceContainer = Color(0xFF14181D),
+    surfaceContainerHigh = Color(0xFF1B2026),
+    surfaceContainerHighest = Color(0xFF262D35),
+
+    outline = Color(0xFF262D35),
+    outlineVariant = Color(0xFF363E48),
+
+    error = Color(0xFFF43F5E),
+    onError = Color(0xFFFFFFFF),
+)
+
+val CashAppNeonColors = darkColorScheme(
+    primary = Color(0xFF00D632),
+    onPrimary = Color(0xFF000000),
+    primaryContainer = Color(0xFF121212),
+    onPrimaryContainer = Color(0xFF00D632),
+
+    secondary = Color(0xFFFFFFFF),
+    onSecondary = Color(0xFF000000),
+    secondaryContainer = Color(0xFF1E1E1E),
+    onSecondaryContainer = Color(0xFFFFFFFF),
+
+    tertiary = Color(0xFF00D632),
+    onTertiary = Color(0xFF000000),
+    tertiaryContainer = Color(0xFF121212),
+    onTertiaryContainer = Color(0xFF00D632),
+
+    background = Color(0xFF000000),
+    onBackground = Color(0xFFFFFFFF),
+
+    surface = Color(0xFF121212),
+    onSurface = Color(0xFFFFFFFF),
+    surfaceVariant = Color(0xFF1E1E1E),
+    onSurfaceVariant = Color(0xFFAAAAAA),
+
+    surfaceContainerLowest = Color(0xFF000000),
+    surfaceContainerLow = Color(0xFF0A0A0A),
+    surfaceContainer = Color(0xFF121212),
+    surfaceContainerHigh = Color(0xFF1E1E1E),
+    surfaceContainerHighest = Color(0xFF2A2A2A),
+
+    outline = Color(0xFF2A2A2A),
+    outlineVariant = Color(0xFF383838),
+
+    error = Color(0xFFFF3B30),
+    onError = Color(0xFF000000),
+)
+
+val MonzoOceanicColors = darkColorScheme(
+    primary = Color(0xFFFF4D5A),
+    onPrimary = Color(0xFFFFFFFF),
+    primaryContainer = Color(0xFF14233C),
+    onPrimaryContainer = Color(0xFFFF4D5A),
+
+    secondary = Color(0xFFF8FAFC),
+    onSecondary = Color(0xFF0E1927),
+    secondaryContainer = Color(0xFF1B2F50),
+    onSecondaryContainer = Color(0xFFF8FAFC),
+
+    tertiary = Color(0xFF00D2A0),
+    onTertiary = Color(0xFF0E1927),
+    tertiaryContainer = Color(0xFF14233C),
+    onTertiaryContainer = Color(0xFF00D2A0),
+
+    background = Color(0xFF0E1927),
+    onBackground = Color(0xFFF8FAFC),
+
+    surface = Color(0xFF14233C),
+    onSurface = Color(0xFFF8FAFC),
+    surfaceVariant = Color(0xFF1B2F50),
+    onSurfaceVariant = Color(0xFF8FA5C4),
+
+    surfaceContainerLowest = Color(0xFF080F18),
+    surfaceContainerLow = Color(0xFF0E1927),
+    surfaceContainer = Color(0xFF14233C),
+    surfaceContainerHigh = Color(0xFF1B2F50),
+    surfaceContainerHighest = Color(0xFF233D66),
+
+    outline = Color(0xFF233D66),
+    outlineVariant = Color(0xFF325285),
+
+    error = Color(0xFFFF4D5A),
+    onError = Color(0xFFFFFFFF),
+)
+
+val DubaiGoldColors = darkColorScheme(
+    primary = Color(0xFFF7C948),
+    onPrimary = Color(0xFF1B1915),
+    primaryContainer = Color(0xFF1F1C16),
+    onPrimaryContainer = Color(0xFFF7C948),
+
+    secondary = Color(0xFFFAF9F6),
+    onSecondary = Color(0xFF0A0A0C),
+    secondaryContainer = Color(0xFF26221A),
+    onSecondaryContainer = Color(0xFFFAF9F6),
+
+    tertiary = Color(0xFF10B981),
+    onTertiary = Color(0xFF0A0A0C),
+    tertiaryContainer = Color(0xFF14171A),
+    onTertiaryContainer = Color(0xFF10B981),
+
+    background = Color(0xFF0A0A0C),
+    onBackground = Color(0xFFFAF9F6),
+
+    surface = Color(0xFF14171A),
+    onSurface = Color(0xFFFAF9F6),
+    surfaceVariant = Color(0xFF1E2226),
+    onSurfaceVariant = Color(0xFF9E998E),
+
+    surfaceContainerLowest = Color(0xFF060708),
+    surfaceContainerLow = Color(0xFF0A0A0C),
+    surfaceContainer = Color(0xFF14171A),
+    surfaceContainerHigh = Color(0xFF1E2226),
+    surfaceContainerHighest = Color(0xFF2A2822),
+
+    outline = Color(0xFF2A2822),
+    outlineVariant = Color(0xFF423D33),
+
+    error = Color(0xFFFF6B6B),
+    onError = Color(0xFF0A0A0C),
+)
+
 @Composable
 fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -> Unit) {
     val systemDark = isSystemInDarkTheme()
@@ -605,6 +860,11 @@ fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -
         ThemeMode.LIGHT -> LightColors
         ThemeMode.DARK -> DarkColors
         ThemeMode.AMOLED -> AmoledDarkColors
+        ThemeMode.APPLE_TITANIUM -> AppleTitaniumColors
+        ThemeMode.REVOLUT_OBSIDIAN -> RevolutObsidianColors
+        ThemeMode.CASH_APP_NEON -> CashAppNeonColors
+        ThemeMode.MONZO_OCEANIC -> MonzoOceanicColors
+        ThemeMode.DUBAI_GOLD -> DubaiGoldColors
         ThemeMode.OBSIDIAN_EMERALD -> ObsidianEmeraldColors
         ThemeMode.ROYAL_AMETHYST -> RoyalAmethystColors
         ThemeMode.NORDIC_SLATE -> NordicSlateColors
@@ -713,6 +973,61 @@ fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -
             well = Color(0x220284C7),
             hairline = Color(0x3338BDF8),
         )
+        ThemeMode.APPLE_TITANIUM -> HeroPalette(
+            top = Color(0xFF141416),
+            bottom = Color(0xFF000000),
+            gold = Color(0xFFE5E5EA),
+            muted = Color(0xFF8E8E93),
+            strong = Color(0xFFFFFFFF),
+            mint = Color(0xFF30D158),
+            warn = Color(0xFFFF453A),
+            well = Color(0x18FFFFFF),
+            hairline = Color(0x28FFFFFF),
+        )
+        ThemeMode.REVOLUT_OBSIDIAN -> HeroPalette(
+            top = Color(0xFF14181D),
+            bottom = Color(0xFF0E1114),
+            gold = Color(0xFF0075FF),
+            muted = Color(0xFF94A3B8),
+            strong = Color(0xFFF8FAFC),
+            mint = Color(0xFF10B981),
+            warn = Color(0xFFF43F5E),
+            well = Color(0x1F0075FF),
+            hairline = Color(0x330075FF),
+        )
+        ThemeMode.CASH_APP_NEON -> HeroPalette(
+            top = Color(0xFF121212),
+            bottom = Color(0xFF000000),
+            gold = Color(0xFF00D632),
+            muted = Color(0xFFAAAAAA),
+            strong = Color(0xFFFFFFFF),
+            mint = Color(0xFF00D632),
+            warn = Color(0xFFFF3B30),
+            well = Color(0x1F00D632),
+            hairline = Color(0x3300D632),
+        )
+        ThemeMode.MONZO_OCEANIC -> HeroPalette(
+            top = Color(0xFF14233C),
+            bottom = Color(0xFF0E1927),
+            gold = Color(0xFFFF4D5A),
+            muted = Color(0xFF8FA5C4),
+            strong = Color(0xFFF8FAFC),
+            mint = Color(0xFF00D2A0),
+            warn = Color(0xFFFF4D5A),
+            well = Color(0x1FFF4D5A),
+            hairline = Color(0x33FF4D5A),
+        )
+        ThemeMode.DUBAI_GOLD -> HeroPalette(
+            top = Color(0xFF1B1915),
+            bottom = Color(0xFF0A0A0C),
+            gold = Color(0xFFF7C948),
+            muted = Color(0xFF9E998E),
+            strong = Color(0xFFFAF9F6),
+            mint = Color(0xFF10B981),
+            warn = Color(0xFFFF6B6B),
+            well = Color(0x1FF7C948),
+            hairline = Color(0x33F7C948),
+        )
         ThemeMode.CYBER_GOLD -> HeroPalette(
             top = Color(0xFF2C1E03),
             bottom = Color(0xFF0E0901),
@@ -724,15 +1039,41 @@ fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -
         )
     }
 
+    val rikkaColors = RikkaColors(
+        background = colorScheme.background,
+        onBackground = colorScheme.onBackground,
+        surface = colorScheme.surface,
+        surfaceElevated = colorScheme.surfaceVariant,
+        onSurface = colorScheme.onSurface,
+        primary = colorScheme.primary,
+        onPrimary = colorScheme.onPrimary,
+        secondary = colorScheme.secondary,
+        onSecondary = colorScheme.onSecondary,
+        muted = colorScheme.surfaceVariant,
+        onMuted = colorScheme.onSurfaceVariant,
+        destructive = colorScheme.error,
+        onDestructive = colorScheme.onError,
+        success = Color(0xFF10B981),
+        onSuccess = Color.White,
+        warning = Color(0xFFF59E0B),
+        onWarning = Color.Black,
+        border = colorScheme.outline,
+        ring = colorScheme.primary,
+    )
+
     CompositionLocalProvider(
         LocalHeroPalette provides heroPalette,
         LocalAndisColors provides AndisColors(),
+        LocalRikkaColors provides rikkaColors,
+        LocalContentColor provides colorScheme.onSurface,
     ) {
-        MaterialTheme(
-            colorScheme = colorScheme,
-            typography = base.persian(),
-            content = content,
-        )
+        ProvideFintechHaptics {
+            MaterialTheme(
+                colorScheme = colorScheme,
+                typography = base.persian(),
+                content = content,
+            )
+        }
     }
 }
 

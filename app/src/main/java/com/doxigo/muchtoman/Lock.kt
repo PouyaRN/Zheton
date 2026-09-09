@@ -597,31 +597,65 @@ private fun SectionLabel(text: String) {
 /** Choice of classic and studio luxury themes. */
 @Composable
 private fun ThemePicker(current: ThemeMode, onChange: (ThemeMode) -> Unit) {
-    val row0 = listOf(ThemeMode.SYSTEM, ThemeMode.ANDIS_TERMINAL)
-    val row1 = listOf(ThemeMode.LIGHT, ThemeMode.DARK, ThemeMode.AMOLED)
-    val row2 = listOf(ThemeMode.OBSIDIAN_EMERALD, ThemeMode.ROYAL_AMETHYST, ThemeMode.NORDIC_SLATE, ThemeMode.CYBER_GOLD)
+    val fintechHaptics = com.doxigo.muchtoman.ui.haptics.LocalFintechHaptics.current
+    val row0 = listOf(ThemeMode.SYSTEM, ThemeMode.DARK, ThemeMode.LIGHT)
+    val rowFintech = listOf(
+        ThemeMode.APPLE_TITANIUM,
+        ThemeMode.REVOLUT_OBSIDIAN,
+        ThemeMode.DUBAI_GOLD,
+    )
+    val rowFintech2 = listOf(
+        ThemeMode.CASH_APP_NEON,
+        ThemeMode.MONZO_OCEANIC,
+        ThemeMode.AMOLED,
+    )
+    val rowStudio = listOf(
+        ThemeMode.OBSIDIAN_EMERALD,
+        ThemeMode.ROYAL_AMETHYST,
+        ThemeMode.NORDIC_SLATE,
+        ThemeMode.CYBER_GOLD,
+    )
 
     Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
         SegmentedChoice(
             options = row0,
             selected = current,
             label = { it.fa },
-            onSelect = onChange,
+            onSelect = {
+                fintechHaptics.click()
+                onChange(it)
+            },
             fontSize = 13.sp,
         )
         SegmentedChoice(
-            options = row1,
+            options = rowFintech,
             selected = current,
             label = { it.fa },
-            onSelect = onChange,
-            fontSize = 13.sp,
+            onSelect = {
+                fintechHaptics.click()
+                onChange(it)
+            },
+            fontSize = 12.sp,
         )
         SegmentedChoice(
-            options = row2,
+            options = rowFintech2,
             selected = current,
             label = { it.fa },
-            onSelect = onChange,
-            fontSize = 13.sp,
+            onSelect = {
+                fintechHaptics.click()
+                onChange(it)
+            },
+            fontSize = 12.sp,
+        )
+        SegmentedChoice(
+            options = rowStudio,
+            selected = current,
+            label = { it.fa },
+            onSelect = {
+                fintechHaptics.click()
+                onChange(it)
+            },
+            fontSize = 11.sp,
         )
     }
 }

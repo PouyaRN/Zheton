@@ -47,16 +47,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.inset
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
+import com.doxigo.muchtoman.ui.haptics.LocalFintechHaptics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -113,7 +113,7 @@ fun TabBar(
     modifier: Modifier = Modifier,
     onQuickAdd: (() -> Unit)? = null,
 ) {
-    val haptic = LocalHapticFeedback.current
+    val fintechHaptics = LocalFintechHaptics.current
     val density = LocalDensity.current
 
     // Coordinates mapping: Tab -> Pair(xDp, widthDp)
@@ -127,29 +127,28 @@ fun TabBar(
     val animatedPillOffset by animateDpAsState(
         targetValue = targetOffset,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessMediumLow,
+            dampingRatio = 0.75f,
+            stiffness = 400f,
         ),
         label = "gliding_pill_offset",
     )
     val animatedPillWidth by animateDpAsState(
         targetValue = targetWidth,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessMediumLow,
+            dampingRatio = 0.75f,
+            stiffness = 400f,
         ),
         label = "gliding_pill_width",
     )
 
     Surface(
         modifier = modifier
-            .background(MaterialTheme.colorScheme.background)
             .navigationBarsPadding()
             .padding(horizontal = Space.m, vertical = Space.s),
-        shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
-        shadowElevation = 6.dp,
+        shape = RoundedCornerShape(22.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.95f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.45f)),
+        shadowElevation = 8.dp,
     ) {
         Box(
             modifier = Modifier
@@ -166,8 +165,15 @@ fun TabBar(
                         .fillMaxHeight()
                         .padding(vertical = 2.dp, horizontal = 2.dp)
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Hero.top)
-                        .border(1.dp, Hero.gold.copy(alpha = 0.25f), RoundedCornerShape(16.dp)),
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Hero.top,
+                                    Hero.bottom.copy(alpha = 0.90f),
+                                )
+                            )
+                        )
+                        .border(1.dp, Hero.gold.copy(alpha = 0.35f), RoundedCornerShape(16.dp)),
                 )
             }
 
@@ -188,7 +194,7 @@ fun TabBar(
                         ) {
                             Surface(
                                 onClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    fintechHaptics.heavyClick()
                                     onQuickAdd()
                                 },
                                 shape = CircleShape,
@@ -253,7 +259,7 @@ fun TabBar(
                                 indication = null,
                             ) {
                                 if (!isSelected) {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    fintechHaptics.click()
                                     onSelect(tab)
                                 }
                             },

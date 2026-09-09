@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import com.doxigo.muchtoman.ui.haptics.LocalFintechHaptics
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.AnnotatedString
@@ -136,6 +137,18 @@ object BankCardThemes {
             accentColor = Color(0xFF9CA3AF),
             textColor = Color(0xFFFFFFFF),
             secondaryTextColor = Color(0xFFE5E7EB),
+        ),
+        "silver" to BankCardPalette(
+            backgroundGradient = listOf(Color(0xFFB0B5BA), Color(0xFFE0E5EA), Color(0xFF888E95), Color(0xFFD0D5DA)),
+            accentColor = Color(0xFFFFFFFF),
+            textColor = Color(0xFF101418),
+            secondaryTextColor = Color(0xFF2C3238),
+        ),
+        "carbon" to BankCardPalette(
+            backgroundGradient = listOf(Color(0xFF0F1012), Color(0xFF1A1C20), Color(0xFF0A0B0D)),
+            accentColor = Color(0xFF00E5FF),
+            textColor = Color(0xFFFFFFFF),
+            secondaryTextColor = Color(0xFF90A4AE),
         ),
         "ocean" to BankCardPalette(
             backgroundGradient = listOf(Color(0xFF0C4A6E), Color(0xFF0284C7), Color(0xFF075985)),
@@ -564,22 +577,25 @@ fun BankCard3D(
             // Background geometric pattern
             CardGeometricPattern(accentColor = palette.accentColor)
 
-            // Dynamic Holographic / Specular Sheen overlay
+            // Dynamic Multi-Spectral Holographic & Specular Sheen overlay
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val sheenX = size.width * sheenProgress
+                val tiltMagnitude = abs(animatedRotX) + abs(animatedRotY)
+                val specularAlpha = (0.12f + (tiltMagnitude / 100f)).coerceIn(0.12f, 0.45f)
+
                 drawRect(
                     brush = Brush.linearGradient(
                         colors = listOf(
                             Color.Transparent,
-                            Color.White.copy(alpha = 0.08f + abs(animatedRotX + animatedRotY) / 300f),
-                            palette.accentColor.copy(alpha = 0.14f),
-                            Color.White.copy(alpha = 0.18f),
-                            palette.accentColor.copy(alpha = 0.14f),
-                            Color.White.copy(alpha = 0.05f),
+                            Color(0xFF00E5FF).copy(alpha = specularAlpha * 0.4f),
+                            Color.White.copy(alpha = specularAlpha),
+                            palette.accentColor.copy(alpha = specularAlpha * 0.75f),
+                            Color(0xFFFF007F).copy(alpha = specularAlpha * 0.35f),
+                            Color.White.copy(alpha = specularAlpha * 0.5f),
                             Color.Transparent,
                         ),
-                        start = Offset(sheenX - 160f, 0f),
-                        end = Offset(sheenX + 240f, size.height),
+                        start = Offset(sheenX - 180f, 0f),
+                        end = Offset(sheenX + 260f, size.height),
                     ),
                     size = size,
                 )
@@ -1313,6 +1329,8 @@ fun BankCardDeck(
         CardQrDialog(account = acc, onDismiss = { qrAccountToShow = null })
     }
 
+    val fintechHaptics = LocalFintechHaptics.current
+
     if (sortedAccounts.size == 1) {
         val singleAccount = sortedAccounts.first()
         val context = LocalContext.current
@@ -1328,8 +1346,14 @@ fun BankCardDeck(
                 bankAccount = singleAccount,
                 cardHolderName = cardHolderName,
                 modifier = Modifier.padding(horizontal = 20.dp),
-                onClick = { onCardClick(singleAccount) },
-                onLongClick = { onCardLongPress(singleAccount) },
+                onClick = {
+                    fintechHaptics.click()
+                    onCardClick(singleAccount)
+                },
+                onLongClick = {
+                    fintechHaptics.heavyClick()
+                    onCardLongPress(singleAccount)
+                },
                 enable3DTiltDrag = true,
                 privacyMode = privacyMode,
             )
@@ -1347,8 +1371,9 @@ fun BankCardDeck(
                         modifier = Modifier
                             .clip(RoundedCornerShape(Radius.pill))
                             .clickable {
+                                fintechHaptics.click()
                                 clipboardManager.setText(AnnotatedString(copyText))
-                                android.widget.Toast.makeText(context, "شماره کپی شد: $copyText", android.widget.Toast.LENGTH_SHORT).show()
+                                android.widget.Toast.makeText(context, "شماره کارت کپی شد", android.widget.Toast.LENGTH_SHORT).show()
                             }
                             .padding(horizontal = Space.s, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -1376,7 +1401,10 @@ fun BankCardDeck(
                     Row(
                         modifier = Modifier
                             .clip(RoundedCornerShape(Radius.pill))
-                            .clickable { qrAccountToShow = singleAccount }
+                            .clickable {
+                                fintechHaptics.click()
+                                qrAccountToShow = singleAccount
+                            }
                             .padding(horizontal = Space.s, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -1404,7 +1432,10 @@ fun BankCardDeck(
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(Radius.pill))
-                        .clickable { onCardClick(singleAccount) }
+                        .clickable {
+                            fintechHaptics.click()
+                            onCardClick(singleAccount)
+                        }
                         .padding(horizontal = Space.s, vertical = 2.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -1483,6 +1514,7 @@ fun BankCardDeck(
                             else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
                         )
                         .clickable {
+                            fintechHaptics.click()
                             coroutineScope.launch {
                                 pagerState.animateScrollToPage(index)
                             }
@@ -1513,8 +1545,9 @@ fun BankCardDeck(
                         modifier = Modifier
                             .clip(RoundedCornerShape(Radius.pill))
                             .clickable {
+                                fintechHaptics.click()
                                 clipboardManager.setText(AnnotatedString(copyText))
-                                android.widget.Toast.makeText(context, "شماره کپی شد: $copyText", android.widget.Toast.LENGTH_SHORT).show()
+                                android.widget.Toast.makeText(context, "شماره کارت کپی شد", android.widget.Toast.LENGTH_SHORT).show()
                             }
                             .padding(horizontal = Space.s, vertical = 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -1544,6 +1577,7 @@ fun BankCardDeck(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(Radius.pill))
                                 .clickable {
+                                    fintechHaptics.click()
                                     val clean = cleanSheba(activeAccount.sheba)
                                     clipboardManager.setText(AnnotatedString(clean))
                                     android.widget.Toast.makeText(context, "شماره شبا کپی شد", android.widget.Toast.LENGTH_SHORT).show()
