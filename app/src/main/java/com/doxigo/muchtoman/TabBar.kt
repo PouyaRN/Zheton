@@ -114,32 +114,6 @@ fun TabBar(
     onQuickAdd: (() -> Unit)? = null,
 ) {
     val fintechHaptics = LocalFintechHaptics.current
-    val density = LocalDensity.current
-
-    // Coordinates mapping: Tab -> Pair(xDp, widthDp)
-    var tabBounds by remember { mutableStateOf<Map<Tab, Pair<Dp, Dp>>>(emptyMap()) }
-
-    val selectedBounds = tabBounds[selected]
-    val targetOffset = selectedBounds?.first ?: 0.dp
-    val targetWidth = selectedBounds?.second ?: 0.dp
-
-    // Continuous spring animation for the floating capsule pill
-    val animatedPillOffset by animateDpAsState(
-        targetValue = targetOffset,
-        animationSpec = spring(
-            dampingRatio = 0.75f,
-            stiffness = 400f,
-        ),
-        label = "gliding_pill_offset",
-    )
-    val animatedPillWidth by animateDpAsState(
-        targetValue = targetWidth,
-        animationSpec = spring(
-            dampingRatio = 0.75f,
-            stiffness = 400f,
-        ),
-        label = "gliding_pill_width",
-    )
 
     Surface(
         modifier = modifier
@@ -150,20 +124,72 @@ fun TabBar(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.45f)),
         shadowElevation = 8.dp,
     ) {
-        Box(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(68.dp)
                 .padding(horizontal = 4.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Gliding capsule pill indicator
-            if (targetWidth > 0.dp) {
-                Box(
-                    modifier = Modifier
-                        .offset(x = animatedPillOffset)
-                        .width(animatedPillWidth)
-                        .fillMaxHeight()
-                        .padding(vertical = 2.dp, horizontal = 2.dp)
+            val half = tabs.size / 2
+            tabs.forEachIndexed { index, tab ->
+                if (onQuickAdd != null && index == half) {
+                    // Central high-velocity quick entry action FAB
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Surface(
+                            onClick = {
+                                fintechHaptics.heavyClick()
+                                onQuickAdd()
+                            },
+                            shape = CircleShape,
+                            color = Hero.gold,
+                            shadowElevation = 4.dp,
+                            modifier = Modifier.size(44.dp),
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Canvas(modifier = Modifier.size(20.dp)) {
+                                    val stroke = 2.4.dp.toPx()
+                                    // Horizontal plus bar
+                                    drawLine(
+                                        color = Color(0xFF050607),
+                                        start = Offset(0f, size.height / 2),
+                                        end = Offset(size.width, size.height / 2),
+                                        strokeWidth = stroke,
+                                        cap = StrokeCap.Round,
+                                    )
+                                    // Vertical plus bar
+                                    drawLine(
+                                        color = Color(0xFF050607),
+                                        start = Offset(size.width / 2, 0f),
+                                        end = Offset(size.width / 2, size.height),
+                                        strokeWidth = stroke,
+                                        cap = StrokeCap.Round,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                val badge = if (tab == Tab.LEDGER) ledgerBadge else 0
+                val isSelected = tab == selected
+                val iconScale by animateFloatAsState(
+                    targetValue = if (isSelected) 1.08f else 1.0f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessMedium,
+                    ),
+                    label = "tab_icon_scale",
+                )
+
+                val itemBg = if (isSelected) {
+                    Modifier
+                        .padding(vertical = 3.dp, horizontal = 2.dp)
                         .clip(RoundedCornerShape(16.dp))
                         .background(
                             Brush.verticalGradient(
@@ -173,144 +199,74 @@ fun TabBar(
                                 )
                             )
                         )
-                        .border(1.dp, Hero.gold.copy(alpha = 0.35f), RoundedCornerShape(16.dp)),
-                )
-            }
+                        .border(1.dp, Hero.gold.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
+                } else {
+                    Modifier
+                        .padding(vertical = 3.dp, horizontal = 2.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                }
 
-            // Tab items row
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                val half = tabs.size / 2
-                tabs.forEachIndexed { index, tab ->
-                    if (onQuickAdd != null && index == half) {
-                        // Central high-velocity quick entry action FAB
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight(),
-                            contentAlignment = Alignment.Center,
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .then(itemBg)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
                         ) {
-                            Surface(
-                                onClick = {
-                                    fintechHaptics.heavyClick()
-                                    onQuickAdd()
-                                },
-                                shape = CircleShape,
-                                color = Hero.gold,
-                                shadowElevation = 4.dp,
-                                modifier = Modifier.size(44.dp),
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Canvas(modifier = Modifier.size(20.dp)) {
-                                        val stroke = 2.4.dp.toPx()
-                                        // Horizontal plus bar
-                                        drawLine(
-                                            color = Color(0xFF050607),
-                                            start = Offset(0f, size.height / 2),
-                                            end = Offset(size.width, size.height / 2),
-                                            strokeWidth = stroke,
-                                            cap = StrokeCap.Round,
-                                        )
-                                        // Vertical plus bar
-                                        drawLine(
-                                            color = Color(0xFF050607),
-                                            start = Offset(size.width / 2, 0f),
-                                            end = Offset(size.width / 2, size.height),
-                                            strokeWidth = stroke,
-                                            cap = StrokeCap.Round,
+                            if (!isSelected) {
+                                fintechHaptics.click()
+                                onSelect(tab)
+                            }
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        BadgedBox(
+                            badge = {
+                                if (badge > 0) {
+                                    Badge(
+                                        containerColor = Hero.gold,
+                                        contentColor = Color(0xFF050607),
+                                    ) {
+                                        Text(
+                                            faNumber(badge.coerceAtMost(99).toDouble()),
+                                            style = figureStyle(Color(0xFF050607)),
+                                            fontSize = 10.sp,
                                         )
                                     }
-                                }
-                            }
-                        }
-                    }
-
-                    val badge = if (tab == Tab.LEDGER) ledgerBadge else 0
-                    val isSelected = tab == selected
-                    val iconScale by animateFloatAsState(
-                        targetValue = if (isSelected) 1.08f else 1.0f,
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessMedium,
-                        ),
-                        label = "tab_icon_scale",
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .onGloballyPositioned { coords ->
-                                val parent = coords.parentCoordinates
-                                if (parent != null) {
-                                    val pos = coords.positionInParent()
-                                    val xDp = with(density) { pos.x.toDp() }
-                                    val widthDp = with(density) { coords.size.width.toDp() }
-                                    if (tabBounds[tab] != Pair(xDp, widthDp)) {
-                                        tabBounds = tabBounds + (tab to Pair(xDp, widthDp))
-                                    }
-                                }
-                            }
-                            .clip(RoundedCornerShape(16.dp))
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                            ) {
-                                if (!isSelected) {
-                                    fintechHaptics.click()
-                                    onSelect(tab)
                                 }
                             },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
                         ) {
-                            BadgedBox(
-                                badge = {
-                                    if (badge > 0) {
-                                        Badge(
-                                            containerColor = Hero.gold,
-                                            contentColor = Color(0xFF050607),
-                                        ) {
-                                            Text(
-                                                faNumber(badge.coerceAtMost(99).toDouble()),
-                                                style = figureStyle(Color(0xFF050607)),
-                                                fontSize = 10.sp,
-                                            )
-                                        }
-                                    }
-                                },
-                            ) {
-                                val tint = if (isSelected) Hero.gold else MaterialTheme.colorScheme.onSurfaceVariant
-                                Canvas(
-                                    Modifier
-                                        .size(22.dp)
-                                        .graphicsLayer {
-                                            scaleX = iconScale
-                                            scaleY = iconScale
-                                            compositingStrategy = CompositingStrategy.Offscreen
-                                        },
-                                ) { drawTabIcon(tab, tint) }
-                            }
-
-                            Spacer(Modifier.height(3.dp))
-
-                            Text(
-                                tab.fa,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                style = TextStyle(
-                                    fontFamily = Modam,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                    fontSize = 11.sp,
-                                    color = if (isSelected) Hero.gold else MaterialTheme.colorScheme.onSurfaceVariant,
-                                ),
-                            )
+                            val tint = if (isSelected) Hero.gold else MaterialTheme.colorScheme.onSurfaceVariant
+                            Canvas(
+                                Modifier
+                                    .size(22.dp)
+                                    .graphicsLayer {
+                                        scaleX = iconScale
+                                        scaleY = iconScale
+                                        compositingStrategy = CompositingStrategy.Offscreen
+                                    },
+                            ) { drawTabIcon(tab, tint) }
                         }
+
+                        Spacer(Modifier.height(3.dp))
+
+                        Text(
+                            tab.fa,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = TextStyle(
+                                fontFamily = Modam,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                fontSize = 11.sp,
+                                color = if (isSelected) Hero.gold else MaterialTheme.colorScheme.onSurfaceVariant,
+                            ),
+                        )
                     }
                 }
             }

@@ -127,160 +127,183 @@ class AndroidFintechHaptics(
 
     @SuppressLint("MissingPermission")
     override fun tick() {
-        if (!isHapticFeedbackEnabled()) return
+        try {
+            if (!isHapticFeedbackEnabled()) return
 
-        val now = SystemClock.elapsedRealtime()
-        if (now - lastTickTimestamp < 20L) {
-            // Drop excessive tick pulses to prevent HAL buffer saturation during rapid drags
-            return
-        }
-        lastTickTimestamp = now
+            val now = SystemClock.elapsedRealtime()
+            if (now - lastTickTimestamp < 20L) {
+                return
+            }
+            lastTickTimestamp = now
 
-        // 1. Android 14+ (API 34): Use SEGMENT_TICK via View.performHapticFeedback
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && view != null) {
-            view.performHapticFeedback(
-                HapticFeedbackConstants.SEGMENT_TICK,
-                HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING,
-            )
-            return
-        }
+            // 1. Android 14+ (API 34): Use SEGMENT_TICK via View.performHapticFeedback
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && view != null) {
+                view.performHapticFeedback(
+                    HapticFeedbackConstants.SEGMENT_TICK,
+                    HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING,
+                )
+                return
+            }
 
-        // 2. Android 12+ (API 31): Use hardware composition primitive
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && vibrator != null && vibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_TICK)) {
-            val composition = VibrationEffect.startComposition()
-                .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK, 0.6f)
-                .compose()
-            vibrator.vibrate(
-                composition,
-                VibrationAttributes.createForUsage(VibrationAttributes.USAGE_TOUCH),
-            )
-            return
-        }
+            // 2. Android 12+ (API 31): Use hardware composition primitive
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && vibrator != null && vibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_TICK)) {
+                val composition = VibrationEffect.startComposition()
+                    .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK, 0.6f)
+                    .compose()
+                vibrator.vibrate(
+                    composition,
+                    VibrationAttributes.createForUsage(VibrationAttributes.USAGE_TOUCH),
+                )
+                return
+            }
 
-        // 3. Android 10+ (API 29): Predefined EFFECT_TICK
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && vibrator != null && tickEffect != null) {
-            vibrator.vibrate(tickEffect)
-            return
-        }
+            // 3. Android 10+ (API 29): Predefined EFFECT_TICK
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && vibrator != null && tickEffect != null) {
+                vibrator.vibrate(tickEffect)
+                return
+            }
 
-        // 4. Android 8.0-9.0 (API 26-28): 4ms OneShot
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && vibrator != null && tickEffect != null) {
-            vibrator.vibrate(tickEffect)
-            return
-        }
+            // 4. Android 8.0-9.0 (API 26-28): 4ms OneShot
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && vibrator != null && tickEffect != null) {
+                vibrator.vibrate(tickEffect)
+                return
+            }
 
-        // 5. Fallback for API 24-25 (Android 7.0-7.1)
-        if (view != null) {
-            view.performHapticFeedback(
-                HapticFeedbackConstants.CLOCK_TICK,
-                HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING,
-            )
-        } else if (vibrator != null && vibrator.hasVibrator()) {
-            @Suppress("DEPRECATION")
-            vibrator.vibrate(4L)
+            // 5. Fallback for API 24-25 (Android 7.0-7.1)
+            if (view != null) {
+                view.performHapticFeedback(
+                    HapticFeedbackConstants.CLOCK_TICK,
+                    HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING,
+                )
+            } else if (vibrator != null && vibrator.hasVibrator()) {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(4L)
+            }
+        } catch (_: Throwable) {
+            try {
+                view?.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
+            } catch (_: Throwable) {}
         }
     }
 
     @SuppressLint("MissingPermission")
     override fun click() {
-        if (!isHapticFeedbackEnabled()) return
+        try {
+            if (!isHapticFeedbackEnabled()) return
 
-        // 1. Android 12+ (API 31): Primitive Click
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && vibrator != null && vibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_CLICK)) {
-            val composition = VibrationEffect.startComposition()
-                .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 0.85f)
-                .compose()
-            vibrator.vibrate(
-                composition,
-                VibrationAttributes.createForUsage(VibrationAttributes.USAGE_TOUCH),
-            )
-            return
-        }
+            // 1. Android 12+ (API 31): Primitive Click
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && vibrator != null && vibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_CLICK)) {
+                val composition = VibrationEffect.startComposition()
+                    .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 0.85f)
+                    .compose()
+                vibrator.vibrate(
+                    composition,
+                    VibrationAttributes.createForUsage(VibrationAttributes.USAGE_TOUCH),
+                )
+                return
+            }
 
-        // 2. Android 10+ (API 29) & Android 8+ (API 26)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && vibrator != null && clickEffect != null) {
-            vibrator.vibrate(clickEffect)
-            return
-        }
+            // 2. Android 10+ (API 29) & Android 8+ (API 26)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && vibrator != null && clickEffect != null) {
+                vibrator.vibrate(clickEffect)
+                return
+            }
 
-        // 3. Fallback for API 24-25
-        if (view != null) {
-            view.performHapticFeedback(
-                HapticFeedbackConstants.KEYBOARD_TAP,
-                HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING,
-            )
-        } else if (vibrator != null && vibrator.hasVibrator()) {
-            @Suppress("DEPRECATION")
-            vibrator.vibrate(12L)
+            // 3. Fallback for API 24-25
+            if (view != null) {
+                view.performHapticFeedback(
+                    HapticFeedbackConstants.KEYBOARD_TAP,
+                    HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING,
+                )
+            } else if (vibrator != null && vibrator.hasVibrator()) {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(12L)
+            }
+        } catch (_: Throwable) {
+            try {
+                view?.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+            } catch (_: Throwable) {}
         }
     }
 
     @SuppressLint("MissingPermission")
     override fun heavyClick() {
-        if (!isHapticFeedbackEnabled()) return
+        try {
+            if (!isHapticFeedbackEnabled()) return
 
-        // 1. Android 12+ (API 31): Primitive Thud
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && vibrator != null && vibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_THUD)) {
-            val composition = VibrationEffect.startComposition()
-                .addPrimitive(VibrationEffect.Composition.PRIMITIVE_THUD, 1.0f)
-                .compose()
-            vibrator.vibrate(
-                composition,
-                VibrationAttributes.createForUsage(VibrationAttributes.USAGE_TOUCH),
-            )
-            return
-        }
+            // 1. Android 12+ (API 31): Primitive Thud
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && vibrator != null && vibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_THUD)) {
+                val composition = VibrationEffect.startComposition()
+                    .addPrimitive(VibrationEffect.Composition.PRIMITIVE_THUD, 1.0f)
+                    .compose()
+                vibrator.vibrate(
+                    composition,
+                    VibrationAttributes.createForUsage(VibrationAttributes.USAGE_TOUCH),
+                )
+                return
+            }
 
-        // 2. Android 8.0+ (API 26+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && vibrator != null && heavyEffect != null) {
-            vibrator.vibrate(heavyEffect)
-            return
-        }
+            // 2. Android 8.0+ (API 26+)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && vibrator != null && heavyEffect != null) {
+                vibrator.vibrate(heavyEffect)
+                return
+            }
 
-        // 3. Fallback for API 24-25
-        if (view != null) {
-            view.performHapticFeedback(
-                HapticFeedbackConstants.LONG_PRESS,
-                HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING,
-            )
-        } else if (vibrator != null && vibrator.hasVibrator()) {
-            @Suppress("DEPRECATION")
-            vibrator.vibrate(35L)
+            // 3. Fallback for API 24-25
+            if (view != null) {
+                view.performHapticFeedback(
+                    HapticFeedbackConstants.LONG_PRESS,
+                    HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING,
+                )
+            } else if (vibrator != null && vibrator.hasVibrator()) {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(35L)
+            }
+        } catch (_: Throwable) {
+            try {
+                view?.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+            } catch (_: Throwable) {}
         }
     }
 
     @SuppressLint("MissingPermission")
     override fun doubleTap() {
-        if (!isHapticFeedbackEnabled()) return
+        try {
+            if (!isHapticFeedbackEnabled()) return
 
-        // 1. Android 12+ (API 31): Composed Dual Click with exact 50ms spacing
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && vibrator != null && vibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_CLICK)) {
-            val composition = VibrationEffect.startComposition()
-                .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 0.7f, 0)
-                .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 1.0f, 50)
-                .compose()
-            vibrator.vibrate(
-                composition,
-                VibrationAttributes.createForUsage(VibrationAttributes.USAGE_TOUCH),
-            )
-            return
-        }
+            // 1. Android 12+ (API 31): Composed Dual Click with exact 50ms spacing
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && vibrator != null && vibrator.areAllPrimitivesSupported(VibrationEffect.Composition.PRIMITIVE_CLICK)) {
+                val composition = VibrationEffect.startComposition()
+                    .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 0.7f, 0)
+                    .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 1.0f, 50)
+                    .compose()
+                vibrator.vibrate(
+                    composition,
+                    VibrationAttributes.createForUsage(VibrationAttributes.USAGE_TOUCH),
+                )
+                return
+            }
 
-        // 2. Android 8.0+ (API 26+) Waveform / Predefined
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && vibrator != null && doubleTapEffect != null) {
-            vibrator.vibrate(doubleTapEffect)
-            return
-        }
+            // 2. Android 8.0+ (API 26+) Waveform / Predefined
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && vibrator != null && doubleTapEffect != null) {
+                vibrator.vibrate(doubleTapEffect)
+                return
+            }
 
-        // 3. Fallback for API 24-25
-        if (vibrator != null && vibrator.hasVibrator()) {
-            @Suppress("DEPRECATION")
-            vibrator.vibrate(longArrayOf(0L, 12L, 50L, 18L), -1)
-        } else if (view != null) {
-            view.performHapticFeedback(
-                HapticFeedbackConstants.CONTEXT_CLICK,
-                HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING,
-            )
+            // 3. Fallback for API 24-25
+            if (vibrator != null && vibrator.hasVibrator()) {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(longArrayOf(0L, 12L, 50L, 18L), -1)
+            } else if (view != null) {
+                view.performHapticFeedback(
+                    HapticFeedbackConstants.CONTEXT_CLICK,
+                    HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING,
+                )
+            }
+        } catch (_: Throwable) {
+            try {
+                view?.performHapticFeedback(HapticFeedbackConstants.CONTEXT_CLICK)
+            } catch (_: Throwable) {}
         }
     }
 }
