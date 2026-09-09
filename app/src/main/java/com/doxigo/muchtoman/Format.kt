@@ -23,6 +23,14 @@ fun faNumber(value: Long): String =
 fun faNumber(value: Int): String =
     FA_INTEGER.get()!!.format(value.toLong())
 
+/** Universal shorthand for grouped Persian digits */
+fun fa(value: Number): String = when (value) {
+    is Double -> faNumber(value)
+    is Long -> faNumber(value)
+    is Int -> faNumber(value)
+    else -> faNumber(value.toLong())
+}
+
 /**
  * Persian digits with decimals kept: 0.0345 -> "۰٫۰۳۴۵". With [pad] the decimals are held at
  * exactly [decimals] places, zeros and all, so a column of figures keeps one shape.
