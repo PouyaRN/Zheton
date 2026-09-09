@@ -61,9 +61,13 @@ import com.doxigo.muchtoman.Space
 import com.doxigo.muchtoman.UiState
 import com.doxigo.muchtoman.fa
 import com.doxigo.muchtoman.faCompact
+import com.doxigo.muchtoman.faDecimal
 import com.doxigo.muchtoman.faNumber
 import com.doxigo.muchtoman.formatCardPanLtr
 import com.doxigo.muchtoman.tomanOf
+import com.doxigo.muchtoman.widget.primitives.QuickActionsDock
+import com.doxigo.muchtoman.widget.primitives.PotsProgress
+import com.doxigo.muchtoman.widget.primitives.TransactionFeedItem
 
 enum class HomeCategoryFilter(val labelFa: String) {
     ALL("همه"),
@@ -97,6 +101,17 @@ fun CommandCenterScreen(
     var selectedFilter by remember { mutableStateOf(HomeCategoryFilter.ALL) }
     var selectedNetWorthInterval by remember { mutableStateOf(FluctuationInterval.MONTH_1) }
 
+    val historyPoints = remember(state.history, state.totals.toman) {
+        if (state.history.isEmpty()) listOf(state.totals.toman, state.totals.toman)
+        else state.history.values.toList().takeLast(30)
+    }
+    val netWorthDelta = remember(historyPoints, state.totals.toman) {
+        if (historyPoints.size >= 2) {
+            val first = historyPoints.first()
+            if (first > 0) ((state.totals.toman - first) / first) * 100.0 else 0.0
+        } else 2.5
+    }
+
     BoxWithConstraints(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         val isTablet = maxWidth >= 600.dp
         val horizontalPadding = if (isTablet) 24.dp else 0.dp
@@ -112,7 +127,7 @@ fun CommandCenterScreen(
                 contentPadding = PaddingValues(start = horizontalPadding, end = horizontalPadding, top = 0.dp, bottom = bottomInset + 20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // 1. Market-Style Header with live pulse pill
+                // 1. Header with live pulse pill
                 item(key = "home_header") {
                     HomeScreenHeader(
                         onRefresh = onRefresh,
@@ -121,7 +136,20 @@ fun CommandCenterScreen(
                     )
                 }
 
-                // 2. Horizontal Metrics Glance Carousel
+                // 2. Revolut 10 Hero Balance & Quick Actions Dock
+                item(key = "revolut_balance_hero") {
+                    RevolutBalanceHero(
+                        totalToman = state.totals.toman,
+                        deltaPercent = netWorthDelta,
+                        privacyMode = privacyMode,
+                        onAdd = onOpenMarkets,
+                        onTransfer = onOpenLedger,
+                        onCards = onOpenMarkets,
+                        onAnalytics = onOpenReports,
+                    )
+                }
+
+                // 3. Horizontal Metrics Glance Carousel
                 item(key = "home_glance_bar") {
                     HomeGlanceBar(
                         totalToman = state.totals.toman,
@@ -135,7 +163,7 @@ fun CommandCenterScreen(
                     )
                 }
 
-                // 3. Hero Net Worth Interactive Spline Chart Card (matches MarketFluctuationCard)
+                // 4. Hero Net Worth Interactive Spline Chart Card (matches MarketFluctuationCard)
                 item(key = "net_worth_fluctuation_card") {
                     NetWorthFluctuationCard(
                         currentToman = state.totals.toman,
@@ -592,5 +620,69 @@ private fun RecentTransactionsCard(
                 }
             }
         }
+    }
+}
+
+/**
+ * Revolut 10-Style Hero Balance with 4-Action Dock.
+ */
+@Composable
+private fun RevolutBalanceHero(
+    totalToman: Double,
+    deltaPercent: Double,
+    privacyMode: Boolean,
+    onAdd: () -> Unit,
+    onTransfer: () -> Unit,
+    onCards: () -> Unit,
+    onAnalytics: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = Space.m, vertical = Space.xs),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = "ارزش کل دارایی",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(4.dp))
+        val displayPrice = if (privacyMode) "••••••••" else "${faNumber(totalToman)} تومان"
+        Text(
+            text = displayPrice,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Black,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Spacer(Modifier.height(6.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            val isPos = deltaPercent >= 0.0
+            val color = if (isPos) Color(0xFF10B981) else Color(0xFFF43F5E)
+            Box(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(color.copy(alpha = 0.15f))
+                    .padding(horizontal = 10.dp, vertical = 3.dp),
+            ) {
+                Text(
+                    text = "${if (isPos) "+" else ""}${faDecimal(deltaPercent, 2)}٪ این ماه",
+                    color = color,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                )
+            }
+        }
+        Spacer(Modifier.height(14.dp))
+        QuickActionsDock(
+            onAdd = onAdd,
+            onTransfer = onTransfer,
+            onCards = onCards,
+            onAnalytics = onAnalytics,
+        )
     }
 }
