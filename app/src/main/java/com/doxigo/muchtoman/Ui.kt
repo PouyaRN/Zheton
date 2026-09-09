@@ -1436,25 +1436,13 @@ internal fun HeroField(
                 }
             }
 
-            AnimatedContent(
-                targetState = heroDisplayFigure,
-                transitionSpec = {
-                    (
-                        slideInVertically(tween(Motion.medium, easing = Motion.enter)) { it / 3 } +
-                            fadeIn(tween(Motion.medium))
-                        ).togetherWith(
-                        slideOutVertically(tween(Motion.fast, easing = Motion.exit)) { -it / 3 } +
-                            fadeOut(tween(Motion.fast))
-                    )
-                },
-                label = "total",
-                modifier = Modifier.privacyBlur(privacyMode),
-            ) { figure ->
-                BasicText(
-                    text = heroFigure(figure, Hero.gold, heroDisplayUnit),
-                    maxLines = 1,
-                    autoSize = TextAutoSize.StepBased(minFontSize = 28.sp, maxFontSize = 60.sp),
-                    style = figureStyle(Hero.gold, FontWeight.Black),
+            Row(modifier = Modifier.fillMaxWidth().privacyBlur(privacyMode)) {
+                com.doxigo.muchtoman.widget.primitives.PersianRollingOdometer(
+                    amount = activeTotal,
+                    unit = heroDisplayUnit,
+                    textStyle = figureStyle(Hero.gold, FontWeight.Black).copy(fontSize = 38.sp),
+                    unitColor = Hero.gold.copy(alpha = 0.8f),
+                    privacyMode = privacyMode,
                 )
             }
 

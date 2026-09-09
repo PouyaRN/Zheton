@@ -1,10 +1,22 @@
 package com.doxigo.muchtoman.widget.primitives
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -12,21 +24,28 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.height
 import com.doxigo.muchtoman.AndisTheme
 import com.doxigo.muchtoman.Modam
 import com.doxigo.muchtoman.ModamFigures
 import com.doxigo.muchtoman.TABULAR
+import com.doxigo.muchtoman.faNumber
 
 enum class FinancialValueSize(val amountSize: TextUnit, val unitSize: TextUnit, val weight: FontWeight) {
     MONUMENTAL(44.sp, 16.sp, FontWeight.Black),
@@ -37,65 +56,112 @@ enum class FinancialValueSize(val amountSize: TextUnit, val unitSize: TextUnit, 
 }
 
 /**
- * Monumental Editorial Financial Value.
- * 44sp commanding presence with sub-aligned Persian currency unit and optional delta.
+ * High-performance, luxury rolling odometer for Persian currency amounts.
+ * Slices digits into individual slots rolling vertically with directional physics.
  */
 @Composable
-fun MonumentalValue(
-    amount: String,
+fun PersianRollingOdometer(
+    amount: Double,
     modifier: Modifier = Modifier,
     unit: String = "تومان",
-    deltaPercent: Double? = null,
-    deltaPeriod: String = "این ماه",
-    color: Color = AndisTheme.colors.textPrimary,
+    textStyle: TextStyle = TextStyle(
+        fontFamily = ModamFigures,
+        fontWeight = FontWeight.Black,
+        fontSize = 38.sp,
+        fontFeatureSettings = TABULAR,
+        color = AndisTheme.colors.textPrimary,
+    ),
+    unitColor: Color = AndisTheme.colors.textSecondary,
     privacyMode: Boolean = false,
 ) {
-    val displayAmount = if (privacyMode) "••••••••" else amount
-
-    Column(modifier = modifier) {
-        Row(
-            verticalAlignment = Alignment.Bottom
-        ) {
-            Text(
-                text = displayAmount,
-                style = TextStyle(
-                    fontFamily = ModamFigures,
-                    fontWeight = FontWeight.Black,
-                    fontSize = 44.sp,
-                    fontFeatureSettings = TABULAR,
-                    letterSpacing = (-0.5).sp,
-                    color = color,
-                    textDirection = TextDirection.Ltr
-                )
-            )
-            if (unit.isNotEmpty()) {
-                Spacer(Modifier.width(8.dp))
+    if (privacyMode) {
+        Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
+            Text(text = "••••••••", style = textStyle)
+            if (unit.isNotBlank()) {
+                Spacer(Modifier.width(6.dp))
                 Text(
                     text = unit,
-                    style = TextStyle(
-                        fontFamily = Modam,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 15.sp,
-                        color = AndisTheme.colors.textSecondary
+                    style = textStyle.copy(
+                        fontSize = (textStyle.fontSize.value * 0.42f).sp,
+                        fontWeight = FontWeight.Bold,
+                        color = unitColor,
                     ),
-                    modifier = Modifier.padding(bottom = 6.dp)
                 )
             }
         }
+        return
+    }
 
-        if (deltaPercent != null) {
-            Spacer(Modifier.height(4.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                FinancialDelta(deltaPercent = deltaPercent, showBackground = false)
+    var previousAmount by remember { mutableDoubleStateOf(amount) }
+    val isIncreasing = amount >= previousAmount
+
+    SideEffect {
+        previousAmount = amount
+    }
+
+    val formattedString = remember(amount) { faNumber(amount) }
+
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        Row(
+            modifier = modifier,
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            formattedString.forEachIndexed { index, char ->
+                if (char.isDigit()) {
+                    AnimatedContent(
+                        targetState = char,
+                        transitionSpec = {
+                            val enterDirection = if (isIncreasing) 1 else -1
+                            val exitDirection = if (isIncreasing) -1 else 1
+
+                            val enterTransition = slideInVertically(
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioLowBouncy,
+                                    stiffness = Spring.StiffnessLow,
+                                ),
+                            ) { height -> height * enterDirection } + fadeIn()
+
+                            val exitTransition = slideOutVertically(
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioNoBouncy,
+                                    stiffness = Spring.StiffnessMedium,
+                                ),
+                            ) { height -> height * exitDirection } + fadeOut()
+
+                            ContentTransform(
+                                targetContentEnter = enterTransition,
+                                initialContentExit = exitTransition,
+                                sizeTransform = SizeTransform(clip = true),
+                            )
+                        },
+                        label = "digit_$index",
+                    ) { targetChar ->
+                        Text(
+                            text = targetChar.toString(),
+                            style = textStyle,
+                            maxLines = 1,
+                        )
+                    }
+                } else {
+                    Text(
+                        text = char.toString(),
+                        style = textStyle,
+                        maxLines = 1,
+                    )
+                }
+            }
+
+            if (unit.isNotBlank()) {
                 Spacer(Modifier.width(6.dp))
                 Text(
-                    text = deltaPeriod,
-                    style = TextStyle(
-                        fontFamily = Modam,
-                        fontWeight = FontWeight.Normal,
-                        fontSize = 12.sp,
-                        color = AndisTheme.colors.textMuted
-                    )
+                    text = unit,
+                    style = textStyle.copy(
+                        fontSize = (textStyle.fontSize.value * 0.42f).sp,
+                        fontWeight = FontWeight.Bold,
+                        color = unitColor,
+                    ),
+                    maxLines = 1,
                 )
             }
         }

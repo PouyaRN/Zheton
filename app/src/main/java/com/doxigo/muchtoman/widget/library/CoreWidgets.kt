@@ -32,7 +32,7 @@ import com.doxigo.muchtoman.widget.primitives.FinancialDelta
 import com.doxigo.muchtoman.widget.primitives.FinancialValue
 import com.doxigo.muchtoman.widget.primitives.FinancialValueSize
 import com.doxigo.muchtoman.widget.primitives.MarketRow
-import com.doxigo.muchtoman.widget.primitives.MonumentalValue
+import com.doxigo.muchtoman.widget.primitives.PersianRollingOdometer
 import com.doxigo.muchtoman.widget.primitives.SubtleLineChart
 import com.doxigo.muchtoman.widget.primitives.WidgetDensity
 
@@ -73,11 +73,9 @@ fun NetWorthWidget(
             FinancialDelta(deltaPercent = deltaPercent, showBackground = true)
         }
     ) {
-        MonumentalValue(
-            amount = faCompact(totalToman),
+        PersianRollingOdometer(
+            amount = totalToman,
             unit = "تومان",
-            deltaPercent = deltaPercent,
-            deltaPeriod = "این ماه",
             privacyMode = privacyMode
         )
 
