@@ -25,7 +25,6 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/modam_medium"
                 android:text="گرم طلا"
                 android:textColor="#93B7B0"
                 android:textSize="9.5sp" />
@@ -33,7 +32,6 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/modam_heavy"
                 android:text="۶,۶۸۰,۰۰۰ ت"
                 android:textColor="#F7C948"
                 android:textSize="12.5sp" />
@@ -49,7 +47,6 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/modam_medium"
                 android:text="دلار"
                 android:textColor="#93B7B0"
                 android:textSize="9.5sp" />
@@ -57,7 +54,6 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/modam_heavy"
                 android:text="۶۰,۲۰۰ ت"
                 android:textColor="#3BE0A8"
                 android:textSize="12.5sp" />
@@ -73,7 +69,6 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/modam_medium"
                 android:text="تتر"
                 android:textColor="#93B7B0"
                 android:textSize="9.5sp" />
@@ -81,7 +76,6 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:fontFamily="@font/modam_heavy"
                 android:text="۶۱,۳۰۰ ت"
                 android:textColor="#3BE0A8"
                 android:textSize="12.5sp" />
@@ -91,7 +85,6 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:fontFamily="@font/modam"
         android:gravity="center"
         android:text="بروزرسانی: ۵ دقیقه پیش"
         android:textColor="#93B7B0"

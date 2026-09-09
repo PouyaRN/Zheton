@@ -17,7 +17,6 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:fontFamily="@font/modam_semibold"
             android:text="خرج امن امروز"
             android:textColor="#F7C948"
             android:textSize="11sp" />
@@ -25,7 +24,6 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/modam_medium"
             android:text="۷ روز تا پایان چرخه"
             android:textColor="#93B7B0"
             android:textSize="9.5sp" />
@@ -35,7 +33,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:fontFamily="@font/modam_heavy"
         android:text="۶۵۰,۰۰۰ تومان"
         android:textColor="#FAF9F6"
         android:textSize="19sp" />
@@ -70,7 +67,6 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:fontFamily="@font/modam"
             android:text="بودجه مصرف‌شده: ۶۸٪"
             android:textColor="#93B7B0"
             android:textSize="9sp" />
@@ -78,7 +74,6 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/modam"
             android:text="معادل: ۴٫۲۶ گرم طلا"
             android:textColor="#F7C948"
             android:textSize="9sp" />

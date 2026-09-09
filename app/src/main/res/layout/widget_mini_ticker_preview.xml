@@ -12,7 +12,6 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:fontFamily="@font/modam_medium"
         android:text="گرم طلا"
         android:textColor="#93B7B0"
         android:textSize="9sp" />
@@ -21,7 +20,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="2dp"
-        android:fontFamily="@font/modam_heavy"
         android:text="۶,۶۸۰,۰۰۰"
         android:textColor="#F7C948"
         android:textSize="14sp" />

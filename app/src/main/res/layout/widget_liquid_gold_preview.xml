@@ -11,7 +11,6 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:fontFamily="@font/modam_medium"
         android:text="موجودی نقد عملیاتی"
         android:textColor="#93B7B0"
         android:textSize="10.5sp" />
@@ -20,7 +19,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="3dp"
-        android:fontFamily="@font/modam_heavy"
         android:text="۲۸,۴۵۰,۰۰۰ تومان"
         android:textColor="#FAF9F6"
         android:textSize="18sp" />
@@ -36,7 +34,6 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:fontFamily="@font/modam_semibold"
             android:text="معادل ۴٫۲۶ گرم طلای ۱۸"
             android:textColor="#F7C948"
             android:textSize="10.5sp" />
@@ -44,7 +41,6 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="@font/modam"
             android:text="خونریزی: ۳۵− ت"
             android:textColor="#FF9E80"
             android:textSize="9.5sp" />
