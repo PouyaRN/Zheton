@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.doxigo.muchtoman.AndisTheme
 import com.doxigo.muchtoman.BankAccount
+import com.doxigo.muchtoman.HairlineDivider
 import com.doxigo.muchtoman.HomeStory
 import com.doxigo.muchtoman.Kind
 import com.doxigo.muchtoman.Modam
@@ -40,20 +41,19 @@ import com.doxigo.muchtoman.faCompact
 import com.doxigo.muchtoman.formatCardPanLtr
 import com.doxigo.muchtoman.tomanOf
 import com.doxigo.muchtoman.widget.primitives.AccountRow
-import com.doxigo.muchtoman.widget.primitives.DotMatrixBadge
 import com.doxigo.muchtoman.widget.primitives.DotProgressBar
+import com.doxigo.muchtoman.widget.primitives.EditorialRow
+import com.doxigo.muchtoman.widget.primitives.EditorialSection
 import com.doxigo.muchtoman.widget.primitives.FinancialDelta
 import com.doxigo.muchtoman.widget.primitives.FinancialValue
 import com.doxigo.muchtoman.widget.primitives.FinancialValueSize
 import com.doxigo.muchtoman.widget.primitives.Metric
 import com.doxigo.muchtoman.widget.primitives.SegmentedProgress
-import com.doxigo.muchtoman.widget.primitives.WidgetContainer
 import com.doxigo.muchtoman.widget.primitives.WidgetDensity
-import com.doxigo.muchtoman.widget.primitives.WidgetHeader
 
 /**
- * 03 — BANK CARD WIDGET
- * Financial instrument card with masked PAN, balance, and quick copy action.
+ * 03 — BANK CARD INSTRUMENT
+ * Clean technical card surface with masked PAN, balance, and quick clipboard actions.
  */
 @Composable
 fun BankCardWidget(
@@ -66,24 +66,26 @@ fun BankCardWidget(
     val panDisplay = if (privacyMode) "••••  ••••  ••••  ••••" else formatCardPanLtr(account.mask)
     val balanceToman = account.balance
 
-    WidgetContainer(
-        modifier = modifier,
-        header = {
-            WidgetHeader(
-                title = account.bankFa,
-                badgeText = "CARD INSTRUMENT"
-            )
-        },
-        onClick = onClick
+    EditorialSection(
+        title = account.bankFa,
+        technicalLabel = "PAYMENT INSTRUMENT",
+        modifier = modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
     ) {
-        Column {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(AndisTheme.colors.surfacePrimary, RoundedCornerShape(8.dp))
+                .border(1.dp, AndisTheme.colors.border, RoundedCornerShape(8.dp))
+                .padding(16.dp)
+        ) {
             Text(
                 text = panDisplay,
                 style = TextStyle(
                     fontFamily = ModamFigures,
                     fontWeight = FontWeight.Medium,
-                    fontSize = 15.sp,
+                    fontSize = 16.sp,
                     fontFeatureSettings = TABULAR,
+                    letterSpacing = 1.sp,
                     color = AndisTheme.colors.textSecondary,
                     textDirection = TextDirection.Ltr
                 ),
@@ -91,7 +93,7 @@ fun BankCardWidget(
                     if (onCopyPan != null) Modifier.clickable(onClick = onCopyPan) else Modifier
                 )
             )
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(12.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -99,14 +101,17 @@ fun BankCardWidget(
             ) {
                 FinancialValue(
                     amount = fa(Math.round(balanceToman)),
-                    size = FinancialValueSize.MEDIUM,
+                    size = FinancialValueSize.LARGE,
                     privacyMode = privacyMode
                 )
                 if (account.sheba.isNotBlank()) {
-                    DotMatrixBadge(
-                        text = "SHEBA",
-                        activeColor = AndisTheme.colors.textSecondary,
-                        surfaceColor = AndisTheme.colors.surfaceSecondary
+                    Text(
+                        text = "IBAN / شبا",
+                        style = TextStyle(
+                            fontFamily = ModamFigures,
+                            fontSize = 11.sp,
+                            color = AndisTheme.colors.accentLime
+                        )
                     )
                 }
             }
@@ -115,8 +120,8 @@ fun BankCardWidget(
 }
 
 /**
- * 04 — ACCOUNTS WIDGET
- * Breakdown of Bank, Cash, USD, Gold, and Crypto holdings with allocation.
+ * 04 — ACCOUNTS & LIQUIDITY LEDGER
+ * Clean unboxed ledger view (Bank, Cash, USD, Gold) with subtle allocation bars.
  */
 @Composable
 fun AccountsWidget(
@@ -130,15 +135,10 @@ fun AccountsWidget(
         compositionByKind(state.holdings, state.coins, state.effective, state.stocks)
     }
 
-    WidgetContainer(
-        modifier = modifier,
-        header = {
-            WidgetHeader(
-                title = "ترکیب حساب‌ها و دارایی",
-                badgeText = "ALLOCATION"
-            )
-        },
-        onClick = onClick
+    EditorialSection(
+        title = "حساب‌ها و نقدینگی",
+        technicalLabel = "LIQUIDITY & BALANCES",
+        modifier = modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
     ) {
         Column {
             AccountRow(
@@ -148,6 +148,7 @@ fun AccountsWidget(
                 indicatorColor = AndisTheme.colors.accentLime
             )
             for ((kind, amount) in composition.take(3)) {
+                HairlineDivider(color = AndisTheme.colors.border)
                 val color = when (kind) {
                     Kind.GOLD, Kind.SILVER, Kind.COIN -> Color(0xFFFFD700)
                     Kind.FIAT -> Color(0xFF38BDF8)
@@ -166,8 +167,8 @@ fun AccountsWidget(
 }
 
 /**
- * 05 — SPENDING WIDGET
- * Monthly cash outflow, income comparison, and burn trajectory.
+ * 05 — SPENDING ANALYTICS
+ * Unboxed monthly cash outflow with comparison and thin segmented progress.
  */
 @Composable
 fun SpendingWidget(
@@ -180,15 +181,10 @@ fun SpendingWidget(
     val spentToman = tomanOf(month.spentRial)
     val incomeToman = tomanOf(month.incomeRial)
 
-    WidgetContainer(
-        modifier = modifier,
-        header = {
-            WidgetHeader(
-                title = "گردش مالی ماه",
-                badgeText = "MONTH FLOW"
-            )
-        },
-        onClick = onClick
+    EditorialSection(
+        title = "هزینه‌های این ماه",
+        technicalLabel = "MONTHLY OUTFLOW",
+        modifier = modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -197,14 +193,14 @@ fun SpendingWidget(
         ) {
             Column {
                 Text(
-                    text = "مجموع مخارج ماه",
+                    text = "مجموع پرداختی‌های ماه",
                     style = TextStyle(
                         fontFamily = Modam,
-                        fontSize = 11.sp,
+                        fontSize = 12.sp,
                         color = AndisTheme.colors.textMuted
                     )
                 )
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(4.dp))
                 FinancialValue(
                     amount = faCompact(spentToman),
                     size = FinancialValueSize.LARGE,
@@ -213,14 +209,14 @@ fun SpendingWidget(
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "درآمد ماه",
+                    text = "درآمد ثبت‌شده",
                     style = TextStyle(
                         fontFamily = Modam,
-                        fontSize = 11.sp,
+                        fontSize = 12.sp,
                         color = AndisTheme.colors.textMuted
                     )
                 )
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(4.dp))
                 FinancialValue(
                     amount = faCompact(incomeToman),
                     size = FinancialValueSize.MEDIUM,
@@ -229,7 +225,7 @@ fun SpendingWidget(
                 )
             }
         }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(14.dp))
         val totalFlow = (spentToman + incomeToman).coerceAtLeast(1.0)
         val progress = (spentToman / totalFlow).toFloat()
         DotProgressBar(
@@ -240,8 +236,7 @@ fun SpendingWidget(
 }
 
 /**
- * 06 — DAILY BURN WIDGET
- * Daily burn rate and runway indicator.
+ * 06 — DAILY BURN RATE & RUNWAY
  */
 @Composable
 fun DailyBurnWidget(
@@ -253,15 +248,10 @@ fun DailyBurnWidget(
     val dailySpent = tomanOf(story.month.spentRial / 30L)
     val runwayDays = story.bufferDays ?: 30
 
-    WidgetContainer(
-        modifier = modifier,
-        header = {
-            WidgetHeader(
-                title = "نرخ سوخت روزانه",
-                badgeText = "DAILY BURN"
-            )
-        },
-        onClick = onClick
+    EditorialSection(
+        title = "نرخ سوخت روزانه",
+        technicalLabel = "BURN RATE · RUNWAY",
+        modifier = modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -269,7 +259,7 @@ fun DailyBurnWidget(
             verticalAlignment = Alignment.Bottom
         ) {
             Metric(
-                label = "میانگین خرج روزانه",
+                label = "میانگین مصرف روزانه",
                 value = faCompact(dailySpent),
                 unit = "تومان / روز"
             )
@@ -279,7 +269,7 @@ fun DailyBurnWidget(
                 unit = "روز باقی‌مانده"
             )
         }
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(12.dp))
         SegmentedProgress(
             segments = 30,
             filledSegments = runwayDays.coerceIn(0, 30),
@@ -289,26 +279,19 @@ fun DailyBurnWidget(
 }
 
 /**
- * 07 — FINANCIAL HEALTH WIDGET
- * Segmented 0-100 financial operating score inspired by Nothing OS.
+ * 07 — FINANCIAL HEALTH SCORE
  */
 @Composable
 fun FinancialHealthWidget(
     score: Int = 84,
-    statusText: String = "وضعیت پایدار",
+    statusText: String = "شاخص پایدار",
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
 ) {
-    WidgetContainer(
-        modifier = modifier,
-        header = {
-            WidgetHeader(
-                title = "شاخص سلامت مالی",
-                badgeText = "INDEX: $score/100",
-                showBeacon = true
-            )
-        },
-        onClick = onClick
+    EditorialSection(
+        title = "شاخص سلامت مالی",
+        technicalLabel = "HEALTH INDEX · $score/100",
+        modifier = modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -321,48 +304,53 @@ fun FinancialHealthWidget(
                     style = TextStyle(
                         fontFamily = ModamFigures,
                         fontWeight = FontWeight.Black,
-                        fontSize = 32.sp,
+                        fontSize = 38.sp,
                         fontFeatureSettings = TABULAR,
                         color = AndisTheme.colors.accentLime
                     )
                 )
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(10.dp))
                 Text(
                     text = statusText,
                     style = TextStyle(
                         fontFamily = Modam,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
+                        fontSize = 14.sp,
                         color = AndisTheme.colors.textPrimary
                     ),
                     modifier = Modifier.padding(bottom = 6.dp)
                 )
             }
-            DotMatrixBadge(
+            Text(
                 text = "GRADE A",
-                activeColor = AndisTheme.colors.accentLime
+                style = TextStyle(
+                    fontFamily = ModamFigures,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                    color = AndisTheme.colors.accentLime
+                )
             )
         }
-        Spacer(Modifier.height(10.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        Spacer(Modifier.height(14.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("پس‌انداز", style = TextStyle(fontFamily = Modam, fontSize = 10.sp, color = AndisTheme.colors.textMuted))
-                Spacer(Modifier.height(3.dp))
+                Text("پس‌انداز", style = TextStyle(fontFamily = Modam, fontSize = 11.sp, color = AndisTheme.colors.textMuted))
+                Spacer(Modifier.height(4.dp))
                 SegmentedProgress(segments = 5, filledSegments = 4, activeColor = AndisTheme.colors.accentLime)
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text("نقدینگی", style = TextStyle(fontFamily = Modam, fontSize = 10.sp, color = AndisTheme.colors.textMuted))
-                Spacer(Modifier.height(3.dp))
+                Text("نقدینگی", style = TextStyle(fontFamily = Modam, fontSize = 11.sp, color = AndisTheme.colors.textMuted))
+                Spacer(Modifier.height(4.dp))
                 SegmentedProgress(segments = 5, filledSegments = 5, activeColor = AndisTheme.colors.accentLime)
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text("بدهی", style = TextStyle(fontFamily = Modam, fontSize = 10.sp, color = AndisTheme.colors.textMuted))
-                Spacer(Modifier.height(3.dp))
+                Text("بدهی", style = TextStyle(fontFamily = Modam, fontSize = 11.sp, color = AndisTheme.colors.textMuted))
+                Spacer(Modifier.height(4.dp))
                 SegmentedProgress(segments = 5, filledSegments = 2, activeColor = AndisTheme.colors.warning)
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text("انضباط", style = TextStyle(fontFamily = Modam, fontSize = 10.sp, color = AndisTheme.colors.textMuted))
-                Spacer(Modifier.height(3.dp))
+                Text("انضباط", style = TextStyle(fontFamily = Modam, fontSize = 11.sp, color = AndisTheme.colors.textMuted))
+                Spacer(Modifier.height(4.dp))
                 SegmentedProgress(segments = 5, filledSegments = 4, activeColor = AndisTheme.colors.accentLime)
             }
         }
@@ -370,8 +358,7 @@ fun FinancialHealthWidget(
 }
 
 /**
- * 14 — BUDGET WIDGET
- * 50/30/20 Rule budget envelope indicator.
+ * 14 — BUDGET ENVELOPE (50/30/20)
  */
 @Composable
 fun BudgetWidget(
@@ -379,36 +366,31 @@ fun BudgetWidget(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
 ) {
-    WidgetContainer(
-        modifier = modifier,
-        header = {
-            WidgetHeader(
-                title = "بودجه ۵۰ / ۳۰ / ۲۰",
-                badgeText = "ENVELOPE"
-            )
-        },
-        onClick = onClick
+    EditorialSection(
+        title = "بودجه ساختاری",
+        technicalLabel = "50 / 30 / 20 ENVELOPE",
+        modifier = modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
     ) {
         Column {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("نیازهای اساسی (۵۰٪)", style = TextStyle(fontFamily = Modam, fontSize = 11.sp, color = AndisTheme.colors.textSecondary))
-                Text("۴۲٪ مصرف‌شده", style = TextStyle(fontFamily = ModamFigures, fontSize = 11.sp, color = AndisTheme.colors.textPrimary))
+                Text("نیازهای اساسی (۵۰٪)", style = TextStyle(fontFamily = Modam, fontSize = 12.sp, color = AndisTheme.colors.textSecondary))
+                Text("۴۲٪ مصرف‌شده", style = TextStyle(fontFamily = ModamFigures, fontSize = 12.sp, color = AndisTheme.colors.textPrimary))
             }
             Spacer(Modifier.height(4.dp))
             DotProgressBar(progress = 0.42f, activeColor = AndisTheme.colors.accentLime)
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(10.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("خواسته‌ها و تفریح (۳۰٪)", style = TextStyle(fontFamily = Modam, fontSize = 11.sp, color = AndisTheme.colors.textSecondary))
-                Text("۲۸٪ مصرف‌شده", style = TextStyle(fontFamily = ModamFigures, fontSize = 11.sp, color = AndisTheme.colors.textPrimary))
+                Text("خواسته‌ها و تفریح (۳۰٪)", style = TextStyle(fontFamily = Modam, fontSize = 12.sp, color = AndisTheme.colors.textSecondary))
+                Text("۲۸٪ مصرف‌شده", style = TextStyle(fontFamily = ModamFigures, fontSize = 12.sp, color = AndisTheme.colors.textPrimary))
             }
             Spacer(Modifier.height(4.dp))
             DotProgressBar(progress = 0.28f, activeColor = AndisTheme.colors.accentLime)
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(10.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("پس‌انداز و سرمایه (۲۰٪)", style = TextStyle(fontFamily = Modam, fontSize = 11.sp, color = AndisTheme.colors.textSecondary))
-                Text("۱۸٪ ذخیره‌شده", style = TextStyle(fontFamily = ModamFigures, fontSize = 11.sp, color = AndisTheme.colors.accentLime))
+                Text("پس‌انداز و سرمایه (۲۰٪)", style = TextStyle(fontFamily = Modam, fontSize = 12.sp, color = AndisTheme.colors.textSecondary))
+                Text("۱۸٪ ذخیره‌شده", style = TextStyle(fontFamily = ModamFigures, fontSize = 12.sp, color = AndisTheme.colors.accentLime))
             }
             Spacer(Modifier.height(4.dp))
             DotProgressBar(progress = 0.18f, activeColor = AndisTheme.colors.accentLime)

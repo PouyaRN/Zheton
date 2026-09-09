@@ -19,27 +19,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.doxigo.muchtoman.AndisTheme
+import com.doxigo.muchtoman.HairlineDivider
 import com.doxigo.muchtoman.Modam
 import com.doxigo.muchtoman.ModamFigures
 import com.doxigo.muchtoman.TABULAR
 import com.doxigo.muchtoman.UiState
-import com.doxigo.muchtoman.bidi
 import com.doxigo.muchtoman.fa
 import com.doxigo.muchtoman.faCompact
-import com.doxigo.muchtoman.widget.primitives.DotGraphCanvas
-import com.doxigo.muchtoman.widget.primitives.DotMatrixBadge
+import com.doxigo.muchtoman.widget.primitives.EditorialRow
+import com.doxigo.muchtoman.widget.primitives.EditorialSection
 import com.doxigo.muchtoman.widget.primitives.FinancialDelta
 import com.doxigo.muchtoman.widget.primitives.FinancialValue
 import com.doxigo.muchtoman.widget.primitives.FinancialValueSize
 import com.doxigo.muchtoman.widget.primitives.MarketRow
-import com.doxigo.muchtoman.widget.primitives.Sparkline
-import com.doxigo.muchtoman.widget.primitives.WidgetContainer
+import com.doxigo.muchtoman.widget.primitives.MonumentalValue
+import com.doxigo.muchtoman.widget.primitives.SubtleLineChart
 import com.doxigo.muchtoman.widget.primitives.WidgetDensity
-import com.doxigo.muchtoman.widget.primitives.WidgetHeader
 
 /**
- * 01 — NET WORTH WIDGET
- * Displays total net worth, 24h delta, and minimalist dot graph trajectory.
+ * 01 — HERO NET WORTH (Obsidian Editorial Centerpiece)
+ * Monumental 44sp typography, generous negative space, and a breathing hairline chart.
  */
 @Composable
 fun NetWorthWidget(
@@ -54,7 +53,7 @@ fun NetWorthWidget(
         if (state.history.isEmpty()) {
             listOf(totalToman, totalToman)
         } else {
-            state.history.values.toList().takeLast(24)
+            state.history.values.toList().takeLast(30)
         }
     }
 
@@ -65,43 +64,37 @@ fun NetWorthWidget(
         } else 0.0
     }
 
-    WidgetContainer(
-        modifier = modifier,
-        header = {
-            WidgetHeader(
-                title = "ارزش خالص دارایی",
-                badgeText = "NET WORTH",
-                showBeacon = true
-            )
-        },
-        onClick = onClick
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Bottom
-        ) {
-            FinancialValue(
-                amount = faCompact(totalToman),
-                size = if (density == WidgetDensity.COMPACT) FinancialValueSize.LARGE else FinancialValueSize.HERO,
-                privacyMode = privacyMode
-            )
-            FinancialDelta(deltaPercent = deltaPercent)
+    EditorialSection(
+        title = "ارزش خالص دارایی",
+        technicalLabel = "NET WORTH · 30D",
+        showTopDivider = false,
+        modifier = modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
+        action = {
+            FinancialDelta(deltaPercent = deltaPercent, showBackground = true)
         }
+    ) {
+        MonumentalValue(
+            amount = faCompact(totalToman),
+            unit = "تومان",
+            deltaPercent = deltaPercent,
+            deltaPeriod = "این ماه",
+            privacyMode = privacyMode
+        )
 
         if (density != WidgetDensity.COMPACT && historyPoints.size >= 2) {
-            Spacer(Modifier.height(14.dp))
-            DotGraphCanvas(
+            Spacer(Modifier.height(18.dp))
+            SubtleLineChart(
                 data = historyPoints,
-                modifier = Modifier.height(52.dp)
+                modifier = Modifier.height(64.dp),
+                lineColor = AndisTheme.colors.accentLime
             )
         }
     }
 }
 
 /**
- * 02 — CURRENCY WIDGET
- * Real-time tracking of USD, EUR, Gold, and BTC with mini sparkline.
+ * 02 — CURRENCY & GOLD TERMINAL LIST
+ * Editorial financial quotes with precise numeric alignment and hairline dividers.
  */
 @Composable
 fun CurrencyWidget(
@@ -111,37 +104,38 @@ fun CurrencyWidget(
     onClick: (() -> Unit)? = null,
 ) {
     val usdRate = state.effective["usd"] ?: 0.0
+    val eurRate = state.effective["eur"] ?: 0.0
     val goldRate = state.effective["gold18"] ?: 0.0
 
-    WidgetContainer(
-        modifier = modifier,
-        header = {
-            WidgetHeader(
-                title = "ارز و طلا",
-                badgeText = "FX/GOLD"
-            )
-        },
-        onClick = onClick
+    EditorialSection(
+        title = "ارز و طلا",
+        technicalLabel = "CURRENCIES & METALS",
+        modifier = modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                DotMatrixBadge(text = "USD / IRR")
-                Spacer(Modifier.height(4.dp))
-                FinancialValue(
-                    amount = fa(Math.round(usdRate)),
-                    size = FinancialValueSize.COMPACT
-                )
-            }
-            Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                DotMatrixBadge(text = "GOLD 18K")
-                Spacer(Modifier.height(4.dp))
-                FinancialValue(
-                    amount = fa(Math.round(goldRate)),
-                    size = FinancialValueSize.COMPACT
+        Column {
+            EditorialRow(
+                label = "دلار آمریکا",
+                sublabel = "USD / IRR",
+                value = fa(Math.round(usdRate)),
+                unit = "تومان",
+                delta = 1.72
+            )
+            HairlineDivider(color = AndisTheme.colors.border)
+            EditorialRow(
+                label = "طلای ۱۸ عیار",
+                sublabel = "GOLD 18K",
+                value = fa(Math.round(goldRate)),
+                unit = "تومان / گرم",
+                delta = 2.31
+            )
+            if (density == WidgetDensity.EXPANDED) {
+                HairlineDivider(color = AndisTheme.colors.border)
+                EditorialRow(
+                    label = "یورو اروپا",
+                    sublabel = "EUR / IRR",
+                    value = fa(Math.round(eurRate)),
+                    unit = "تومان",
+                    delta = 0.84
                 )
             }
         }
@@ -149,8 +143,8 @@ fun CurrencyWidget(
 }
 
 /**
- * 10 — PORTFOLIO WIDGET
- * Breakdown of investments and performance tracking.
+ * 10 — PORTFOLIO ALLOCATION
+ * Spacious, unboxed wealth breakdown.
  */
 @Composable
 fun PortfolioWidget(
@@ -163,15 +157,10 @@ fun PortfolioWidget(
     val totalToman = state.totals.toman
     val holdingsCount = state.holdings.size
 
-    WidgetContainer(
-        modifier = modifier,
-        header = {
-            WidgetHeader(
-                title = "سبد دارایی‌ها",
-                badgeText = "PORTFOLIO"
-            )
-        },
-        onClick = onClick
+    EditorialSection(
+        title = "سبد دارایی‌ها",
+        technicalLabel = "PORTFOLIO · ASSETS",
+        modifier = modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -184,24 +173,24 @@ fun PortfolioWidget(
                     size = FinancialValueSize.LARGE,
                     privacyMode = privacyMode
                 )
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "${fa(holdingsCount)} قلم دارایی نگه‌داری‌شده",
+                    text = "${fa(holdingsCount)} قلم دارایی فعال در پرتفوی",
                     style = TextStyle(
                         fontFamily = Modam,
-                        fontSize = 11.sp,
-                        color = AndisTheme.colors.textMuted
+                        fontSize = 12.sp,
+                        color = AndisTheme.colors.textSecondary
                     )
                 )
             }
-            FinancialDelta(deltaPercent = 2.45)
+            FinancialDelta(deltaPercent = 2.45, showBackground = true)
         }
     }
 }
 
 /**
- * 11 — MARKET WATCH WIDGET
- * Dense financial-terminal matrix of major asset pairs.
+ * 11 — MARKET WATCH MATRIX
+ * Dense financial-terminal list of major asset pairs.
  */
 @Composable
 fun MarketWatchWidget(
@@ -215,24 +204,22 @@ fun MarketWatchWidget(
     val gold = state.effective["gold18"] ?: 0.0
     val btc = state.effective["btc"] ?: 0.0
 
-    WidgetContainer(
-        modifier = modifier,
-        header = {
-            WidgetHeader(
-                title = "دیده‌بان بازار",
-                badgeText = "LIVE MATRIX",
-                showBeacon = true
-            )
-        },
-        onClick = onClick
+    EditorialSection(
+        title = "دیده‌بان بازار",
+        technicalLabel = "GLOBAL TICKERS",
+        modifier = modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
     ) {
         Column {
             MarketRow(ticker = "USD / IRR", price = fa(Math.round(usd)), delta = 1.72)
+            HairlineDivider(color = AndisTheme.colors.border)
             MarketRow(ticker = "EUR / IRR", price = fa(Math.round(eur)), delta = 0.84)
+            HairlineDivider(color = AndisTheme.colors.border)
             MarketRow(ticker = "GBP / IRR", price = fa(Math.round(gbp)), delta = 1.21)
+            HairlineDivider(color = AndisTheme.colors.border)
             MarketRow(ticker = "XAU / 18K", price = fa(Math.round(gold)), delta = 2.31)
             if (btc > 0) {
-                MarketRow(ticker = "BTC / IRT", price = faCompact(btc), delta = -0.42)
+                HairlineDivider(color = AndisTheme.colors.border)
+                MarketRow(ticker = "BTC / USD", price = faCompact(btc), delta = -0.42)
             }
         }
     }

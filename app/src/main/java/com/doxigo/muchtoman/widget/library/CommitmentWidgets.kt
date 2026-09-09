@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import com.doxigo.muchtoman.AndisTheme
 import com.doxigo.muchtoman.Commitment
 import com.doxigo.muchtoman.Goal
+import com.doxigo.muchtoman.HairlineDivider
 import com.doxigo.muchtoman.LedgerEntry
 import com.doxigo.muchtoman.Modam
 import com.doxigo.muchtoman.ModamFigures
@@ -27,18 +28,15 @@ import com.doxigo.muchtoman.TABULAR
 import com.doxigo.muchtoman.fa
 import com.doxigo.muchtoman.faCompact
 import com.doxigo.muchtoman.tomanOf
-import com.doxigo.muchtoman.widget.primitives.DotMatrixBadge
 import com.doxigo.muchtoman.widget.primitives.DotProgressBar
+import com.doxigo.muchtoman.widget.primitives.EditorialSection
 import com.doxigo.muchtoman.widget.primitives.FinancialTimeline
 import com.doxigo.muchtoman.widget.primitives.FinancialValue
 import com.doxigo.muchtoman.widget.primitives.FinancialValueSize
 import com.doxigo.muchtoman.widget.primitives.TransactionRow
-import com.doxigo.muchtoman.widget.primitives.WidgetContainer
-import com.doxigo.muchtoman.widget.primitives.WidgetHeader
 
 /**
- * 08 — INSTALLMENTS WIDGET
- * Active BNPL and loan commitments with visual installment timeline.
+ * 08 — INSTALLMENTS & LIABILITIES
  */
 @Composable
 fun InstallmentsWidget(
@@ -49,27 +47,22 @@ fun InstallmentsWidget(
 ) {
     val active = commitments.filter { !it.isSettled }
 
-    WidgetContainer(
-        modifier = modifier,
-        header = {
-            WidgetHeader(
-                title = "اقساط و تعهدات فعال",
-                badgeText = if (active.isNotEmpty()) "${fa(active.size)} تعهد" else "بدون بدهی"
-            )
-        },
-        onClick = onClick
+    EditorialSection(
+        title = "اقساط و تعهدات",
+        technicalLabel = if (active.isNotEmpty()) "${fa(active.size)} COMMITMENTS" else "ALL SETTLED",
+        modifier = modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
     ) {
         if (active.isEmpty()) {
             Text(
-                text = "هیچ قسط سررسیدنشده‌ای ثبت نشده است.",
+                text = "هیچ تعهد سررسیدنشده‌ای ثبت نشده است.",
                 style = TextStyle(
                     fontFamily = Modam,
-                    fontSize = 12.sp,
+                    fontSize = 13.sp,
                     color = AndisTheme.colors.textMuted
                 )
             )
         } else {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 active.take(2).forEach { item ->
                     Column {
                         Row(
@@ -82,7 +75,7 @@ fun InstallmentsWidget(
                                 style = TextStyle(
                                     fontFamily = Modam,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp,
+                                    fontSize = 14.sp,
                                     color = AndisTheme.colors.textPrimary
                                 )
                             )
@@ -91,7 +84,7 @@ fun InstallmentsWidget(
                                 style = TextStyle(
                                     fontFamily = ModamFigures,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
+                                    fontSize = 13.sp,
                                     fontFeatureSettings = TABULAR,
                                     color = AndisTheme.colors.accentLime
                                 )
@@ -110,16 +103,16 @@ fun InstallmentsWidget(
                             )
                             if (item.nextDueDays > 0) {
                                 Text(
-                                    text = "${fa(item.nextDueDays)} روز تا سررسید",
+                                    text = "${fa(item.nextDueDays)} روز مانده",
                                     style = TextStyle(
                                         fontFamily = Modam,
-                                        fontSize = 11.sp,
-                                        color = AndisTheme.colors.textMuted
+                                        fontSize = 12.sp,
+                                        color = AndisTheme.colors.textSecondary
                                     )
                                 )
                             }
                         }
-                        Spacer(Modifier.height(6.dp))
+                        Spacer(Modifier.height(8.dp))
                         FinancialTimeline(
                             totalSteps = item.installmentCount.coerceAtLeast(2),
                             currentStep = item.paidInstallmentCount
@@ -132,8 +125,7 @@ fun InstallmentsWidget(
 }
 
 /**
- * 09 — GOALS WIDGET
- * Savings milestones and target progress tracking.
+ * 09 — GOALS
  */
 @Composable
 fun GoalsWidget(
@@ -142,27 +134,22 @@ fun GoalsWidget(
     privacyMode: Boolean = false,
     onClick: (() -> Unit)? = null,
 ) {
-    WidgetContainer(
-        modifier = modifier,
-        header = {
-            WidgetHeader(
-                title = "اهداف پس‌انداز",
-                badgeText = "TARGETS"
-            )
-        },
-        onClick = onClick
+    EditorialSection(
+        title = "اهداف مالی",
+        technicalLabel = "SAVINGS TARGETS",
+        modifier = modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
     ) {
         if (goals.isEmpty()) {
             Text(
-                text = "هدفی برای پس‌انداز ثبت نشده است.",
+                text = "هنوز هدفی برای پس‌انداز تعریف نشده است.",
                 style = TextStyle(
                     fontFamily = Modam,
-                    fontSize = 12.sp,
+                    fontSize = 13.sp,
                     color = AndisTheme.colors.textMuted
                 )
             )
         } else {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 goals.take(2).forEach { goal ->
                     val targetToman = goal.targetRial / 10.0
                     Column {
@@ -175,7 +162,7 @@ fun GoalsWidget(
                                 style = TextStyle(
                                     fontFamily = Modam,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp,
+                                    fontSize = 14.sp,
                                     color = AndisTheme.colors.textPrimary
                                 )
                             )
@@ -187,7 +174,7 @@ fun GoalsWidget(
                         }
                         Spacer(Modifier.height(6.dp))
                         DotProgressBar(
-                            progress = 0.65f, // Dynamic progress indicator
+                            progress = 0.65f,
                             activeColor = AndisTheme.colors.accentLime
                         )
                     }
@@ -198,8 +185,7 @@ fun GoalsWidget(
 }
 
 /**
- * 12 — BILLS WIDGET
- * Upcoming financial commitments and Sayad promissory notes.
+ * 12 — UPCOMING BILLS
  */
 @Composable
 fun BillsWidget(
@@ -210,31 +196,30 @@ fun BillsWidget(
 ) {
     val dueSoon = commitments.filter { !it.isSettled }
 
-    WidgetContainer(
-        modifier = modifier,
-        header = {
-            WidgetHeader(
-                title = "قبوض و تعهدات پیش‌رو",
-                badgeText = "UPCOMING",
-                showBeacon = dueSoon.isNotEmpty()
-            )
-        },
-        onClick = onClick
+    EditorialSection(
+        title = "پرداخت‌های پیش‌رو",
+        technicalLabel = "SCHEDULED BILLS",
+        modifier = modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
     ) {
         if (dueSoon.isEmpty()) {
             Text(
-                text = "هیچ تعهد معوق یا چک سررسید شده‌ای وجود ندارد.",
+                text = "هیچ چک سررسید شده یا بدهی معوقی وجود ندارد.",
                 style = TextStyle(
                     fontFamily = Modam,
-                    fontSize = 12.sp,
+                    fontSize = 13.sp,
                     color = AndisTheme.colors.textMuted
                 )
             )
         } else {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                dueSoon.take(3).forEach { bill ->
+            Column {
+                dueSoon.take(3).forEachIndexed { index, bill ->
+                    if (index > 0) {
+                        HairlineDivider(color = AndisTheme.colors.border)
+                    }
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -244,7 +229,7 @@ fun BillsWidget(
                                 style = TextStyle(
                                     fontFamily = Modam,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp,
+                                    fontSize = 14.sp,
                                     color = AndisTheme.colors.textPrimary
                                 )
                             )
@@ -252,7 +237,7 @@ fun BillsWidget(
                                 text = bill.provider,
                                 style = TextStyle(
                                     fontFamily = Modam,
-                                    fontSize = 10.sp,
+                                    fontSize = 11.sp,
                                     color = AndisTheme.colors.textMuted
                                 )
                             )
@@ -264,10 +249,10 @@ fun BillsWidget(
                                 privacyMode = privacyMode
                             )
                             Text(
-                                text = "${fa(bill.nextDueDays)} روز باقی‌مانده",
+                                text = "${fa(bill.nextDueDays)} روز مانده",
                                 style = TextStyle(
                                     fontFamily = Modam,
-                                    fontSize = 10.sp,
+                                    fontSize = 11.sp,
                                     color = if (bill.nextDueDays <= 3) AndisTheme.colors.danger else AndisTheme.colors.textMuted
                                 )
                             )
@@ -280,8 +265,7 @@ fun BillsWidget(
 }
 
 /**
- * 13 — TRANSACTIONS WIDGET
- * High-legibility live transaction stream.
+ * 13 — TRANSACTION STREAM
  */
 @Composable
 fun TransactionsWidget(
@@ -291,28 +275,26 @@ fun TransactionsWidget(
     onClick: (() -> Unit)? = null,
     onEntryClick: ((LedgerEntry) -> Unit)? = null,
 ) {
-    WidgetContainer(
-        modifier = modifier,
-        header = {
-            WidgetHeader(
-                title = "تراکنش‌های اخیر",
-                badgeText = "STREAM"
-            )
-        },
-        onClick = onClick
+    EditorialSection(
+        title = "آخرین تراکنش‌ها",
+        technicalLabel = "TRANSACTION STREAM",
+        modifier = modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
     ) {
         if (entries.isEmpty()) {
             Text(
-                text = "تراکنشی برای نمایش ثبت نشده است.",
+                text = "هنوز تراکنشی در دفتر ثبت نشده است.",
                 style = TextStyle(
                     fontFamily = Modam,
-                    fontSize = 12.sp,
+                    fontSize = 13.sp,
                     color = AndisTheme.colors.textMuted
                 )
             )
         } else {
             Column {
-                entries.take(4).forEach { entry ->
+                entries.take(4).forEachIndexed { index, entry ->
+                    if (index > 0) {
+                        HairlineDivider(color = AndisTheme.colors.border)
+                    }
                     val amountRial = entry.txn.amountRial ?: 0L
                     val isExpense = amountRial < 0
                     val absRial = Math.abs(amountRial)
