@@ -18,6 +18,8 @@ import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
+import androidx.glance.Image
+import androidx.glance.ImageProvider
 import androidx.glance.background
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
@@ -28,6 +30,7 @@ import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
+import androidx.glance.layout.size
 import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
@@ -133,6 +136,59 @@ class ChandTomanGlanceWidget : GlanceAppWidget() {
     }
 }
 
+/** Maps Iranian bank names to their authentic vector SVG drawables. */
+fun bankLogoRes(bank: String): Int? {
+    val enumLogo = when (runCatching { Bank.valueOf(bank) }.getOrDefault(Bank.OTHER)) {
+        Bank.BLU -> R.drawable.ic_bank_blu
+        Bank.SAMAN -> R.drawable.ic_bank_saman
+        Bank.REFAH -> R.drawable.ic_bank_refah
+        Bank.PASARGAD -> R.drawable.ic_bank_pasargad
+        Bank.EGHTESAD_NOVIN -> R.drawable.ic_bank_eghtesad_novin
+        Bank.KHAVARMIANEH -> R.drawable.ic_bank_khavar_mianeh
+        Bank.SADERAT -> R.drawable.ic_bank_saderat
+        Bank.RESALAT -> R.drawable.ic_bank_resalat
+        Bank.PARSIAN -> R.drawable.ic_bank_parsian
+        Bank.MELLAT -> R.drawable.ic_bank_mellat
+        Bank.MELLI -> R.drawable.ic_bank_melli
+        Bank.MASKAN -> R.drawable.ic_bank_maskan
+        Bank.SEPAH -> R.drawable.ic_bank_sepah
+        Bank.TEJARAT -> R.drawable.ic_bank_tejarat
+        Bank.OTHER -> null
+    }
+
+    val extendedLogo = when {
+        bank.contains("KESHAVARZI", ignoreCase = true) || bank.contains("کشاورزی") -> R.drawable.ic_bank_keshavarzi
+        bank.contains("SHAHR", ignoreCase = true) || bank.contains("شهر") -> R.drawable.ic_bank_shahr
+        bank.contains("AYANDEH", ignoreCase = true) || bank.contains("آینده") -> R.drawable.ic_bank_ayandeh
+        bank.contains("SINA", ignoreCase = true) || bank.contains("سینا") -> R.drawable.ic_bank_sina
+        bank.contains("POST", ignoreCase = true) || bank.contains("پست") -> R.drawable.ic_bank_post
+        bank.contains("MEHR_IRAN", ignoreCase = true) || bank.contains("مهر") -> R.drawable.ic_bank_mehr_iran
+        bank.contains("GARDESHGARI", ignoreCase = true) || bank.contains("گردشگری") -> R.drawable.ic_bank_gardeshgari
+        bank.contains("SARMAYEH", ignoreCase = true) || bank.contains("سرمایه") -> R.drawable.ic_bank_sarmayeh
+        bank.contains("IRAN_ZAMIN", ignoreCase = true) || bank.contains("ایران زمین") -> R.drawable.ic_bank_iran_zamin
+        bank.contains("DEY", ignoreCase = true) || bank.contains("دی") -> R.drawable.ic_bank_dey
+        bank.contains("SANAT_MADAN", ignoreCase = true) || bank.contains("صنعت و معدن") -> R.drawable.ic_bank_sanat_madan
+        bank.contains("TOSEE_TAAVON", ignoreCase = true) || bank.contains("توسعه تعاون") -> R.drawable.ic_bank_tosee_taavon
+        bank.contains("GHAVAMIN", ignoreCase = true) || bank.contains("قوامین") -> R.drawable.ic_bank_ghavamin
+        bank.contains("KOSAR", ignoreCase = true) || bank.contains("کوثر") -> R.drawable.ic_bank_kosar
+        bank.contains("KARAFARIN", ignoreCase = true) || bank.contains("کارآفرین") -> R.drawable.ic_bank_karafarin
+        else -> null
+    }
+
+    return enumLogo ?: extendedLogo
+}
+
+/** Maps market asset keys to vector SVG icons. */
+fun marketIconRes(key: String): Int {
+    return when {
+        key == "btc" -> R.drawable.ic_network_bitcoin
+        key == "eth" -> R.drawable.ic_network_ethereum
+        key == "sol" -> R.drawable.ic_network_solana
+        key == "usdt" || key == "usd" -> R.drawable.ic_network_tron
+        else -> R.drawable.ic_toman_gold
+    }
+}
+
 @Composable
 private fun ChandTomanWidgetBody(context: Context, state: GlanceWidgetState) {
     val darkSurface = Color(0xFF13110E)
@@ -163,6 +219,12 @@ private fun ChandTomanWidgetBody(context: Context, state: GlanceWidgetState) {
                 modifier = GlanceModifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                Image(
+                    provider = ImageProvider(R.drawable.ic_toman_gold),
+                    contentDescription = "چند تومان",
+                    modifier = GlanceModifier.size(16.dp),
+                )
+                Spacer(GlanceModifier.width(6.dp))
                 GlanceModamText(
                     text = "چند تومان",
                     sp = 14f,
@@ -172,20 +234,28 @@ private fun ChandTomanWidgetBody(context: Context, state: GlanceWidgetState) {
 
                 Spacer(GlanceModifier.defaultWeight())
 
-                // Gold & Tether rates chips
+                // Gold & Tether rates chips with icons
                 if (state.goldRateToman != null && state.goldRateToman > 0) {
                     Box(
                         modifier = GlanceModifier
                             .background(chipSurface)
                             .cornerRadius(6.dp)
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                            .padding(horizontal = 6.dp, vertical = 3.dp),
                     ) {
-                        GlanceModamText(
-                            text = "طلا: ${faCompact(state.goldRateToman)}",
-                            sp = 9.5f,
-                            color = goldColor,
-                            weight = ModamWeight.MEDIUM,
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Image(
+                                provider = ImageProvider(R.drawable.ic_toman_gold),
+                                contentDescription = null,
+                                modifier = GlanceModifier.size(10.dp),
+                            )
+                            Spacer(GlanceModifier.width(4.dp))
+                            GlanceModamText(
+                                text = "طلا: ${faCompact(state.goldRateToman)}",
+                                sp = 9.5f,
+                                color = goldColor,
+                                weight = ModamWeight.MEDIUM,
+                            )
+                        }
                     }
                 }
 
@@ -195,14 +265,22 @@ private fun ChandTomanWidgetBody(context: Context, state: GlanceWidgetState) {
                         modifier = GlanceModifier
                             .background(chipSurface)
                             .cornerRadius(6.dp)
-                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                            .padding(horizontal = 6.dp, vertical = 3.dp),
                     ) {
-                        GlanceModamText(
-                            text = "تتر: ${faCompact(state.tetherRateToman)}",
-                            sp = 9.5f,
-                            color = mintColor,
-                            weight = ModamWeight.MEDIUM,
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Image(
+                                provider = ImageProvider(R.drawable.ic_network_tron),
+                                contentDescription = null,
+                                modifier = GlanceModifier.size(10.dp),
+                            )
+                            Spacer(GlanceModifier.width(4.dp))
+                            GlanceModamText(
+                                text = "تتر: ${faCompact(state.tetherRateToman)}",
+                                sp = 9.5f,
+                                color = mintColor,
+                                weight = ModamWeight.MEDIUM,
+                            )
+                        }
                     }
                 }
             }
@@ -418,17 +496,25 @@ private fun MarketTickerBody(tickers: List<MarketTicker>, updatedAt: Long) {
                     tickers.forEachIndexed { index, ticker ->
                         if (index > 0) Spacer(GlanceModifier.width(10.dp))
                         Column(horizontalAlignment = androidx.glance.layout.Alignment.Horizontal.CenterHorizontally) {
-                            GlanceModamText(
-                                text = ticker.label,
-                                sp = 9.5f,
-                                color = mutedColor,
-                                weight = ModamWeight.MEDIUM,
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Image(
+                                    provider = ImageProvider(marketIconRes(ticker.key)),
+                                    contentDescription = ticker.label,
+                                    modifier = GlanceModifier.size(11.dp),
+                                )
+                                Spacer(GlanceModifier.width(3.dp))
+                                GlanceModamText(
+                                    text = ticker.label,
+                                    sp = 9.5f,
+                                    color = mutedColor,
+                                    weight = ModamWeight.MEDIUM,
+                                )
+                            }
                             Spacer(GlanceModifier.height(2.dp))
                             GlanceModamText(
                                 text = "${faCompact(ticker.rateToman)} ${ticker.unit}",
                                 sp = 12.5f,
-                                color = if (ticker.key == "gold18") goldColor else mintColor,
+                                color = if (ticker.key.startsWith("gold") || ticker.key.startsWith("coin")) goldColor else mintColor,
                                 weight = ModamWeight.HEAVY,
                                 narrow = true,
                             )
@@ -497,17 +583,25 @@ private fun SingleTickerMiniBody(ticker: MarketTicker?) {
             )
         } else {
             Column(horizontalAlignment = androidx.glance.layout.Alignment.Horizontal.CenterHorizontally) {
-                GlanceModamText(
-                    text = ticker.label,
-                    sp = 9f,
-                    color = mutedColor,
-                    weight = ModamWeight.MEDIUM,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Image(
+                        provider = ImageProvider(marketIconRes(ticker.key)),
+                        contentDescription = ticker.label,
+                        modifier = GlanceModifier.size(13.dp),
+                    )
+                    Spacer(GlanceModifier.width(3.dp))
+                    GlanceModamText(
+                        text = ticker.label,
+                        sp = 9f,
+                        color = mutedColor,
+                        weight = ModamWeight.MEDIUM,
+                    )
+                }
                 Spacer(GlanceModifier.height(2.dp))
                 GlanceModamText(
                     text = faCompact(ticker.rateToman),
                     sp = 14f,
-                    color = if (ticker.key == "gold18") goldColor else mintColor,
+                    color = if (ticker.key.startsWith("gold") || ticker.key.startsWith("coin")) goldColor else mintColor,
                     weight = ModamWeight.HEAVY,
                     narrow = true,
                 )
@@ -646,6 +740,12 @@ private fun SafeSpendBody(state: RunwayWidgetState) {
     ) {
         Column(modifier = GlanceModifier.fillMaxSize()) {
             Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Image(
+                    provider = ImageProvider(R.drawable.ic_toman_gold),
+                    contentDescription = null,
+                    modifier = GlanceModifier.size(14.dp),
+                )
+                Spacer(GlanceModifier.width(5.dp))
                 GlanceModamText(
                     text = "خرج امن امروز",
                     sp = 11f,
@@ -1018,6 +1118,15 @@ private fun QuickCardRowItem(
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            val logoRes = bankLogoRes(row.bankFa)
+            if (logoRes != null) {
+                Image(
+                    provider = ImageProvider(logoRes),
+                    contentDescription = row.bankFa,
+                    modifier = GlanceModifier.size(26.dp),
+                )
+                Spacer(GlanceModifier.width(8.dp))
+            }
             Column(modifier = GlanceModifier.defaultWeight()) {
                 GlanceModamText(
                     text = row.label,

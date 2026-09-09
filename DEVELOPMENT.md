@@ -19,9 +19,9 @@ Needs Android Studio (for the SDK) or a standalone Android SDK + JDK 17.
 ./gradlew installFullDev
 ```
 
-`dev` installs beside the released app with its own data. `debug` can replace the released app
-when a local release keystore is configured, so use it only when testing an in-place upgrade
-and pass a `muchtoman.versionCode` at least as high as the installed release.
+`dev` installs beside the released app with its own data. `release` replaces the installed app in place
+preserving all user accounts, transactions, and holdings. The build automatically generates a monotonic
+`versionCode` (`2_000_000_500 + gitRevCount`) so downgrade errors never occur. See `docs/adr/0005-in-place-upgrade-signing-and-glance-widgets.md`.
 
 ### Editions
 

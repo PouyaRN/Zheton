@@ -22,12 +22,17 @@ android {
     namespace = "com.doxigo.muchtoman"
     compileSdk = 37
 
+    val gitRevCount = providers.exec {
+        commandLine("git", "rev-list", "--count", "HEAD")
+    }.standardOutput.asText.map { it.trim().toIntOrNull() ?: 0 }
+
     defaultConfig {
         applicationId = "com.doxigo.muchtoman"
         minSdk = 24
         targetSdk = 37
-        // High versionCode to guarantee safe upgrade over any existing build
-        versionCode = providers.gradleProperty("muchtoman.versionCode").orNull?.toInt() ?: 2000000500
+        // Monotonic versionCode strictly above 2_000_000_500 to guarantee safe in-place upgrades
+        versionCode = providers.gradleProperty("muchtoman.versionCode").orNull?.toInt()
+            ?: (2_000_000_500 + gitRevCount.getOrElse(0))
         versionName = providers.gradleProperty("muchtoman.versionName").orNull ?: "1.0.5"
         buildConfigField("boolean", "LITE", "false")
     }
