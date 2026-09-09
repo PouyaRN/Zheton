@@ -206,9 +206,8 @@ private fun ChandTomanWidgetBody(context: Context, state: GlanceWidgetState) {
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
-            .background(darkSurface)
-            .cornerRadius(22.dp)
-            .padding(12.dp)
+            .background(ImageProvider(R.drawable.widget_bg))
+            .padding(14.dp)
             .clickable(actionStartActivity(mainComponent)),
     ) {
         Column(
@@ -335,9 +334,8 @@ private fun ChandTomanWidgetBody(context: Context, state: GlanceWidgetState) {
             Box(
                 modifier = GlanceModifier
                     .fillMaxWidth()
-                    .background(cardSurface)
-                    .cornerRadius(10.dp)
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                    .background(ImageProvider(R.drawable.widget_inner_card))
+                    .padding(horizontal = 10.dp, vertical = 7.dp),
             ) {
                 Row(
                     modifier = GlanceModifier.fillMaxWidth(),
@@ -375,10 +373,9 @@ private fun ChandTomanWidgetBody(context: Context, state: GlanceWidgetState) {
             Box(
                 modifier = GlanceModifier
                     .fillMaxWidth()
-                    .background(Color(0xFF282112))
-                    .cornerRadius(10.dp)
+                    .background(ImageProvider(R.drawable.widget_action_btn))
                     .clickable(actionStartActivity(quickAddComponent))
-                    .padding(vertical = 6.dp),
+                    .padding(vertical = 7.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 GlanceModamText(
@@ -470,9 +467,8 @@ private fun MarketTickerBody(tickers: List<MarketTicker>, updatedAt: Long) {
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
-            .background(darkSurface)
-            .cornerRadius(18.dp)
-            .padding(10.dp)
+            .background(ImageProvider(R.drawable.widget_bg))
+            .padding(12.dp)
             .clickable(actionStartActivity<MainActivity>()),
     ) {
         when {
@@ -568,8 +564,7 @@ private fun SingleTickerMiniBody(ticker: MarketTicker?) {
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
-            .background(darkSurface)
-            .cornerRadius(18.dp)
+            .background(ImageProvider(R.drawable.widget_bg))
             .padding(8.dp)
             .clickable(actionStartActivity<MainActivity>()),
         contentAlignment = Alignment.Center,
@@ -733,9 +728,8 @@ private fun SafeSpendBody(state: RunwayWidgetState) {
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
-            .background(darkSurface)
-            .cornerRadius(18.dp)
-            .padding(12.dp)
+            .background(ImageProvider(R.drawable.widget_bg))
+            .padding(14.dp)
             .clickable(actionStartActivity<MainActivity>()),
     ) {
         Column(modifier = GlanceModifier.fillMaxSize()) {
@@ -842,18 +836,25 @@ private fun LiquidGoldBody(state: RunwayWidgetState) {
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
-            .background(darkSurface)
-            .cornerRadius(18.dp)
-            .padding(12.dp)
+            .background(ImageProvider(R.drawable.widget_bg))
+            .padding(14.dp)
             .clickable(actionStartActivity<MainActivity>()),
     ) {
         Column(modifier = GlanceModifier.fillMaxSize()) {
-            GlanceModamText(
-                text = "موجودی نقد عملیاتی",
-                sp = 10.5f,
-                color = mutedColor,
-                weight = ModamWeight.MEDIUM,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Image(
+                    provider = ImageProvider(R.drawable.ic_toman_gold),
+                    contentDescription = null,
+                    modifier = GlanceModifier.size(13.dp),
+                )
+                Spacer(GlanceModifier.width(5.dp))
+                GlanceModamText(
+                    text = "موجودی نقد عملیاتی",
+                    sp = 11f,
+                    color = mutedColor,
+                    weight = ModamWeight.MEDIUM,
+                )
+            }
             Spacer(GlanceModifier.height(3.dp))
             val amountStr = if (state.isMasked) "٭٭٭" else "${faCompact(state.liquidCashToman.toDouble())} تومان"
             GlanceModamText(
@@ -939,9 +940,8 @@ private fun QuickAddBody(context: Context) {
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
-            .background(darkSurface)
-            .cornerRadius(18.dp)
-            .padding(8.dp),
+            .background(ImageProvider(R.drawable.widget_bg))
+            .padding(10.dp),
         contentAlignment = Alignment.Center,
     ) {
         Row(
@@ -952,9 +952,8 @@ private fun QuickAddBody(context: Context) {
             QUICK_ADD_CHIPS.forEach { chip ->
                 Box(
                     modifier = GlanceModifier
-                        .background(chipSurface)
-                        .cornerRadius(10.dp)
-                        .padding(horizontal = 9.dp, vertical = 5.dp)
+                        .background(ImageProvider(R.drawable.widget_action_btn))
+                        .padding(horizontal = 9.dp, vertical = 6.dp)
                         .clickable(
                             actionStartActivity(
                                 Intent(context, QuickAddActivity::class.java).apply {
@@ -1051,17 +1050,22 @@ private fun QuickCardsBody(context: Context, rows: List<QuickCardRow>) {
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
-            .background(darkSurface)
-            .cornerRadius(18.dp)
-            .padding(10.dp),
+            .background(ImageProvider(R.drawable.widget_bg))
+            .padding(12.dp),
     ) {
         Column(modifier = GlanceModifier.fillMaxSize()) {
             Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Image(
+                    provider = ImageProvider(R.drawable.ic_toman_gold),
+                    contentDescription = null,
+                    modifier = GlanceModifier.size(15.dp),
+                )
+                Spacer(GlanceModifier.width(6.dp))
                 GlanceModamText(
                     text = "کارت‌های شتاب شما",
-                    sp = 11.5f,
+                    sp = 12f,
                     color = goldColor,
-                    weight = ModamWeight.SEMIBOLD,
+                    weight = ModamWeight.HEAVY,
                     modifier = GlanceModifier.defaultWeight(),
                 )
                 GlanceModamText(
@@ -1090,7 +1094,7 @@ private fun QuickCardsBody(context: Context, rows: List<QuickCardRow>) {
             } else {
                 rows.take(3).forEach { row ->
                     QuickCardRowItem(context, row, cardSurface, goldColor, mintColor, textWhite, mutedColor)
-                    Spacer(GlanceModifier.height(5.dp))
+                    Spacer(GlanceModifier.height(6.dp))
                 }
             }
         }
@@ -1110,9 +1114,8 @@ private fun QuickCardRowItem(
     Box(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .background(cardSurface)
-            .cornerRadius(12.dp)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
+            .background(ImageProvider(R.drawable.widget_inner_card))
+            .padding(horizontal = 10.dp, vertical = 7.dp),
     ) {
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
@@ -1145,9 +1148,8 @@ private fun QuickCardRowItem(
             if (row.fullPanDigits.isNotBlank()) {
                 Box(
                     modifier = GlanceModifier
-                        .background(Color(0xFF262012))
-                        .cornerRadius(8.dp)
-                        .padding(horizontal = 7.dp, vertical = 4.dp)
+                        .background(ImageProvider(R.drawable.widget_chip))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
                         .clickable {
                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
                             clipboard?.setPrimaryClip(
@@ -1167,9 +1169,8 @@ private fun QuickCardRowItem(
                     Spacer(GlanceModifier.width(6.dp))
                     Box(
                         modifier = GlanceModifier
-                            .background(Color(0xFF142922))
-                            .cornerRadius(8.dp)
-                            .padding(horizontal = 7.dp, vertical = 4.dp)
+                            .background(ImageProvider(R.drawable.widget_chip))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
                             .clickable {
                                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
                                 clipboard?.setPrimaryClip(
