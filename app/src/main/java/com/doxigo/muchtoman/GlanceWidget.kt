@@ -369,26 +369,31 @@ class MarketTickerWidget(private val pinned: Set<String> = setOf("gold18", "usd"
 
 @Composable
 private fun MarketTickerBody(tickers: List<MarketTicker>, updatedAt: Long) {
-    val darkSurface = Color(0xFF161410)
+    val darkSurface = Color(0xFF13110E)
     val goldColor = Color(0xFFF7C948)
     val mintColor = Color(0xFF3BE0A8)
     val mutedColor = Color(0xFF93B7B0)
-    val textWhite = Color(0xFFFAF9F6)
 
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
             .background(darkSurface)
-            .cornerRadius(16.dp)
-            .padding(8.dp)
+            .cornerRadius(18.dp)
+            .padding(10.dp)
             .clickable(actionStartActivity<MainActivity>()),
     ) {
         when {
-            tickers.isEmpty() -> Text(
-                text = "نرخ‌ها در دسترس نیست",
-                style = TextStyle(color = ColorProvider(mutedColor), fontSize = 11.sp),
+            tickers.isEmpty() -> Box(
                 modifier = GlanceModifier.fillMaxSize(),
-            )
+                contentAlignment = Alignment.Center,
+            ) {
+                GlanceModamText(
+                    text = "نرخ‌ها در دسترس نیست",
+                    sp = 11f,
+                    color = mutedColor,
+                    weight = ModamWeight.REGULAR,
+                )
+            }
             else -> Column(modifier = GlanceModifier.fillMaxSize()) {
                 Row(
                     modifier = GlanceModifier.fillMaxWidth().defaultWeight(),
@@ -398,30 +403,30 @@ private fun MarketTickerBody(tickers: List<MarketTicker>, updatedAt: Long) {
                     tickers.forEachIndexed { index, ticker ->
                         if (index > 0) Spacer(GlanceModifier.width(10.dp))
                         Column(horizontalAlignment = androidx.glance.layout.Alignment.Horizontal.CenterHorizontally) {
-                            Text(
+                            GlanceModamText(
                                 text = ticker.label,
-                                style = TextStyle(color = ColorProvider(mutedColor), fontSize = 9.sp),
-                                maxLines = 1,
+                                sp = 9.5f,
+                                color = mutedColor,
+                                weight = ModamWeight.MEDIUM,
                             )
-                            Spacer(GlanceModifier.height(1.dp))
-                            Text(
+                            Spacer(GlanceModifier.height(2.dp))
+                            GlanceModamText(
                                 text = "${faCompact(ticker.rateToman)} ${ticker.unit}",
-                                style = TextStyle(
-                                    color = ColorProvider(if (ticker.key == "gold18") goldColor else mintColor),
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                ),
-                                maxLines = 1,
+                                sp = 12.5f,
+                                color = if (ticker.key == "gold18") goldColor else mintColor,
+                                weight = ModamWeight.HEAVY,
+                                narrow = true,
                             )
                         }
                     }
                 }
                 if (updatedAt > 0) {
                     Spacer(GlanceModifier.height(2.dp))
-                    Text(
+                    GlanceModamText(
                         text = "بروزرسانی: ${faAgo(updatedAt, System.currentTimeMillis())}",
-                        style = TextStyle(color = ColorProvider(mutedColor), fontSize = 8.sp),
-                        maxLines = 1,
+                        sp = 8.5f,
+                        color = mutedColor,
+                        weight = ModamWeight.REGULAR,
                     )
                 }
             }
@@ -454,7 +459,7 @@ class SingleTickerMiniWidget(private val key: String = "gold18") : GlanceAppWidg
 
 @Composable
 private fun SingleTickerMiniBody(ticker: MarketTicker?) {
-    val darkSurface = Color(0xFF161410)
+    val darkSurface = Color(0xFF13110E)
     val goldColor = Color(0xFFF7C948)
     val mintColor = Color(0xFF3BE0A8)
     val mutedColor = Color(0xFF93B7B0)
@@ -463,32 +468,33 @@ private fun SingleTickerMiniBody(ticker: MarketTicker?) {
         modifier = GlanceModifier
             .fillMaxSize()
             .background(darkSurface)
-            .cornerRadius(16.dp)
-            .padding(6.dp)
+            .cornerRadius(18.dp)
+            .padding(8.dp)
             .clickable(actionStartActivity<MainActivity>()),
         contentAlignment = Alignment.Center,
     ) {
         if (ticker == null) {
-            Text(
+            GlanceModamText(
                 text = "—",
-                style = TextStyle(color = ColorProvider(mutedColor), fontSize = 12.sp),
+                sp = 14f,
+                color = mutedColor,
+                weight = ModamWeight.MEDIUM,
             )
         } else {
             Column(horizontalAlignment = androidx.glance.layout.Alignment.Horizontal.CenterHorizontally) {
-                Text(
+                GlanceModamText(
                     text = ticker.label,
-                    style = TextStyle(color = ColorProvider(mutedColor), fontSize = 8.sp),
-                    maxLines = 1,
+                    sp = 9f,
+                    color = mutedColor,
+                    weight = ModamWeight.MEDIUM,
                 )
-                Spacer(GlanceModifier.height(1.dp))
-                Text(
+                Spacer(GlanceModifier.height(2.dp))
+                GlanceModamText(
                     text = faCompact(ticker.rateToman),
-                    style = TextStyle(
-                        color = ColorProvider(if (ticker.key == "gold18") goldColor else mintColor),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                    maxLines = 1,
+                    sp = 14f,
+                    color = if (ticker.key == "gold18") goldColor else mintColor,
+                    weight = ModamWeight.HEAVY,
+                    narrow = true,
                 )
             }
         }
@@ -712,7 +718,7 @@ class LiquidGoldGlanceWidget : GlanceAppWidget() {
 
 @Composable
 private fun LiquidGoldBody(state: RunwayWidgetState) {
-    val darkSurface = Color(0xFF161410)
+    val darkSurface = Color(0xFF13110E)
     val goldColor = Color(0xFFF7C948)
     val warnColor = Color(0xFFFF9E80)
     val mutedColor = Color(0xFF93B7B0)
@@ -722,43 +728,46 @@ private fun LiquidGoldBody(state: RunwayWidgetState) {
         modifier = GlanceModifier
             .fillMaxSize()
             .background(darkSurface)
-            .cornerRadius(16.dp)
-            .padding(8.dp)
+            .cornerRadius(18.dp)
+            .padding(12.dp)
             .clickable(actionStartActivity<MainActivity>()),
     ) {
         Column(modifier = GlanceModifier.fillMaxSize()) {
-            Text(
+            GlanceModamText(
                 text = "موجودی نقد عملیاتی",
-                style = TextStyle(color = ColorProvider(mutedColor), fontSize = 10.sp),
-                maxLines = 1,
+                sp = 10.5f,
+                color = mutedColor,
+                weight = ModamWeight.MEDIUM,
             )
-            Spacer(GlanceModifier.height(2.dp))
-            Text(
-                text = if (state.isMasked) "٭٭٭" else "${faCompact(state.liquidCashToman.toDouble())} تومان",
-                style = TextStyle(
-                    color = ColorProvider(if (state.isMasked) goldColor else textWhite),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                ),
-                maxLines = 1,
+            Spacer(GlanceModifier.height(3.dp))
+            val amountStr = if (state.isMasked) "٭٭٭" else "${faCompact(state.liquidCashToman.toDouble())} تومان"
+            GlanceModamText(
+                text = amountStr,
+                sp = 18f,
+                color = if (state.isMasked) goldColor else textWhite,
+                weight = ModamWeight.HEAVY,
+                narrow = true,
             )
-            Spacer(GlanceModifier.height(4.dp))
+            Spacer(GlanceModifier.height(6.dp))
             Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 val goldText = state.goldGrams?.let {
                     if (state.isMasked) "⋆⋆ گرم" else "معادل ${faDecimal(it, 2)} گرم طلای ۱۸"
                 } ?: "نرخ طلا در دسترس نیست"
-                Text(
+
+                GlanceModamText(
                     text = goldText,
-                    style = TextStyle(color = ColorProvider(goldColor), fontSize = 10.sp),
-                    maxLines = 1,
+                    sp = 10.5f,
+                    color = goldColor,
+                    weight = ModamWeight.SEMIBOLD,
                     modifier = GlanceModifier.defaultWeight(),
                 )
                 if (state.dailyBleedToman > 0 && !state.isMasked) {
                     Spacer(GlanceModifier.width(6.dp))
-                    Text(
-                        text = "خونریزی روزانه: ${faCompact(state.dailyBleedToman.toDouble())}− تومان",
-                        style = TextStyle(color = ColorProvider(warnColor), fontSize = 9.sp),
-                        maxLines = 1,
+                    GlanceModamText(
+                        text = "خونریزی: ${faCompact(state.dailyBleedToman.toDouble())}− ت",
+                        sp = 9.5f,
+                        color = warnColor,
+                        weight = ModamWeight.REGULAR,
                     )
                 }
             }
