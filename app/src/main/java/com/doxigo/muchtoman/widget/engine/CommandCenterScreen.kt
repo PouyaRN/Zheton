@@ -120,16 +120,22 @@ fun CommandCenterScreen(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(AndisTheme.colors.surfacePrimary, RoundedCornerShape(AndisTheme.radius.card))
-                                .border(1.dp, AndisTheme.colors.border, RoundedCornerShape(AndisTheme.radius.card))
-                                .padding(28.dp),
+                                .padding(vertical = 48.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                DotMatrixBadge(text = "[ NO ACTIVE WIDGETS ]", activeColor = AndisTheme.colors.textMuted)
-                                Spacer(Modifier.height(10.dp))
                                 Text(
-                                    text = "برای فعال‌سازی ویجت‌ها، دکمه «چیدمان ویجت‌ها» را لمس کنید.",
+                                    text = "— بدون ماژول فعال —",
+                                    style = TextStyle(
+                                        fontFamily = Modam,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 15.sp,
+                                        color = AndisTheme.colors.textMuted
+                                    )
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    text = "برای فعال‌سازی و چینش بخش‌ها، دکمه «چیدمان» را در بالا لمس کنید.",
                                     style = TextStyle(fontFamily = Modam, fontSize = 12.sp, color = AndisTheme.colors.textSecondary)
                                 )
                             }
@@ -250,7 +256,7 @@ fun CommandCenterScreen(
 }
 
 /**
- * ANDIS OS Technical Command Center Header.
+ * ANDIS OS Editorial Command Center Header.
  */
 @Composable
 private fun CommandCenterHeader(
@@ -261,47 +267,54 @@ private fun CommandCenterHeader(
         modifier = Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(vertical = 8.dp),
+            .padding(vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            StatusIndicator(
-                active = true,
-                pulsing = refreshing,
-                activeColor = AndisTheme.colors.accentLime
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(
-                text = "اندیس // سیستم مالی",
-                style = TextStyle(
-                    fontFamily = Modam,
-                    fontWeight = FontWeight.Black,
-                    fontSize = 14.sp,
-                    color = AndisTheme.colors.textPrimary
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "فرمان",
+                    style = TextStyle(
+                        fontFamily = Modam,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 18.sp,
+                        color = AndisTheme.colors.textPrimary
+                    )
                 )
-            )
-            Spacer(Modifier.width(6.dp))
-            DotMatrixBadge(
-                text = "ANDIS OS",
-                activeColor = AndisTheme.colors.accentLime,
-                dotSize = 1.3.dp
+                Spacer(Modifier.width(8.dp))
+                StatusIndicator(
+                    active = true,
+                    pulsing = refreshing,
+                    activeColor = AndisTheme.colors.accentLime,
+                    size = 5.dp
+                )
+            }
+            Text(
+                text = "ANDIS // FINANCIAL OS",
+                style = TextStyle(
+                    fontFamily = ModamFigures,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 10.sp,
+                    letterSpacing = 1.sp,
+                    color = AndisTheme.colors.textMuted
+                )
             )
         }
 
         Box(
             modifier = Modifier
-                .background(AndisTheme.colors.surfacePrimary, RoundedCornerShape(2.dp))
-                .border(1.dp, AndisTheme.colors.border, RoundedCornerShape(2.dp))
+                .background(AndisTheme.colors.surfacePrimary, RoundedCornerShape(4.dp))
+                .border(1.dp, AndisTheme.colors.border, RoundedCornerShape(4.dp))
                 .clickable(onClick = onCustomizeClick)
-                .padding(horizontal = 8.dp, vertical = 4.dp)
+                .padding(horizontal = 10.dp, vertical = 5.dp)
         ) {
             Text(
-                text = "چیدمان ویجت‌ها",
+                text = "چیدمان",
                 style = TextStyle(
                     fontFamily = Modam,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
                     color = AndisTheme.colors.textSecondary
                 )
             )
