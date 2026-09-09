@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -87,30 +88,56 @@ fun CommandCenterScreen(
     var showCustomizeSheet by remember { mutableStateOf(false) }
     val pullState = rememberPullToRefreshState()
 
-    PullToRefreshBox(
-        isRefreshing = state.refreshing,
-        onRefresh = onRefresh,
-        state = pullState,
-        modifier = modifier.fillMaxSize().background(AndisTheme.colors.background)
-    ) {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 12.dp, bottom = bottomInset + 16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+    BoxWithConstraints(modifier = modifier.fillMaxSize().background(AndisTheme.colors.background)) {
+        val isTablet = maxWidth >= 600.dp
+        val horizontalPadding = if (isTablet) 24.dp else 14.dp
+
+        PullToRefreshBox(
+            isRefreshing = state.refreshing,
+            onRefresh = onRefresh,
+            state = pullState,
+            modifier = Modifier.fillMaxSize()
         ) {
-            // ANDIS OS Header
-            item(key = "header") {
-                CommandCenterHeader(
-                    refreshing = state.refreshing,
-                    onCustomizeClick = { showCustomizeSheet = true }
-                )
-                Spacer(Modifier.height(4.dp))
-            }
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = horizontalPadding, end = horizontalPadding, top = 12.dp, bottom = bottomInset + 16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // ANDIS OS Header
+                item(key = "header") {
+                    CommandCenterHeader(
+                        refreshing = state.refreshing,
+                        onCustomizeClick = { showCustomizeSheet = true }
+                    )
+                    Spacer(Modifier.height(4.dp))
+                }
 
-            // Visible widgets sorted by order
-            val visibleSlots = slots.filter { it.isVisible }.sortedBy { it.order }
+                // Visible widgets sorted by order
+                val visibleSlots = slots.filter { it.isVisible }.sortedBy { it.order }
 
-            items(visibleSlots, key = { it.id.name }) { slot ->
+                if (visibleSlots.isEmpty()) {
+                    item(key = "empty_state") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(AndisTheme.colors.surfacePrimary, RoundedCornerShape(AndisTheme.radius.card))
+                                .border(1.dp, AndisTheme.colors.border, RoundedCornerShape(AndisTheme.radius.card))
+                                .padding(28.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                DotMatrixBadge(text = "[ NO ACTIVE WIDGETS ]", activeColor = AndisTheme.colors.textMuted)
+                                Spacer(Modifier.height(10.dp))
+                                Text(
+                                    text = "برای فعال‌سازی ویجت‌ها، دکمه «چیدمان ویجت‌ها» را لمس کنید.",
+                                    style = TextStyle(fontFamily = Modam, fontSize = 12.sp, color = AndisTheme.colors.textSecondary)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                items(visibleSlots, key = { it.id.name }) { slot ->
                 when (slot.id) {
                     WidgetId.NET_WORTH -> {
                         NetWorthWidget(
@@ -207,6 +234,7 @@ fun CommandCenterScreen(
                 }
             }
         }
+    }
     }
 
     if (showCustomizeSheet) {
