@@ -26,6 +26,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.text.style.TextOverflow
+import com.doxigo.muchtoman.ui.rikka.components.card.Card as RikkaCard
+import com.doxigo.muchtoman.ui.rikka.components.card.CardVariant
+import com.doxigo.muchtoman.ui.rikka.components.card.CardAnimation
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
@@ -500,7 +504,7 @@ fun NetWorthFluctuationCard(
  */
 @Composable
 fun HomeGlanceBar(
-    totalToman: Double,
+    totalToman: Double = 0.0,
     bankToman: Double,
     gold18Toman: Double,
     usdCashToman: Double,
@@ -513,17 +517,7 @@ fun HomeGlanceBar(
         contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.s),
         horizontalArrangement = Arrangement.spacedBy(Space.m),
     ) {
-        item {
-            GlanceCard(
-                assetId = "net_worth",
-                title = "ارزش کل دارایی",
-                priceFa = "${faCompact(totalToman)} ت",
-                changeFa = "+۲.۵٪",
-                isPositive = true,
-                badge = "کل",
-                onClick = onSelectNetWorth,
-            )
-        }
+        // Redundant Net Worth card eliminated from glance tray in favor of Hero Command Hub
         item {
             GlanceCard(
                 assetId = "bank",
@@ -556,6 +550,208 @@ fun HomeGlanceBar(
                 badge = "USD",
                 onClick = onSelectUsd,
             )
+        }
+    }
+}
+
+/**
+ * Contextual Priority Card consolidating obligations, installments, and reservations (Tier 3).
+ * Eliminates multi-card sprawl by highlighting the single most urgent upcoming item
+ * with fast one-tap category access chips.
+ */
+@Composable
+fun ContextualPriorityCard(
+    commitments: List<Commitment>,
+    obligations: List<InstallmentObligation>,
+    reservations: List<Reservation>,
+    onOpenCommitments: () -> Unit,
+    onOpenObligations: () -> Unit,
+    onOpenReservations: () -> Unit,
+    modifier: Modifier = Modifier,
+    privacyMode: Boolean = false,
+) {
+    val activeCommitments = remember(commitments) { commitments.filter { !it.isSettled } }
+    val activeObligations = remember(obligations) { obligations.filter { !it.archived } }
+    val activeReservations = remember(reservations) { reservations.filter { !it.released } }
+
+    val totalActiveCount = activeCommitments.size + activeObligations.size + activeReservations.size
+    if (totalActiveCount == 0) return
+
+    val nearestCommitment = activeCommitments.minByOrNull { it.nextDueDays }
+    val totalRemainingToman = activeCommitments.sumOf { it.remainingAmountToman } +
+        (activeObligations.sumOf { it.totalRial - it.downPaymentRial } / 10L) +
+        (activeReservations.sumOf { it.amountRial } / 10L)
+
+    RikkaCard(
+        modifier = modifier.fillMaxWidth(),
+        variant = CardVariant.Elevated,
+        animation = CardAnimation.Press,
+        onClick = onOpenCommitments,
+    ) {
+        Column(modifier = Modifier.padding(Space.m)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "تعهدات و اولویت‌های مالی",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(Modifier.width(Space.s))
+                    Box(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(Hero.gold.copy(alpha = 0.2f))
+                            .padding(horizontal = 8.dp, vertical = 2.dp),
+                    ) {
+                        Text(
+                            text = "${fa(totalActiveCount)} مورد فعال",
+                            color = Hero.gold,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 10.sp,
+                        )
+                    }
+                }
+                Text(
+                    text = if (privacyMode) "••••••" else "${faCompact(totalRemainingToman.toDouble())} ت",
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Black,
+                    color = Hero.gold,
+                )
+            }
+
+            Spacer(Modifier.height(Space.s))
+
+            // Urgent highlight banner
+            if (nearestCommitment != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f))
+                        .padding(Space.s),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("⚠️", fontSize = 14.sp)
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                nearestCommitment.title,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        Text(
+                            "${fa(nearestCommitment.nextDueDays)} روز تا سررسید قسط بعدی",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    val amount = if (privacyMode) "••••••••" else "${faCompact(nearestCommitment.remainingAmountToman.toDouble())} ت"
+                    Text(
+                        amount,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 13.sp,
+                        fontFamily = ModamFigures,
+                        color = Hero.gold,
+                    )
+                }
+            } else if (activeObligations.isNotEmpty()) {
+                val firstOb = activeObligations.first()
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f))
+                        .padding(Space.s),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            firstOb.provider,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            "${fa(firstOb.installmentCount)} قسط باقیمانده",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    val amount = if (privacyMode) "••••••••" else "${faCompact((firstOb.installmentRial / 10L).toDouble())} ت"
+                    Text(
+                        amount,
+                        fontWeight = FontWeight.Black,
+                        fontSize = 13.sp,
+                        fontFamily = ModamFigures,
+                        color = Hero.gold,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(Space.s))
+
+            // Contextual category chips
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Space.s),
+            ) {
+                if (activeCommitments.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f))
+                            .clickable(onClick = onOpenCommitments)
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    ) {
+                        Text(
+                            "اقساط (${fa(activeCommitments.size)})",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                if (activeObligations.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f))
+                            .clickable(onClick = onOpenObligations)
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    ) {
+                        Text(
+                            "تعهدات (${fa(activeObligations.size)})",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                if (activeReservations.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f))
+                            .clickable(onClick = onOpenReservations)
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    ) {
+                        Text(
+                            "رزروها (${fa(activeReservations.size)})",
+                            fontSize = 11.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
         }
     }
 }

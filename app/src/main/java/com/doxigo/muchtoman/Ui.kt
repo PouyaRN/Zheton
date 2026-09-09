@@ -917,7 +917,7 @@ val snackbarHostState = remember { SnackbarHostState() }
                 )
             }
 
-            // Interactive 3D Iranian Bank Card Deck — front and center
+            // Tier 2: Interactive 3D Iranian Bank Card Deck — front and center
             if (state.bankAccounts.isNotEmpty()) {
                 item(key = "bank_card_deck") {
                     Box(modifier = Modifier.padding(edge).padding(top = Space.l)) {
@@ -929,6 +929,18 @@ val snackbarHostState = remember { SnackbarHostState() }
                             privacyMode = privacyMode,
                         )
                     }
+                }
+            }
+
+            // Tier 2: Quick Actions Dock for instant interaction
+            item(key = "quick_actions_dock") {
+                Box(modifier = Modifier.padding(edge).padding(top = Space.m)) {
+                    com.doxigo.muchtoman.widget.primitives.QuickActionsDock(
+                        onAdd = { adding = true; vm.refreshStocksForPicker() },
+                        onTransfer = { showQuickAdd = true },
+                        onCards = { tab = Tab.CARDS },
+                        onAnalytics = { tab = Tab.REPORTS },
+                    )
                 }
             }
 
@@ -944,42 +956,96 @@ val snackbarHostState = remember { SnackbarHostState() }
                 }
             }
 
-            // Active Commitments Hub (BNPL, Loans, Sayad Checks)
-            if (state.commitments.isNotEmpty()) {
-                item(key = "commitments_card") {
-                    CommitmentsCard(
-                        commitments = state.commitments,
-                        modifier = Modifier.padding(edge).padding(top = Space.l),
-                        onOpenHub = { showCommitmentsHubSheet = true },
-                        onAddCommitment = { showAddCommitmentSheet = true },
-                        privacyMode = privacyMode,
-                    )
-                }
-            }
-
-            // Active Obligations — only rendered when there are active obligations to attend to
+            // Tier 3: Consolidated Contextual Priority Card (Commitments, Obligations, Reservations)
             val activeObligations = state.obligations.filter { !it.archived }
-            if (activeObligations.isNotEmpty()) {
-                item(key = "obligations") {
-                    ObligationsCard(
-                        state = state,
-                        modifier = Modifier.padding(edge).padding(top = Space.l),
-                        onOpenObligation = { selectedObligation = it },
-                        onAddObligation = { addingObligation = true },
-                    )
+            val activeReservations = state.reservations.filter { !it.released }
+            val activeCommitments = state.commitments.filter { !it.isSettled }
+            if (activeCommitments.isNotEmpty() || activeObligations.isNotEmpty() || activeReservations.isNotEmpty()) {
+                item(key = "contextual_priority_card") {
+                    Box(modifier = Modifier.padding(edge).padding(top = Space.l)) {
+                        ContextualPriorityCard(
+                            commitments = state.commitments,
+                            obligations = state.obligations,
+                            reservations = state.reservations,
+                            onOpenCommitments = { showCommitmentsHubSheet = true },
+                            onOpenObligations = {
+                                if (activeObligations.size == 1) {
+                                    selectedObligation = activeObligations.first()
+                                } else {
+                                    addingObligation = true
+                                }
+                            },
+                            onOpenReservations = {
+                                if (activeReservations.isNotEmpty()) {
+                                    vm.releaseReservation(activeReservations.first().id)
+                                }
+                            },
+                            privacyMode = privacyMode,
+                        )
+                    }
                 }
             }
 
-            // Active Reservations — only rendered when there are funds actively reserved
-            val activeReservations = state.reservations.filter { !it.released }
-            if (activeReservations.isNotEmpty()) {
-                item(key = "reservations") {
-                    ReservationsCard(
-                        state = state,
-                        modifier = Modifier.padding(edge).padding(top = Space.l),
-                        onRelease = vm::releaseReservation,
-                        onDelete = vm::deleteReservation,
-                    )
+            // Tier 3: Stream of latest transactions with merchant avatars
+            val recentEntries = state.ledger.entries.take(4)
+            if (recentEntries.isNotEmpty()) {
+                item(key = "home_recent_transactions") {
+                    Box(modifier = Modifier.padding(edge).padding(top = Space.l)) {
+                        com.doxigo.muchtoman.ui.rikka.components.card.Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            variant = com.doxigo.muchtoman.ui.rikka.components.card.CardVariant.Elevated,
+                            animation = com.doxigo.muchtoman.ui.rikka.components.card.CardAnimation.None,
+                        ) {
+                            Column(modifier = Modifier.padding(Space.m)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        text = "آخرین تراکنش‌ها",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                    Text(
+                                        text = "مشاهده دفتر ↗",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Hero.gold,
+                                        modifier = Modifier.clickable { tab = Tab.LEDGER },
+                                    )
+                                }
+
+                                Spacer(Modifier.height(Space.s))
+
+                                recentEntries.forEachIndexed { idx, entry ->
+                                    if (idx > 0) {
+                                        com.doxigo.muchtoman.ui.rikka.components.separator.Separator(
+                                            modifier = Modifier.padding(vertical = Space.xs)
+                                        )
+                                    }
+                                    val isExpense = entry.txn.direction != "in"
+                                    val toman = (entry.txn.amountRial ?: 0L) / 10L
+                                    val merchantName = entry.txn.merchant.ifBlank {
+                                        entry.txn.merchantNorm
+                                    }.ifBlank { if (isExpense) "خرید کارت‌خوان" else "واریز به حساب" }
+                                    val categoryName = entry.categoryFa.ifBlank { "عمومی" }
+                                    val bankFa = bankNameOf(entry.txn.bank)
+                                    val timeFormatted = if (entry.txn.printedAt.isNotBlank()) entry.txn.printedAt else faDay(entry.txn.day)
+
+                                    com.doxigo.muchtoman.widget.primitives.TransactionFeedItem(
+                                        merchant = merchantName,
+                                        category = categoryName,
+                                        amountFormatted = if (privacyMode) "••••••••" else "${faNumber(toman.toDouble())} ت",
+                                        timeFormatted = timeFormatted,
+                                        isExpense = isExpense,
+                                        bankName = bankFa,
+                                        onClick = { tab = Tab.LEDGER },
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
