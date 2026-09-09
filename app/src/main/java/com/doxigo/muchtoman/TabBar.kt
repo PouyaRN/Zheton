@@ -101,13 +101,13 @@ fun TabBar(
 ) {
     Surface(
         modifier = modifier
-            .background(AndisTheme.colors.background)
+            .background(MaterialTheme.colorScheme.background)
             .navigationBarsPadding()
             .padding(horizontal = Space.m, vertical = Space.s),
-        shape = RoundedCornerShape(14.dp),
-        color = AndisTheme.colors.surfacePrimary,
-        border = BorderStroke(1.dp, AndisTheme.colors.border),
-        shadowElevation = 0.dp,
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)),
+        shadowElevation = 3.dp,
     ) {
         NavigationBar(
             containerColor = Color.Transparent,
@@ -128,13 +128,13 @@ fun TabBar(
                         Surface(
                             onClick = onQuickAdd,
                             shape = CircleShape,
-                            color = AndisTheme.colors.accentLime,
-                            shadowElevation = 0.dp,
-                            modifier = Modifier.size(42.dp),
+                            color = Hero.gold,
+                            shadowElevation = 4.dp,
+                            modifier = Modifier.size(44.dp),
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Canvas(modifier = Modifier.size(18.dp)) {
-                                    val stroke = 2.2.dp.toPx()
+                                Canvas(modifier = Modifier.size(20.dp)) {
+                                    val stroke = 2.4.dp.toPx()
                                     // Horizontal plus bar
                                     drawLine(
                                         color = Color(0xFF050607),
@@ -175,7 +175,7 @@ fun TabBar(
                             badge = {
                                 if (badge > 0) {
                                     Badge(
-                                        containerColor = AndisTheme.colors.accentLime,
+                                        containerColor = Hero.gold,
                                         contentColor = Color(0xFF050607),
                                     ) {
                                         Text(
@@ -187,7 +187,7 @@ fun TabBar(
                                 }
                             },
                         ) {
-                            val tint = if (isSelected) AndisTheme.colors.accentLime else AndisTheme.colors.textSecondary
+                            val tint = if (isSelected) Hero.gold else MaterialTheme.colorScheme.onSurfaceVariant
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Canvas(
                                     Modifier
@@ -204,7 +204,7 @@ fun TabBar(
                                     Box(
                                         Modifier
                                             .size(3.dp)
-                                            .background(AndisTheme.colors.accentLime, CircleShape)
+                                            .background(Hero.gold, CircleShape)
                                     )
                                 }
                             }
@@ -223,11 +223,11 @@ fun TabBar(
                         )
                     },
                     colors = NavigationBarItemDefaults.colors(
-                        indicatorColor = AndisTheme.colors.surfaceSecondary,
-                        selectedIconColor = AndisTheme.colors.accentLime,
-                        selectedTextColor = AndisTheme.colors.accentLime,
-                        unselectedIconColor = AndisTheme.colors.textSecondary,
-                        unselectedTextColor = AndisTheme.colors.textMuted,
+                        indicatorColor = Hero.top,
+                        selectedIconColor = Hero.gold,
+                        selectedTextColor = Hero.gold,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     ),
                 )
             }
