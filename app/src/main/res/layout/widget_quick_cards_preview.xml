@@ -39,8 +39,10 @@
         android:background="#1B1914"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="10dp"
-        android:paddingVertical="6dp">
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -70,8 +72,10 @@
             android:layout_height="wrap_content"
             android:background="#262012"
             android:fontFamily="@font/modam_medium"
-            android:paddingHorizontal="7dp"
-            android:paddingVertical="4dp"
+            android:paddingLeft="7dp"
+            android:paddingRight="7dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
             android:text="کپی کارت"
             android:textColor="#F7C948"
             android:textSize="9.5sp" />
@@ -82,8 +86,10 @@
             android:layout_marginStart="6dp"
             android:background="#142922"
             android:fontFamily="@font/modam_medium"
-            android:paddingHorizontal="7dp"
-            android:paddingVertical="4dp"
+            android:paddingLeft="7dp"
+            android:paddingRight="7dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
             android:text="کپی شبا"
             android:textColor="#3BE0A8"
             android:textSize="9.5sp" />
@@ -97,8 +103,10 @@
         android:background="#1B1914"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="10dp"
-        android:paddingVertical="6dp">
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -128,8 +136,10 @@
             android:layout_height="wrap_content"
             android:background="#262012"
             android:fontFamily="@font/modam_medium"
-            android:paddingHorizontal="7dp"
-            android:paddingVertical="4dp"
+            android:paddingLeft="7dp"
+            android:paddingRight="7dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
             android:text="کپی کارت"
             android:textColor="#F7C948"
             android:textSize="9.5sp" />

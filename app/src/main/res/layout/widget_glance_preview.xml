@@ -57,8 +57,10 @@
         android:background="#1B1914"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingHorizontal="10dp"
-        android:paddingVertical="7dp">
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp"
+        android:paddingTop="7dp"
+        android:paddingBottom="7dp">
 
         <TextView
             android:layout_width="0dp"
@@ -85,7 +87,8 @@
         android:background="#262012"
         android:fontFamily="@font/modam_semibold"
         android:gravity="center"
-        android:paddingVertical="7dp"
+        android:paddingTop="7dp"
+        android:paddingBottom="7dp"
         android:text="＋ ثبت سریع هزینه یا درآمد"
         android:textColor="#F7C948"
         android:textSize="11.5sp" />
