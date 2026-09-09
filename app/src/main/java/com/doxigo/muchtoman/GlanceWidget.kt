@@ -608,7 +608,7 @@ class SafeSpendGlanceWidget : GlanceAppWidget() {
 
 @Composable
 private fun SafeSpendBody(state: RunwayWidgetState) {
-    val darkSurface = Color(0xFF161410)
+    val darkSurface = Color(0xFF13110E)
     val goldColor = Color(0xFFF7C948)
     val mintColor = Color(0xFF3BE0A8)
     val warnColor = Color(0xFFFF9E80)
@@ -619,68 +619,68 @@ private fun SafeSpendBody(state: RunwayWidgetState) {
         modifier = GlanceModifier
             .fillMaxSize()
             .background(darkSurface)
-            .cornerRadius(16.dp)
-            .padding(8.dp)
+            .cornerRadius(18.dp)
+            .padding(12.dp)
             .clickable(actionStartActivity<MainActivity>()),
     ) {
         Column(modifier = GlanceModifier.fillMaxSize()) {
             Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(
+                GlanceModamText(
                     text = "خرج امن امروز",
-                    style = TextStyle(color = ColorProvider(mutedColor), fontSize = 10.sp),
+                    sp = 11f,
+                    color = goldColor,
+                    weight = ModamWeight.SEMIBOLD,
                 )
                 Spacer(GlanceModifier.defaultWeight())
-                Text(
+                GlanceModamText(
                     text = "${faNumber(state.daysRemaining.toDouble())} روز تا پایان چرخه",
-                    style = TextStyle(color = ColorProvider(mutedColor), fontSize = 9.sp),
-                    maxLines = 1,
+                    sp = 9.5f,
+                    color = mutedColor,
+                    weight = ModamWeight.MEDIUM,
                 )
             }
-            Spacer(GlanceModifier.height(2.dp))
-            Text(
-                text = if (state.isMasked) "٭٭٭" else {
-                    if (state.isOverdrawn) "کسری بودجه!" else "${faCompact(state.dailyAllowanceToman.toDouble())} تومان"
+            Spacer(GlanceModifier.height(4.dp))
+            val amountStr = if (state.isMasked) "٭٭٭" else {
+                if (state.isOverdrawn) "کسری بودجه!" else "${faCompact(state.dailyAllowanceToman.toDouble())} تومان"
+            }
+            GlanceModamText(
+                text = amountStr,
+                sp = 19f,
+                color = when {
+                    state.isMasked -> goldColor
+                    state.isOverdrawn -> warnColor
+                    else -> textWhite
                 },
-                style = TextStyle(
-                    color = ColorProvider(
-                        when {
-                            state.isMasked -> goldColor
-                            state.isOverdrawn -> warnColor
-                            else -> textWhite
-                        },
-                    ),
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
-                ),
-                maxLines = 1,
+                weight = ModamWeight.HEAVY,
+                narrow = true,
+            )
+            Spacer(GlanceModifier.height(6.dp))
+            val fill = state.monthProgressPercent.coerceIn(0, 100)
+            GlanceProgressGauge(
+                fraction = fill / 100f,
+                activeTone = if (state.isOverdrawn) warnColor else mintColor,
+                bgTone = Color(0xFF26221A),
+                heightDp = 6f,
+                modifier = GlanceModifier.fillMaxWidth(),
             )
             Spacer(GlanceModifier.height(4.dp))
-            // Month progress bar: filled portion in mint (warn when overdrawn), track dim.
-            // Glance has no fractional fill, so widths come from a coarse 10-segment bar.
-            val fill = state.monthProgressPercent.coerceIn(0, 100)
-            Row(
-                modifier = GlanceModifier.fillMaxWidth().height(4.dp).background(Color(0xFF2A271F)),
-            ) {
-                val filled = (fill / 10).coerceIn(0, 10)
-                repeat(filled) {
-                    Spacer(
-                        GlanceModifier.defaultWeight().height(4.dp)
-                            .background(if (state.isOverdrawn) warnColor else mintColor),
-                    )
-                }
-                repeat(10 - filled) {
-                    Spacer(
-                        GlanceModifier.defaultWeight().height(4.dp)
-                            .background(Color(0xFF2A271F)),
+            Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                GlanceModamText(
+                    text = if (state.isMasked) "پنهان" else "بودجه مصرف‌شده: ${faNumber(fill.toDouble())}٪",
+                    sp = 9f,
+                    color = mutedColor,
+                    weight = ModamWeight.REGULAR,
+                )
+                if (state.goldGrams != null && state.goldGrams > 0.0) {
+                    Spacer(GlanceModifier.defaultWeight())
+                    GlanceModamText(
+                        text = "معادل: ${faDecimal(state.goldGrams, 2)} گرم طلا",
+                        sp = 9f,
+                        color = goldColor,
+                        weight = ModamWeight.REGULAR,
                     )
                 }
             }
-            Spacer(GlanceModifier.height(3.dp))
-            Text(
-                text = if (state.isMasked) "پنهان" else "بودجه مصرف‌شده: ${faNumber(fill.toDouble())}٪",
-                style = TextStyle(color = ColorProvider(mutedColor), fontSize = 8.sp),
-                maxLines = 1,
-            )
         }
     }
 }

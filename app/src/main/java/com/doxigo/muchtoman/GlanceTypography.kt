@@ -17,10 +17,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.res.ResourcesCompat
+import androidx.compose.ui.unit.dp
 import androidx.glance.GlanceModifier
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
+import androidx.glance.layout.ContentScale
+import androidx.glance.layout.height
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.ceil
 
@@ -413,5 +416,37 @@ fun GlanceModamPan(
         provider = ImageProvider(bitmap),
         contentDescription = contentDescription,
         modifier = modifier,
+    )
+}
+
+/**
+ * Smooth anti-aliased horizontal progress gauge for Glance widgets.
+ */
+@Composable
+fun GlanceProgressGauge(
+    fraction: Float,
+    activeTone: Color,
+    bgTone: Color = Color(0xFF26231C),
+    modifier: GlanceModifier = GlanceModifier,
+    heightDp: Float = 5f,
+) {
+    val context = LocalContext.current
+    val d = context.resources.displayMetrics
+    val widthPx = (280 * d.density).toInt().coerceAtLeast(100)
+    val heightPx = (heightDp * d.density).toInt().coerceAtLeast(6)
+    val bitmap = GlanceTypographyEngine.renderProgressGaugeBitmap(
+        context = context,
+        fraction = fraction,
+        activeTone = activeTone.toArgb(),
+        bgTone = bgTone.toArgb(),
+        widthPx = widthPx,
+        heightPx = heightPx,
+    )
+
+    Image(
+        provider = ImageProvider(bitmap),
+        contentDescription = "پیشرفت مصرف بودجه",
+        contentScale = ContentScale.FillBounds,
+        modifier = modifier.height(heightDp.dp),
     )
 }
