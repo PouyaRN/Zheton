@@ -775,13 +775,12 @@ val snackbarHostState = remember { SnackbarHostState() }
             }
 
             item {
-                Card(
+                com.doxigo.muchtoman.ui.rikka.components.card.Card(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = Space.m, vertical = Space.xs),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    variant = com.doxigo.muchtoman.ui.rikka.components.card.CardVariant.Elevated,
+                    animation = com.doxigo.muchtoman.ui.rikka.components.card.CardAnimation.None,
                 ) {
-                    Column(modifier = Modifier.padding(Space.m)) {
+                    Column(modifier = Modifier.padding(Space.xs)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -836,22 +835,6 @@ val snackbarHostState = remember { SnackbarHostState() }
         return@Scaffold
       }
 
-      if (tab == Tab.HOME) {
-        com.doxigo.muchtoman.widget.engine.CommandCenterScreen(
-            state = state,
-            slots = state.widgetSlots,
-            onSaveSlots = { vm.updateWidgetSlots(it) },
-            onRefresh = { vm.refreshAll() },
-            onOpenLedger = { tab = Tab.LEDGER },
-            onOpenMarkets = { tab = Tab.ASSETS },
-            onOpenReports = { tab = Tab.REPORTS },
-            onEntryClick = { entry -> transactionRef = entry.txn.ref },
-            privacyMode = privacyMode,
-            bottomInset = pad.calculateBottomPadding(),
-        )
-        return@Scaffold
-      }
-
       Box(Modifier.fillMaxSize()) {
         // Pulling the list down refetches, exactly like the به‌روزرسانی button — the button
         // stays, because a labelled control is still the one she can be told about by phone.
@@ -903,6 +886,34 @@ val snackbarHostState = remember { SnackbarHostState() }
                     onCurrencyLensChange = { currencyLens = it },
                     privacyMode = privacyMode,
                     onTogglePrivacy = { privacyMode = !privacyMode },
+                )
+            }
+
+            // Horizontal Glance Carousel (matches MarketUi GlanceBar)
+            item(key = "home_glance_bar") {
+                Box(modifier = Modifier.padding(top = Space.s)) {
+                    HomeGlanceBar(
+                        totalToman = state.totals.toman,
+                        bankToman = state.bankToman,
+                        gold18Toman = effective["gold18"] ?: 0.0,
+                        usdCashToman = effective["usd"] ?: 0.0,
+                        onSelectNetWorth = { tab = Tab.REPORTS },
+                        onSelectBank = { tab = Tab.CARDS },
+                        onSelectGold = { tab = Tab.ASSETS },
+                        onSelectUsd = { tab = Tab.ASSETS },
+                    )
+                }
+            }
+
+            // Interactive Spline Chart Card (matches MarketFluctuationCard directly)
+            item(key = "home_spline_chart_card") {
+                var selectedNetWorthInterval by remember { mutableStateOf(FluctuationInterval.MONTH_1) }
+                NetWorthFluctuationCard(
+                    currentToman = state.totals.toman,
+                    history = state.history,
+                    privacyMode = privacyMode,
+                    selectedInterval = selectedNetWorthInterval,
+                    onSelectInterval = { selectedNetWorthInterval = it },
                 )
             }
 

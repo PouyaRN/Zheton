@@ -697,15 +697,13 @@ internal fun GlanceCard(
     badge: String,
     onClick: () -> Unit,
 ) {
-    Card(
-        modifier = Modifier
-            .width(148.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+    com.doxigo.muchtoman.ui.rikka.components.card.Card(
+        modifier = Modifier.width(148.dp),
+        variant = com.doxigo.muchtoman.ui.rikka.components.card.CardVariant.Elevated,
+        onClick = onClick,
+        animation = com.doxigo.muchtoman.ui.rikka.components.card.CardAnimation.Press,
     ) {
-        Column(modifier = Modifier.padding(Space.m)) {
+        Column(modifier = Modifier.padding(Space.xs)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -736,15 +734,14 @@ fun MarketFluctuationCard(
 ) {
     var scrubbedPoint by remember(series) { mutableStateOf<FluctuationPoint?>(null) }
 
-    Card(
+    com.doxigo.muchtoman.ui.rikka.components.card.Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Space.m, vertical = Space.s),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        variant = com.doxigo.muchtoman.ui.rikka.components.card.CardVariant.Elevated,
+        animation = com.doxigo.muchtoman.ui.rikka.components.card.CardAnimation.None,
     ) {
-        Column(modifier = Modifier.padding(Space.m)) {
+        Column(modifier = Modifier.padding(Space.xs)) {
             // Card Title & Current or Scrubbed Rate
             Row(
                 modifier = Modifier.fillMaxWidth(),

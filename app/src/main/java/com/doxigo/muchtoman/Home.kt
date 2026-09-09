@@ -369,15 +369,14 @@ fun NetWorthFluctuationCard(
         )
     }
 
-    Card(
+    com.doxigo.muchtoman.ui.rikka.components.card.Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = Space.m, vertical = Space.s),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        variant = com.doxigo.muchtoman.ui.rikka.components.card.CardVariant.Elevated,
+        animation = com.doxigo.muchtoman.ui.rikka.components.card.CardAnimation.None,
     ) {
-        Column(modifier = Modifier.padding(Space.m)) {
+        Column(modifier = Modifier.padding(Space.xs)) {
             // Card Title & Current or Scrubbed Rate
             Row(
                 modifier = Modifier.fillMaxWidth(),
