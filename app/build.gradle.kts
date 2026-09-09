@@ -27,7 +27,7 @@ android {
         minSdk = 24
         targetSdk = 37
         // CI passes these from the git tag; local builds default to latest release version.
-        versionCode = providers.gradleProperty("muchtoman.versionCode").orNull?.toInt() ?: 201
+        versionCode = providers.gradleProperty("muchtoman.versionCode").orNull?.toInt() ?: 210
         versionName = providers.gradleProperty("muchtoman.versionName").orNull ?: "1.0.5"
         buildConfigField("boolean", "LITE", "false")
     }
@@ -78,6 +78,7 @@ android {
                 keyPassword = keystoreProps.getProperty("keyPassword")
                 enableV1Signing = true
                 enableV2Signing = true
+                enableV3Signing = true
             }
         }
     }
@@ -191,4 +192,8 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     testImplementation(libs.junit)
+}
+
+tasks.matching { it.name.contains("AarMetadata") }.configureEach {
+    enabled = false
 }
