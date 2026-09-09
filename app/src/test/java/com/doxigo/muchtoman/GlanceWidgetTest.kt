@@ -287,4 +287,19 @@ class GlanceWidgetTest {
         // Widget lock hides the whole deck.
         assertTrue(quickCardRows(accounts, isMasked = true).isEmpty())
     }
+
+    @Test
+    fun `pan formatting handles 16 digits and masked states`() {
+        val pan = "6037991823456789"
+        val digits = pan.filter { it.isDigit() }
+        assertEquals(16, digits.length)
+        val p1 = digits.substring(0, 4)
+        val p2 = digits.substring(4, 8)
+        val p3 = digits.substring(8, 12)
+        val p4 = digits.substring(12, 16)
+        assertEquals("6037  9918  2345  6789", "$p1  $p2  $p3  $p4")
+
+        val masked = "••••  ••••  ••••  ${digits.takeLast(4)}"
+        assertEquals("••••  ••••  ••••  6789", masked)
+    }
 }
