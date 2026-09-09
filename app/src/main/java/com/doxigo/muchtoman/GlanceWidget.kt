@@ -920,9 +920,10 @@ class QuickCardsGlanceWidget : GlanceAppWidget() {
 
 @Composable
 private fun QuickCardsBody(context: Context, rows: List<QuickCardRow>) {
-    val darkSurface = Color(0xFF161410)
-    val cardSurface = Color(0xFF221F19)
+    val darkSurface = Color(0xFF13110E)
+    val cardSurface = Color(0xFF1B1914)
     val goldColor = Color(0xFFF7C948)
+    val mintColor = Color(0xFF3BE0A8)
     val mutedColor = Color(0xFF93B7B0)
     val textWhite = Color(0xFFFAF9F6)
 
@@ -930,35 +931,45 @@ private fun QuickCardsBody(context: Context, rows: List<QuickCardRow>) {
         modifier = GlanceModifier
             .fillMaxSize()
             .background(darkSurface)
-            .cornerRadius(16.dp)
-            .padding(8.dp),
+            .cornerRadius(18.dp)
+            .padding(10.dp),
     ) {
         Column(modifier = GlanceModifier.fillMaxSize()) {
             Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(
+                GlanceModamText(
                     text = "کارت‌های شتاب شما",
-                    style = TextStyle(color = ColorProvider(goldColor), fontSize = 11.sp, fontWeight = FontWeight.Bold),
-                    maxLines = 1,
+                    sp = 11.5f,
+                    color = goldColor,
+                    weight = ModamWeight.SEMIBOLD,
                     modifier = GlanceModifier.defaultWeight(),
                 )
-                Text(
+                GlanceModamText(
                     text = "کپی با یک لمس",
-                    style = TextStyle(color = ColorProvider(mutedColor), fontSize = 8.sp),
-                    maxLines = 1,
+                    sp = 9f,
+                    color = mutedColor,
+                    weight = ModamWeight.REGULAR,
                 )
             }
-            Spacer(GlanceModifier.height(4.dp))
+            Spacer(GlanceModifier.height(6.dp))
             if (rows.isEmpty()) {
-                Text(
-                    text = if (rows.isEmpty()) "حسابی یافت نشد (یا حالت پنهان روشن است)" else "",
-                    style = TextStyle(color = ColorProvider(mutedColor), fontSize = 10.sp),
-                    maxLines = 2,
-                    modifier = GlanceModifier.fillMaxWidth().clickable(actionStartActivity<MainActivity>()),
-                )
+                Box(
+                    modifier = GlanceModifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp)
+                        .clickable(actionStartActivity<MainActivity>()),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    GlanceModamText(
+                        text = "حسابی یافت نشد (یا حالت پنهان روشن است)",
+                        sp = 10.5f,
+                        color = mutedColor,
+                        weight = ModamWeight.REGULAR,
+                    )
+                }
             } else {
                 rows.take(3).forEach { row ->
-                    QuickCardRowItem(context, row, cardSurface, goldColor, textWhite, mutedColor)
-                    Spacer(GlanceModifier.height(4.dp))
+                    QuickCardRowItem(context, row, cardSurface, goldColor, mintColor, textWhite, mutedColor)
+                    Spacer(GlanceModifier.height(5.dp))
                 }
             }
         }
@@ -971,6 +982,7 @@ private fun QuickCardRowItem(
     row: QuickCardRow,
     cardSurface: Color,
     goldColor: Color,
+    mintColor: Color,
     textWhite: Color,
     mutedColor: Color,
 ) {
@@ -978,31 +990,34 @@ private fun QuickCardRowItem(
         modifier = GlanceModifier
             .fillMaxWidth()
             .background(cardSurface)
-            .cornerRadius(10.dp)
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .cornerRadius(12.dp)
+            .padding(horizontal = 10.dp, vertical = 6.dp),
     ) {
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = GlanceModifier.defaultWeight()) {
-                Text(
+                GlanceModamText(
                     text = row.label,
-                    style = TextStyle(color = ColorProvider(textWhite), fontSize = 10.sp, fontWeight = FontWeight.Bold),
-                    maxLines = 1,
+                    sp = 10.5f,
+                    color = textWhite,
+                    weight = ModamWeight.SEMIBOLD,
                 )
-                Text(
-                    text = row.maskedPan,
-                    style = TextStyle(color = ColorProvider(mutedColor), fontSize = 9.sp),
-                    maxLines = 1,
+                Spacer(GlanceModifier.height(2.dp))
+                GlanceModamPan(
+                    pan = row.fullPanDigits.ifBlank { row.maskedPan },
+                    isMasked = row.fullPanDigits.isBlank(),
+                    sp = 10.5f,
+                    color = mutedColor,
                 )
             }
             if (row.fullPanDigits.isNotBlank()) {
                 Box(
                     modifier = GlanceModifier
-                        .background(Color(0xFF322A14))
+                        .background(Color(0xFF262012))
                         .cornerRadius(8.dp)
-                        .padding(horizontal = 6.dp, vertical = 3.dp)
+                        .padding(horizontal = 7.dp, vertical = 4.dp)
                         .clickable {
                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
                             clipboard?.setPrimaryClip(
@@ -1011,19 +1026,20 @@ private fun QuickCardRowItem(
                             android.widget.Toast.makeText(context, "شماره کارت کپی شد", android.widget.Toast.LENGTH_SHORT).show()
                         },
                 ) {
-                    Text(
-                        text = "کپی شماره",
-                        style = TextStyle(color = ColorProvider(goldColor), fontSize = 9.sp, fontWeight = FontWeight.Bold),
-                        maxLines = 1,
+                    GlanceModamText(
+                        text = "کپی کارت",
+                        sp = 9.5f,
+                        color = goldColor,
+                        weight = ModamWeight.MEDIUM,
                     )
                 }
                 if (row.sheba.isNotBlank()) {
-                    Spacer(GlanceModifier.width(4.dp))
+                    Spacer(GlanceModifier.width(6.dp))
                     Box(
                         modifier = GlanceModifier
-                            .background(Color(0xFF322A14))
+                            .background(Color(0xFF142922))
                             .cornerRadius(8.dp)
-                            .padding(horizontal = 6.dp, vertical = 3.dp)
+                            .padding(horizontal = 7.dp, vertical = 4.dp)
                             .clickable {
                                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
                                 clipboard?.setPrimaryClip(
@@ -1032,10 +1048,11 @@ private fun QuickCardRowItem(
                                 android.widget.Toast.makeText(context, "شماره شبا کپی شد", android.widget.Toast.LENGTH_SHORT).show()
                             },
                     ) {
-                        Text(
+                        GlanceModamText(
                             text = "کپی شبا",
-                            style = TextStyle(color = ColorProvider(goldColor), fontSize = 9.sp, fontWeight = FontWeight.Bold),
-                            maxLines = 1,
+                            sp = 9.5f,
+                            color = mintColor,
+                            weight = ModamWeight.MEDIUM,
                         )
                     }
                 }
