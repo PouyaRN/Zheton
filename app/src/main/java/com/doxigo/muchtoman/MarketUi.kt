@@ -688,7 +688,7 @@ private fun MarketGlanceBar(
 }
 
 @Composable
-private fun GlanceCard(
+internal fun GlanceCard(
     assetId: String,
     title: String,
     priceFa: String,
@@ -855,7 +855,7 @@ fun MarketFluctuationCard(
 }
 
 @Composable
-private fun StatColumn(label: String, valueFa: String) {
+internal fun StatColumn(label: String, valueFa: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(2.dp))

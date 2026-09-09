@@ -23,7 +23,16 @@ import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -333,5 +342,221 @@ fun QuietStart(smsEnabled: Boolean, modifier: Modifier = Modifier) {
             lineHeight = 22.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+/**
+ * Interactive Net Worth Fluctuation Card with Spline Chart and Timeframe interval scrubbing.
+ * Matches MarketFluctuationCard directly for visual continuity across the entire app.
+ */
+@Composable
+fun NetWorthFluctuationCard(
+    currentToman: Double,
+    history: Map<Long, Double>,
+    modifier: Modifier = Modifier,
+    privacyMode: Boolean = false,
+    selectedInterval: FluctuationInterval = FluctuationInterval.MONTH_1,
+    onSelectInterval: (FluctuationInterval) -> Unit = {},
+) {
+    var scrubbedPoint by remember(currentToman, history, selectedInterval) { mutableStateOf<FluctuationPoint?>(null) }
+
+    val series = remember(currentToman, history, selectedInterval) {
+        MarketFluctuationEngine.computeSeries(
+            assetId = "net_worth",
+            currentPriceToman = currentToman,
+            interval = selectedInterval,
+            historicalSnapshots = history,
+        )
+    }
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = Space.m, vertical = Space.s),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column(modifier = Modifier.padding(Space.m)) {
+            // Card Title & Current or Scrubbed Rate
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top,
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Space.m),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .background(Hero.gold.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text("💎", fontSize = 20.sp)
+                    }
+                    Column {
+                        Text(
+                            "ارزش خالص دارایی",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Black,
+                        )
+                        Text(
+                            "NET WORTH",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+
+                Column(horizontalAlignment = Alignment.End) {
+                    val displayPrice = scrubbedPoint?.priceToman ?: series.currentPriceToman
+                    val textAmount = if (privacyMode) "••••••••" else "${faNumber(displayPrice)} تومان"
+                    Text(
+                        textAmount,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Black,
+                        color = Hero.gold,
+                    )
+
+                    val changePct = if (scrubbedPoint != null) {
+                        val base = series.startPriceToman
+                        if (base > 0) ((displayPrice - base) / base) * 100.0 else 0.0
+                    } else {
+                        series.changePercent
+                    }
+                    val isPos = changePct >= 0.0
+                    val sign = if (isPos) "+" else ""
+                    val subtitle = scrubbedPoint?.labelFa ?: "${sign}${faDecimal(changePct, 2)}٪"
+                    Text(
+                        subtitle,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isPos) Color(0xFF0F9D58) else Color(0xFFD93025),
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(Space.m))
+
+            // Timeframe Interval Selectors
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                for (interval in FluctuationInterval.entries) {
+                    val isSel = interval == selectedInterval
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (isSel) Hero.top else Color.Transparent)
+                            .clickable { onSelectInterval(interval) }
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                    ) {
+                        Text(
+                            interval.labelFa,
+                            fontSize = 11.sp,
+                            fontWeight = if (isSel) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isSel) Hero.gold else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(Space.m))
+
+            // Interactive Spline Chart
+            MarketSplineChart(
+                series = series,
+                onScrub = { scrubbedPoint = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(180.dp),
+            )
+
+            Spacer(Modifier.height(Space.m))
+
+            // Stats row: High, Low, Range Spread
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f))
+                    .padding(Space.s),
+                horizontalArrangement = Arrangement.SpaceAround,
+            ) {
+                StatColumn(label = "بیشترین", valueFa = faCompact(series.highPriceToman))
+                StatColumn(label = "کمترین", valueFa = faCompact(series.lowPriceToman))
+                val spread = (series.highPriceToman - series.lowPriceToman).coerceAtLeast(0.0)
+                StatColumn(label = "دامنه تغییر", valueFa = faCompact(spread))
+            }
+        }
+    }
+}
+
+/**
+ * Horizontal scrolling glance metrics bar for Home screen.
+ */
+@Composable
+fun HomeGlanceBar(
+    totalToman: Double,
+    bankToman: Double,
+    gold18Toman: Double,
+    usdCashToman: Double,
+    onSelectNetWorth: () -> Unit = {},
+    onSelectBank: () -> Unit = {},
+    onSelectGold: () -> Unit = {},
+    onSelectUsd: () -> Unit = {},
+) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.s),
+        horizontalArrangement = Arrangement.spacedBy(Space.m),
+    ) {
+        item {
+            GlanceCard(
+                assetId = "net_worth",
+                title = "ارزش کل دارایی",
+                priceFa = "${faCompact(totalToman)} ت",
+                changeFa = "+۲.۵٪",
+                isPositive = true,
+                badge = "کل",
+                onClick = onSelectNetWorth,
+            )
+        }
+        item {
+            GlanceCard(
+                assetId = "bank",
+                title = "موجودی بانک‌ها",
+                priceFa = "${faCompact(bankToman)} ت",
+                changeFa = "+۰.۹٪",
+                isPositive = true,
+                badge = "بانک",
+                onClick = onSelectBank,
+            )
+        }
+        item {
+            GlanceCard(
+                assetId = "gold18",
+                title = "طلای ۱۸ عیار",
+                priceFa = "${faNumber(gold18Toman)} ت",
+                changeFa = "+۱.۸٪",
+                isPositive = true,
+                badge = "گرم",
+                onClick = onSelectGold,
+            )
+        }
+        item {
+            GlanceCard(
+                assetId = "usd",
+                title = "دلار بازار آزاد",
+                priceFa = "${faNumber(usdCashToman)} ت",
+                changeFa = "+۱.۲٪",
+                isPositive = true,
+                badge = "USD",
+                onClick = onSelectUsd,
+            )
+        }
     }
 }

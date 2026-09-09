@@ -92,18 +92,16 @@ This document defines the canonical terms and bounded context concepts for Chand
 
 ---
 
-## 6. ANDIS Obsidian Editorial Financial OS & Widget Architecture
+## 6. Unified Market-Style Design Architecture (الگوی طراحی بازار)
 
-### **ANDIS (اندیس)**
-- The financial operating system identity uniting Swiss information design, editorial typography, and high-density financial terminal architecture over Iranian Rial/Toman economics. Characterized by expansive negative space, unboxed metric blocks, thin hairline dividers, and brutalist restraint.
+### **Market-Parity Design Language (زبان طراحی منطبق بر بازار)**
+- The design system governing the entire application, derived from `MarketUi.kt`. Characterized by polished elevation cards (`RoundedCornerShape(14.dp/16.dp)`), interactive spline charts with timeframe pickers and touch-scrubbing, horizontal glance carousels, sleek colored badges, and high-legibility Persian typography.
 
-### **Editorial Financial Module (ماژول سرمقاله مالی)**
-- An open, unboxed layout block prioritizing data over container decoration, breaking the "card soup" anti-pattern in favor of metric dominance, subtle sparklines, and precision alignment.
+### **Interactive Net Worth Spline Card (کارت تعاملی ارزش خالص)**
+- The hero centerpiece of the Home screen, mirroring `MarketFluctuationCard`: displaying the total net worth in bold Persian digits, timeframe interval selectors (`۱ روز` تا `۱ سال`), touch-scrubbed spline trajectory, and high/low/range statistics chips.
 
-### **Semantic Accent Signal (`#D4FF00`)**
-- A rare, high-contrast neon lime signal reserved strictly for positive financial deltas, selected navigation, and active tracking indicators across an overwhelmingly monochrome (95%) obsidian interface.
+### **Glance Carousel Bar (نوار نگاه سریع)**
+- A horizontal scrolling tray of high-priority financial metrics (`GlanceCard`) providing immediate glance visibility into total liquidity, bank totals, gold rates, and currency pegs.
 
-### **Restrained Technical Dividers (`#1C2327` / `#283136`)**
-- Hairline architectural separators and borders providing structural rhythm and separation without enclosing every data point in a rounded card.
 
 
