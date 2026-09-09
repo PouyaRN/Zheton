@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.Alignment
@@ -41,6 +43,8 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.inset
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -68,10 +72,11 @@ import androidx.compose.ui.unit.sp
  * "this is the answer"; here it answers *where am I*.
  */
 enum class Tab(val fa: String) {
-    HOME("خانه"),
-    LEDGER("دفتر"),
+    HOME("فرمان"),
     ASSETS("بازار"),
-    REPORTS("گزارش‌ها"),
+    CARDS("حساب‌ها"),
+    LEDGER("دفتر"),
+    REPORTS("دیده‌بان"),
 }
 
 /**
@@ -96,24 +101,19 @@ fun TabBar(
 ) {
     Surface(
         modifier = modifier
-            // The island's own ground. It floats, but not over a hole: the screens that take
-            // the bar's height as an inset and draw under it would otherwise show a list
-            // scrolling through the strip beside the island.
-            .background(MaterialTheme.colorScheme.background)
+            .background(AndisTheme.colors.background)
             .navigationBarsPadding()
             .padding(horizontal = Space.m, vertical = Space.s),
-        shape = RoundedCornerShape(Radius.group),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-        shadowElevation = 10.dp,
+        shape = RoundedCornerShape(14.dp),
+        color = AndisTheme.colors.surfacePrimary,
+        border = BorderStroke(1.dp, AndisTheme.colors.border),
+        shadowElevation = 0.dp,
     ) {
         NavigationBar(
-            // The island owns the shape, the colour and the gesture inset, so the component is
-            // asked for its behaviour only: the sliding slug, the ripple, the tab semantics.
             containerColor = Color.Transparent,
             tonalElevation = 0.dp,
             windowInsets = WindowInsets(0),
-            modifier = Modifier.height(72.dp),
+            modifier = Modifier.height(68.dp),
         ) {
             val half = tabs.size / 2
             tabs.forEachIndexed { index, tab ->
@@ -128,16 +128,16 @@ fun TabBar(
                         Surface(
                             onClick = onQuickAdd,
                             shape = CircleShape,
-                            color = Hero.gold,
-                            shadowElevation = 6.dp,
-                            modifier = Modifier.size(46.dp),
+                            color = AndisTheme.colors.accentLime,
+                            shadowElevation = 0.dp,
+                            modifier = Modifier.size(42.dp),
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                Canvas(modifier = Modifier.size(20.dp)) {
-                                    val stroke = 2.5.dp.toPx()
+                                Canvas(modifier = Modifier.size(18.dp)) {
+                                    val stroke = 2.2.dp.toPx()
                                     // Horizontal plus bar
                                     drawLine(
-                                        color = Color.Black,
+                                        color = Color(0xFF050607),
                                         start = Offset(0f, size.height / 2),
                                         end = Offset(size.width, size.height / 2),
                                         strokeWidth = stroke,
@@ -145,7 +145,7 @@ fun TabBar(
                                     )
                                     // Vertical plus bar
                                     drawLine(
-                                        color = Color.Black,
+                                        color = Color(0xFF050607),
                                         start = Offset(size.width / 2, 0f),
                                         end = Offset(size.width / 2, size.height),
                                         strokeWidth = stroke,
@@ -175,37 +175,59 @@ fun TabBar(
                             badge = {
                                 if (badge > 0) {
                                     Badge(
-                                        containerColor = MaterialTheme.colorScheme.primary,
-                                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                                        containerColor = AndisTheme.colors.accentLime,
+                                        contentColor = Color(0xFF050607),
                                     ) {
                                         Text(
                                             faNumber(badge.coerceAtMost(99).toDouble()),
-                                            style = figureStyle(MaterialTheme.colorScheme.onPrimary),
+                                            style = figureStyle(Color(0xFF050607)),
                                             fontSize = 10.sp,
                                         )
                                     }
                                 }
                             },
                         ) {
-                            val tint = LocalContentColor.current
-                            Canvas(
-                                Modifier
-                                    .size(24.dp)
-                                    .graphicsLayer {
-                                        scaleX = iconScale
-                                        scaleY = iconScale
-                                        compositingStrategy = CompositingStrategy.Offscreen
-                                    },
-                            ) { drawTabIcon(tab, tint) }
+                            val tint = if (isSelected) AndisTheme.colors.accentLime else AndisTheme.colors.textSecondary
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Canvas(
+                                    Modifier
+                                        .size(22.dp)
+                                        .graphicsLayer {
+                                            scaleX = iconScale
+                                            scaleY = iconScale
+                                            compositingStrategy = CompositingStrategy.Offscreen
+                                        },
+                                ) { drawTabIcon(tab, tint) }
+
+                                if (isSelected) {
+                                    Spacer(Modifier.height(2.dp))
+                                    Box(
+                                        Modifier
+                                            .size(3.dp)
+                                            .background(AndisTheme.colors.accentLime, CircleShape)
+                                    )
+                                }
+                            }
                         }
                     },
-                    label = { Text(tab.fa, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                    label = {
+                        Text(
+                            tab.fa,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = TextStyle(
+                                fontFamily = Modam,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                fontSize = 11.sp,
+                            )
+                        )
+                    },
                     colors = NavigationBarItemDefaults.colors(
-                        indicatorColor = MaterialTheme.colorScheme.primary,
-                        selectedIconColor = MaterialTheme.colorScheme.onPrimary,
-                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        indicatorColor = AndisTheme.colors.surfaceSecondary,
+                        selectedIconColor = AndisTheme.colors.accentLime,
+                        selectedTextColor = AndisTheme.colors.accentLime,
+                        unselectedIconColor = AndisTheme.colors.textSecondary,
+                        unselectedTextColor = AndisTheme.colors.textMuted,
                     ),
                 )
             }
@@ -215,25 +237,40 @@ fun TabBar(
 
 /**
  * Drawn, not imported.
- *
- * The icons artifact this project pins is the core set and has no house, no receipt, no coin
- * and no second device, so four of the five would have had to be drawn anyway — and four drawn
- * glyphs beside one imported one is the mismatch you notice without being able to name.
- *
- * What makes them a family is mechanical, and it is what the first cut got wrong: one pen
- * ([pen]) for all five, and one 18dp box inside the 24dp canvas that no glyph is allowed to
- * touch. The old set drew at four different stroke weights and ran to the edge of its box,
- * which is why it read as rough against the slug's curve.
  */
 private fun DrawScope.drawTabIcon(tab: Tab, tint: Color) {
     inset(3.dp.toPx()) {
         when (tab) {
             Tab.HOME -> drawHome(tint)
-            Tab.LEDGER -> drawLedger(tint)
             Tab.ASSETS -> drawAssets(tint)
+            Tab.CARDS -> drawCards(tint)
+            Tab.LEDGER -> drawLedger(tint)
             Tab.REPORTS -> drawReports(tint)
         }
     }
+}
+
+private fun DrawScope.drawCards(tint: Color) {
+    val w = size.width
+    val h = size.height
+    drawRoundRect(
+        color = tint,
+        topLeft = Offset(w * 0.06f, h * 0.18f),
+        size = Size(w * 0.88f, h * 0.64f),
+        cornerRadius = CornerRadius(w * 0.08f, w * 0.08f),
+        style = pen()
+    )
+    drawLine(
+        color = tint,
+        start = Offset(w * 0.06f, h * 0.42f),
+        end = Offset(w * 0.94f, h * 0.42f),
+        strokeWidth = 1.5.dp.toPx()
+    )
+    drawCircle(
+        color = tint,
+        radius = w * 0.06f,
+        center = Offset(w * 0.74f, h * 0.62f)
+    )
 }
 
 /**

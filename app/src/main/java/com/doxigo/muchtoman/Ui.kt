@@ -726,6 +726,53 @@ val snackbarHostState = remember { SnackbarHostState() }
         return@Scaffold
       }
 
+      if (tab == Tab.CARDS) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().background(AndisTheme.colors.background),
+            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 16.dp, bottom = pad.calculateBottomPadding() + 80.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "حساب‌ها و کارت‌ها",
+                        style = TextStyle(
+                            fontFamily = Modam,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 18.sp,
+                            color = AndisTheme.colors.textPrimary
+                        )
+                    )
+                    com.doxigo.muchtoman.widget.primitives.DotMatrixBadge(
+                        text = "${fa(state.bankAccounts.size)} CARDS",
+                        activeColor = AndisTheme.colors.accentLime
+                    )
+                }
+            }
+
+            item {
+                BankCardDeck(
+                    accounts = state.bankAccounts,
+                    cardHolderName = state.name,
+                    privacyMode = privacyMode,
+                    onCardClick = { },
+                )
+            }
+
+            item {
+                com.doxigo.muchtoman.widget.library.AccountsWidget(
+                    state = state,
+                    privacyMode = privacyMode
+                )
+            }
+        }
+        return@Scaffold
+      }
+
       if (tab == Tab.HOME) {
         com.doxigo.muchtoman.widget.engine.CommandCenterScreen(
             state = state,

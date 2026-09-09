@@ -9,18 +9,19 @@ class HomeDeclutterTest {
 
     @Test
     fun `Tab entries has exactly four core tabs and excludes GOALS`() {
-        assertEquals(4, Tab.entries.size)
+        assertEquals(5, Tab.entries.size)
         val tabNames = Tab.entries.map { it.name }
         assertTrue(tabNames.contains("HOME"))
-        assertTrue(tabNames.contains("LEDGER"))
         assertTrue(tabNames.contains("ASSETS"))
+        assertTrue(tabNames.contains("CARDS"))
+        assertTrue(tabNames.contains("LEDGER"))
         assertTrue(tabNames.contains("REPORTS"))
         assertFalse("GOALS must not be in Tab.entries", tabNames.contains("GOALS"))
     }
 
     @Test
     fun `Tab labels in Persian match refined four-tab navigation`() {
-        val expected = listOf("خانه", "دفتر", "بازار", "گزارش‌ها")
+        val expected = listOf("فرمان", "بازار", "حساب‌ها", "دفتر", "دیده‌بان")
         assertEquals(expected, Tab.entries.map { it.fa })
     }
 
