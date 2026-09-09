@@ -92,20 +92,18 @@ This document defines the canonical terms and bounded context concepts for Chand
 
 ---
 
-## 6. ANDIS Financial OS & Widget Architecture
+## 6. ANDIS Obsidian Editorial Financial OS & Widget Architecture
 
 ### **ANDIS (اندیس)**
-- The financial operating system identity uniting Nothing OS dot-matrix aesthetics, Swiss grid systems, and high-density financial terminal design over Iranian rial/toman economics.
+- The financial operating system identity uniting Swiss information design, editorial typography, and high-density financial terminal architecture over Iranian Rial/Toman economics. Characterized by expansive negative space, unboxed metric blocks, thin hairline dividers, and brutalist restraint.
 
-### **Financial Widget (ویجت مالی)**
-- A self-contained, composable financial visual unit supporting three layout densities (`compact`, `standard`, `expanded`) within a responsive grid (4-column mobile, 8-column tablet, 12-column desktop).
+### **Editorial Financial Module (ماژول سرمقاله مالی)**
+- An open, unboxed layout block prioritizing data over container decoration, breaking the "card soup" anti-pattern in favor of metric dominance, subtle sparklines, and precision alignment.
 
-### **Widget Grid Manifest (مانیفست چینش ویجت‌ها)**
-- The persisted user configuration governing widget ordering, visibility, pinning, and slot sizing across dashboard surfaces.
+### **Semantic Accent Signal (`#D4FF00`)**
+- A rare, high-contrast neon lime signal reserved strictly for positive financial deltas, selected navigation, and active tracking indicators across an overwhelmingly monochrome (95%) obsidian interface.
 
-### **Functional Neon Lime (`#D4FF00`)**
-- The high-contrast accent signal reserved strictly for positive financial delta, active states, progress completion, and critical interactive metrics—never applied decoratively.
+### **Restrained Technical Dividers (`#1C2327` / `#283136`)**
+- Hairline architectural separators and borders providing structural rhythm and separation without enclosing every data point in a rounded card.
 
-### **Dot-Matrix Semantic Language (زبان نقطه‌ای)**
-- Geometric dot arrays and segmented indicators utilized for progress bars, loading skeletons, category allocations, and status beacons.
 
