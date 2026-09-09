@@ -42,6 +42,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.geometry.Size
 import androidx.compose.foundation.layout.PaddingValues
@@ -667,6 +669,7 @@ fun BankCard3D(
                 val displayPan = formatCardPanLtr(rawPan)
                 val cardContext = LocalContext.current
                 val cardClipboard = LocalClipboardManager.current
+                val haptics = LocalHapticFeedback.current
                 val cardDigits = toAsciiDigits(bankAccount?.fullPan?.takeIf { it.isNotBlank() } ?: (bankAccount?.mask?.filter { it.isDigit() } ?: ""))
                     .filter { it.isDigit() }
                 val cardSheba = bankAccount?.sheba.orEmpty()
@@ -677,6 +680,7 @@ fun BankCard3D(
                         .clickable {
                             if (!privacyMode && cardDigits.isNotBlank()) {
                                 cardClipboard.setText(AnnotatedString(cardDigits))
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                 android.widget.Toast.makeText(cardContext, "شماره کارت کپی شد: $cardDigits", android.widget.Toast.LENGTH_SHORT).show()
                             }
                         }
@@ -720,6 +724,7 @@ fun BankCard3D(
                             .clickable {
                                 val clean = cleanSheba(cardSheba)
                                 cardClipboard.setText(AnnotatedString(clean))
+                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                 android.widget.Toast.makeText(cardContext, "شماره شبا کپی شد", android.widget.Toast.LENGTH_SHORT).show()
                             }
                             .padding(vertical = 1.dp),

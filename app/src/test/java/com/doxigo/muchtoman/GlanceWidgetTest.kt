@@ -180,6 +180,45 @@ class GlanceWidgetTest {
     }
 
     @Test
+    fun `runwayWidgetState budget bar rises as commitments consume the allowance`() {
+        // The bar is consumption (share of the month's total allowance already spoken for
+        // by commitments and gone from the remainder), not calendar time. Same day, same
+        // liquid cash: more obligations must mean a fuller bar.
+        val epochMs = 1_700_000_000_000L
+        val light = runwayWidgetState(
+            liquidCashToman = 30_000_000L,
+            upcomingObligationsToman = 0L,
+            reservationsToman = 0L,
+            goldRateToman = null,
+            isMasked = false,
+            todayEpochMs = epochMs,
+        )
+        val heavy = runwayWidgetState(
+            liquidCashToman = 30_000_000L,
+            upcomingObligationsToman = 22_000_000L,
+            reservationsToman = 0L,
+            goldRateToman = null,
+            isMasked = false,
+            todayEpochMs = epochMs,
+        )
+
+        assertTrue(light.monthProgressPercent in 0..100)
+        assertTrue(heavy.monthProgressPercent > light.monthProgressPercent)
+        assertTrue(heavy.monthProgressPercent in 0..100)
+
+        // Fully overdrawn pins the bar at the top.
+        val drained = runwayWidgetState(
+            liquidCashToman = 1_000_000L,
+            upcomingObligationsToman = 20_000_000L,
+            reservationsToman = 0L,
+            goldRateToman = null,
+            isMasked = false,
+        )
+        assertEquals(100, drained.monthProgressPercent)
+        assertTrue(drained.isOverdrawn)
+    }
+
+    @Test
     fun `runwayWidgetState flags overdrawn budget`() {
         val state = runwayWidgetState(
             liquidCashToman = 2_000_000L,
@@ -193,6 +232,29 @@ class GlanceWidgetTest {
         assertEquals(0L, state.dailyAllowanceToman)
         assertEquals(-7_000_000L, state.safeToSpendToman)
         assertNull(state.goldGrams)
+    }
+
+    @Test
+    fun `quick add chips carry valid category ids and quick add intent contract holds`() {
+        // Every chip's id must be one the quick-add dialog's own category list accepts,
+        // so a widget tap always lands on a real preselected category.
+        val dialogCategories = setOf(
+            "cat_groceries",
+            "cat_dining",
+            "cat_transport",
+            "cat_bills",
+            "cat_shopping",
+            "cat_fuel",
+            "cat_uncategorised",
+        )
+        assertTrue(QUICK_ADD_CHIPS.isNotEmpty())
+        QUICK_ADD_CHIPS.forEach { chip ->
+            assertTrue("unknown chip category: ${chip.categoryId}", chip.categoryId in dialogCategories)
+            assertTrue(chip.label.isNotBlank())
+        }
+
+        // The widget's intent extra key must match what QuickAddActivity reads back.
+        assertEquals("com.doxigo.muchtoman.extra.CATEGORY_ID", QuickAddActivity.EXTRA_CATEGORY_ID)
     }
 
     @Test

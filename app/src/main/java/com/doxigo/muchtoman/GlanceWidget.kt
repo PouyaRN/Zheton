@@ -328,7 +328,7 @@ data class MarketTicker(
     val key: String,
     val label: String,
     val rateToman: Double,
-    val unit: String = "ت",
+    val unit: String = "تومان",
 )
 
 /**
@@ -550,7 +550,28 @@ fun runwayWidgetState(
     val tehranDayValue = tehranDay(todayEpochMs)
     val jalali = jalaliOf(tehranDayValue)
     val monthLength = jalaliMonthLength(jalali.year, jalali.month)
-    val progress = ((jalali.day * 100) / monthLength).coerceIn(0, 100)
+    // Budget consumption vs the calendar, not of it. Baseline: the bar tracks days gone by,
+    // because a plan burning exactly its daily allowance is on pace. Commitments drag
+    // today's allowance below what a commitment-free month would allow, and that drag
+    // pushes the bar past the calendar mark; overdrawn pins it at 100.
+    val daysElapsed = (jalali.day - 1).coerceAtLeast(0)
+    val calendarShare = daysElapsed * 100 / monthLength
+    val progress = when {
+        safe.isOverdrawn -> 100
+        safe.dailyAllowanceToman <= 0L -> calendarShare
+        else -> {
+            val commitmentFreeAllowance = calculateSafeToSpend(
+                liquidCashToman = liquidCashToman,
+                upcomingObligationsToman = 0L,
+                reservationsToman = 0L,
+                todayEpochMs = todayEpochMs,
+            ).dailyAllowanceToman
+            val drag = if (commitmentFreeAllowance > 0L) {
+                1.0 - safe.dailyAllowanceToman.toDouble() / commitmentFreeAllowance.toDouble()
+            } else 0.0
+            (calendarShare + drag * 100.0 * (1.0 - calendarShare / 100.0)).toInt().coerceIn(0, 100)
+        }
+    }
     val bleed = calculateDailyCashBurn(liquidCashToman).dailyLossToman
     return RunwayWidgetState(
         dailyAllowanceToman = safe.dailyAllowanceToman,
@@ -675,7 +696,7 @@ private fun SafeSpendBody(state: RunwayWidgetState) {
             }
             Spacer(GlanceModifier.height(3.dp))
             Text(
-                text = if (state.isMasked) "پنهان" else "مصرف ${faNumber(fill.toDouble())}٪ از ماه",
+                text = if (state.isMasked) "پنهان" else "بودجه مصرف‌شده: ${faNumber(fill.toDouble())}٪",
                 style = TextStyle(color = ColorProvider(mutedColor), fontSize = 8.sp),
                 maxLines = 1,
             )
@@ -743,7 +764,7 @@ private fun LiquidGoldBody(state: RunwayWidgetState) {
             Spacer(GlanceModifier.height(4.dp))
             Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 val goldText = state.goldGrams?.let {
-                    if (state.isMasked) "⋆⋆ گرم" else "≈ ${faDecimal(it, 2)} گرم طلای ۱۸"
+                    if (state.isMasked) "⋆⋆ گرم" else "معادل ${faDecimal(it, 2)} گرم طلای ۱۸"
                 } ?: "نرخ طلا در دسترس نیست"
                 Text(
                     text = goldText,
@@ -754,7 +775,7 @@ private fun LiquidGoldBody(state: RunwayWidgetState) {
                 if (state.dailyBleedToman > 0 && !state.isMasked) {
                     Spacer(GlanceModifier.width(6.dp))
                     Text(
-                        text = "خونریزی روزانه: ${faCompact(state.dailyBleedToman.toDouble())}− ت",
+                        text = "خونریزی روزانه: ${faCompact(state.dailyBleedToman.toDouble())}− تومان",
                         style = TextStyle(color = ColorProvider(warnColor), fontSize = 9.sp),
                         maxLines = 1,
                     )
