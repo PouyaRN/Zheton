@@ -1,7 +1,10 @@
 package com.doxigo.muchtoman
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -64,11 +67,15 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -823,7 +830,7 @@ fun MarketFluctuationCard(
             Spacer(Modifier.height(Space.m))
 
             // Interactive Spline Chart
-            MarketSplineChart(
+            KineticSplineChart(
                 series = series,
                 onScrub = { scrubbedPoint = it },
                 modifier = Modifier
@@ -861,14 +868,28 @@ internal fun StatColumn(label: String, valueFa: String) {
 }
 
 @Composable
-fun MarketSplineChart(
+fun KineticSplineChart(
     series: FluctuationSeries,
     modifier: Modifier = Modifier,
     onScrub: (FluctuationPoint?) -> Unit = {},
 ) {
     val heroGold = Hero.gold
     val heroTop = Hero.top
+    val haptic = LocalHapticFeedback.current
     var scrubIndex by remember(series) { mutableStateOf<Int?>(null) }
+
+    // Path tracing entrance animation
+    val progress = remember(series) { Animatable(0f) }
+    LaunchedEffect(series) {
+        progress.snapTo(0f)
+        progress.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(
+                durationMillis = 850,
+                easing = CubicBezierEasing(0.16f, 1f, 0.3f, 1f), // Expressive decelerate
+            ),
+        )
+    }
 
     val pointerMod = if (series.points.size > 1) {
         Modifier.pointerInput(series) {
@@ -876,14 +897,18 @@ fun MarketSplineChart(
                 val down = awaitFirstDown(requireUnconsumed = false)
                 val idx = findClosestIndex(down.position.x, size.width.toFloat(), series.points.size)
                 scrubIndex = idx
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                 onScrub(idx?.let { series.points[it] })
                 do {
                     val event = awaitPointerEvent()
                     val change = event.changes.firstOrNull()
                     if (change != null && change.pressed) {
                         val currentIdx = findClosestIndex(change.position.x, size.width.toFloat(), series.points.size)
-                        scrubIndex = currentIdx
-                        onScrub(currentIdx?.let { series.points[it] })
+                        if (currentIdx != scrubIndex) {
+                            scrubIndex = currentIdx
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onScrub(currentIdx?.let { series.points[it] })
+                        }
                     }
                 } while (event.changes.any { it.pressed })
                 scrubIndex = null
@@ -894,8 +919,11 @@ fun MarketSplineChart(
 
     val isPositive = series.changePercent >= 0.0
     val strokeColor = if (isPositive) Color(0xFF0F9D58) else Color(0xFFE53935)
-    val gradientStart = strokeColor.copy(alpha = 0.35f)
+    val gradientStart = strokeColor.copy(alpha = 0.30f)
     val gradientEnd = strokeColor.copy(alpha = 0.0f)
+
+    val pathMeasure = remember { PathMeasure() }
+    val animatedStrokePath = remember { Path() }
 
     Canvas(modifier = modifier.then(pointerMod)) {
         if (series.points.isEmpty()) return@Canvas
@@ -935,14 +963,14 @@ fun MarketSplineChart(
         )
 
         // Construct smooth cubic bezier path
-        val strokePath = Path()
-        val fillPath = Path()
+        val fullPath = Path()
+        val fullFill = Path()
 
         val p0x = getX(0)
         val p0y = getY(series.points[0].priceToman)
-        strokePath.moveTo(p0x, p0y)
-        fillPath.moveTo(p0x, h)
-        fillPath.lineTo(p0x, p0y)
+        fullPath.moveTo(p0x, p0y)
+        fullFill.moveTo(p0x, h)
+        fullFill.lineTo(p0x, p0y)
 
         for (i in 0 until n - 1) {
             val currX = getX(i)
@@ -955,26 +983,36 @@ fun MarketSplineChart(
             val ctrl2X = currX + (nextX - currX) / 2f
             val ctrl2Y = nextY
 
-            strokePath.cubicTo(ctrl1X, ctrl1Y, ctrl2X, ctrl2Y, nextX, nextY)
-            fillPath.cubicTo(ctrl1X, ctrl1Y, ctrl2X, ctrl2Y, nextX, nextY)
+            fullPath.cubicTo(ctrl1X, ctrl1Y, ctrl2X, ctrl2Y, nextX, nextY)
+            fullFill.cubicTo(ctrl1X, ctrl1Y, ctrl2X, ctrl2Y, nextX, nextY)
         }
 
-        fillPath.lineTo(getX(n - 1), h)
-        fillPath.close()
+        fullFill.lineTo(getX(n - 1), h)
+        fullFill.close()
 
-        // Draw fill gradient
-        drawPath(
-            path = fillPath,
-            brush = Brush.verticalGradient(
-                colors = listOf(gradientStart, gradientEnd),
-                startY = padTop,
-                endY = h,
-            ),
-        )
+        // Extract animated segment using PathMeasure
+        pathMeasure.setPath(fullPath, forceClosed = false)
+        val currentLength = pathMeasure.length * progress.value
+        animatedStrokePath.reset()
+        pathMeasure.getSegment(0f, currentLength, animatedStrokePath, startWithMoveTo = true)
 
-        // Draw line
+        val currentSweepX = w * progress.value
+
+        // Draw synchronized fill gradient clipped to current animation progression
+        clipRect(right = currentSweepX) {
+            drawPath(
+                path = fullFill,
+                brush = Brush.verticalGradient(
+                    colors = listOf(gradientStart, gradientEnd),
+                    startY = padTop,
+                    endY = h,
+                ),
+            )
+        }
+
+        // Draw animated stroke line
         drawPath(
-            path = strokePath,
+            path = animatedStrokePath,
             color = strokeColor,
             style = Stroke(
                 width = 3.dp.toPx(),
@@ -982,6 +1020,23 @@ fun MarketSplineChart(
                 join = StrokeJoin.Round,
             ),
         )
+
+        // Draw leading kinetic spark during entrance animation
+        if (progress.value < 1f && currentLength > 0f) {
+            val tipPos = pathMeasure.getPosition(currentLength)
+            // Outer radiant halo
+            drawCircle(
+                color = strokeColor.copy(alpha = 0.4f),
+                radius = 8.dp.toPx(),
+                center = tipPos,
+            )
+            // Inner specular white core
+            drawCircle(
+                color = Color.White,
+                radius = 3.5.dp.toPx(),
+                center = tipPos,
+            )
+        }
 
         // Draw scrubber indicator if active
         scrubIndex?.let { idx ->
@@ -1012,6 +1067,19 @@ fun MarketSplineChart(
             }
         }
     }
+}
+
+@Composable
+fun MarketSplineChart(
+    series: FluctuationSeries,
+    modifier: Modifier = Modifier,
+    onScrub: (FluctuationPoint?) -> Unit = {},
+) {
+    KineticSplineChart(
+        series = series,
+        modifier = modifier,
+        onScrub = onScrub,
+    )
 }
 
 private fun findClosestIndex(touchX: Float, width: Float, count: Int): Int? {

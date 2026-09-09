@@ -466,8 +466,8 @@ fun NetWorthFluctuationCard(
 
             Spacer(Modifier.height(Space.m))
 
-            // Interactive Spline Chart
-            MarketSplineChart(
+            // Interactive Kinetic Spline Chart
+            KineticSplineChart(
                 series = series,
                 onScrub = { scrubbedPoint = it },
                 modifier = Modifier
