@@ -15,6 +15,11 @@ class ThemeTest {
                 "LIGHT",
                 "DARK",
                 "AMOLED",
+                "APPLE_TITANIUM",
+                "REVOLUT_OBSIDIAN",
+                "CASH_APP_NEON",
+                "MONZO_OCEANIC",
+                "DUBAI_GOLD",
                 "OBSIDIAN_EMERALD",
                 "ROYAL_AMETHYST",
                 "NORDIC_SLATE",
@@ -24,6 +29,11 @@ class ThemeTest {
         )
         assertEquals("اندیس", ThemeMode.ANDIS_TERMINAL.fa)
         assertEquals("آمولد", ThemeMode.AMOLED.fa)
+        assertEquals("اپل تیتانیوم", ThemeMode.APPLE_TITANIUM.fa)
+        assertEquals("رولوت ابسیدین", ThemeMode.REVOLUT_OBSIDIAN.fa)
+        assertEquals("کش‌اپ نئون", ThemeMode.CASH_APP_NEON.fa)
+        assertEquals("مانزو اقیانوسی", ThemeMode.MONZO_OCEANIC.fa)
+        assertEquals("دبی گلد", ThemeMode.DUBAI_GOLD.fa)
         assertEquals("زمرد", ThemeMode.OBSIDIAN_EMERALD.fa)
         assertEquals("ارغوانی", ThemeMode.ROYAL_AMETHYST.fa)
         assertEquals("نوردیک", ThemeMode.NORDIC_SLATE.fa)
