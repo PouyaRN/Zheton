@@ -643,40 +643,9 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         val app = getApplication<Application>()
         viewModelScope.launch(Dispatchers.Default) {
             runCatching {
+                ledgerEngine.bulkCategorise(entries, categoryId, store.extraBankNumbers)
                 val durable = DurableDb.get(app)
                 val derived = DerivedDb.get(app)
-                val session = loadSession(durable)
-                val now = System.currentTimeMillis()
-                val refs = entries.map { it.txn.ref }
-                val existing = durable.decisions().all()
-                    .filter { it.ref in refs && it.kind == DecisionKind.CATEGORY }
-                durable.withTransaction {
-                    // In-product transacts supersede every older answer, including sync's.
-                    existing.forEach { old -> durable.decisions().put(old.copy(deleted = true, updatedAt = now)) }
-                    for (entry in entries) {
-                        durable.decisions().put(
-                            TxnDecision(
-                                id = uuid7(now),
-                                ref = entry.txn.ref,
-                                kind = DecisionKind.CATEGORY,
-                                value = categoryId,
-                                createdAt = now,
-                                updatedAt = now,
-                                memberId = session?.member.orEmpty(),
-                                familyRef = entry.txn.familyRef.ifBlank {
-                                    session?.let { familyTxnId(it.member, entry.txn.ref) }.orEmpty()
-                                },
-                            )
-                        )
-                    }
-                    val distinctMerchants = entries.filter { it.txn.merchantNorm.isNotBlank() }
-                        .distinctBy { it.txn.merchantNorm }
-                    for (entry in distinctMerchants) {
-                        val addrKey = durable.smsSource().addrKeyOf(entry.txn.srcHash).orEmpty()
-                        durable.rules().put(ruleFrom(entry.txn, categoryId, addrKey, now))
-                    }
-                }
-                derive(durable, derived, extraLookup(store.extraBankNumbers))
                 _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
                 recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
@@ -694,37 +663,9 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         val app = getApplication<Application>()
         viewModelScope.launch(Dispatchers.Default) {
             runCatching {
+                ledgerEngine.bulkSaveNote(entries, note, store.extraBankNumbers)
                 val durable = DurableDb.get(app)
                 val derived = DerivedDb.get(app)
-                val session = loadSession(durable)
-                val now = System.currentTimeMillis()
-                val refs = entries.map { it.txn.ref }
-                val existingByRef = durable.decisions().all()
-                    .filter { it.ref in refs && it.kind == DecisionKind.NOTE }
-                    .associateBy { it.ref }
-                durable.withTransaction {
-                    if (note.isBlank()) {
-                        existingByRef.values.forEach { old ->
-                            durable.decisions().put(old.copy(deleted = true, updatedAt = now))
-                        }
-                    } else {
-                        for (entry in entries) {
-                            val old = existingByRef[entry.txn.ref]
-                            durable.decisions().put(
-                                TxnDecision(
-                                    id = old?.id ?: uuid7(now),
-                                    ref = entry.txn.ref,
-                                    kind = DecisionKind.NOTE,
-                                    value = note,
-                                    createdAt = old?.createdAt ?: now,
-                                    updatedAt = now,
-                                    deleted = false,
-                                    memberId = session?.member.orEmpty(),
-                                )
-                            )
-                        }
-                    }
-                }
                 _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
                 recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
@@ -742,16 +683,9 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         val app = getApplication<Application>()
         viewModelScope.launch(Dispatchers.Default) {
             runCatching {
+                ledgerEngine.bulkPinMerchant(entries, displayName, store.extraBankNumbers)
                 val durable = DurableDb.get(app)
                 val derived = DerivedDb.get(app)
-                val now = System.currentTimeMillis()
-                val norms = entries.map { it.txn.merchantNorm }.filter { it.isNotBlank() }.toSet()
-                durable.withTransaction {
-                    for (norm in norms) {
-                        durable.merchantAliases().put(MerchantAlias(norm, displayName, now, now))
-                    }
-                }
-                derive(durable, derived, extraLookup(store.extraBankNumbers))
                 _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
                 recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)

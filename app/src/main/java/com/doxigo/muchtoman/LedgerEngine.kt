@@ -1,6 +1,7 @@
 package com.doxigo.muchtoman
 
 import android.content.Context
+import androidx.room.withTransaction
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -90,6 +91,116 @@ class LedgerEngine(
                 durable.rules().put(ruleFrom(entry.txn, categoryId, addrKey, now))
             }
 
+            derive(durable, derived, extraLookup(extraBankNumbers))
+        }
+    }
+
+    /**
+     * Bulk categorizes a list of ledger entries atomically within a single Room transaction.
+     */
+    suspend fun bulkCategorise(
+        entries: List<LedgerEntry>,
+        categoryId: String,
+        extraBankNumbers: Map<String, List<String>>,
+    ) = mutex.withLock {
+        withContext(Dispatchers.IO) {
+            if (entries.isEmpty()) return@withContext
+            val session = loadSession(durable)
+            val now = System.currentTimeMillis()
+            val refs = entries.map { it.txn.ref }
+            val existing = durable.decisions().all()
+                .filter { it.ref in refs && it.kind == DecisionKind.CATEGORY }
+
+            durable.withTransaction {
+                existing.forEach { old -> durable.decisions().put(old.copy(deleted = true, updatedAt = now)) }
+                for (entry in entries) {
+                    durable.decisions().put(
+                        TxnDecision(
+                            id = uuid7(now),
+                            ref = entry.txn.ref,
+                            kind = DecisionKind.CATEGORY,
+                            value = categoryId,
+                            createdAt = now,
+                            updatedAt = now,
+                            memberId = session?.member.orEmpty(),
+                            familyRef = entry.txn.familyRef.ifBlank {
+                                session?.let { familyTxnId(it.member, entry.txn.ref) }.orEmpty()
+                            },
+                        )
+                    )
+                }
+                val distinctMerchants = entries.filter { it.txn.merchantNorm.isNotBlank() }
+                    .distinctBy { it.txn.merchantNorm }
+                for (entry in distinctMerchants) {
+                    val addrKey = durable.smsSource().addrKeyOf(entry.txn.srcHash).orEmpty()
+                    durable.rules().put(ruleFrom(entry.txn, categoryId, addrKey, now))
+                }
+            }
+            derive(durable, derived, extraLookup(extraBankNumbers))
+        }
+    }
+
+    /**
+     * Bulk assigns or clears a note across multiple transactions atomically.
+     */
+    suspend fun bulkSaveNote(
+        entries: List<LedgerEntry>,
+        note: String,
+        extraBankNumbers: Map<String, List<String>>,
+    ) = mutex.withLock {
+        withContext(Dispatchers.IO) {
+            if (entries.isEmpty()) return@withContext
+            val session = loadSession(durable)
+            val now = System.currentTimeMillis()
+            val refs = entries.map { it.txn.ref }
+            val existingByRef = durable.decisions().all()
+                .filter { it.ref in refs && it.kind == DecisionKind.NOTE }
+                .associateBy { it.ref }
+
+            durable.withTransaction {
+                if (note.isBlank()) {
+                    existingByRef.values.forEach { old ->
+                        durable.decisions().put(old.copy(deleted = true, updatedAt = now))
+                    }
+                } else {
+                    for (entry in entries) {
+                        val old = existingByRef[entry.txn.ref]
+                        durable.decisions().put(
+                            TxnDecision(
+                                id = old?.id ?: uuid7(now),
+                                ref = entry.txn.ref,
+                                kind = DecisionKind.NOTE,
+                                value = note,
+                                createdAt = old?.createdAt ?: now,
+                                updatedAt = now,
+                                deleted = false,
+                                memberId = session?.member.orEmpty(),
+                            )
+                        )
+                    }
+                }
+            }
+            derive(durable, derived, extraLookup(extraBankNumbers))
+        }
+    }
+
+    /**
+     * Sets or unpins display aliases for merchants of all selected rows atomically.
+     */
+    suspend fun bulkPinMerchant(
+        entries: List<LedgerEntry>,
+        displayName: String,
+        extraBankNumbers: Map<String, List<String>>,
+    ) = mutex.withLock {
+        withContext(Dispatchers.IO) {
+            if (entries.isEmpty()) return@withContext
+            val now = System.currentTimeMillis()
+            val norms = entries.map { it.txn.merchantNorm }.filter { it.isNotBlank() }.toSet()
+            durable.withTransaction {
+                for (norm in norms) {
+                    durable.merchantAliases().put(MerchantAlias(norm, displayName, now, now))
+                }
+            }
             derive(durable, derived, extraLookup(extraBankNumbers))
         }
     }
