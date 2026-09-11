@@ -51,24 +51,7 @@ import com.doxigo.muchtoman.faNumber
 import com.doxigo.muchtoman.formatShamsiDate
 import com.doxigo.muchtoman.jalaliDay
 import com.doxigo.muchtoman.tehranDay
-
-@Composable
-fun DetailRow(label: String, value: String, bold: Boolean = false, valueColor: Color = Color.Unspecified) {
-    Row(
-        Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(label, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Text(
-            value,
-            fontSize = 14.sp,
-            fontFamily = ModamFigures,
-            fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
-            color = valueColor,
-        )
-    }
-}
+import com.doxigo.muchtoman.ui.components.DetailRow
 
 /**
  * Full detail screen for an installment obligation.

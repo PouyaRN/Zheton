@@ -148,6 +148,7 @@ private fun faYear(year: Int): String = buildString {
     for (c in year.toString()) append('۰' + (c - '0'))
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun TimelineScreen(
     ledger: LedgerView,
@@ -477,6 +478,14 @@ TextButton(onClick = {
                         ),
                     ) {
                         for ((day, rows) in grouped) {
+                            stickyHeader(key = "sticky-$day") {
+                                DayStickyHeader(
+                                    day = day,
+                                    today = today,
+                                    rows = rows,
+                                    privacyMode = privacyMode,
+                                )
+                            }
                             item(key = "day-$day") {
                                 DayBand(
                                     day = day,
@@ -498,6 +507,7 @@ TextButton(onClick = {
                                     onLinkInstallment = onLinkInstallment,
                                     onToggleTransfer = onToggleTransfer,
                                     privacyMode = privacyMode,
+                                    showHeading = false,
                                 )
                             }
                         }
@@ -982,6 +992,91 @@ private fun BatchActionBar(
  * it lets the heading carry the day's net, which is the one figure the ledger owns and no other
  * screen shows.
  */
+/**
+ * Sticky Date Header with Daily Spend / Income Sum (Spec §7.3).
+ */
+@Composable
+private fun DayStickyHeader(
+    day: Long,
+    today: Long,
+    rows: List<LedgerEntry>,
+    privacyMode: Boolean = false,
+) {
+    val nonTransferRows = rows.filterNot { it.transfer || it.hidden }
+    val spentRial = nonTransferRows.filter { (it.txn.signedRial ?: 0L) < 0L }.sumOf { -(it.txn.signedRial ?: 0L) }
+    val incomeRial = nonTransferRows.filter { (it.txn.signedRial ?: 0L) > 0L }.sumOf { it.txn.signedRial ?: 0L }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        color = MaterialTheme.colorScheme.background.copy(alpha = 0.95f),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Space.s, vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = faDay(day, today),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Spacer(Modifier.width(Space.s))
+                Text(
+                    text = "(${fa(rows.size)} تراکنش)",
+                    fontSize = 11.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            if (spentRial > 0L || incomeRial > 0L) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    if (spentRial > 0L) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(Radius.pill))
+                                .background(Color(0xFFEF4444).copy(alpha = 0.15f))
+                                .padding(horizontal = 8.dp, vertical = 2.dp),
+                        ) {
+                            Text(
+                                text = if (privacyMode) "••••••" else "مجموع خرج: ${faCompact(tomanOf(spentRial))} ت",
+                                fontSize = 11.sp,
+                                fontFamily = ModamFigures,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFF87171),
+                            )
+                        }
+                    }
+                    if (incomeRial > 0L) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(Radius.pill))
+                                .background(Hero.mint.copy(alpha = 0.15f))
+                                .padding(horizontal = 8.dp, vertical = 2.dp),
+                        ) {
+                            Text(
+                                text = if (privacyMode) "••••••" else "+${faCompact(tomanOf(incomeRial))} ت",
+                                fontSize = 11.sp,
+                                fontFamily = ModamFigures,
+                                fontWeight = FontWeight.Bold,
+                                color = Hero.mint,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun DayBand(
     day: Long,
@@ -998,36 +1093,33 @@ private fun DayBand(
     onLinkInstallment: (LedgerEntry) -> Unit,
     onToggleTransfer: (LedgerEntry) -> Unit = {},
     privacyMode: Boolean = false,
+    showHeading: Boolean = true,
 ) {
-    // Transfers move money between her own accounts. Counting them would show a day that only
-    // shuffled funds as a day she earned or spent, which is the whole reason they are struck
-    // through in the rows below. Hidden rows have been deleted from her ledger — they count
-    // in neither the day's figure nor anything else.
     val net = rows.filterNot { it.transfer || it.hidden }.sumOf { it.txn.signedRial ?: 0L }
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(top = Space.xl, bottom = Space.s, start = Space.s, end = Space.s),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            faDay(day, today),
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.weight(1f).semantics { heading() },
-        )
-        if (net != 0L) {
+    if (showHeading) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(top = Space.xl, bottom = Space.s, start = Space.s, end = Space.s),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Text(
-                if (privacyMode) "••••••" else faSignedCompact(tomanOf(net), net > 0),
-                // A step under the rows it summarises: the day's figure is context for them,
-                // not another entry competing with them.
-                style = figureStyle(
-                    if (net > 0) Color(0xFF2E9E5B) else MaterialTheme.colorScheme.onSurfaceVariant,
-                    FontWeight.Bold,
-                ),
-                fontSize = 13.sp,
+                faDay(day, today),
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.weight(1f).semantics { heading() },
             )
+            if (net != 0L) {
+                Text(
+                    if (privacyMode) "••••••" else faSignedCompact(tomanOf(net), net > 0),
+                    style = figureStyle(
+                        if (net > 0) Color(0xFF2E9E5B) else MaterialTheme.colorScheme.onSurfaceVariant,
+                        FontWeight.Bold,
+                    ),
+                    fontSize = 13.sp,
+                )
+            }
         }
     }
     Column(
@@ -1159,7 +1251,17 @@ private fun TimelineRow(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            val fintechHaptics = com.doxigo.muchtoman.ui.haptics.LocalFintechHaptics.current
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(Radius.pill))
+                    .clickable {
+                        fintechHaptics.click()
+                        onClick()
+                    }
+                    .padding(vertical = 2.dp, horizontal = 2.dp),
+            ) {
                 val categoryFa = if (entry.transfer) "انتقال بین حساب‌ها" else entry.categoryFa
                 CategoryIcon(
                     categoryFa,
@@ -1199,15 +1301,30 @@ private fun TimelineRow(
                         fontSize = 10.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                     )
-                } else if (state.hourlyWageToman > 0L && !incoming && !entry.transfer) {
+                } else if (!incoming && !entry.transfer) {
                     val toman = kotlin.math.abs(tomanOf(rial)).toLong()
-                    val energy = calculateLifeEnergy(toman, customHourlyWageToman = state.hourlyWageToman)
-                    if (energy.hours > 0 || energy.minutes >= 10) {
-                        Text(
-                            "⏱️ ${energy.formattedFa}",
-                            fontSize = 10.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                        )
+                    val gold18Rate = state.effective["gold18"]
+                    if (gold18Rate != null && gold18Rate > 0 && toman > 10_000L) {
+                        val goldBench = calculateGoldSpendBenchmark(toman, gold18Rate)
+                        if (goldBench.grams18k >= 0.001) {
+                            Text(
+                                "${faDecimal(goldBench.grams18k, 3)} گرم طلا",
+                                fontSize = 10.sp,
+                                fontFamily = ModamFigures,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Hero.gold.copy(alpha = 0.9f),
+                            )
+                        }
+                    }
+                    if (state.hourlyWageToman > 0L) {
+                        val energy = calculateLifeEnergy(toman, customHourlyWageToman = state.hourlyWageToman)
+                        if (energy.hours > 0 || energy.minutes >= 10) {
+                            Text(
+                                "⏱️ ${energy.formattedFa}",
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                            )
+                        }
                     }
                 }
             }

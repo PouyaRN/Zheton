@@ -742,7 +742,7 @@ val snackbarHostState = remember { SnackbarHostState() }
         val context = androidx.compose.ui.platform.LocalContext.current
         LazyColumn(
             modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
-            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 0.dp, bottom = pad.calculateBottomPadding() + 80.dp),
+            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 0.dp, bottom = pad.calculateBottomPadding() + 96.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
@@ -778,11 +778,15 @@ val snackbarHostState = remember { SnackbarHostState() }
             }
 
             item {
-                BankCardDeck(
+                com.doxigo.muchtoman.ui.cards.AppleWalletAccordionDeck(
                     accounts = state.bankAccounts,
                     cardHolderName = state.name,
                     privacyMode = privacyMode,
-                    onCardClick = { },
+                    onCardClick = { banks = true },
+                    onCardLongPress = { cardEditorKey = it.key },
+                    onFilterLedger = {
+                        tab = Tab.LEDGER
+                    },
                 )
             }
 
@@ -841,6 +845,18 @@ val snackbarHostState = remember { SnackbarHostState() }
                             }
                         }
                     }
+                }
+            }
+
+            if (state.commitments.any { !it.isSettled }) {
+                item {
+                    com.doxigo.muchtoman.CommitmentsCard(
+                        commitments = state.commitments,
+                        onOpenHub = { showCommitmentsHubSheet = true },
+                        onAddCommitment = { showAddCommitmentSheet = true },
+                        privacyMode = privacyMode,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = Space.m, vertical = Space.xs)
+                    )
                 }
             }
         }
@@ -922,21 +938,6 @@ val snackbarHostState = remember { SnackbarHostState() }
                 )
             }
 
-            // Tier 2: Interactive 3D Iranian Bank Card Deck — front and center
-            if (state.bankAccounts.isNotEmpty()) {
-                item(key = "bank_card_deck") {
-                    Box(modifier = Modifier.padding(edge).padding(top = Space.l)) {
-                        BankCardDeck(
-                            accounts = state.bankAccounts,
-                            cardHolderName = state.name,
-                            onCardClick = { banks = true },
-                            onCardLongPress = { cardEditorKey = it.key },
-                            privacyMode = privacyMode,
-                        )
-                    }
-                }
-            }
-
             // Tier 2: Quick Actions Dock for instant interaction
             item(key = "quick_actions_dock") {
                 Box(modifier = Modifier.padding(edge).padding(top = Space.m)) {
@@ -945,6 +946,20 @@ val snackbarHostState = remember { SnackbarHostState() }
                         onTransfer = { showQuickAdd = true },
                         onCards = { tab = Tab.CARDS },
                         onAnalytics = { tab = Tab.REPORTS },
+                    )
+                }
+            }
+
+            // Zone 3: Smart Spending Dial (Left-to-Spend Buffer)
+            item(key = "left_to_spend_dial") {
+                Box(modifier = Modifier.padding(edge).padding(top = Space.s)) {
+                    LeftToSpendDial(
+                        story = state.story,
+                        today = tehranDay(System.currentTimeMillis()),
+                        cycleSpec = CycleSpec(state.cycleMode, state.cycleAnchorDay),
+                        liquidToman = state.bankToman,
+                        privacyMode = privacyMode,
+                        onClick = { tab = Tab.REPORTS },
                     )
                 }
             }
@@ -1474,12 +1489,12 @@ internal fun HeroField(
             }
 
             Row(modifier = Modifier.fillMaxWidth().privacyBlur(privacyMode)) {
-                com.doxigo.muchtoman.widget.primitives.PersianRollingOdometer(
+                com.doxigo.muchtoman.ui.components.PersianCurrencyTicker(
                     amount = activeTotal,
                     unit = heroDisplayUnit,
-                    textStyle = figureStyle(Hero.gold, FontWeight.Black).copy(fontSize = 38.sp),
+                    fontSize = 38.sp,
+                    textColor = Hero.gold,
                     unitColor = Hero.gold.copy(alpha = 0.8f),
-                    privacyMode = privacyMode,
                 )
             }
 

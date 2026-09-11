@@ -18,6 +18,7 @@ class LedgerEngine(
     private val context: Context,
     private val durable: DurableDb = DurableDb.get(context),
     private val derived: DerivedDb = DerivedDb.get(context),
+    private val extraBankNumbersProvider: () -> Map<String, List<String>> = { emptyMap() },
 ) {
     private val mutex = Mutex()
 
@@ -33,7 +34,7 @@ class LedgerEngine(
     /**
      * Re-derives the complete materialized ledger view from durable sources and active decisions.
      */
-    suspend fun rederive(extraBankNumbers: Map<String, List<String>>): Int = mutex.withLock {
+    suspend fun rederive(extraBankNumbers: Map<String, List<String>> = extraBankNumbersProvider()): Int = mutex.withLock {
         withContext(Dispatchers.IO) {
             val extra = extraLookup(extraBankNumbers)
             derive(durable, derived, extra)
@@ -47,7 +48,7 @@ class LedgerEngine(
         entry: LedgerEntry,
         categoryId: String,
         always: Boolean,
-        extraBankNumbers: Map<String, List<String>>,
+        extraBankNumbers: Map<String, List<String>> = extraBankNumbersProvider(),
     ) = mutex.withLock {
         withContext(Dispatchers.IO) {
             val session = loadSession(durable)
@@ -101,7 +102,7 @@ class LedgerEngine(
     suspend fun bulkCategorise(
         entries: List<LedgerEntry>,
         categoryId: String,
-        extraBankNumbers: Map<String, List<String>>,
+        extraBankNumbers: Map<String, List<String>> = extraBankNumbersProvider(),
     ) = mutex.withLock {
         withContext(Dispatchers.IO) {
             if (entries.isEmpty()) return@withContext
@@ -146,7 +147,7 @@ class LedgerEngine(
     suspend fun bulkSaveNote(
         entries: List<LedgerEntry>,
         note: String,
-        extraBankNumbers: Map<String, List<String>>,
+        extraBankNumbers: Map<String, List<String>> = extraBankNumbersProvider(),
     ) = mutex.withLock {
         withContext(Dispatchers.IO) {
             if (entries.isEmpty()) return@withContext
@@ -190,7 +191,7 @@ class LedgerEngine(
     suspend fun bulkPinMerchant(
         entries: List<LedgerEntry>,
         displayName: String,
-        extraBankNumbers: Map<String, List<String>>,
+        extraBankNumbers: Map<String, List<String>> = extraBankNumbersProvider(),
     ) = mutex.withLock {
         withContext(Dispatchers.IO) {
             if (entries.isEmpty()) return@withContext
@@ -211,7 +212,7 @@ class LedgerEngine(
     suspend fun pinMerchantAlias(
         sourceNorm: String,
         displayName: String,
-        extraBankNumbers: Map<String, List<String>>,
+        extraBankNumbers: Map<String, List<String>> = extraBankNumbersProvider(),
     ) = mutex.withLock {
         withContext(Dispatchers.IO) {
             val now = System.currentTimeMillis()
@@ -265,7 +266,7 @@ class LedgerEngine(
     suspend fun setTransactionDirection(
         entry: LedgerEntry,
         direction: String?,
-        extraBankNumbers: Map<String, List<String>>,
+        extraBankNumbers: Map<String, List<String>> = extraBankNumbersProvider(),
     ) = mutex.withLock {
         withContext(Dispatchers.IO) {
             val now = System.currentTimeMillis()

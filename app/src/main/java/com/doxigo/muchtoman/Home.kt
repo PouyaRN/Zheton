@@ -97,6 +97,133 @@ fun MonthFlow(story: HomeStory, modifier: Modifier = Modifier) {
 }
 
 /**
+ * Monzo/Copilot-inspired Smart Spending Dial (Left-To-Spend Buffer).
+ * Calculates daily safe spending based on liquid cash and remaining cycle days.
+ */
+@Composable
+fun LeftToSpendDial(
+    story: HomeStory,
+    today: Long,
+    cycleSpec: CycleSpec,
+    liquidToman: Double,
+    privacyMode: Boolean = false,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
+) {
+    val window = remember(today, cycleSpec) { cycleWindow(today, cycleSpec) }
+    val daysRemaining = remember(window, today) { (window.endDay - today).toInt().coerceAtLeast(1) }
+    val totalDays = remember(window) { (window.endDay - window.startDay).toInt().coerceAtLeast(1) }
+    val elapsedDays = remember(window, today, totalDays) { (today - window.startDay + 1).toInt().coerceIn(1, totalDays) }
+    val cycleProgress = (elapsedDays.toFloat() / totalDays.toFloat()).coerceIn(0f, 1f)
+
+    val safeDailySpendToman = remember(liquidToman, daysRemaining) {
+        if (liquidToman > 0) (liquidToman / daysRemaining).toLong() else 0L
+    }
+    val spentThisMonthToman = remember(story) {
+        (story.month.spentRial / 10.0).toLong()
+    }
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.75f),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outline.copy(alpha = 0.25f),
+        ),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Space.m, vertical = Space.m),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🛡️", fontSize = 16.sp)
+                    Spacer(Modifier.width(Space.s))
+                    Column {
+                        Text(
+                            text = "خرج امن روزانه",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = if (privacyMode) "••••••••" else "${fa(safeDailySpendToman)} تومان",
+                            fontSize = 16.sp,
+                            fontFamily = ModamFigures,
+                            fontWeight = FontWeight.Black,
+                            color = Hero.mint,
+                        )
+                    }
+                }
+
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = "خرج این ماه",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = if (privacyMode) "••••••••" else "${fa(spentThisMonthToman)} ت",
+                        fontSize = 13.sp,
+                        fontFamily = ModamFigures,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(Space.m))
+
+            // Progress bar showing cycle elapsed days
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(Radius.pill))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(cycleProgress)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(Radius.pill))
+                        .background(Hero.mint),
+                )
+            }
+
+            Spacer(Modifier.height(Space.s))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "${fa(elapsedDays)} روز از ${fa(totalDays)} روز سپری شده",
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                )
+                Text(
+                    text = "${fa(daysRemaining)} روز تا پایان چرخه",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Hero.gold,
+                )
+            }
+        }
+    }
+}
+
+/**
  * The comparison itself: two lengths off one baseline, in whichever two colours the surface
  * under them calls for.
  *
@@ -770,9 +897,7 @@ fun ContextualPriorityCard(
 /**
  * Modern 4-Tile Bento Grid for Home Cockpit (Revolut 10 / Apple Card inspired).
  * Consolidates liquid cash, gold/hedging, upcoming debt, and monthly flow into a 2-second glance.
- * Supports iOS/Revolut-style Jiggle Edit Mode with long-press trigger and tactile haptics.
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeBentoCockpit(
     bankToman: Double,
@@ -788,19 +913,6 @@ fun HomeBentoCockpit(
     onNavigateReports: () -> Unit = {},
 ) {
     val fintechHaptics = com.doxigo.muchtoman.ui.haptics.LocalFintechHaptics.current
-    var isEditing by remember { mutableStateOf(false) }
-    var swappedRows by remember { mutableStateOf(false) }
-
-    val infiniteTransition = rememberInfiniteTransition(label = "bento_jiggle")
-    val jiggleAngle by infiniteTransition.animateFloat(
-        initialValue = -1.2f,
-        targetValue = 1.2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(130, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "jiggle_angle",
-    )
 
     Column(
         modifier = modifier
@@ -808,173 +920,70 @@ fun HomeBentoCockpit(
             .padding(horizontal = Space.m, vertical = Space.s),
         verticalArrangement = Arrangement.spacedBy(Space.s),
     ) {
-        // Edit Mode Header Banner
-        if (isEditing) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(Radius.pill))
-                    .background(Hero.top)
-                    .border(1.dp, Hero.gold.copy(alpha = 0.4f), RoundedCornerShape(Radius.pill))
-                    .padding(horizontal = Space.m, vertical = 6.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    "حالت ویرایش چیدمان داشبورد",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Hero.gold,
-                )
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(Space.s),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(Radius.pill))
-                            .background(Hero.gold.copy(alpha = 0.2f))
-                            .clickable {
-                                fintechHaptics.tick()
-                                swappedRows = !swappedRows
-                            }
-                            .padding(horizontal = Space.s, vertical = 3.dp),
-                    ) {
-                        Text("تعویض سطرها ⇅", fontSize = 11.sp, color = Hero.gold)
-                    }
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(Radius.pill))
-                            .background(Hero.gold)
-                            .clickable {
-                                fintechHaptics.doubleTap()
-                                isEditing = false
-                            }
-                            .padding(horizontal = Space.m, vertical = 3.dp),
-                    ) {
-                        Text("انجام شد ✓", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.Black)
-                    }
-                }
-            }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Space.s),
+        ) {
+            BentoTile(
+                modifier = Modifier.weight(1f),
+                emoji = "💳",
+                title = "موجودی بانک‌ها",
+                value = if (privacyMode) "••••••••" else "${faCompact(bankToman)} ت",
+                subtitle = "حساب‌های فعال شتاب",
+                accentColor = MaterialTheme.colorScheme.primary,
+                onClick = {
+                    fintechHaptics.click()
+                    onNavigateCards()
+                },
+            )
+
+            BentoTile(
+                modifier = Modifier.weight(1f),
+                emoji = "🪙",
+                title = "طلای ۱۸ عیار",
+                value = if (privacyMode) "••••••••" else "${faRate(gold18Toman)} ت",
+                subtitle = "سپر ضد تورم",
+                accentColor = Hero.gold,
+                onClick = {
+                    fintechHaptics.click()
+                    onNavigateAssets()
+                },
+            )
         }
 
-        val row1 = @Composable {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Space.s),
-            ) {
-                BentoTile(
-                    modifier = Modifier.weight(1f),
-                    emoji = "💳",
-                    title = "موجودی بانک‌ها",
-                    value = if (privacyMode) "••••••••" else "${faCompact(bankToman)} ت",
-                    subtitle = "حساب‌های فعال شتاب",
-                    accentColor = MaterialTheme.colorScheme.primary,
-                    isEditing = isEditing,
-                    jiggleRotation = jiggleAngle,
-                    onClick = {
-                        if (isEditing) {
-                            fintechHaptics.tick()
-                        } else {
-                            fintechHaptics.click()
-                            onNavigateCards()
-                        }
-                    },
-                    onLongClick = {
-                        fintechHaptics.heavyClick()
-                        isEditing = true
-                    },
-                )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Space.s),
+        ) {
+            BentoTile(
+                modifier = Modifier.weight(1f),
+                emoji = "⏳",
+                title = "اقساط و چک‌ها",
+                value = if (commitmentsCount > 0) "${fa(commitmentsCount)} سررسید فعال" else "بدون سررسید",
+                subtitle = if (upcomingDueDays != null) "${fa(upcomingDueDays)} روز تا موعد" else "وضعیت منظم",
+                accentColor = if (commitmentsCount > 0) Color(0xFFF59E0B) else Color(0xFF10B981),
+                onClick = {
+                    fintechHaptics.click()
+                    onNavigateCommitments()
+                },
+            )
 
-                BentoTile(
-                    modifier = Modifier.weight(1f),
-                    emoji = "🪙",
-                    title = "طلای ۱۸ عیار",
-                    value = if (privacyMode) "••••••••" else "${faRate(gold18Toman)} ت",
-                    subtitle = "سپر ضد تورم",
-                    accentColor = Hero.gold,
-                    isEditing = isEditing,
-                    jiggleRotation = -jiggleAngle,
-                    onClick = {
-                        if (isEditing) {
-                            fintechHaptics.tick()
-                        } else {
-                            fintechHaptics.click()
-                            onNavigateAssets()
-                        }
-                    },
-                    onLongClick = {
-                        fintechHaptics.heavyClick()
-                        isEditing = true
-                    },
-                )
-            }
-        }
-
-        val row2 = @Composable {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Space.s),
-            ) {
-                BentoTile(
-                    modifier = Modifier.weight(1f),
-                    emoji = "⏳",
-                    title = "اقساط و چک‌ها",
-                    value = if (commitmentsCount > 0) "${fa(commitmentsCount)} سررسید فعال" else "بدون سررسید",
-                    subtitle = if (upcomingDueDays != null) "${fa(upcomingDueDays)} روز تا موعد" else "وضعیت منظم",
-                    accentColor = if (commitmentsCount > 0) Color(0xFFF59E0B) else Color(0xFF10B981),
-                    isEditing = isEditing,
-                    jiggleRotation = jiggleAngle,
-                    onClick = {
-                        if (isEditing) {
-                            fintechHaptics.tick()
-                        } else {
-                            fintechHaptics.click()
-                            onNavigateCommitments()
-                        }
-                    },
-                    onLongClick = {
-                        fintechHaptics.heavyClick()
-                        isEditing = true
-                    },
-                )
-
-                BentoTile(
-                    modifier = Modifier.weight(1f),
-                    emoji = "📊",
-                    title = "جریان مخارج",
-                    value = if (privacyMode) "••••••••" else "${faCompact(monthlySpentToman)} ت",
-                    subtitle = "تحلیل ماه جاری",
-                    accentColor = Color(0xFF38BDF8),
-                    isEditing = isEditing,
-                    jiggleRotation = -jiggleAngle,
-                    onClick = {
-                        if (isEditing) {
-                            fintechHaptics.tick()
-                        } else {
-                            fintechHaptics.click()
-                            onNavigateReports()
-                        }
-                    },
-                    onLongClick = {
-                        fintechHaptics.heavyClick()
-                        isEditing = true
-                    },
-                )
-            }
-        }
-
-        if (swappedRows) {
-            row2()
-            row1()
-        } else {
-            row1()
-            row2()
+            BentoTile(
+                modifier = Modifier.weight(1f),
+                emoji = "📊",
+                title = "جریان مخارج",
+                value = if (privacyMode) "••••••••" else "${faCompact(monthlySpentToman)} ت",
+                subtitle = "تحلیل ماه جاری",
+                accentColor = Color(0xFF38BDF8),
+                onClick = {
+                    fintechHaptics.click()
+                    onNavigateReports()
+                },
+            )
         }
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun BentoTile(
     emoji: String,
@@ -983,28 +992,17 @@ private fun BentoTile(
     subtitle: String,
     accentColor: Color,
     onClick: () -> Unit,
-    onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
-    isEditing: Boolean = false,
-    jiggleRotation: Float = 0f,
 ) {
     Surface(
         modifier = modifier
-            .graphicsLayer {
-                rotationZ = if (isEditing) jiggleRotation else 0f
-                scaleX = if (isEditing) 1.02f else 1.0f
-                scaleY = if (isEditing) 1.02f else 1.0f
-            }
             .clip(RoundedCornerShape(16.dp))
-            .combinedClickable(
-                onClick = onClick,
-                onLongClick = onLongClick,
-            ),
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f),
         border = androidx.compose.foundation.BorderStroke(
-            if (isEditing) 1.5.dp else 1.dp,
-            if (isEditing) Hero.gold.copy(alpha = 0.7f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
+            1.dp,
+            MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
         ),
     ) {
         Column(

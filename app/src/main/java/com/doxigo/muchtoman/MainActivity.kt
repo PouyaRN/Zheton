@@ -51,7 +51,7 @@ private const val FILTER_WIDE_LIMIT = 50_000
 
 class AppVm(app: Application) : AndroidViewModel(app) {
     private val store = Store(app)
-    val ledgerEngine = LedgerEngine(app)
+    val ledgerEngine = LedgerEngine(app, extraBankNumbersProvider = { store.extraBankNumbers })
 
     /**
      * The scan in flight, if any. Only one runs at a time, and anything that wants the inbox
@@ -603,7 +603,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
     fun categorise(entry: LedgerEntry, categoryId: String, always: Boolean) {
         viewModelScope.launch(Dispatchers.Default) {
             runCatching {
-                ledgerEngine.categorise(entry, categoryId, always, store.extraBankNumbers)
+                ledgerEngine.categorise(entry, categoryId, always)
                 val app = getApplication<Application>()
                 val durable = DurableDb.get(app)
                 val derived = DerivedDb.get(app)
@@ -623,7 +623,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
     fun pinMerchantAlias(sourceNorm: String, displayName: String) {
         viewModelScope.launch(Dispatchers.Default) {
             runCatching {
-                ledgerEngine.pinMerchantAlias(sourceNorm, displayName, store.extraBankNumbers)
+                ledgerEngine.pinMerchantAlias(sourceNorm, displayName)
                 val app = getApplication<Application>()
                 val durable = DurableDb.get(app)
                 val derived = DerivedDb.get(app)
@@ -643,7 +643,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         val app = getApplication<Application>()
         viewModelScope.launch(Dispatchers.Default) {
             runCatching {
-                ledgerEngine.bulkCategorise(entries, categoryId, store.extraBankNumbers)
+                ledgerEngine.bulkCategorise(entries, categoryId)
                 val durable = DurableDb.get(app)
                 val derived = DerivedDb.get(app)
                 _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
@@ -663,7 +663,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         val app = getApplication<Application>()
         viewModelScope.launch(Dispatchers.Default) {
             runCatching {
-                ledgerEngine.bulkSaveNote(entries, note, store.extraBankNumbers)
+                ledgerEngine.bulkSaveNote(entries, note)
                 val durable = DurableDb.get(app)
                 val derived = DerivedDb.get(app)
                 _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
@@ -683,7 +683,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         val app = getApplication<Application>()
         viewModelScope.launch(Dispatchers.Default) {
             runCatching {
-                ledgerEngine.bulkPinMerchant(entries, displayName, store.extraBankNumbers)
+                ledgerEngine.bulkPinMerchant(entries, displayName)
                 val durable = DurableDb.get(app)
                 val derived = DerivedDb.get(app)
                 _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }

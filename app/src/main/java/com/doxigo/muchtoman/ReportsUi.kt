@@ -225,6 +225,21 @@ fun ReportsTab(
                     start = Space.xl, end = Space.xl, top = Space.s, bottom = bottomInset + 100.dp,
                 ),
             ) {
+                // Section 1: Monzo Trends-inspired Payday Burn-Down Trajectory Card
+                if (window == ReportWindow.MONTH) {
+                    item {
+                        PaydayBurnDownCard(
+                            entries = visibleEntries,
+                            today = today.longValue,
+                            cycle = cycle,
+                            totalIncomeRial = snapshot.income,
+                            totalExpenseRial = snapshot.expense,
+                            privacyMode = privacyMode,
+                        )
+                        Spacer(Modifier.height(Space.l))
+                    }
+                }
+
                 // Executive Cash Flow & Velocity Card
                 item {
                     ExecutiveCashFlowCard(
@@ -2003,6 +2018,228 @@ private fun CategoryDonutCard(
                             color = if (isSelected) color else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                }
+            }
+
+            // Interactive Drill-Down Action
+            if (activeCat != null || activeItem != null) {
+                Spacer(Modifier.height(Space.m))
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                        .clickable { onSelectCategory(activeItem?.first) }
+                        .padding(horizontal = Space.m, vertical = Space.s),
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color.Transparent,
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "مشاهده جزئیات و تراکنش‌های $activeCatName در دفتر کل",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Hero.gold,
+                        )
+                        Text(
+                            text = "کاوش >",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Hero.gold,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Monzo Trends-inspired Payday Burn-Down Trajectory Card (Spec §8.3).
+ * Visualizes current expenditure velocity against ideal linear budget and remaining cycle days.
+ */
+@Composable
+private fun PaydayBurnDownCard(
+    entries: List<LedgerEntry>,
+    today: Long,
+    cycle: CycleSpec,
+    totalIncomeRial: Long,
+    totalExpenseRial: Long,
+    modifier: Modifier = Modifier,
+    privacyMode: Boolean = false,
+) {
+    val window = remember(today, cycle) { cycleWindow(today, cycle) }
+    val totalDays = (window.endDay - window.startDay).toInt().coerceAtLeast(1)
+    val elapsedDays = (today - window.startDay + 1).toInt().coerceIn(1, totalDays)
+    val remainingDays = (window.endDay - today).toInt().coerceAtLeast(1)
+
+    val spentToman = (totalExpenseRial / 10L).toDouble()
+    val incomeToman = (totalIncomeRial / 10L).toDouble()
+    val estimatedBudgetToman = if (incomeToman > 0) incomeToman else (spentToman * 1.3).coerceAtLeast(10_000_000.0)
+    val remainingBudgetToman = (estimatedBudgetToman - spentToman).coerceAtLeast(0.0)
+
+    val safeDailySpendToman = if (remainingDays > 0) (remainingBudgetToman / remainingDays).toLong() else 0L
+
+    val idealProgress = elapsedDays.toFloat() / totalDays.toFloat()
+    val actualBurnProgress = if (estimatedBudgetToman > 0) (spentToman / estimatedBudgetToman).toFloat().coerceIn(0f, 1.5f) else 0f
+
+    val isOverPacing = actualBurnProgress > idealProgress * 1.15f
+    val paceColor = if (isOverPacing) Color(0xFFEF4444) else Color(0xFF10B981)
+    val paceLabel = if (isOverPacing) "🔴 سرعت مصرف بالا (خطر کسری)" else "🟢 در محدوده بودجه امن"
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Radius.group))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.group)),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+    ) {
+        Column(modifier = Modifier.padding(Space.xl)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("📉", fontSize = 16.sp)
+                    Spacer(Modifier.width(Space.s))
+                    Text(
+                        "منحنی پیش‌بینی مصرف (Burn-Down)",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(Radius.pill))
+                        .background(paceColor.copy(alpha = 0.15f))
+                        .padding(horizontal = 8.dp, vertical = 3.dp),
+                ) {
+                    Text(
+                        text = paceLabel,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = paceColor,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(Space.m))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column {
+                    Text("خرج تا امروز", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        if (privacyMode) "•••••• ت" else "${faCompact(spentToman)} ت",
+                        fontSize = 16.sp,
+                        fontFamily = ModamFigures,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("سقف امن روزانه", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        if (privacyMode) "•••••• ت" else "${fa(safeDailySpendToman)} ت",
+                        fontSize = 16.sp,
+                        fontFamily = ModamFigures,
+                        fontWeight = FontWeight.Black,
+                        color = Hero.mint,
+                    )
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("روزهای باقی‌مانده", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        "${fa(remainingDays)} روز",
+                        fontSize = 16.sp,
+                        fontFamily = ModamFigures,
+                        fontWeight = FontWeight.Black,
+                        color = Hero.gold,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(Space.l))
+
+            // Comparative Burn-down progress track
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "مسیر زمانی سیکل (${fa(elapsedDays)} از ${fa(totalDays)} روز)",
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        "${(idealProgress * 100).toInt()}٪ زمان",
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(Modifier.height(4.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(Radius.pill))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(idealProgress.coerceIn(0f, 1f))
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(Radius.pill))
+                            .background(Color(0xFF64748B)),
+                    )
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "میزان مصرف بودجه",
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        "${(actualBurnProgress * 100).toInt()}٪ مصرف",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = paceColor,
+                    )
+                }
+                Spacer(Modifier.height(4.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(Radius.pill))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(actualBurnProgress.coerceIn(0f, 1f))
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(Radius.pill))
+                            .background(paceColor),
+                    )
                 }
             }
         }

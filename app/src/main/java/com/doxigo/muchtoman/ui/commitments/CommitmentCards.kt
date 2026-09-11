@@ -1,5 +1,6 @@
 package com.doxigo.muchtoman.ui.commitments
 
+import com.doxigo.muchtoman.ui.components.DetailRow
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -208,7 +209,7 @@ import com.doxigo.muchtoman.parseAmount
 import com.doxigo.muchtoman.ui.cards.CardEditorSheet
 import com.doxigo.muchtoman.ui.categories.CategoriesScreen
 import com.doxigo.muchtoman.ui.commitments.CreditPurchaseForm
-import com.doxigo.muchtoman.ui.commitments.DetailRow
+import com.doxigo.muchtoman.ui.components.DetailRow
 import com.doxigo.muchtoman.ui.commitments.DirectObligationSheet
 import com.doxigo.muchtoman.ui.commitments.LinkInstallmentPicker
 import com.doxigo.muchtoman.ui.commitments.ObligationDetailScreen

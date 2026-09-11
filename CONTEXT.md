@@ -106,6 +106,12 @@ This document defines the canonical terms and bounded context concepts for Chand
 ### **Transaction Stream Ergonomics (ارگونومی جریان تراکنش‌ها)**
 - High-contrast, clean chronological stream with circular merchant/bank avatars, bilingual categorization, clear green/white amounts, and instant 1-tap detail drill-down.
 
+### **Bento Cockpit (کابین بنتو / داشبورد فشرده)**
+- High-density 2-second glance grid on the primary Home fold displaying real-time 18K gold benchmark anchor, monthly burn-rate pacing, and daily liquidity alerts, balancing immediacy with zero cognitive exhaustion.
+
+### **Apple Wallet Accordion Deck (دک آکاردئونی کارت‌های بانکی)**
+- Dedicated vertical stacking presentation of bank cards in Tab 3, where cards overlap dynamically and expand smoothly with spring physics upon interaction, providing instant 1-tap PAN/SHEBA copying and metallic 3D styling without cluttering the Home dashboard.
+
 
 
 

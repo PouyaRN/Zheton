@@ -5,6 +5,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -125,6 +127,7 @@ fun MarketAndAssetsScreen(
     var selectedInterval by remember { mutableStateOf(FluctuationInterval.WEEK_1) }
     var searchQuery by remember { mutableStateOf("") }
     var showSearch by remember { mutableStateOf(false) }
+    var marketTabMode by remember { mutableStateOf(MarketTabMode.PORTFOLIO) }
 
     // Aggregate primary rates
     val usdtToman = effective["usdt"] ?: effective["usd"] ?: 92_000.0
@@ -327,138 +330,73 @@ fun MarketAndAssetsScreen(
                 )
             }
 
-            // Search box if toggled
-            if (showSearch) {
-                item(key = "search_box") {
-                    OutlinedTextField(
-                        value = searchQuery,
-                        onValueChange = { searchQuery = it },
-                        placeholder = { Text("جستجوی نام ارز، سکه، رمزارز یا نماد...") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = Space.m, vertical = Space.s),
-                        singleLine = true,
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Hero.gold,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                        ),
-                    )
-                }
-            }
-
-            // High-level Market Metrics Glance Bar
-            item(key = "glance_bar") {
-                MarketGlanceBar(
-                    usdtToman = usdtToman,
-                    usdCashToman = usdCashToman,
-                    gold18Toman = gold18Toman,
-                    emamiCoinToman = emamiCoinToman,
-                    onSelectAsset = { selectedAssetId = it },
-                )
-            }
-
-            // Primary Interactive Chart Card
-            item(key = "fluctuation_chart_card") {
-                if (selectedItem != null) {
-                    MarketFluctuationCard(
-                        item = selectedItem,
-                        series = chartSeries,
-                        selectedInterval = selectedInterval,
-                        onSelectInterval = { selectedInterval = it },
-                    )
-                }
-            }
-
-            // Category Filter Pills
-            item(key = "category_tabs") {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.s),
-                    horizontalArrangement = Arrangement.spacedBy(Space.s),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    items(MarketCategory.entries) { cat ->
-                        FilterChip(
-                            selected = selectedCategory == cat,
-                            onClick = { selectedCategory = cat },
-                            label = {
-                                Text(
-                                    cat.labelFa,
-                                    fontWeight = if (selectedCategory == cat) FontWeight.Bold else FontWeight.Normal,
-                                    fontSize = 13.sp,
-                                )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = Hero.top,
-                                selectedLabelColor = Hero.gold,
-                            ),
-                            shape = RoundedCornerShape(12.dp),
-                        )
-                    }
-                }
-            }
-
-            // Collapsible Arbitrage and Bubble Indicator Card
-            item(key = "arbitrage_radar_toggle") {
-                Card(
+            // Segmented Control Pill: [ ● سبد دارایی من (Portfolio) ] [ ○ دیده‌بان بازار (Live) ]
+            item(key = "market_mode_segmented_pill") {
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = Space.m, vertical = Space.xs)
-                        .clickable { showArbitrageRadar = !showArbitrageRadar },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                    ),
+                        .padding(horizontal = Space.m, vertical = Space.s)
+                        .clip(RoundedCornerShape(Radius.pill))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Row(
+                    val fintechHaptics = LocalFintechHaptics.current
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = Space.m, vertical = Space.s),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(24.dp)
-                                    .clip(CircleShape)
-                                    .background(Hero.gold.copy(alpha = 0.2f)),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text("⚡", fontSize = 12.sp)
+                            .weight(1f)
+                            .clip(RoundedCornerShape(Radius.pill))
+                            .background(if (marketTabMode == MarketTabMode.PORTFOLIO) Hero.gold else Color.Transparent)
+                            .clickable {
+                                if (marketTabMode != MarketTabMode.PORTFOLIO) {
+                                    fintechHaptics.click()
+                                    marketTabMode = MarketTabMode.PORTFOLIO
+                                }
                             }
-                            Spacer(Modifier.width(Space.s))
-                            Text(
-                                "رادار آربیتراژ و حباب طلا و تتر",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
+                            .padding(vertical = 8.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
                         Text(
-                            if (showArbitrageRadar) "بستن ▲" else "مشاهده تحلیل ▼",
+                            text = "● سبد دارایی من (Portfolio)",
                             fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Hero.gold,
+                            fontWeight = if (marketTabMode == MarketTabMode.PORTFOLIO) FontWeight.Black else FontWeight.Medium,
+                            color = if (marketTabMode == MarketTabMode.PORTFOLIO) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(Radius.pill))
+                            .background(if (marketTabMode == MarketTabMode.LIVE_MARKET) Hero.gold else Color.Transparent)
+                            .clickable {
+                                if (marketTabMode != MarketTabMode.LIVE_MARKET) {
+                                    fintechHaptics.click()
+                                    marketTabMode = MarketTabMode.LIVE_MARKET
+                                }
+                            }
+                            .padding(vertical = 8.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "○ دیده‌بان بازار (Live)",
+                            fontSize = 12.sp,
+                            fontWeight = if (marketTabMode == MarketTabMode.LIVE_MARKET) FontWeight.Black else FontWeight.Medium,
+                            color = if (marketTabMode == MarketTabMode.LIVE_MARKET) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
             }
 
-            if (showArbitrageRadar) {
-                item(key = "arbitrage_radar") {
-                    MarketArbitrageRadar(
-                        usdtToman = usdtToman,
-                        usdCashToman = usdCashToman,
-                        emamiCoinToman = emamiCoinToman,
-                        robCoinToman = robCoinToman,
-                        gold18Toman = gold18Toman,
+            if (marketTabMode == MarketTabMode.PORTFOLIO) {
+                // Mode 1: Portfolio View
+                item(key = "portfolio_overview_card") {
+                    PortfolioOverviewCard(
+                        state = state,
+                        onAddHolding = onAddHolding,
                     )
                 }
-            }
 
-            // If user clicked "My Holdings", show their personal holdings list
-            if (selectedCategory == MarketCategory.HOLDINGS) {
                 item(key = "holdings_title") {
                     Row(
                         modifier = Modifier
@@ -468,20 +406,10 @@ fun MarketAndAssetsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            "سبد دارایی‌های شما",
+                            "اقلام دارایی‌های شما (${fa(activeHoldings.size)})",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                         )
-                        Button(
-                            onClick = onAddHolding,
-                            colors = ButtonDefaults.buttonColors(containerColor = Hero.top),
-                            contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.xs),
-                            shape = RoundedCornerShape(8.dp),
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null, tint = Hero.gold, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(Space.xs))
-                            Text("افزودن", color = Hero.gold, fontSize = 12.sp)
-                        }
                     }
                 }
 
@@ -544,6 +472,148 @@ fun MarketAndAssetsScreen(
                     }
                 }
             } else {
+                // Mode 2: Live Market View
+
+                // Search box if toggled
+                if (showSearch) {
+                    item(key = "search_box") {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            placeholder = { Text("جستجوی نام ارز، سکه، رمزارز یا نماد...") },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = Space.m, vertical = Space.s),
+                            singleLine = true,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Hero.gold,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                            ),
+                        )
+                    }
+                }
+
+                // High-level Market Metrics Glance Bar
+                item(key = "glance_bar") {
+                    MarketGlanceBar(
+                        usdtToman = usdtToman,
+                        usdCashToman = usdCashToman,
+                        gold18Toman = gold18Toman,
+                        emamiCoinToman = emamiCoinToman,
+                        onSelectAsset = { selectedAssetId = it },
+                    )
+                }
+
+                // Primary Interactive Chart Card
+                item(key = "fluctuation_chart_card") {
+                    if (selectedItem != null) {
+                        MarketFluctuationCard(
+                            item = selectedItem,
+                            series = chartSeries,
+                            selectedInterval = selectedInterval,
+                            onSelectInterval = { selectedInterval = it },
+                        )
+                    }
+                }
+
+                // Gold Coin Bubble Visual Gauge (حباب‌سنج گرافیکی سکه)
+                item(key = "gold_coin_bubble_gauge") {
+                    GoldCoinBubbleGauge(
+                        emamiPrice = emamiCoinToman,
+                        nimPrice = effective["coin_nim"] ?: (emamiCoinToman * 0.52),
+                        robPrice = robCoinToman,
+                        gold18Price = gold18Toman,
+                    )
+                }
+
+                // Category Filter Pills
+                item(key = "category_tabs") {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.s),
+                        horizontalArrangement = Arrangement.spacedBy(Space.s),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        items(MarketCategory.entries.filterNot { it == MarketCategory.HOLDINGS }) { cat ->
+                            FilterChip(
+                                selected = selectedCategory == cat,
+                                onClick = { selectedCategory = cat },
+                                label = {
+                                    Text(
+                                        cat.labelFa,
+                                        fontWeight = if (selectedCategory == cat) FontWeight.Bold else FontWeight.Normal,
+                                        fontSize = 13.sp,
+                                    )
+                                },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = Hero.top,
+                                    selectedLabelColor = Hero.gold,
+                                ),
+                                shape = RoundedCornerShape(12.dp),
+                            )
+                        }
+                    }
+                }
+
+                // Collapsible Arbitrage and Bubble Indicator Card
+                item(key = "arbitrage_radar_toggle") {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = Space.m, vertical = Space.xs)
+                            .clickable { showArbitrageRadar = !showArbitrageRadar },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                        ),
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = Space.m, vertical = Space.s),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .clip(CircleShape)
+                                        .background(Hero.gold.copy(alpha = 0.2f)),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text("⚡", fontSize = 12.sp)
+                                }
+                                Spacer(Modifier.width(Space.s))
+                                Text(
+                                    "رادار آربیتراژ و حباب طلا و تتر",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                            }
+                            Text(
+                                if (showArbitrageRadar) "بستن" else "مشاهده تحلیل",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Hero.gold,
+                            )
+                        }
+                    }
+                }
+
+                if (showArbitrageRadar) {
+                    item(key = "arbitrage_radar") {
+                        MarketArbitrageRadar(
+                            usdtToman = usdtToman,
+                            usdCashToman = usdCashToman,
+                            emamiCoinToman = emamiCoinToman,
+                            robCoinToman = robCoinToman,
+                            gold18Toman = gold18Toman,
+                        )
+                    }
+                }
+
                 // Ticker List for Market Items
                 if (filteredItems.isEmpty()) {
                     item(key = "empty_market_items") {
@@ -1445,4 +1515,280 @@ private fun ArbitrageRow(
             color = if (isWarning) Color(0xFFD93025) else Hero.top,
         )
     }
+}
+
+enum class MarketTabMode {
+    PORTFOLIO,
+    LIVE_MARKET,
+}
+
+/**
+ * Gold Coin Bubble Visual Gauge (حباب‌سنج گرافیکی سکه و طلا).
+ * Provides visual gauges comparing market price vs intrinsic melt value for Iranian gold coins.
+ */
+@Composable
+fun GoldCoinBubbleGauge(
+    emamiPrice: Double,
+    nimPrice: Double,
+    robPrice: Double,
+    gold18Price: Double,
+    modifier: Modifier = Modifier,
+) {
+    val emamiIntrinsic = calculateCoinIntrinsicToman(GoldCoinType.EMAMI, gold18Price).toDouble()
+    val emamiBubble = if (emamiPrice > emamiIntrinsic && emamiPrice > 0) ((emamiPrice - emamiIntrinsic) / emamiPrice) * 100.0 else 0.0
+
+    val nimIntrinsic = calculateCoinIntrinsicToman(GoldCoinType.NIM, gold18Price).toDouble()
+    val nimBubble = if (nimPrice > nimIntrinsic && nimPrice > 0) ((nimPrice - nimIntrinsic) / nimPrice) * 100.0 else 0.0
+
+    val robIntrinsic = calculateCoinIntrinsicToman(GoldCoinType.ROB, gold18Price).toDouble()
+    val robBubble = if (robPrice > robIntrinsic && robPrice > 0) ((robPrice - robIntrinsic) / robPrice) * 100.0 else 0.0
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = Space.m, vertical = Space.s),
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+    ) {
+        Column(modifier = Modifier.padding(Space.m)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("🪙", fontSize = 16.sp)
+                    Spacer(Modifier.width(Space.s))
+                    Text(
+                        "حباب‌سنج گرافیکی انواع سکه طلا",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                Text("ارزش ذاتی عیار ۹۰۰", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+
+            Spacer(Modifier.height(Space.m))
+
+            BubbleGaugeRow("تمام سکه امامی", emamiPrice, emamiIntrinsic, emamiBubble)
+            Spacer(Modifier.height(Space.s))
+            BubbleGaugeRow("نیم‌سکه بهار آزادی", nimPrice, nimIntrinsic, nimBubble)
+            Spacer(Modifier.height(Space.s))
+            BubbleGaugeRow("ربع‌سکه بهار آزادی", robPrice, robIntrinsic, robBubble)
+        }
+    }
+}
+
+@Composable
+private fun BubbleGaugeRow(
+    coinName: String,
+    marketPrice: Double,
+    intrinsicPrice: Double,
+    bubblePercent: Double,
+) {
+    val riskColor = when {
+        bubblePercent > 30.0 -> Color(0xFFEF4444)
+        bubblePercent > 18.0 -> Color(0xFFF59E0B)
+        else -> Color(0xFF10B981)
+    }
+    val riskLabel = when {
+        bubblePercent > 30.0 -> "بسیار پرریسک"
+        bubblePercent > 18.0 -> "ریسک بالا"
+        else -> "متعادل"
+    }
+    val progress = (bubblePercent / 50.0).toFloat().coerceIn(0f, 1f)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
+            .padding(10.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column {
+                Text(coinName, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    "بازار: ${faCompact(marketPrice)} ت • ذاتی: ${faCompact(intrinsicPrice)} ت",
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    "${faDecimal(bubblePercent, 1)}٪ حباب",
+                    fontSize = 13.sp,
+                    fontFamily = ModamFigures,
+                    fontWeight = FontWeight.Black,
+                    color = riskColor,
+                )
+                Text(riskLabel, fontSize = 9.sp, color = riskColor, fontWeight = FontWeight.SemiBold)
+            }
+        }
+
+        Spacer(Modifier.height(6.dp))
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(5.dp)
+                .clip(RoundedCornerShape(Radius.pill))
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(progress)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(Radius.pill))
+                    .background(riskColor),
+            )
+        }
+    }
+}
+
+@Composable
+fun PortfolioOverviewCard(
+    state: UiState,
+    onAddHolding: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val totalToman = state.totals.toman
+    val bankToman = state.bankToman
+    val holdingsToman = (totalToman - bankToman).coerceAtLeast(0.0)
+    val usdRate = state.effective["usd"]
+    val usdEquivalent = usdRate?.takeIf { it > 0.0 && holdingsToman > 0.0 }?.let { (holdingsToman / it).toLong() }
+
+    val composition = remember(state.listHoldings, state.coins, state.effective, state.stocks) {
+        compositionByKind(state.listHoldings, state.coins, state.effective, state.stocks)
+    }
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = Space.m, vertical = Space.s),
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+    ) {
+        Column(modifier = Modifier.padding(Space.m)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column {
+                    Text(
+                        "ارزش کل سبد دارایی و سرمایه‌گذاری",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "${faCompact(holdingsToman)} تومان",
+                            fontSize = 20.sp,
+                            fontFamily = ModamFigures,
+                            fontWeight = FontWeight.Black,
+                            color = Hero.gold,
+                        )
+                        if (usdEquivalent != null) {
+                            Spacer(Modifier.width(Space.s))
+                            Text(
+                                "\$${fa(usdEquivalent)}",
+                                fontSize = 12.sp,
+                                fontFamily = ModamFigures,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+
+                Button(
+                    onClick = onAddHolding,
+                    colors = ButtonDefaults.buttonColors(containerColor = Hero.gold),
+                    contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.xs),
+                    shape = RoundedCornerShape(Radius.pill),
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, tint = Color.Black, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(Space.xs))
+                    Text("افزودن دارایی", color = Color.Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            // Asset Allocation Ribbon
+            if (holdingsToman > 0.0 && composition.isNotEmpty()) {
+                Spacer(Modifier.height(Space.m))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f)),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    composition.forEach { (kind, amount) ->
+                        val weight = (amount / holdingsToman).toFloat().coerceIn(0.01f, 1f)
+                        val color = assetKindColor(kind)
+                        Box(
+                            modifier = Modifier
+                                .weight(weight)
+                                .fillMaxHeight()
+                                .background(color)
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(Space.s))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Space.m),
+                ) {
+                    composition.take(4).forEach { (kind, amount) ->
+                        val pct = ((amount / holdingsToman) * 100).toInt()
+                        val color = assetKindColor(kind)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(modifier = Modifier.size(6.dp).clip(CircleShape).background(color))
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                "${kind.fa} (${fa(pct)}٪)",
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(Space.m))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
+                    .padding(horizontal = Space.s, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("شاخص مقاومت در برابر تورم", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("حفاظت فعال با دارایی‌های امن 🛡️", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Hero.mint)
+            }
+        }
+    }
+}
+
+@Composable
+private fun assetKindColor(kind: Kind): Color = when (kind) {
+    Kind.GOLD -> Hero.gold
+    Kind.COIN -> Color(0xFFFBBF24)
+    Kind.FIAT -> Color(0xFF38BDF8)
+    Kind.CRYPTO -> Color(0xFF60A5FA)
+    Kind.STOCK -> Color(0xFFA855F7)
+    else -> Hero.mint
 }
