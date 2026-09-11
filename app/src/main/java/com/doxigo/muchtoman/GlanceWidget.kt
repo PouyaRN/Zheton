@@ -54,66 +54,16 @@ data class GlanceWidgetState(
 )
 
 suspend fun loadGlanceWidgetData(context: Context): GlanceWidgetState = withContext(Dispatchers.IO) {
-    val store = Store(context)
-    val rates = store.cachedRates
-    val history = store.history
-    val effective = effectiveRates(rates, store.overrides, store.cachedStocks)
-    val total = computeTotals(
-        listHoldings(store.holdings, store.smsEnabled, store.bankAccounts, store.disabledBanks),
-        effective,
-    ).toman
-
-    val now = System.currentTimeMillis()
-    val today = now / DAY_MS
-    val baseDay = history.keys.filter { it < today }.maxOrNull()
-    val base = baseDay?.let { history.getValue(it) }
-    val delta = base?.let { total - it }
-    val deltaPercent = base?.takeIf { it > 0 }?.let { (total - it) / it * 100 }
-    val deltaSince = when {
-        baseDay == null -> ""
-        today - baseDay == 1L -> "از دیروز"
-        else -> "${faNumber((today - baseDay).toDouble())} روز پیش"
-    }
-
-    // Today's spend from derived database
-    var todaySpendToman = 0L
-    runCatching {
-        val derived = DerivedDb.get(context)
-        val todayTehran = tehranDay(now)
-        val txns = derived.txn().newest(200)
-        val rial = txns.filter { it.day == todayTehran && it.direction == "out" }
-            .sumOf { abs(it.signedRial ?: 0L) }
-        todaySpendToman = rial / 10L
-    }
-
-    // Nearest upcoming commitment / installment
-    val nextCommitment = store.commitments
-        .filter { !it.isSettled && it.nextDueTimestamp > 0L }
-        .minByOrNull { it.nextDueTimestamp }
-
-    val nextCommitmentText = nextCommitment?.let {
-        val days = it.nextDueDays
-        val dueLabel = when (days) {
-            0 -> "سررسید امروز"
-            1 -> "سررسید فردا"
-            else -> "${faNumber(days.toDouble())} روز مانده"
-        }
-        val providerName = it.provider.ifBlank { it.title }
-        "$providerName: $dueLabel (${faCompact(it.remainingAmountToman.toDouble())} ت)"
-    }
-
-    val goldRate = effective["gold18"] ?: effective["geram18"]
-    val tetherRate = effective["usdt"] ?: effective["usd"]
-
+    val snapshot = WidgetSnapshotEngine.getSnapshot(context)
     GlanceWidgetState(
-        netWorthToman = total,
-        isMasked = store.widgetLock,
-        deltaPercent = deltaPercent,
-        deltaSince = deltaSince,
-        todaySpendToman = todaySpendToman,
-        goldRateToman = goldRate,
-        tetherRateToman = tetherRate,
-        nextCommitmentText = nextCommitmentText,
+        netWorthToman = snapshot.netWorthToman,
+        isMasked = snapshot.isMasked,
+        deltaPercent = snapshot.deltaPercent,
+        deltaSince = snapshot.deltaSince,
+        todaySpendToman = snapshot.todaySpendToman,
+        goldRateToman = snapshot.goldRateToman,
+        tetherRateToman = snapshot.tetherRateToman,
+        nextCommitmentText = snapshot.nextCommitmentText,
     )
 }
 

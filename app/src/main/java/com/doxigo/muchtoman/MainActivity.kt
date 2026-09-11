@@ -51,6 +51,7 @@ private const val FILTER_WIDE_LIMIT = 50_000
 
 class AppVm(app: Application) : AndroidViewModel(app) {
     private val store = Store(app)
+    val ledgerEngine = LedgerEngine(app)
 
     /**
      * The scan in flight, if any. Only one runs at a time, and anything that wants the inbox
@@ -600,49 +601,12 @@ class AppVm(app: Application) : AndroidViewModel(app) {
      * ever had rather than only the ones that arrive next.
      */
     fun categorise(entry: LedgerEntry, categoryId: String, always: Boolean) {
-        val app = getApplication<Application>()
         viewModelScope.launch(Dispatchers.Default) {
-            val durable = DurableDb.get(app)
-            val derived = DerivedDb.get(app)
             runCatching {
-                val session = loadSession(durable)
-                val previous = durable.decisions().forRef(entry.txn.ref)
-                    .firstOrNull { it.kind == DecisionKind.CATEGORY }
-                val now = maxOf(System.currentTimeMillis(), (previous?.updatedAt ?: 0L) + 1L)
-                if (entry.transfer) {
-                    derived.links().touching(entry.txn.ref)
-                        .filter { it.kind == LinkKind.TRANSFER && it.auto }
-                        .forEach { link ->
-                            durable.linkDecisions().put(
-                                linkDecision(
-                                    link.aRef,
-                                    link.bRef,
-                                    LinkKind.TRANSFER,
-                                    Verdict.REJECTED,
-                                    now,
-                                )
-                            )
-                        }
-                }
-                durable.decisions().put(
-                    TxnDecision(
-                        id = uuid7(now),
-                        ref = entry.txn.ref,
-                        kind = DecisionKind.CATEGORY,
-                        value = categoryId,
-                        createdAt = now,
-                        updatedAt = now,
-                        memberId = session?.member.orEmpty(),
-                        familyRef = entry.txn.familyRef.ifBlank {
-                            session?.let { familyTxnId(it.member, entry.txn.ref) }.orEmpty()
-                        },
-                    )
-                )
-                if (always) {
-                    val addrKey = durable.smsSource().addrKeyOf(entry.txn.srcHash).orEmpty()
-                    durable.rules().put(ruleFrom(entry.txn, categoryId, addrKey, now))
-                }
-                derive(durable, derived, extraLookup(store.extraBankNumbers))
+                ledgerEngine.categorise(entry, categoryId, always, store.extraBankNumbers)
+                val app = getApplication<Application>()
+                val durable = DurableDb.get(app)
+                val derived = DerivedDb.get(app)
                 _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
                 requestFamilySync(silent = true)
             }.onFailure { android.util.Log.w("muchtoman", "categorise failed: $it") }
@@ -657,18 +621,12 @@ class AppVm(app: Application) : AndroidViewModel(app) {
      * the source name; only the words on the screen change. An empty display unpins.
      */
     fun pinMerchantAlias(sourceNorm: String, displayName: String) {
-        val app = getApplication<Application>()
         viewModelScope.launch(Dispatchers.Default) {
             runCatching {
+                ledgerEngine.pinMerchantAlias(sourceNorm, displayName, store.extraBankNumbers)
+                val app = getApplication<Application>()
                 val durable = DurableDb.get(app)
                 val derived = DerivedDb.get(app)
-                val now = System.currentTimeMillis()
-                if (displayName.isBlank()) {
-                    durable.merchantAliases().put(MerchantAlias(sourceNorm, "", now, now))
-                } else {
-                    durable.merchantAliases().put(MerchantAlias(sourceNorm, displayName, now, now))
-                }
-                derive(durable, derived, extraLookup(store.extraBankNumbers))
                 _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
             }.onFailure { android.util.Log.w("muchtoman", "pin merchant alias failed: $it") }
         }
