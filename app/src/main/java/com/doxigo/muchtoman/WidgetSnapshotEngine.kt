@@ -85,14 +85,17 @@ object WidgetSnapshotEngine {
                 "$providerName: $dueLabel (${faCompact(it.remainingAmountToman.toDouble())} ت)"
             }
 
+            val goldRate = effective["gold18"] ?: effective["geram18"]
+            val tetherRate = effective["usdt"] ?: effective["usd"]
+
             val snapshot = WidgetSnapshot(
                 netWorthToman = total,
                 isMasked = store.widgetLock,
                 deltaPercent = deltaPercent,
                 deltaSince = deltaSince,
                 todaySpendToman = todaySpendToman,
-                goldRateToman = effective["gold18"],
-                tetherRateToman = effective["usdt"],
+                goldRateToman = goldRate,
+                tetherRateToman = tetherRate,
                 nextCommitmentText = nextCommitmentText,
                 timestamp = now,
             )

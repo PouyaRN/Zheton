@@ -121,32 +121,30 @@ class LedgerEngine(
     }
 
     /**
-     * Hides or reveals a transaction from spending calculations and timeline display.
+     * Hides or reveals a transaction from the ledger without unnecessary re-derive.
      */
     suspend fun setTransactionHidden(
         entry: LedgerEntry,
         hidden: Boolean,
-        extraBankNumbers: Map<String, List<String>>,
     ) = mutex.withLock {
         withContext(Dispatchers.IO) {
             val now = System.currentTimeMillis()
             val session = loadSession(durable)
+            val ref = entry.txn.ref
+            val existing = durable.decisions().forRef(ref).firstOrNull { it.kind == DecisionKind.HIDE }
             durable.decisions().put(
                 TxnDecision(
-                    id = uuid7(now),
-                    ref = entry.txn.ref,
+                    id = existing?.id ?: uuid7(now),
+                    ref = ref,
                     kind = DecisionKind.HIDE,
-                    value = if (hidden) "true" else null,
-                    createdAt = now,
+                    value = "1",
+                    createdAt = existing?.createdAt ?: now,
                     updatedAt = now,
                     deleted = !hidden,
                     memberId = session?.member.orEmpty(),
-                    familyRef = entry.txn.familyRef.ifBlank {
-                        session?.let { familyTxnId(it.member, entry.txn.ref) }.orEmpty()
-                    },
+                    familyRef = entry.txn.familyRef.ifBlank { "" },
                 )
             )
-            derive(durable, derived, extraLookup(extraBankNumbers))
         }
     }
 
