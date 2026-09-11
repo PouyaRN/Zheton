@@ -52,6 +52,11 @@ import com.doxigo.muchtoman.Radius
 import com.doxigo.muchtoman.SheetFlingGuard
 import com.doxigo.muchtoman.Space
 import com.doxigo.muchtoman.ui.haptics.LocalFintechHaptics
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import com.doxigo.muchtoman.toAsciiDigits
+import com.doxigo.muchtoman.ShetabPanVisualTransformation
 
 /**
  * Scoped Bank Card Editor bottom sheet extracted from monolithic Ui.kt.
@@ -140,43 +145,46 @@ fun CardEditorSheet(
             )
             Spacer(Modifier.height(Space.s))
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.s)) {
+                    OutlinedTextField(
+                        value = panDraft,
+                        onValueChange = { input ->
+                            val digits = toAsciiDigits(input).filter { it.isDigit() }.take(16)
+                            panDraft = digits
+                        },
+                        label = { Text("شماره ۱۶ رقمی کارت") },
+                        placeholder = { Text("xxxx xxxx xxxx xxxx") },
+                        visualTransformation = ShetabPanVisualTransformation(),
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    OutlinedTextField(
+                        value = expiryDraft,
+                        onValueChange = { input ->
+                            val clean = toAsciiDigits(input).filter { it.isDigit() || it == '/' }.take(5)
+                            expiryDraft = clean
+                        },
+                        label = { Text("انقضا") },
+                        placeholder = { Text("MM/YY") },
+                        singleLine = true,
+                        modifier = Modifier.width(110.dp),
+                    )
+                }
+                Spacer(Modifier.height(Space.s))
+
                 OutlinedTextField(
-                    value = panDraft,
+                    value = shebaDraft,
                     onValueChange = { input ->
-                        val digits = input.filter { it.isDigit() }.take(16)
-                        panDraft = digits
+                        val clean = toAsciiDigits(input).filter { it.isLetterOrDigit() }.uppercase().take(26)
+                        shebaDraft = clean
                     },
-                    label = { Text("شماره ۱۶ رقمی کارت") },
-                    placeholder = { Text("xxxx xxxx xxxx xxxx") },
+                    label = { Text("شماره شبا") },
+                    placeholder = { Text("IR000000000000000000000000") },
                     singleLine = true,
-                    modifier = Modifier.weight(1f),
-                )
-                OutlinedTextField(
-                    value = expiryDraft,
-                    onValueChange = { input ->
-                        val clean = input.filter { it.isDigit() || it == '/' }.take(5)
-                        expiryDraft = clean
-                    },
-                    label = { Text("انقضا") },
-                    placeholder = { Text("MM/YY") },
-                    singleLine = true,
-                    modifier = Modifier.width(110.dp),
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
-            Spacer(Modifier.height(Space.s))
-
-            OutlinedTextField(
-                value = shebaDraft,
-                onValueChange = { input ->
-                    val clean = input.filter { it.isLetterOrDigit() }.uppercase().take(26)
-                    shebaDraft = clean
-                },
-                label = { Text("شماره شبا") },
-                placeholder = { Text("IR000000000000000000000000") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
 
             Spacer(Modifier.height(Space.m))
             Text(
