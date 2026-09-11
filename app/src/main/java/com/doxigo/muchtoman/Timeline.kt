@@ -1,6 +1,6 @@
 package com.doxigo.muchtoman
 
-import com.doxigo.muchtoman.ui.home.HeroPanel
+import com.doxigo.muchtoman.ui.components.HeroPanel
 
 import androidx.activity.compose.BackHandler
 

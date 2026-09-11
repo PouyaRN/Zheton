@@ -6,7 +6,7 @@ import com.doxigo.muchtoman.ui.commitments.CreditPurchaseForm
 import com.doxigo.muchtoman.ui.commitments.DirectObligationSheet
 import com.doxigo.muchtoman.ui.commitments.LinkInstallmentPicker
 import com.doxigo.muchtoman.ui.cards.CardEditorSheet
-import com.doxigo.muchtoman.ui.home.HeroPanel
+import com.doxigo.muchtoman.ui.components.HeroPanel
 
 import android.content.Context
 import android.content.Intent
@@ -1286,12 +1286,8 @@ val snackbarHostState = remember { SnackbarHostState() }
 }
 
 /**
- * The reason the app exists, and now the ground the app stands on rather than a card floating
- * on it: a deep green field that runs to both edges and off the top of the screen, with the
- * total set in gold across it. Everything below defers to it.
+ * The main balance hero field displayed at the top of the Home and Portfolio views.
  */
-// HeroPanel extracted to com.doxigo.muchtoman.ui.home.HeroPanel
-
 @Composable
 internal fun HeroField(
     state: UiState,
