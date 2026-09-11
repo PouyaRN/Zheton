@@ -6,6 +6,7 @@ import com.doxigo.muchtoman.ui.commitments.CreditPurchaseForm
 import com.doxigo.muchtoman.ui.commitments.DirectObligationSheet
 import com.doxigo.muchtoman.ui.commitments.LinkInstallmentPicker
 import com.doxigo.muchtoman.ui.cards.CardEditorSheet
+import com.doxigo.muchtoman.ui.home.HeroPanel
 
 import android.content.Context
 import android.content.Intent
@@ -1289,37 +1290,7 @@ val snackbarHostState = remember { SnackbarHostState() }
  * on it: a deep green field that runs to both edges and off the top of the screen, with the
  * total set in gold across it. Everything below defers to it.
  */
-@Composable
-internal fun HeroPanel(
-    modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    val topColor = Hero.top
-    val bottomColor = Hero.bottom
-    val goldColor = Hero.gold
-    Box(
-        modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(bottomStart = Radius.hero, bottomEnd = Radius.hero))
-            .background(Brush.verticalGradient(listOf(topColor, bottomColor))),
-    ) {
-        Canvas(Modifier.matchParentSize()) {
-            drawRect(
-                Brush.radialGradient(
-                    colors = listOf(goldColor.copy(alpha = 0.13f), Color.Transparent),
-                    center = Offset(size.width * 0.88f, size.height * -0.05f),
-                    radius = size.width * 0.95f,
-                ),
-            )
-        }
-        Column(
-            Modifier
-                .statusBarsPadding()
-                .padding(start = Space.xl, end = Space.xl, top = Space.s, bottom = Space.xl),
-            content = content,
-        )
-    }
-}
+// HeroPanel extracted to com.doxigo.muchtoman.ui.home.HeroPanel
 
 @Composable
 internal fun HeroField(

@@ -1,5 +1,7 @@
 package com.doxigo.muchtoman
 
+import com.doxigo.muchtoman.ui.home.HeroPanel
+
 import androidx.activity.compose.BackHandler
 
 import androidx.compose.animation.AnimatedVisibility
