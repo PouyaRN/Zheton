@@ -49,6 +49,12 @@ fun faDecimal(value: Double, decimals: Int, pad: Boolean = false): String {
  */
 fun tomanOf(rial: Long): Double = rial / 10.0
 
+/**
+ * Masks any formatted financial amount with dots when privacy/discretion mode is active.
+ */
+fun maskFinancialAmount(amount: String, privacy: Boolean): String =
+    if (privacy) "••••••••" else amount
+
 fun faCompact(toman: Long, dec: Int = 1, pad: Boolean = false): String =
     faCompact(toman.toDouble(), dec, pad)
 

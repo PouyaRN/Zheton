@@ -673,54 +673,17 @@ val snackbarHostState = remember { SnackbarHostState() }
     ) { pad ->
       // The tabs that are their own screens. They sit inside the Scaffold rather than
       // returning early, so the bar stays under them and there is always a way out.
-      if (tab == Tab.LEDGER) {
-        val activity = LocalActivity.current as? FragmentActivity
-        TimelineScreen(
-            ledger = state.ledger,
+      if (tab == Tab.ACTIVITY_AND_TRENDS) {
+        UnifiedActivityAndTrendsScreen(
             state = state,
+            vm = vm,
             bottomInset = pad.calculateBottomPadding(),
-            onOpen = { transactionRef = it.txn.ref },
-            onMarkCredit = { vm.startMarkCredit(it) },
-            onLinkInstallment = { vm.startLinkInstallment(it) },
-            onExport = { activity?.let { ctx -> vm.exportCsv(ctx) } },
-            initialCategoryId = timelineCategoryId,
-            initialSearchQuery = timelineSearchQuery,
-            onRefresh = { vm.refreshLedger() },
-            onAddManual = { amountRial, isExpense, catId, merchant, note, at ->
-                vm.addManualTransaction(amountRial, isExpense, catId, merchant, note, at)
-            },
-            onBulkCategorise = vm::bulkCategorise,
-            onBulkHide = vm::bulkHide,
-            onBulkFlip = vm::bulkFlipDirection,
-            onBulkDelete = vm::bulkDelete,
-            onBulkNote = vm::bulkSaveNote,
-            onBulkMerchant = vm::bulkPinMerchant,
-            onHide = { entry, hidden -> vm.setTransactionHidden(entry, hidden) },
-            onToggleShowHidden = { vm.setShowHidden(!state.showHidden) },
-            onToggleTransfer = { entry -> vm.toggleTransfer(entry) },
-            onFilterWide = { wide -> vm.setFilterWide(wide) },
+            timelineCategoryId = timelineCategoryId,
+            timelineSearchQuery = timelineSearchQuery,
+            onOpenTransaction = { transactionRef = it },
+            onCategorySelected = { timelineCategoryId = it },
+            onSearchQueryChanged = { timelineSearchQuery = it },
             privacyMode = privacyMode,
-        )
-        return@Scaffold
-      }
-      if (tab == Tab.REPORTS) {
-        val composition = remember(state.listHoldings, state.coins, state.effective, state.stocks) {
-            compositionByKind(state.listHoldings, state.coins, state.effective, state.stocks)
-        }
-        ReportsTab(
-            ledger = state.ledger,
-            history = state.history,
-            current = state.totals.toman,
-            composition = composition,
-            bankAccounts = state.bankAccounts,
-            privacyMode = privacyMode,
-            onSelectCategory = { catId ->
-                timelineCategoryId = catId
-                timelineSearchQuery = null
-                tab = Tab.LEDGER
-            },
-            bottomInset = pad.calculateBottomPadding(),
-            cycle = CycleSpec(state.cycleMode, state.cycleAnchorDay),
         )
         return@Scaffold
       }
@@ -790,72 +753,30 @@ val snackbarHostState = remember { SnackbarHostState() }
                 )
             }
 
-            item {
-                com.doxigo.muchtoman.ui.rikka.components.card.Card(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = Space.m, vertical = Space.xs),
-                    variant = com.doxigo.muchtoman.ui.rikka.components.card.CardVariant.Elevated,
-                    animation = com.doxigo.muchtoman.ui.rikka.components.card.CardAnimation.None,
-                ) {
-                    Column(modifier = Modifier.padding(Space.xs)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                "موجودی حساب‌های متصل",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                "جمع: ${faCompact(state.bankToman)} ت",
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.Black,
-                                color = Hero.gold
-                            )
-                        }
-
-                        if (state.bankAccounts.isNotEmpty()) {
-                            Spacer(Modifier.height(12.dp))
-                            state.bankAccounts.forEachIndexed { index, acc ->
-                                if (index > 0) Spacer(Modifier.height(8.dp))
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(RoundedCornerShape(10.dp))
-                                        .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.4f))
-                                        .padding(12.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Column {
-                                        Text(acc.bankFa, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                        val pan = if (privacyMode) "••••  ••••" else formatCardPanLtr(acc.mask)
-                                        Text(pan, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                        if (acc.sheba.isNotBlank()) {
-                                            Text(acc.sheba, fontSize = 10.sp, color = Hero.gold)
-                                        }
-                                    }
-                                    Column(horizontalAlignment = Alignment.End) {
-                                        val bal = if (privacyMode) "••••••••" else "${faNumber(acc.balance)} ت"
-                                        Text(bal, fontWeight = FontWeight.Black, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
-                                        Text("به‌روزرسانی پیامک", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (state.commitments.any { !it.isSettled }) {
+            // Smart Commitments, BNPL & Sayad Checks Summary
+            val activeCommitments = state.commitments.filter { !it.isSettled }
+            val activeObligations = state.obligations.filter { !it.archived }
+            val activeReservations = state.reservations.filter { !it.released }
+            if (activeCommitments.isNotEmpty() || activeObligations.isNotEmpty() || activeReservations.isNotEmpty()) {
                 item {
-                    com.doxigo.muchtoman.CommitmentsCard(
+                    ContextualPriorityCard(
                         commitments = state.commitments,
-                        onOpenHub = { showCommitmentsHubSheet = true },
-                        onAddCommitment = { showAddCommitmentSheet = true },
+                        obligations = state.obligations,
+                        reservations = state.reservations,
+                        onOpenCommitments = { showCommitmentsHubSheet = true },
+                        onOpenObligations = {
+                            if (activeObligations.size == 1) {
+                                selectedObligation = activeObligations.first()
+                            } else {
+                                addingObligation = true
+                            }
+                        },
+                        onOpenReservations = {
+                            if (activeReservations.isNotEmpty()) {
+                                vm.releaseReservation(activeReservations.first().id)
+                            }
+                        },
                         privacyMode = privacyMode,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = Space.m, vertical = Space.xs)
                     )
                 }
             }
@@ -938,19 +859,7 @@ val snackbarHostState = remember { SnackbarHostState() }
                 )
             }
 
-            // Tier 2: Quick Actions Dock for instant interaction
-            item(key = "quick_actions_dock") {
-                Box(modifier = Modifier.padding(edge).padding(top = Space.m)) {
-                    com.doxigo.muchtoman.widget.primitives.QuickActionsDock(
-                        onAdd = { adding = true; vm.refreshStocksForPicker() },
-                        onTransfer = { showQuickAdd = true },
-                        onCards = { tab = Tab.CARDS },
-                        onAnalytics = { tab = Tab.REPORTS },
-                    )
-                }
-            }
-
-            // Zone 3: Smart Spending Dial (Left-to-Spend Buffer)
+            // Zone 2: Smart Spending Dial (Daily Safe Spend & Buffer Pacing)
             item(key = "left_to_spend_dial") {
                 Box(modifier = Modifier.padding(edge).padding(top = Space.s)) {
                     LeftToSpendDial(
@@ -959,55 +868,13 @@ val snackbarHostState = remember { SnackbarHostState() }
                         cycleSpec = CycleSpec(state.cycleMode, state.cycleAnchorDay),
                         liquidToman = state.bankToman,
                         privacyMode = privacyMode,
-                        onClick = { tab = Tab.REPORTS },
+                        onClick = { tab = Tab.ACTIVITY_AND_TRENDS },
                     )
                 }
             }
 
-            // Sleek Financial Health & Resilience Banner (Decluttered Home Dashboard)
-            item(key = "home_financial_health_banner") {
-                Box(modifier = Modifier.padding(edge).padding(top = Space.l)) {
-                    CompactFinancialHealthBanner(
-                        state = state,
-                        privacyMode = privacyMode,
-                        onOpenDetails = { showExecutiveDeckSheet = true },
-                        onOpenReports = { tab = Tab.REPORTS },
-                    )
-                }
-            }
-
-            // Tier 3: Consolidated Contextual Priority Card (Commitments, Obligations, Reservations)
-            val activeObligations = state.obligations.filter { !it.archived }
-            val activeReservations = state.reservations.filter { !it.released }
-            val activeCommitments = state.commitments.filter { !it.isSettled }
-            if (activeCommitments.isNotEmpty() || activeObligations.isNotEmpty() || activeReservations.isNotEmpty()) {
-                item(key = "contextual_priority_card") {
-                    Box(modifier = Modifier.padding(edge).padding(top = Space.l)) {
-                        ContextualPriorityCard(
-                            commitments = state.commitments,
-                            obligations = state.obligations,
-                            reservations = state.reservations,
-                            onOpenCommitments = { showCommitmentsHubSheet = true },
-                            onOpenObligations = {
-                                if (activeObligations.size == 1) {
-                                    selectedObligation = activeObligations.first()
-                                } else {
-                                    addingObligation = true
-                                }
-                            },
-                            onOpenReservations = {
-                                if (activeReservations.isNotEmpty()) {
-                                    vm.releaseReservation(activeReservations.first().id)
-                                }
-                            },
-                            privacyMode = privacyMode,
-                        )
-                    }
-                }
-            }
-
-            // Tier 3: Stream of latest transactions with merchant avatars
-            val recentEntries = state.ledger.entries.take(4)
+            // Zone 3: Stream of latest transactions (up to 5 recent entries) with merchant avatars
+            val recentEntries = state.ledger.entries.take(5)
             if (recentEntries.isNotEmpty()) {
                 item(key = "home_recent_transactions") {
                     Box(modifier = Modifier.padding(edge).padding(top = Space.l)) {
@@ -1115,31 +982,6 @@ val snackbarHostState = remember { SnackbarHostState() }
                 if (state.totals.missing.isNotEmpty()) {
                     item(key = "missing") {
                         MissingNote(state.totals.missing, state.coins, state.stocks)
-                    }
-                }
-
-                // The two doors feedback said were buried: registering what she owns, and the
-                // installments hub. Chips, not cards — they are entrances, not content, and
-                // they sit after the story so the glance stays first.
-                item(key = "quick_actions") {
-                    Row(
-                        Modifier
-                            .padding(edge)
-                            .padding(top = Space.m),
-                        horizontalArrangement = Arrangement.spacedBy(Space.m),
-                    ) {
-                        HomeQuickAction(
-                            label = "ثبت دارایی",
-                            icon = Icons.Rounded.Add,
-                            onClick = { adding = true; vm.refreshStocksForPicker() },
-                            modifier = Modifier.weight(1f),
-                        )
-                        HomeQuickAction(
-                            label = "مدیریت اقساط",
-                            icon = Icons.Rounded.DateRange,
-                            onClick = { showCommitmentsHubSheet = true },
-                            modifier = Modifier.weight(1f),
-                        )
                     }
                 }
             } else if (state.listHoldings.isEmpty()) {
@@ -1397,7 +1239,7 @@ internal fun HeroField(
 
             Spacer(Modifier.height(Space.m))
 
-            var showLiquidPerspective by remember { mutableStateOf(false) }
+            var showLiquidPerspective by remember(portfolio) { mutableStateOf(!portfolio) }
 
             val liquidCashToman = state.bankToman.toLong()
             val upcomingObligationsToman = (state.obligations.filter { !it.archived }.sumOf { obligation ->
@@ -1495,6 +1337,20 @@ internal fun HeroField(
                     fontSize = 38.sp,
                     textColor = Hero.gold,
                     unitColor = Hero.gold.copy(alpha = 0.8f),
+                )
+            }
+
+            if (showLiquidPerspective) {
+                Text(
+                    text = "ارزش کل دارایی‌ها: ${if (privacyMode) "••••••••" else faCompact(total)} تومان",
+                    fontSize = 12.sp,
+                    fontFamily = ModamFigures,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Hero.muted.copy(alpha = 0.85f),
+                    modifier = Modifier
+                        .padding(top = Space.xs)
+                        .clickable { onReport() }
+                        .semantics { contentDescription = "مشاهده جزئیات دارایی‌ها" },
                 )
             }
 

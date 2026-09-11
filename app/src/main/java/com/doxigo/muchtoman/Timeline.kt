@@ -381,13 +381,6 @@ TextButton(onClick = {
                 }
             }
 
-            // 14-day spending outflow sparkline chart
-            DailyOutflowSparkCard(
-                entries = visible,
-                todayEpochDay = today,
-                privacyMode = privacyMode,
-            )
-
             // Failed transaction watchdog banner (Ticket 05)
             val failedWatchdogs = remember(visible) {
                 val failed = visible.filter { isFailedDebitTxn(it) }
@@ -2368,6 +2361,7 @@ fun ManualTxnSheet(
     var merchant by remember { mutableStateOf("") }
     var selectedCatId by remember { mutableStateOf<String?>(null) }
     var note by remember { mutableStateOf("") }
+    val fintechHaptics = com.doxigo.muchtoman.ui.haptics.LocalFintechHaptics.current
 
     val rawAmount = amountText.replace(",", "").replace(" ", "").toLongOrNull() ?: 0L
     val amountRial = if (isToman) rawAmount * 10L else rawAmount
@@ -2405,13 +2399,19 @@ fun ManualTxnSheet(
             ) {
                 FilterChip(
                     selected = isExpense,
-                    onClick = { isExpense = true },
+                    onClick = {
+                        fintechHaptics.click()
+                        isExpense = true
+                    },
                     label = { Text("هزینه (پرداخت)") },
                     modifier = Modifier.weight(1f),
                 )
                 FilterChip(
                     selected = !isExpense,
-                    onClick = { isExpense = false },
+                    onClick = {
+                        fintechHaptics.click()
+                        isExpense = false
+                    },
                     label = { Text("درآمد (واریز)") },
                     modifier = Modifier.weight(1f),
                 )
@@ -2474,6 +2474,7 @@ fun ManualTxnSheet(
                     FilterChip(
                         selected = selectedCatId == cat.id,
                         onClick = {
+                            fintechHaptics.tick()
                             selectedCatId = if (selectedCatId == cat.id) null else cat.id
                         },
                         label = { Text(cat.nameFa, fontSize = 12.sp) },
@@ -2492,14 +2493,16 @@ fun ManualTxnSheet(
 
             Button(
                 onClick = {
-                    if (amountRial > 0 && merchant.isNotBlank()) {
-                        onSave(amountRial, isExpense, selectedCatId, merchant, note, System.currentTimeMillis())
+                    if (amountRial > 0) {
+                        fintechHaptics.heavyClick()
+                        val effectiveMerchant = merchant.ifBlank { if (isExpense) "خرید نقدی" else "واریز نقدی" }
+                        onSave(amountRial, isExpense, selectedCatId, effectiveMerchant, note, System.currentTimeMillis())
                     }
                 },
-                enabled = amountRial > 0 && merchant.isNotBlank(),
+                enabled = amountRial > 0,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text("ثبت تراکنش")
+                Text("ثبت تراکنش", fontWeight = FontWeight.Bold)
             }
         }
     }

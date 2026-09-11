@@ -112,6 +112,37 @@ This document defines the canonical terms and bounded context concepts for Chand
 ### **Apple Wallet Accordion Deck (دک آکاردئونی کارت‌های بانکی)**
 - Dedicated vertical stacking presentation of bank cards in Tab 3, where cards overlap dynamically and expand smoothly with spring physics upon interaction, providing instant 1-tap PAN/SHEBA copying and metallic 3D styling without cluttering the Home dashboard.
 
+---
+
+## 7. Unified Navigation & Screen Boundaries
+
+### **Quad-Tab Architecture (معماری ۴ تب پایدار)**
+- **Tab 1: CommandCenter (فرمان)**: Operational liquidity cockpit, daily safe spend, quick bank card triggers, and the 5 most recent activities. Primary focal number is **Liquid Cash** with Net Worth as a dignified secondary subtitle.
+- **Tab 2: Market & Portfolio (بازار و دارایی)**: Comprehensive gold, currency, and fund pricing alongside asset allocation breakdown.
+- **Tab 3: Bank Instruments (حساب‌ها و تعهدات)**: The single source of truth for bank cards (Apple Wallet accordion), SHEBA/PAN clipboard export, and scheduled commitments (BNPL & installments) positioned as a smart summary tile below the deck.
+- **Tab 4: Activity & Trends (دفتر و تحلیل)**: Consolidated chronological ledger and executive analytical trends (Payday burn curve, 50/30/20 balance) toggled via a frictionless horizontal pager and top segmented pill (`ریزتراکنش‌ها` | `دیده‌بان و بودجه`).
+
+### **Discretion & Privacy Mode (حالت حریم خصوصی و استتار مبالغ)**
+- Instant masking of all financial figures (`••••••`) triggered via an eye icon next to the primary hero or a subtle device shake gesture, ensuring privacy in public transit and shared environments.
+
+---
+
+## 8. Ingestion & Tactile Ergonomics
+
+### **Instant Numeric Keypad (صفحه‌کلید عددی برق‌آسای تراکنش)**
+- Zero-friction bottom sheet triggered by the primary floating `+` action. Promotes amount-first entry via custom large tactile keypad, immediate 3-way toggle (`هزینه` / `درآمد` / `انتقال`), horizontal category chips, and automated card pairing completed in < 3 seconds.
+
+### **Calendar Stream & Swipe Ergonomics (جریان تقویمی و ژست‌های حرکتی)**
+- Transactions grouped under Shamsi day anchors (`امروز`, `دیروز`, date) displaying net daily burn in the header. Supports directional swipes: swipe-left for deletion with undo toast; swipe-right for rapid 50/30/20 necessity reclassification (`نیاز` / `خواسته` / `پس‌انداز`).
+
+### **4-Tier Tactile Haptics (سامانه بازخورد لمسی ۴ سطحی)**
+- `Chart Scrub`: 10ms micro-tick during slider/drag operations.
+- `Tab Switch`: 25ms tactile detent when navigating root views.
+- `Clipboard Export`: Double confirmation pulse upon copying PAN or SHEBA.
+- `Commitment Settlement`: 55ms affirmative click on debt payment or transaction save.
+
+
+
 
 
 

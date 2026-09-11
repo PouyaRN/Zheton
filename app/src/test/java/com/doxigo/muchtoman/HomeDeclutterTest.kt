@@ -8,20 +8,20 @@ import org.junit.Test
 class HomeDeclutterTest {
 
     @Test
-    fun `Tab entries has exactly four core tabs and excludes GOALS`() {
-        assertEquals(5, Tab.entries.size)
+    fun `Tab entries has exactly four core tabs and excludes GOALS and standalone REPORTS`() {
+        assertEquals(4, Tab.entries.size)
         val tabNames = Tab.entries.map { it.name }
         assertTrue(tabNames.contains("HOME"))
         assertTrue(tabNames.contains("ASSETS"))
         assertTrue(tabNames.contains("CARDS"))
-        assertTrue(tabNames.contains("LEDGER"))
-        assertTrue(tabNames.contains("REPORTS"))
+        assertTrue(tabNames.contains("ACTIVITY_AND_TRENDS"))
         assertFalse("GOALS must not be in Tab.entries", tabNames.contains("GOALS"))
+        assertFalse("REPORTS must not be a standalone root tab", tabNames.contains("REPORTS"))
     }
 
     @Test
     fun `Tab labels in Persian match refined four-tab navigation`() {
-        val expected = listOf("فرمان", "بازار", "حساب‌ها", "دفتر", "دیده‌بان")
+        val expected = listOf("فرمان", "بازار", "حساب‌ها", "دفتر و تحلیل")
         assertEquals(expected, Tab.entries.map { it.fa })
     }
 
@@ -69,5 +69,55 @@ class HomeDeclutterTest {
         assertEquals("۲۹۱۰", blocks[1])
         assertEquals("۱۲۳۴", blocks[2])
         assertEquals("۵۶۷۸", blocks[3])
+    }
+
+    @Test
+    fun `Home recent transactions displays up to exactly five transactions for optimal glance`() {
+        val entries = (1..10).map { i ->
+            LedgerEntry(
+                txn = Txn(
+                    ref = "tx$i",
+                    srcHash = "h$i",
+                    seq = i,
+                    at = 1700000000L + i,
+                    day = 14030620L,
+                    bank = "mellat",
+                    accountId = "acc1",
+                    direction = "out",
+                    amountRial = (i * 100_000L),
+                    signedRial = -(i * 100_000L),
+                    balanceRial = 50_000_000L,
+                    feeRial = 0L,
+                    mask = "1234",
+                    instrument = "card",
+                    merchant = "فروشگاه $i",
+                    merchantNorm = "فروشگاه $i",
+                    refNo = "ref$i",
+                    printedAt = "12:0$i",
+                    channel = "pos",
+                    unitPrinted = "rial",
+                    inferred = false,
+                    parserVer = 1,
+                ),
+                categoryId = "cat1",
+                categoryFa = "خرید",
+                confidence = 100,
+                needsReview = false,
+                duplicate = false,
+                transfer = false,
+            )
+        }
+        val displayed = entries.take(5)
+        assertEquals(5, displayed.size)
+        assertEquals("tx1", displayed.first().txn.ref)
+        assertEquals("tx5", displayed.last().txn.ref)
+    }
+
+    @Test
+    fun `Privacy mode masks financial amounts with dots`() {
+        val masked = maskFinancialAmount("۲۵,۰۰۰,۰۰۰ تومان", privacy = true)
+        assertEquals("••••••••", masked)
+        val unmasked = maskFinancialAmount("۲۵,۰۰۰,۰۰۰ تومان", privacy = false)
+        assertEquals("۲۵,۰۰۰,۰۰۰ تومان", unmasked)
     }
 }

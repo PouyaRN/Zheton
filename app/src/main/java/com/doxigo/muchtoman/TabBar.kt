@@ -92,8 +92,12 @@ enum class Tab(val fa: String) {
     HOME("فرمان"),
     ASSETS("بازار"),
     CARDS("حساب‌ها"),
-    LEDGER("دفتر"),
-    REPORTS("دیده‌بان"),
+    ACTIVITY_AND_TRENDS("دفتر و تحلیل");
+
+    companion object {
+        val LEDGER: Tab get() = ACTIVITY_AND_TRENDS
+        val REPORTS: Tab get() = ACTIVITY_AND_TRENDS
+    }
 }
 
 /**
@@ -225,7 +229,7 @@ fun TabBar(
                         }
                     }
 
-                    val badge = if (tab == Tab.LEDGER) ledgerBadge else 0
+                    val badge = if (tab == Tab.ACTIVITY_AND_TRENDS) ledgerBadge else 0
                     val isSelected = tab == selected
                     val iconScale by animateFloatAsState(
                         targetValue = if (isSelected) 1.08f else 1.0f,
@@ -315,8 +319,7 @@ private fun DrawScope.drawTabIcon(tab: Tab, tint: Color) {
             Tab.HOME -> drawHome(tint)
             Tab.ASSETS -> drawAssets(tint)
             Tab.CARDS -> drawCards(tint)
-            Tab.LEDGER -> drawLedger(tint)
-            Tab.REPORTS -> drawReports(tint)
+            Tab.ACTIVITY_AND_TRENDS -> drawActivityAndTrends(tint)
         }
     }
 }
@@ -400,6 +403,52 @@ private fun DrawScope.drawHome(tint: Color) {
  * cover it and this is a document; show it and it is a receipt — and the badge now sits over a
  * corner, the way a badge sits over every other icon ever drawn.
  */
+private fun DrawScope.drawActivityAndTrends(tint: Color) {
+    val w = size.width
+    val h = size.height
+    val left = w * 0.08f
+    val right = w * 0.92f
+    val top = h * 0.10f
+    val foot = h * 0.90f
+    val teeth = 3
+    val step = (right - left) / teeth
+    val slip = Path().apply {
+        moveTo(left, foot)
+        lineTo(left, top)
+        lineTo(right, top)
+        lineTo(right, foot)
+        for (i in 0 until teeth) {
+            val x = right - step * i
+            lineTo(x - step / 2f, foot - h * 0.10f)
+            lineTo(x - step, foot)
+        }
+    }
+    drawPath(slip, tint, style = pen())
+
+    // Top rule
+    val inset = (right - left) * 0.18f
+    drawLine(
+        tint,
+        Offset(left + inset, h * 0.32f),
+        Offset(right - inset, h * 0.32f),
+        strokeWidth = 1.8.dp.toPx(),
+        cap = StrokeCap.Round,
+    )
+
+    // 3 mini ascending trend bars inside receipt
+    val barW = (right - left) * 0.12f
+    val barBase = h * 0.72f
+    val heights = listOf(h * 0.16f, h * 0.24f, h * 0.32f)
+    heights.forEachIndexed { i, bh ->
+        drawRoundRect(
+            color = tint,
+            topLeft = Offset(left + inset + i * barW * 1.8f, barBase - bh),
+            size = Size(barW, bh),
+            cornerRadius = CornerRadius(1.dp.toPx(), 1.dp.toPx()),
+        )
+    }
+}
+
 private fun DrawScope.drawLedger(tint: Color) {
     val w = size.width
     val h = size.height
