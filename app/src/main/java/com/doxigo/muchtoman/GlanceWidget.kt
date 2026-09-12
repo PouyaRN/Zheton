@@ -1124,7 +1124,7 @@ private fun QuickCardRowItem(
                             .clickable {
                                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
                                 clipboard?.setPrimaryClip(
-                                    android.content.ClipData.newPlainText("sheba", cleanSheba(row.sheba)),
+                                    android.content.ClipData.newPlainText("sheba", com.doxigo.muchtoman.domain.shetab.ShetabKit.cleanSheba(row.sheba)),
                                 )
                                 android.widget.Toast.makeText(context, "شماره شبا کپی شد", android.widget.Toast.LENGTH_SHORT).show()
                             },

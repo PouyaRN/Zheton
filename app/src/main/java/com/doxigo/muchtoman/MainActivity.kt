@@ -1944,7 +1944,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 )
                 // SHEBA, like theme, is optional: null = caller never offered the field,
                 // empty = explicit clear. Canonical form strips spacing and casing.
-                val withSheba = if (sheba == null) base else base.copy(sheba = cleanSheba(sheba))
+                val withSheba = if (sheba == null) base else base.copy(sheba = com.doxigo.muchtoman.domain.shetab.ShetabKit.cleanSheba(sheba))
                 // Null = the editor was not given a theme row at all, so whatever is
                 // stored stays; empty string = she picked «رنگ خود بانک», clearing it.
                 if (theme == null) withSheba else withSheba.copy(theme = theme.trim())
