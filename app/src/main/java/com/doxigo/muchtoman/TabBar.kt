@@ -37,7 +37,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
@@ -150,9 +149,11 @@ fun TabBar(
                 selectedIndex
             }
 
-            val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-            val effectiveSlot = if (isRtl) (slotCount - 1 - selectedSlot) else selectedSlot
-            val targetOffset = slotWidth * effectiveSlot
+            // Both Row children and Modifier.offset(x) use relative coordinates (distance from start).
+            // In RTL, start is the right edge and positive offset moves leftward toward the end;
+            // in LTR, start is the left edge and positive offset moves rightward.
+            // Therefore, selectedSlot * slotWidth exactly tracks the slot in both RTL and LTR viewports.
+            val targetOffset = slotWidth * selectedSlot
 
             val animatedPillOffset by animateDpAsState(
                 targetValue = targetOffset,
@@ -166,7 +167,6 @@ fun TabBar(
             // Animated floating spring gliding pill indicator
             Box(
                 modifier = Modifier
-                    .align(AbsoluteAlignment.TopLeft)
                     .offset(x = animatedPillOffset)
                     .width(slotWidth)
                     .fillMaxHeight()

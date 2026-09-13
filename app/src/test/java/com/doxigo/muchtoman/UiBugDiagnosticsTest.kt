@@ -13,54 +13,59 @@ import org.junit.Test
  */
 class UiBugDiagnosticsTest {
 
-    // --- Bug 1: TabBar RTL Slot Offset Calculation ---
+    // --- Bug 1: TabBar RTL Slot Offset Calculation & placeRelative ---
 
     @Test
-    fun `test TabBar pill target offset calculation matches slot in RTL without double inversion`() {
+    fun `test TabBar pill offset under Compose placeRelative in RTL`() {
         val tabList = listOf(Tab.HOME, Tab.ASSETS, Tab.CARDS, Tab.ACTIVITY_AND_TRENDS)
         val hasQuickAdd = true
         val slotCount = if (hasQuickAdd) tabList.size + 1 else tabList.size // 5
         val totalWidth = 360f // typical phone width in dp
         val slotWidth = totalWidth / slotCount // 72 dp
 
-        // In RTL layout with Row, children are laid out right-to-left:
-        // Physical visual slots from Left to Right:
-        // Slot 0 (leftmost): ACTIVITY_AND_TRENDS (tab index 3)
-        // Slot 1: CARDS (tab index 2)
-        // Slot 2 (center): QuickAdd (+)
-        // Slot 3: ASSETS (tab index 1)
-        // Slot 4 (rightmost): HOME (tab index 0)
+        // Physical positions in RTL (Row lays out 0..4 from right to left):
+        // Slot 0 (HOME): physical left = totalWidth - slotWidth = 288 dp (rightmost)
+        // Slot 1 (ASSETS): physical left = 216 dp
+        // Slot 2 (+): physical left = 144 dp
+        // Slot 3 (CARDS): physical left = 72 dp
+        // Slot 4 (ACTIVITY_AND_TRENDS): physical left = 0 dp (leftmost)
 
-        // For absolute left-aligned container (AbsoluteAlignment.TopLeft), the X position of the pill
-        // for each tab MUST match the visual slot:
-        fun calculatePillAbsoluteLeftOffset(selected: Tab, isRtl: Boolean): Float {
-            val half = tabList.size / 2 // 2
+        // In Compose, Modifier.offset(x) uses Placeable.PlacementScope.placeRelative(x).
+        // Under RTL, placeRelative(x) maps to:
+        // physicalLeft = totalWidth - childWidth - x
+        // Therefore, to place child at slot S from start (right):
+        // x must be S * slotWidth!
+        // Proof: physicalLeft = totalWidth - slotWidth - (S * slotWidth)
+        // For S = 0 (HOME): physicalLeft = 360 - 72 - 0 = 288 dp (matches HOME!)
+        // For S = 1 (ASSETS): physicalLeft = 360 - 72 - 72 = 216 dp (matches ASSETS!)
+        // For S = 3 (CARDS): physicalLeft = 360 - 72 - 216 = 72 dp (matches CARDS!)
+        // For S = 4 (ACTIVITY_AND_TRENDS): physicalLeft = 360 - 72 - 288 = 0 dp (matches ACTIVITY!)
+
+        fun getSelectedSlot(selected: Tab): Int {
+            val half = tabList.size / 2
             val selectedIndex = tabList.indexOf(selected).coerceAtLeast(0)
-            val selectedSlot = if (hasQuickAdd && selectedIndex >= half) {
-                selectedIndex + 1
-            } else {
-                selectedIndex
-            }
-            val effectiveSlot = if (isRtl) (slotCount - 1 - selectedSlot) else selectedSlot
-            return slotWidth * effectiveSlot
+            return if (hasQuickAdd && selectedIndex >= half) selectedIndex + 1 else selectedIndex
         }
 
-        // Expected absolute X coordinates from left edge:
-        // Tab.HOME (index 0): In RTL, HOME is at the far right -> visual slot 4 -> 4 * 72 = 288 dp
-        val homeOffsetRtl = calculatePillAbsoluteLeftOffset(Tab.HOME, isRtl = true)
-        assertEquals(288f, homeOffsetRtl, 0.01f)
+        fun computePhysicalLeftUnderPlaceRelativeRtl(targetOffset: Float): Float {
+            return totalWidth - slotWidth - targetOffset
+        }
 
-        // Tab.ASSETS (index 1): In RTL, ASSETS is at slot 3 -> 3 * 72 = 216 dp
-        val assetsOffsetRtl = calculatePillAbsoluteLeftOffset(Tab.ASSETS, isRtl = true)
-        assertEquals(216f, assetsOffsetRtl, 0.01f)
+        // 1. Correct relative offset: targetOffset = selectedSlot * slotWidth (no manual inversion!)
+        for (tab in tabList) {
+            val slot = getSelectedSlot(tab)
+            val correctOffset = slot * slotWidth
+            val physicalLeft = computePhysicalLeftUnderPlaceRelativeRtl(correctOffset)
+            val expectedPhysicalLeft = (slotCount - 1 - slot) * slotWidth
+            assertEquals("Physical position for $tab must match slot", expectedPhysicalLeft, physicalLeft, 0.01f)
+        }
 
-        // Tab.CARDS (index 2): In RTL, CARDS is at slot 1 -> 1 * 72 = 72 dp
-        val cardsOffsetRtl = calculatePillAbsoluteLeftOffset(Tab.CARDS, isRtl = true)
-        assertEquals(72f, cardsOffsetRtl, 0.01f)
-
-        // Tab.ACTIVITY_AND_TRENDS (index 3): In RTL, at slot 0 (far left) -> 0 * 72 = 0 dp
-        val activityOffsetRtl = calculatePillAbsoluteLeftOffset(Tab.ACTIVITY_AND_TRENDS, isRtl = true)
-        assertEquals(0f, activityOffsetRtl, 0.01f)
+        // 2. The Buggy manual inversion: targetOffset = (slotCount - 1 - slot) * slotWidth
+        // For Tab.HOME (slot = 0):
+        val buggyHomeOffset = (slotCount - 1 - 0) * slotWidth // 288 dp
+        val buggyHomePhysicalLeft = computePhysicalLeftUnderPlaceRelativeRtl(buggyHomeOffset)
+        // 360 - 72 - 288 = 0 dp (ends up on the far left instead of right!)
+        assertEquals(0f, buggyHomePhysicalLeft, 0.01f)
     }
 
     // --- Bug 2: Due Date Formatting for Commitments & Obligations ---
