@@ -174,6 +174,7 @@ fun TimelineScreen(
     /** Tells the host to widen the ledger window while a structured filter is live. */
     onFilterWide: (Boolean) -> Unit = {},
     privacyMode: Boolean = false,
+    onSelectionModeChanged: (Boolean) -> Unit = {},
 ) {
     val today = remember { tehranDay(System.currentTimeMillis()) }
     // Without the reveal, hidden rows leave the ledger entirely; with it, they come back
@@ -212,6 +213,15 @@ fun TimelineScreen(
         BackHandler {
             selecting = false
             selected = emptySet()
+        }
+    }
+
+    LaunchedEffect(selecting) {
+        onSelectionModeChanged(selecting)
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+            if (selecting) onSelectionModeChanged(false)
         }
     }
 
@@ -508,10 +518,9 @@ TextButton(onClick = {
                 }
             }
 
-            // The batch action bar: appears only while something is selected. Category filing is
-            // the first bulk action; the same refs are what later bulk hide/delete will consume.
-            if (selecting && selected.isNotEmpty()) {
-                val rows = filtered.filter { it.txn.ref in selected }
+            // The batch action bar: appears while selection mode is active.
+            if (selecting) {
+                val rows = remember(filtered, selected) { filtered.filter { it.txn.ref in selected } }
                 BatchActionBar(
                     selectedRefs = selected,
                     matchCount = filtered.size,
@@ -738,33 +747,50 @@ private fun BatchActionBar(
     var noteValue by remember { mutableStateOf("") }
     var merchantValue by remember { mutableStateOf("") }
 
-    Surface(tonalElevation = 3.dp, shadowElevation = 4.dp) {
+    Surface(
+        tonalElevation = 6.dp,
+        shadowElevation = 8.dp,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+    ) {
         Row(
             Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(horizontal = Space.xl, vertical = Space.s),
+                .padding(horizontal = Space.l, vertical = Space.s),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Space.s),
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    "${selectedRefs.size} مورد انتخاب شده",
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    if (selectedRefs.isEmpty()) "موردی انتخاب نشده" else "${fa(selectedRefs.size)} مورد انتخاب شده",
+                    fontSize = 14.sp,
+                    fontFamily = ModamFigures,
+                    fontWeight = FontWeight.Bold,
+                    color = if (selectedRefs.isEmpty()) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                 )
-                if (matchCount != selectedRefs.size) {
+                if (selectedRefs.isNotEmpty() && matchCount != selectedRefs.size) {
                     Text(
-                        "فیلتر با $matchCount مورد مطابقت دارد؛ «انتخاب همه» همهٔ آن‌ها را برمی‌دارد.",
-                        fontSize = 12.sp,
+                        "فیلتر با ${fa(matchCount)} مورد مطابقت دارد؛ «انتخاب همه» همهٔ آن‌ها را برمی‌دارد.",
+                        fontSize = 11.sp,
+                        fontFamily = ModamFigures,
                         color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
-            Button(onClick = { showActionsSheet = true }) {
-                Text("عملیات", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+            Button(
+                onClick = { showActionsSheet = true },
+                enabled = selectedRefs.isNotEmpty(),
+                colors = ButtonDefaults.buttonColors(containerColor = Hero.gold),
+            ) {
+                Text(
+                    "عملیات",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (selectedRefs.isNotEmpty()) Color.Black else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
+                )
             }
-            TextButton(onClick = onCancel) { Text("لغو", fontSize = 12.sp) }
+            TextButton(onClick = onCancel) { Text("لغو", fontSize = 13.sp) }
         }
     }
 

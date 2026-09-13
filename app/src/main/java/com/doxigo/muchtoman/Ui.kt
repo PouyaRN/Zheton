@@ -289,6 +289,7 @@ fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
     var showCommitmentsHubSheet by remember { mutableStateOf(false) }
     var showAddCommitmentSheet by remember { mutableStateOf(false) }
     var showExecutiveDeckSheet by remember { mutableStateOf(false) }
+    var isTimelineSelecting by remember { mutableStateOf(false) }
 
     // The permanent-delete undo door. One host, and the window's lifetime rides on the state
     // itself: when it nulls (the window elapsed or she hit Undo) the snackbar just leaves.
@@ -310,6 +311,7 @@ val snackbarHostState = remember { SnackbarHostState() }
     // one tab it has is where it opens.
     var tab by rememberSaveable { mutableStateOf(tabs.first()) }
     val portfolio = tab == Tab.ASSETS
+    LaunchedEffect(tab) { isTimelineSelecting = false }
 
     // Leaving the app re-arms the lock, so coming back asks again — and coming back also
     // refetches rates if the ones on screen are older than the Worker's cache window.
@@ -657,12 +659,18 @@ val snackbarHostState = remember { SnackbarHostState() }
             // already opens the same picker on this tab. Two buttons for one action, one of
             // them a gold slab against a gold slug, and the bar is where she looks anyway.
             if (tabs.size > 1) {
-                TabBar(
-                    selected = tab,
-                    ledgerBadge = 0,
-                    onSelect = { tab = it },
-                    onQuickAdd = { showQuickAdd = true },
-                )
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = !isTimelineSelecting,
+                    enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { it },
+                    exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { it },
+                ) {
+                    TabBar(
+                        selected = tab,
+                        ledgerBadge = 0,
+                        onSelect = { tab = it },
+                        onQuickAdd = { showQuickAdd = true },
+                    )
+                }
             } else {
                 // The lite edition has no bar, but the Scaffold's inset is the only thing keeping
                 // the last holding clear of the gesture pill, so something still has to stand
@@ -684,6 +692,7 @@ val snackbarHostState = remember { SnackbarHostState() }
             onCategorySelected = { timelineCategoryId = it },
             onSearchQueryChanged = { timelineSearchQuery = it },
             privacyMode = privacyMode,
+            onSelectionModeChanged = { isTimelineSelecting = it },
         )
         return@Scaffold
       }

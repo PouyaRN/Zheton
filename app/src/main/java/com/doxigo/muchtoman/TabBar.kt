@@ -37,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.AbsoluteAlignment
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
@@ -165,6 +166,7 @@ fun TabBar(
             // Animated floating spring gliding pill indicator
             Box(
                 modifier = Modifier
+                    .align(AbsoluteAlignment.TopLeft)
                     .offset(x = animatedPillOffset)
                     .width(slotWidth)
                     .fillMaxHeight()

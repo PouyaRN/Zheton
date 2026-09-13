@@ -56,6 +56,7 @@ fun UnifiedActivityAndTrendsScreen(
     onCategorySelected: (String?) -> Unit,
     onSearchQueryChanged: (String?) -> Unit,
     privacyMode: Boolean,
+    onSelectionModeChanged: (Boolean) -> Unit = {},
     initialPage: Int = 0,
     modifier: Modifier = Modifier,
 ) {
@@ -162,6 +163,7 @@ fun UnifiedActivityAndTrendsScreen(
                         onToggleTransfer = { entry -> vm.toggleTransfer(entry) },
                         onFilterWide = { wide -> vm.setFilterWide(wide) },
                         privacyMode = privacyMode,
+                        onSelectionModeChanged = onSelectionModeChanged,
                     )
                 }
                 1 -> {

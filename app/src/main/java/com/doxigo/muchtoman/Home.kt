@@ -732,11 +732,16 @@ fun ContextualPriorityCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.weight(1f, fill = false),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Text(
                         text = "تعهدات و اولویت‌های مالی",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                     Spacer(Modifier.width(Space.s))
                     Box(
@@ -750,13 +755,16 @@ fun ContextualPriorityCard(
                             color = Hero.gold,
                             fontWeight = FontWeight.Bold,
                             fontSize = 10.sp,
+                            fontFamily = ModamFigures,
                         )
                     }
                 }
+                Spacer(Modifier.width(Space.s))
                 Text(
                     text = if (privacyMode) "••••••" else "${faCompact(totalRemainingToman.toDouble())} ت",
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Black,
+                    fontFamily = ModamFigures,
                     color = Hero.gold,
                 )
             }
@@ -775,7 +783,10 @@ fun ContextualPriorityCard(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
                             Text("⚠️", fontSize = 14.sp)
                             Spacer(Modifier.width(6.dp))
                             Text(
@@ -784,14 +795,24 @@ fun ContextualPriorityCard(
                                 fontSize = 13.sp,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false),
                             )
                         }
+                        val dueText = when {
+                            nearestCommitment.nextDueDays < 0 -> "${fa(-nearestCommitment.nextDueDays)} روز گذشته از سررسید"
+                            nearestCommitment.nextDueDays == 0 -> "سررسید قسط امروز"
+                            nearestCommitment.nextDueDays == 1 -> "فردا موعد سررسید قسط"
+                            else -> "${fa(nearestCommitment.nextDueDays)} روز تا سررسید قسط بعدی"
+                        }
+                        val dueColor = if (nearestCommitment.nextDueDays <= 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                         Text(
-                            "${fa(nearestCommitment.nextDueDays)} روز تا سررسید قسط بعدی",
+                            dueText,
                             fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = dueColor,
+                            fontFamily = ModamFigures,
                         )
                     }
+                    Spacer(Modifier.width(Space.s))
                     val amount = if (privacyMode) "••••••••" else "${faCompact(nearestCommitment.remainingAmountToman.toDouble())} ت"
                     Text(
                         amount,
@@ -824,8 +845,10 @@ fun ContextualPriorityCard(
                             "${fa(firstOb.installmentCount)} قسط باقیمانده",
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontFamily = ModamFigures,
                         )
                     }
+                    Spacer(Modifier.width(Space.s))
                     val amount = if (privacyMode) "••••••••" else "${faCompact((firstOb.installmentRial / 10L).toDouble())} ت"
                     Text(
                         amount,
@@ -851,10 +874,12 @@ fun ContextualPriorityCard(
                             .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f))
                             .clickable(onClick = onOpenCommitments)
                             .padding(horizontal = 8.dp, vertical = 4.dp),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             "اقساط (${fa(activeCommitments.size)})",
                             fontSize = 11.sp,
+                            fontFamily = ModamFigures,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -866,10 +891,12 @@ fun ContextualPriorityCard(
                             .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f))
                             .clickable(onClick = onOpenObligations)
                             .padding(horizontal = 8.dp, vertical = 4.dp),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             "تعهدات (${fa(activeObligations.size)})",
                             fontSize = 11.sp,
+                            fontFamily = ModamFigures,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -881,10 +908,12 @@ fun ContextualPriorityCard(
                             .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f))
                             .clickable(onClick = onOpenReservations)
                             .padding(horizontal = 8.dp, vertical = 4.dp),
+                        contentAlignment = Alignment.Center,
                     ) {
                         Text(
                             "رزروها (${fa(activeReservations.size)})",
                             fontSize = 11.sp,
+                            fontFamily = ModamFigures,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
