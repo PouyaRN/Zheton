@@ -49,6 +49,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
@@ -467,11 +468,76 @@ TextButton(onClick = {
                             .padding(Space.xl),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text(
-                            "موردی یافت نشد",
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        Surface(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = Space.s),
+                            shape = RoundedCornerShape(20.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerLow,
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                            ),
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(52.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Add,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(26.dp),
+                                    )
+                                }
+                                val isPureEmpty = searchQuery.isBlank() && selectedCategoryId == null && filterTokens.isEmpty()
+                                Text(
+                                    text = if (isPureEmpty) "هنوز هیچ تراکنشی ثبت نشده است" else "تراکنشی با این مشخصات یافت نشد",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                                Text(
+                                    text = if (isPureEmpty) "با ثبت تراکنش‌های روزانه یا روشن کردن پیامک‌های بانکی، دفتر مالی شما تکمیل می‌شود." else "می‌توانید عبارت جستجو یا دسته‌بندی انتخابی را تغییر دهید.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                    lineHeight = 20.sp,
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                if (isPureEmpty) {
+                                    androidx.compose.material3.Button(
+                                        onClick = { showAddManual = true },
+                                        shape = RoundedCornerShape(Radius.pill),
+                                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                            containerColor = MaterialTheme.colorScheme.primary,
+                                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                                        ),
+                                    ) {
+                                        Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Spacer(Modifier.width(6.dp))
+                                        Text("ثبت تراکنش دستی", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    }
+                                } else {
+                                    androidx.compose.material3.OutlinedButton(
+                                        onClick = {
+                                            searchQuery = ""
+                                            selectedCategoryId = null
+                                            filterTokens = emptyList()
+                                        },
+                                        shape = RoundedCornerShape(Radius.pill),
+                                    ) {
+                                        Text("پاک کردن فیلترها", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                    }
+                                }
+                            }
+                        }
                     }
                 } else {
                     LazyColumn(

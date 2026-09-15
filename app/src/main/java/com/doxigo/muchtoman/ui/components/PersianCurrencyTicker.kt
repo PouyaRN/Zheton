@@ -162,7 +162,7 @@ fun PersianCurrencyTicker(
     fontSize: TextUnit = 36.sp,
     textColor: Color = Color(0xFFF1F3F4),
     unitColor: Color = Color(0xFFB0B5B9),
-    showVignette: Boolean = true,
+    showVignette: Boolean = false,
 ) {
     var previousAmount by remember { mutableDoubleStateOf(amount) }
     val isIncreasing = amount >= previousAmount
@@ -404,18 +404,16 @@ private fun SingleDigitCylinder(
         }
 
         // Specular Vignette: Simulates bevel depth and dial casing shadows
+        // ponytail: disabled by default for modern flat legibility without dark bar artifacts in light mode.
         if (showVignette) {
             Box(
                 modifier = Modifier
                     .matchParentSize()
                     .background(
                         Brush.verticalGradient(
-                            0.0f to Color.Black.copy(alpha = 0.45f),
-                            0.18f to Color.Transparent,
-                            0.82f to Color.Transparent,
-                            1.0f to Color.Black.copy(alpha = 0.45f),
-                        ),
-                    ),
+                            listOf(Color.Black.copy(alpha = 0.25f), Color.Transparent, Color.Transparent, Color.Black.copy(alpha = 0.25f))
+                        )
+                    )
             )
         }
     }

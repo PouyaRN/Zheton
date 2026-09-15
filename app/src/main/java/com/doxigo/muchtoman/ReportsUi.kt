@@ -78,6 +78,8 @@ fun ReportsTab(
     current: Double = 0.0,
     composition: List<Pair<Kind, Double>> = emptyList(),
     bankAccounts: List<BankAccount> = emptyList(),
+    commitments: List<Commitment> = emptyList(),
+    reservations: List<Reservation> = emptyList(),
     onSelectCategory: (String?) -> Unit = {},
     bottomInset: androidx.compose.ui.unit.Dp = 0.dp,
     privacyMode: Boolean = false,
@@ -142,9 +144,63 @@ fun ReportsTab(
         BudgetRule503020Summary.compute(visibleEntries)
     }
 
-    // Micro-leak detection for micro-transactions under 50,000 Tomans
-    val microLeakSummary = remember(visibleEntries) {
-        MicroLeakDetector.analyze(visibleEntries, thresholdToman = 50_000L)
+    // Financial Decision Engine: Dynamic Non-linear Pacing & Runway Calculation
+    val currentCycleWindow = remember(today.longValue, cycle) { cycleWindow(today.longValue, cycle) }
+    val totalCycleDays = (currentCycleWindow.endDay - currentCycleWindow.startDay).toInt().coerceAtLeast(1)
+    val cycleDay = (today.longValue - currentCycleWindow.startDay + 1).toInt().coerceIn(1, totalCycleDays)
+    val remainingDays = (currentCycleWindow.endDay - today.longValue).toInt().coerceAtLeast(1)
+    val currentDOW = remember(today.longValue) { SafeSpendEngine.iranianDayOfWeek(today.longValue) }
+
+    val liquidCashToman = remember(bankAccounts) { bankAccounts.sumOf { it.balance }.toLong() }
+    val upcomingLiabilitiesToman = remember(commitments, reservations, remainingDays) {
+        val commitmentPart = commitments.filter { !it.isSettled && it.nextDueDays in 0..remainingDays }
+            .sumOf { it.remainingAmountToman }
+        val reservationPart = reservations.filter { !it.released }
+            .sumOf { it.amountRial / 10L }
+        commitmentPart + reservationPart
+    }
+
+    val actualSpentSoFarToman = snapshot.expense / 10L
+    val targetBudgetToman = if (snapshot.income > 0) snapshot.income / 10L else (actualSpentSoFarToman * 1.3).toLong().coerceAtLeast(10_000_000L)
+
+    val pacingDecision = remember(
+        liquidCashToman, upcomingLiabilitiesToman, cycleDay, totalCycleDays, currentDOW, actualSpentSoFarToman, targetBudgetToman,
+    ) {
+        SafeSpendEngine.computePacing(
+            liquidCashToman = liquidCashToman,
+            upcomingLiabilitiesToman = upcomingLiabilitiesToman,
+            cycleDay = cycleDay,
+            totalCycleDays = totalCycleDays,
+            currentDayOfWeek = currentDOW,
+            actualSpentSoFarToman = actualSpentSoFarToman,
+            targetMonthlyBudgetToman = targetBudgetToman,
+            recentDailyBurnToman = if (cycleDay > 1) actualSpentSoFarToman / cycleDay else 0L,
+        )
+    }
+
+    // Variance attribution comparing current window to prior window
+    val varianceInsight = remember(ledger.allEntries, windowStart, today.longValue) {
+        val priorCycleStart = jalaliMonthsBack(windowStart, 1)
+        val priorCycleEnd = windowStart
+        val priorEntries = ledger.allEntries.filter { !it.duplicate && !it.hidden && !it.transfer && it.txn.day in priorCycleStart until priorCycleEnd }
+
+        val currentCatMap = visibleEntries
+            .filter { it.txn.direction == "out" }
+            .groupBy { it.categoryId }
+            .mapValues { (_, rows) -> rows.sumOf { kotlin.math.abs(it.txn.signedRial ?: 0L) / 10L } }
+
+        val priorCatMap = priorEntries
+            .filter { it.txn.direction == "out" }
+            .groupBy { it.categoryId }
+            .mapValues { (_, rows) -> rows.sumOf { kotlin.math.abs(it.txn.signedRial ?: 0L) / 10L } }
+
+        val catNames = ledger.categories.associate { it.id to it.nameFa }
+
+        SafeSpendEngine.analyzeVariance(
+            currentCatSpend = currentCatMap,
+            priorCatSpend = priorCatMap,
+            categoryNames = catNames,
+        )
     }
 
     // Bank fee & friction tracker
@@ -222,18 +278,15 @@ fun ReportsTab(
             LazyColumn(
                 Modifier.fillMaxSize(),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                    start = Space.xl, end = Space.xl, top = Space.s, bottom = bottomInset + 100.dp,
+                    start = Space.xl, end = Space.xl, top = Space.s, bottom = bottomInset + 140.dp,
                 ),
             ) {
-                // Section 1: Monzo Trends-inspired Payday Burn-Down Trajectory Card
+                // Section 1: Actionable Financial Decision & Pacing Card
                 if (window == ReportWindow.MONTH) {
                     item {
-                        PaydayBurnDownCard(
-                            entries = visibleEntries,
-                            today = today.longValue,
-                            cycle = cycle,
-                            totalIncomeRial = snapshot.income,
-                            totalExpenseRial = snapshot.expense,
+                        FinancialDecisionEngineCard(
+                            pacing = pacingDecision,
+                            variance = varianceInsight,
                             privacyMode = privacyMode,
                         )
                         Spacer(Modifier.height(Space.l))
@@ -267,11 +320,7 @@ fun ReportsTab(
                     }
                 }
 
-                // Wealth Defense Index gauge card
-                item {
-                    Spacer(Modifier.height(Space.l))
-                    WealthDefenseGaugeCard(unhedgedToman = unhedgedToman, hedgedToman = hedgedToman, privacyMode = privacyMode)
-                }
+
 
                 // Idle Cash Sweep Warning Card
                 if (idleCashWarning.hasIdleCash) {
@@ -289,13 +338,7 @@ fun ReportsTab(
                     }
                 }
 
-                // Micro-Leak Radar Card
-                if (microLeakSummary.hasLeaks) {
-                    item {
-                        Spacer(Modifier.height(Space.l))
-                        MicroLeakCard(leakSummary = microLeakSummary, privacyMode = privacyMode)
-                    }
-                }
+
 
                 // Interactive Category Donut Chart with Slice Selection
                 if (snapshot.catSpend.isNotEmpty()) {
@@ -325,113 +368,9 @@ fun ReportsTab(
                     }
                 }
 
-                // Category spend list
-                if (snapshot.catSpend.isNotEmpty()) {
-                    item {
-                        Spacer(Modifier.height(Space.xl))
-                        Text(
-                            "هزینه بر اساس دسته‌بندی",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground,
-                        )
-                        Spacer(Modifier.height(Space.s))
-                    }
-                    items(snapshot.catSpend, key = { it.first ?: "uncategorized" }) { (catId, amount) ->
-                        val catFa = ledger.categories.find { it.id == catId }?.nameFa ?: "دسته‌بندی نشده"
-                        val isUncategorized = catId == null
-                        CategorySpendRow(
-                            nameFa = catFa,
-                            amount = amount,
-                            totalExpense = snapshot.expense,
-                            isUncategorized = isUncategorized,
-                            privacyMode = privacyMode,
-                            onClick = { onSelectCategory(catId) },
-                        )
-                    }
-                }
 
-                // Wealth-trend chart
-                if (history.isNotEmpty()) {
-                    item {
-                        Spacer(Modifier.height(Space.xl))
-                        Text(
-                            "روند دارایی",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground,
-                        )
-                        Spacer(Modifier.height(Space.s))
-                        if (change == null || points.size < 2) {
-                            EmptyReport()
-                        } else {
-                            ChangeFigure(change, window.fa, now, privacyMode = privacyMode)
-                            Spacer(Modifier.height(Space.xl))
-                            var scrubPoint by remember(points) { mutableStateOf<Pair<Long, Double>?>(null) }
-                            val tone = changeTone(change)
-                            Box(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .clip(RoundedCornerShape(Radius.group))
-                                    .background(MaterialTheme.colorScheme.surfaceContainer)
-                                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.group))
-                                    .padding(Space.l),
-                            ) {
-                                Column {
-                                    Box(Modifier.fillMaxWidth()) {
-                                        scrubPoint?.let { (day, v) ->
-                                            Row(
-                                                modifier = Modifier
-                                                    .align(Alignment.TopCenter)
-                                                    .clip(RoundedCornerShape(Radius.pill))
-                                                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                                                    .border(1.dp, tone.copy(alpha = 0.5f), RoundedCornerShape(Radius.pill))
-                                                    .padding(horizontal = Space.m, vertical = 4.dp),
-                                                verticalAlignment = Alignment.CenterVertically,
-                                            ) {
-                                                Text(
-                                                    faDay(day),
-                                                    fontSize = 12.sp,
-                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                )
-                                                Spacer(Modifier.width(Space.s))
-                                                Text(
-                                                    if (privacyMode) "•••••• تومان" else "${faCompact(v, 3, pad = true)} تومان",
-                                                    fontSize = 13.sp,
-                                                    fontWeight = FontWeight.Bold,
-                                                    fontFamily = ModamFigures,
-                                                    color = tone,
-                                                )
-                                            }
-                                        }
-                                        HistoryChart(
-                                            points,
-                                            tone = tone,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .height(220.dp),
-                                            onScrub = { scrubPoint = it },
-                                        )
-                                    }
-                                    Spacer(Modifier.height(Space.l))
-                                    Row(Modifier.fillMaxWidth()) {
-                                        ChartCaption("اکنون", current, privacyMode = privacyMode)
-                                        Spacer(Modifier.weight(1f))
-                                        ChartCaption("شروع", sorted.getValue(change.sinceDay), privacyMode = privacyMode)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
 
-                // Composition bar
-                if (composition.isNotEmpty()) {
-                    item {
-                        Spacer(Modifier.height(Space.xl))
-                        CompositionBar(composition, privacyMode = privacyMode)
-                    }
-                }
+
             }
         }
     }
@@ -687,209 +626,6 @@ private fun ExecutiveCashFlowCard(
                             color = MaterialTheme.colorScheme.onBackground,
                         )
                     }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CategorySpendRow(
-    nameFa: String,
-    amount: Long,
-    totalExpense: Long,
-    isUncategorized: Boolean,
-    privacyMode: Boolean = false,
-    onClick: (() -> Unit)? = null,
-) {
-    val pct = if (totalExpense > 0) (amount.toDouble() / totalExpense * 100).toInt() else 0
-    val animatedProgress by animateFloatAsState(
-        targetValue = (pct / 100f).coerceIn(0f, 1f),
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessLow,
-        ),
-        label = "cat_spend_progress",
-    )
-    val clickModifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .then(clickModifier)
-            .padding(vertical = Space.s),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        CategoryIcon(
-            nameFa,
-            MaterialTheme.colorScheme.onSurfaceVariant,
-            size = 18.dp,
-            stroke = 1.4.dp,
-        )
-        Spacer(Modifier.width(Space.m))
-        Column(Modifier.weight(1f)) {
-            Text(
-                nameFa,
-                fontSize = 14.sp,
-                color = if (isUncategorized) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onBackground,
-                fontWeight = if (isUncategorized) FontWeight.Normal else FontWeight.SemiBold,
-            )
-            Spacer(Modifier.height(4.dp))
-            Box(
-                Modifier
-                    .fillMaxWidth(0.85f)
-                    .height(3.dp)
-                    .clip(RoundedCornerShape(1.5.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-            ) {
-                Box(
-                    Modifier
-                        .fillMaxWidth(animatedProgress)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(1.5.dp))
-                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.75f))
-                )
-            }
-        }
-        Column(horizontalAlignment = Alignment.End) {
-            Text(
-                if (privacyMode) "••••••" else bidi(faCompact(tomanOf(amount))),
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-            )
-            Text(
-                "${pct}%",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-@Composable
-private fun WealthDefenseGaugeCard(
-    unhedgedToman: Long,
-    hedgedToman: Long,
-    modifier: Modifier = Modifier,
-    privacyMode: Boolean = false,
-) {
-    val defense = remember(unhedgedToman, hedgedToman) {
-        PurchasingOptimizationEngine.computeWealthDefenseIndex(unhedgedToman, hedgedToman)
-    }
-
-    val animatedScore by animateFloatAsState(
-        targetValue = defense.score / 100f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessLow,
-        ),
-        label = "wdi_score",
-    )
-
-    val gaugeColor = when {
-        defense.score >= 80 -> Color(0xFF10B981)
-        defense.score >= 60 -> Color(0xFF38BDF8)
-        defense.score >= 40 -> Color(0xFFFBBF24)
-        else -> Color(0xFFF87171)
-    }
-
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.group))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.group)),
-        color = MaterialTheme.colorScheme.surfaceContainer,
-    ) {
-        Column(Modifier.padding(Space.xl)) {
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    "شاخص مصونیت از تورم (WDI)",
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground,
-                )
-                Surface(
-                    shape = RoundedCornerShape(Radius.pill),
-                    color = gaugeColor.copy(alpha = 0.15f),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, gaugeColor.copy(alpha = 0.4f)),
-                ) {
-                    Text(
-                        "${defense.score}٪",
-                        modifier = Modifier.padding(horizontal = Space.m, vertical = 2.dp),
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Black,
-                        fontFamily = ModamFigures,
-                        color = gaugeColor,
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(Space.m))
-
-            // Gauge sweep bar
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(animatedScore)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(
-                            Brush.horizontalGradient(
-                                listOf(gaugeColor.copy(alpha = 0.7f), gaugeColor),
-                            ),
-                        ),
-                )
-            }
-
-            Spacer(Modifier.height(Space.m))
-
-            Text(
-                defense.levelFa,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = gaugeColor,
-            )
-
-            Spacer(Modifier.height(Space.m))
-
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column {
-                    Text(
-                        "نقدینگی در معرض تورم",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        if (privacyMode) "•••••• تومان" else "${faCompact(defense.unhedgedToman.toDouble())} تومان",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = ModamFigures,
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text(
-                        "افت روزانه ارزش (Bleed)",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        if (privacyMode) "•••••• ت / روز" else "${faCompact(defense.dailyBleedToman.toDouble())} ت / روز",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = ModamFigures,
-                        color = if (defense.dailyBleedToman > 0) MaterialTheme.colorScheme.error else gaugeColor,
-                    )
                 }
             }
         }
@@ -1285,122 +1021,6 @@ private fun AssetAllocationDonutCard(
                     }
                 }
             }
-        }
-    }
-}
-
-/**
- * Visual card alerting the user to small invisible micro-leaks (transactions < 50k Tomans).
- */
-@Composable
-fun MicroLeakCard(
-    leakSummary: MicroLeakSummary,
-    modifier: Modifier = Modifier,
-    privacyMode: Boolean = false,
-) {
-    if (!leakSummary.hasLeaks) return
-
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(Radius.card),
-        modifier = modifier.fillMaxWidth(),
-    ) {
-        Column(Modifier.padding(Space.l)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("🔍", fontSize = 18.sp, modifier = Modifier.padding(end = Space.s))
-                    Column {
-                        Text(
-                            "رادار نشتی‌های ریز مالی",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Text(
-                            "مبالغ زیر ۵۰ هزار تومان (اسنک، کارمزد، شارژ)",
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                        )
-                    }
-                }
-
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(Radius.pill))
-                        .background(Color(0xFFFFB74D).copy(alpha = 0.15f))
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                ) {
-                    Text(
-                        "${faNumber(leakSummary.leakCount.toDouble())} تراکنش خرد",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFF57C00),
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(Space.m))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Space.m),
-            ) {
-                Column(
-                    Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(Radius.card))
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
-                        .padding(Space.m),
-                ) {
-                    Text(
-                        "مجموع نشتی خرد",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        if (privacyMode) "•••••• ت" else "${faCompact(leakSummary.totalLeakToman.toDouble())} ت",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontFamily = ModamFigures,
-                        color = MaterialTheme.colorScheme.error,
-                    )
-                }
-
-                Column(
-                    Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(Radius.card))
-                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
-                        .padding(Space.m),
-                ) {
-                    Text(
-                        "میانگین هر خرید خرد",
-                        fontSize = 11.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        if (privacyMode) "•••••• ت" else "${faNumber(leakSummary.averageAmountToman.toDouble())} ت",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        fontFamily = ModamFigures,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(Space.s))
-            Text(
-                leakSummary.recommendationFa,
-                fontSize = 11.sp,
-                lineHeight = 16.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.85f),
-            )
         }
     }
 }
@@ -1977,60 +1597,120 @@ private fun CategoryDonutCard(
 
             Spacer(Modifier.height(Space.l))
 
-            // Legend chips for top categories
-            LazyRow(
+            var expandedCategories by remember { mutableStateOf(false) }
+            val displayItems = if (expandedCategories) catSpend else catSpend.take(4)
+
+            Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Space.xs),
+                verticalArrangement = Arrangement.spacedBy(Space.s),
             ) {
-                itemsIndexed(catSpend.take(6)) { index, (catId, amountRial) ->
+                displayItems.forEachIndexed { index, (catId, amountRial) ->
                     val cat = categories.find { it.id == catId }
                     val name = cat?.nameFa ?: if (catId == CAT_UNCATEGORISED) "دسته‌بندی‌نشده" else "سایر"
                     val color = categoryColors[index % categoryColors.size]
-                    val pct = if (totalExpenseRial > 0L) ((amountRial.toDouble() / totalExpenseRial.toDouble()) * 100.0).toInt() else 0
                     val isSelected = catId == activeItem?.first
+                    val pct = if (totalExpenseRial > 0L) ((amountRial.toDouble() / totalExpenseRial.toDouble()) * 100.0).toInt() else 0
+                    val amountToman = amountRial / 10L
 
-                    Row(
+                    Surface(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(Radius.pill))
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(Radius.card))
                             .clickable {
-                                if (selectedCatId == catId) {
+                                if (isSelected) {
                                     onSelectCategory(catId)
                                 } else {
                                     selectedCatId = catId
                                 }
-                            }
-                            .background(if (isSelected) color.copy(alpha = 0.15f) else Color.Transparent)
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            },
+                        color = if (isSelected) color.copy(alpha = 0.12f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                        shape = RoundedCornerShape(Radius.card),
+                        border = if (isSelected) androidx.compose.foundation.BorderStroke(1.dp, color.copy(alpha = 0.4f)) else null,
                     ) {
-                        Box(
+                        Row(
                             modifier = Modifier
-                                .size(8.dp)
-                                .clip(CircleShape)
-                                .background(color),
-                        )
-                        Text(
-                            text = "$name $pct٪",
-                            fontSize = 11.sp,
-                            fontFamily = ModamFigures,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isSelected) color else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                                .fillMaxWidth()
+                                .padding(horizontal = Space.m, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(10.dp)
+                                    .clip(CircleShape)
+                                    .background(color),
+                            )
+                            Spacer(Modifier.width(Space.s))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(
+                                        name,
+                                        fontSize = 13.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) color else MaterialTheme.colorScheme.onSurface,
+                                    )
+                                    Text(
+                                        if (privacyMode) "•••••• ت" else "${faCompact(amountToman.toDouble())} ت (٪${faNumber(pct.toDouble())})",
+                                        fontSize = 12.sp,
+                                        fontFamily = ModamFigures,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isSelected) color else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                                Spacer(Modifier.height(6.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(4.dp)
+                                        .clip(RoundedCornerShape(2.dp))
+                                        .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth((pct / 100f).coerceIn(0.02f, 1f))
+                                            .fillMaxHeight()
+                                            .clip(RoundedCornerShape(2.dp))
+                                            .background(color),
+                                    )
+                                }
+                            }
+                        }
                     }
+                }
+            }
+
+            if (catSpend.size > 4) {
+                Spacer(Modifier.height(Space.s))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(Radius.pill))
+                        .clickable { expandedCategories = !expandedCategories }
+                        .padding(vertical = 6.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = if (expandedCategories) "بستن لیست دسته‌بندی‌ها ▲" else "مشاهده همه (${fa(catSpend.size)} دسته‌بندی) ▼",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
                 }
             }
 
             // Interactive Drill-Down Action
             if (activeCat != null || activeItem != null) {
-                Spacer(Modifier.height(Space.m))
+                Spacer(Modifier.height(Space.xs))
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f))
                         .clickable { onSelectCategory(activeItem?.first) }
-                        .padding(horizontal = Space.m, vertical = Space.s),
+                        .padding(horizontal = Space.m, vertical = 8.dp),
                     shape = RoundedCornerShape(12.dp),
                     color = Color.Transparent,
                 ) {
@@ -2040,7 +1720,7 @@ private fun CategoryDonutCard(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "مشاهده جزئیات و تراکنش‌های $activeCatName در دفتر کل",
+                            text = "مشاهده ریزتراکنش‌های $activeCatName در دفتر کل",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = Hero.gold,
@@ -2059,37 +1739,22 @@ private fun CategoryDonutCard(
 }
 
 /**
- * Monzo Trends-inspired Payday Burn-Down Trajectory Card (Spec §8.3).
- * Visualizes current expenditure velocity against ideal linear budget and remaining cycle days.
+ * Financial Decision Engine Card (replacing passive burn-down with actionable pacing & runway).
+ * Computes non-linear daily safe spend (Iranian week weighted) and balance exhaustion day.
  */
 @Composable
-private fun PaydayBurnDownCard(
-    entries: List<LedgerEntry>,
-    today: Long,
-    cycle: CycleSpec,
-    totalIncomeRial: Long,
-    totalExpenseRial: Long,
-    modifier: Modifier = Modifier,
+fun FinancialDecisionEngineCard(
+    pacing: SafeSpendEngine.PacingDecision,
+    variance: SafeSpendEngine.VarianceInsight?,
     privacyMode: Boolean = false,
+    modifier: Modifier = Modifier,
 ) {
-    val window = remember(today, cycle) { cycleWindow(today, cycle) }
-    val totalDays = (window.endDay - window.startDay).toInt().coerceAtLeast(1)
-    val elapsedDays = (today - window.startDay + 1).toInt().coerceIn(1, totalDays)
-    val remainingDays = (window.endDay - today).toInt().coerceAtLeast(1)
-
-    val spentToman = (totalExpenseRial / 10L).toDouble()
-    val incomeToman = (totalIncomeRial / 10L).toDouble()
-    val estimatedBudgetToman = if (incomeToman > 0) incomeToman else (spentToman * 1.3).coerceAtLeast(10_000_000.0)
-    val remainingBudgetToman = (estimatedBudgetToman - spentToman).coerceAtLeast(0.0)
-
-    val safeDailySpendToman = if (remainingDays > 0) (remainingBudgetToman / remainingDays).toLong() else 0L
-
-    val idealProgress = elapsedDays.toFloat() / totalDays.toFloat()
-    val actualBurnProgress = if (estimatedBudgetToman > 0) (spentToman / estimatedBudgetToman).toFloat().coerceIn(0f, 1.5f) else 0f
-
-    val isOverPacing = actualBurnProgress > idealProgress * 1.15f
-    val paceColor = if (isOverPacing) Color(0xFFEF4444) else Color(0xFF10B981)
-    val paceLabel = if (isOverPacing) "🔴 سرعت مصرف بالا (خطر کسری)" else "🟢 در محدوده بودجه امن"
+    val statusColor = when (pacing.paceStatus) {
+        SafeSpendEngine.PaceStatus.CONSERVATIVE -> Color(0xFF10B981)
+        SafeSpendEngine.PaceStatus.ON_TRACK -> Color(0xFF38BDF8)
+        SafeSpendEngine.PaceStatus.ELEVATED_VELOCITY -> Color(0xFFF59E0B)
+        SafeSpendEngine.PaceStatus.DEFICIT_RISK -> Color(0xFFEF4444)
+    }
 
     Surface(
         modifier = modifier
@@ -2099,16 +1764,17 @@ private fun PaydayBurnDownCard(
         color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Column(modifier = Modifier.padding(Space.xl)) {
+            // Header: Title + Status Pill
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("📉", fontSize = 16.sp)
+                    Text("🧭", fontSize = 16.sp)
                     Spacer(Modifier.width(Space.s))
                     Text(
-                        "منحنی پیش‌بینی مصرف (Burn-Down)",
+                        "دست‌فرمان خرج و تاب‌آوری",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground,
@@ -2118,127 +1784,182 @@ private fun PaydayBurnDownCard(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(Radius.pill))
-                        .background(paceColor.copy(alpha = 0.15f))
-                        .padding(horizontal = 8.dp, vertical = 3.dp),
+                        .background(statusColor.copy(alpha = 0.15f))
+                        .border(1.dp, statusColor.copy(alpha = 0.3f), RoundedCornerShape(Radius.pill))
+                        .padding(horizontal = 10.dp, vertical = 4.dp),
                 ) {
                     Text(
-                        text = paceLabel,
+                        text = pacing.paceStatus.shortLabelFa,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = paceColor,
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(Space.m))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column {
-                    Text("خرج تا امروز", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(
-                        if (privacyMode) "•••••• ت" else "${faCompact(spentToman)} ت",
-                        fontSize = 16.sp,
-                        fontFamily = ModamFigures,
-                        fontWeight = FontWeight.Black,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("سقف امن روزانه", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(
-                        if (privacyMode) "•••••• ت" else "${fa(safeDailySpendToman)} ت",
-                        fontSize = 16.sp,
-                        fontFamily = ModamFigures,
-                        fontWeight = FontWeight.Black,
-                        color = Hero.mint,
-                    )
-                }
-                Column(horizontalAlignment = Alignment.End) {
-                    Text("روزهای باقی‌مانده", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(
-                        "${fa(remainingDays)} روز",
-                        fontSize = 16.sp,
-                        fontFamily = ModamFigures,
-                        fontWeight = FontWeight.Black,
-                        color = Hero.gold,
+                        color = statusColor,
                     )
                 }
             }
 
             Spacer(Modifier.height(Space.l))
 
-            // Comparative Burn-down progress track
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        "مسیر زمانی سیکل (${fa(elapsedDays)} از ${fa(totalDays)} روز)",
-                        fontSize = 10.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        "${(idealProgress * 100).toInt()}٪ زمان",
-                        fontSize = 10.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                Spacer(Modifier.height(4.dp))
-                Box(
+            // Two Actionable Hero Metric Cards
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Space.m),
+            ) {
+                // Column 1: Safe Spend Today
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(Radius.pill))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                        .weight(1f)
+                        .clip(RoundedCornerShape(Radius.card))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                        .padding(Space.m),
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(idealProgress.coerceIn(0f, 1f))
-                            .fillMaxHeight()
-                            .clip(RoundedCornerShape(Radius.pill))
-                            .background(Color(0xFF64748B)),
+                    Text(
+                        "خرج مجاز امروز",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = if (privacyMode) "•••••• ت" else "${fa(pacing.safeSpendTodayToman)} ت",
+                        fontSize = 17.sp,
+                        fontFamily = ModamFigures,
+                        fontWeight = FontWeight.Black,
+                        color = if (pacing.safeSpendTodayToman > 0) Hero.mint else MaterialTheme.colorScheme.error,
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = "با وزن‌دهی روزهای هفته",
+                        fontSize = 9.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     )
                 }
 
-                Spacer(Modifier.height(8.dp))
+                // Column 2: Projected Balance Exhaustion Day
+                val isExhaustionBeforeMonthEnd = pacing.exhaustionCycleDay != null && pacing.exhaustionCycleDay < pacing.totalCycleDays
+                val exhaustionColor = if (isExhaustionBeforeMonthEnd) MaterialTheme.colorScheme.error else Color(0xFF10B981)
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(Radius.card))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
+                        .padding(Space.m),
                 ) {
                     Text(
-                        "میزان مصرف بودجه",
+                        "تاب‌آوری نقدینگی",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = if (pacing.exhaustionCycleDay == null) {
+                            "پایدار تا سر ماه"
+                        } else if (pacing.daysUntilExhaustion == 0) {
+                            "کسری آنی تعهدات"
+                        } else {
+                            "اتمام در روز ${fa(pacing.exhaustionCycleDay)} ماه"
+                        },
+                        fontSize = 14.sp,
+                        fontFamily = ModamFigures,
+                        fontWeight = FontWeight.Black,
+                        color = exhaustionColor,
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = if (pacing.exhaustionCycleDay == null) {
+                            "${fa(pacing.remainingDays)} روز مانده به سر دوره"
+                        } else {
+                            "${fa(pacing.daysUntilExhaustion ?: 0)} روز دوام با سرعت فعلی"
+                        },
+                        fontSize = 9.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(Space.m))
+
+            // Sub-bar: Committed Liabilities Breakdown
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(Radius.card))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f))
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(Radius.card))
+                    .padding(horizontal = Space.m, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column {
+                    Text(
+                        "نقدینگی در دسترس",
                         fontSize = 10.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        "${(actualBurnProgress * 100).toInt()}٪ مصرف",
-                        fontSize = 10.sp,
+                        if (privacyMode) "••••••" else "${faCompact(pacing.liquidCashToman.toDouble())} ت",
+                        fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = paceColor,
+                        fontFamily = ModamFigures,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
-                Spacer(Modifier.height(4.dp))
-                Box(
+
+                if (pacing.committedLiabilitiesToman > 0L) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            "رزرو اقساط و چک‌ها",
+                            fontSize = 10.sp,
+                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.9f),
+                        )
+                        Text(
+                            if (privacyMode) "••••••" else "-${faCompact(pacing.committedLiabilitiesToman.toDouble())} ت",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = ModamFigures,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        "بافر خالص مخارج",
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        if (privacyMode) "••••••" else "${faCompact(pacing.discretionaryBufferToman.toDouble())} ت",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = ModamFigures,
+                        color = Hero.gold,
+                    )
+                }
+            }
+
+            // Variance / Divergence Diagnostic Callout
+            if (variance != null) {
+                Spacer(Modifier.height(Space.m))
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(Radius.pill))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                        .clip(RoundedCornerShape(Radius.card))
+                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.18f))
+                        .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f), RoundedCornerShape(Radius.card))
+                        .padding(horizontal = Space.m, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(actualBurnProgress.coerceIn(0f, 1f))
-                            .fillMaxHeight()
-                            .clip(RoundedCornerShape(Radius.pill))
-                            .background(paceColor),
+                    Text(
+                        if (variance.isSignificantIncrease) "⚠️" else if (variance.isSignificantDecrease) "🎯" else "💡",
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(end = Space.s),
+                    )
+                    Text(
+                        text = variance.diagnosticTextFa,
+                        fontSize = 11.sp,
+                        lineHeight = 17.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }

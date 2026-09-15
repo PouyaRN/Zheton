@@ -81,8 +81,8 @@ fun UnifiedActivityAndTrendsScreen(
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(24.dp))
-                    .background(Color(0xFF0F1622))
-                    .border(1.dp, Color(0xFF1E293B), RoundedCornerShape(24.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(24.dp))
                     .padding(3.dp),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -91,12 +91,12 @@ fun UnifiedActivityAndTrendsScreen(
                 pages.forEachIndexed { index, title ->
                     val isSelected = pagerState.currentPage == index
                     val bgCol by animateColorAsState(
-                        targetValue = if (isSelected) Hero.gold.copy(alpha = 0.24f) else Color.Transparent,
+                        targetValue = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f) else Color.Transparent,
                         animationSpec = spring(stiffness = Spring.StiffnessMedium),
                         label = "pill_bg_$index"
                     )
                     val textCol by animateColorAsState(
-                        targetValue = if (isSelected) Hero.gold else Hero.muted,
+                        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         animationSpec = spring(stiffness = Spring.StiffnessMedium),
                         label = "pill_text_$index"
                     )
@@ -176,6 +176,8 @@ fun UnifiedActivityAndTrendsScreen(
                         current = state.totals.toman,
                         composition = composition,
                         bankAccounts = state.bankAccounts,
+                        commitments = state.commitments,
+                        reservations = state.reservations,
                         privacyMode = privacyMode,
                         onSelectCategory = { catId ->
                             onCategorySelected(catId)

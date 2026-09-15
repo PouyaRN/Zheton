@@ -10,7 +10,14 @@ import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG
 import androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
 import androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
 import androidx.biometric.BiometricPrompt
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
 import androidx.compose.foundation.background
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -35,6 +42,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -557,7 +565,7 @@ fun SettingsScreen(
             Spacer(Modifier.height(Space.xxl))
             Text(
                 buildString {
-                    append("چقدر تومن • نسخهٔ ${faVersion(BuildConfig.VERSION_NAME)}")
+                    append("اندیس • نسخهٔ ${faVersion(BuildConfig.VERSION_NAME)}")
                     append(" • ساخت ${faVersion(BuildConfig.VERSION_CODE.toString())}")
                     if (BuildConfig.BUILD_TYPE != "release") {
                         append(" • ${bidi(BuildConfig.BUILD_TYPE)}")
@@ -594,69 +602,367 @@ private fun SectionLabel(text: String) {
     )
 }
 
-/** Choice of classic and studio luxury themes. */
+private enum class ThemeFilterCategory(val fa: String) {
+    ALL("همه"),
+    LIGHT("روشن ☀️"),
+    DARK("تیره 🌙"),
+}
+
+/** Interactive Theme Studio with live preview card, palette swatches, and category filtering. */
 @Composable
 private fun ThemePicker(current: ThemeMode, onChange: (ThemeMode) -> Unit) {
     val fintechHaptics = com.doxigo.muchtoman.ui.haptics.LocalFintechHaptics.current
-    val row0 = listOf(ThemeMode.SYSTEM, ThemeMode.DARK, ThemeMode.LIGHT)
-    val rowFintech = listOf(
-        ThemeMode.APPLE_TITANIUM,
-        ThemeMode.REVOLUT_OBSIDIAN,
-        ThemeMode.DUBAI_GOLD,
-    )
-    val rowFintech2 = listOf(
-        ThemeMode.CASH_APP_NEON,
-        ThemeMode.MONZO_OCEANIC,
-        ThemeMode.AMOLED,
-    )
-    val rowStudio = listOf(
-        ThemeMode.OBSIDIAN_EMERALD,
-        ThemeMode.ROYAL_AMETHYST,
-        ThemeMode.NORDIC_SLATE,
-        ThemeMode.CYBER_GOLD,
-    )
+    var selectedCategory by remember { mutableStateOf(ThemeFilterCategory.ALL) }
 
-    Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+    val allThemes = ThemeMode.entries
+    val filteredThemes = remember(selectedCategory) {
+        when (selectedCategory) {
+            ThemeFilterCategory.ALL -> allThemes
+            ThemeFilterCategory.LIGHT -> allThemes.filter { !it.isDark && it != ThemeMode.SYSTEM }
+            ThemeFilterCategory.DARK -> allThemes.filter { it.isDark }
+        }
+    }
+
+    val activeSpec = remember(current) { getThemeVisualSpec(current) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(Space.m)) {
+        // 1. Live Interactive Theme Preview Card
+        ThemeLivePreviewCard(spec = activeSpec)
+
+        // 2. Category Filter Switcher
         SegmentedChoice(
-            options = row0,
-            selected = current,
+            options = ThemeFilterCategory.entries,
+            selected = selectedCategory,
             label = { it.fa },
             onSelect = {
                 fintechHaptics.click()
-                onChange(it)
-            },
-            fontSize = 13.sp,
-        )
-        SegmentedChoice(
-            options = rowFintech,
-            selected = current,
-            label = { it.fa },
-            onSelect = {
-                fintechHaptics.click()
-                onChange(it)
-            },
-            fontSize = 12.sp,
-        )
-        SegmentedChoice(
-            options = rowFintech2,
-            selected = current,
-            label = { it.fa },
-            onSelect = {
-                fintechHaptics.click()
-                onChange(it)
+                selectedCategory = it
             },
             fontSize = 12.sp,
         )
-        SegmentedChoice(
-            options = rowStudio,
-            selected = current,
-            label = { it.fa },
-            onSelect = {
-                fintechHaptics.click()
-                onChange(it)
-            },
-            fontSize = 11.sp,
-        )
+
+        // 3. Grid of Visual Theme Swatch Cards
+        Column(verticalArrangement = Arrangement.spacedBy(Space.s)) {
+            filteredThemes.chunked(2).forEach { row ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Space.s),
+                ) {
+                    row.forEach { theme ->
+                        Box(modifier = Modifier.weight(1f)) {
+                            ThemeSwatchCard(
+                                theme = theme,
+                                isSelected = theme == current,
+                                onSelect = {
+                                    fintechHaptics.click()
+                                    onChange(theme)
+                                },
+                            )
+                        }
+                    }
+                    if (row.size == 1) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThemeLivePreviewCard(spec: ThemeVisualSpec) {
+    val animHeroTop by animateColorAsState(spec.heroTopPreview, spring(stiffness = Spring.StiffnessMediumLow), label = "prev_top")
+    val animHeroBottom by animateColorAsState(spec.heroBottomPreview, spring(stiffness = Spring.StiffnessMediumLow), label = "prev_bottom")
+    val animBg by animateColorAsState(spec.bgPreview, spring(stiffness = Spring.StiffnessMediumLow), label = "prev_bg")
+    val animSurface by animateColorAsState(spec.surfacePreview, spring(stiffness = Spring.StiffnessMediumLow), label = "prev_surface")
+    val animAccent by animateColorAsState(spec.accentPreview, spring(stiffness = Spring.StiffnessMediumLow), label = "prev_accent")
+
+    val textColor = if (spec.isDark) Color(0xFFF8FAFC) else Color(0xFF101A18)
+    val mutedColor = if (spec.isDark) Color(0xFF94A3B8) else Color(0xFF5C6F68)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Radius.sheet),
+        colors = CardDefaults.cardColors(containerColor = animBg),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column {
+            // Mini Hero Header
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(bottomStart = Radius.hero, bottomEnd = Radius.hero))
+                    .background(Brush.verticalGradient(listOf(animHeroTop, animHeroBottom)))
+                    .padding(horizontal = Space.m, vertical = Space.m),
+            ) {
+                // Radial specular highlight
+                Canvas(Modifier.matchParentSize()) {
+                    drawRect(
+                        Brush.radialGradient(
+                            colors = listOf(animAccent.copy(alpha = 0.22f), Color.Transparent),
+                            center = Offset(size.width * 0.9f, 0f),
+                            radius = size.width * 0.8f,
+                        )
+                    )
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "پیش‌نمایش زنده • اندیس",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = mutedColor,
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(Radius.pill),
+                            color = animAccent.copy(alpha = 0.16f),
+                            border = BorderStroke(1.dp, animAccent.copy(alpha = 0.35f)),
+                        ) {
+                            Text(
+                                text = if (spec.mode == ThemeMode.SYSTEM) "⚙️ خودکار" else if (spec.isDark) "🌙 تیره" else "☀️ روشن",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = animAccent,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(Space.xs))
+
+                    Text(
+                        text = "موجودی کل در دسترس",
+                        fontSize = 11.sp,
+                        color = mutedColor,
+                    )
+
+                    Row(
+                        verticalAlignment = Alignment.Bottom,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            text = "۴۸,۲۵۰,۰۰۰",
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Black,
+                            fontFamily = ModamFigures,
+                            color = animAccent,
+                        )
+                        Text(
+                            text = "تومان",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = animAccent.copy(alpha = 0.8f),
+                            modifier = Modifier.padding(bottom = 3.dp),
+                        )
+                    }
+                }
+            }
+
+            // Mini App Cockpit / Cards row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Space.m, vertical = Space.s),
+                horizontalArrangement = Arrangement.spacedBy(Space.s),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // Mini Bank Card Chip
+                Surface(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(Radius.card),
+                    color = animSurface,
+                    border = BorderStroke(1.dp, animAccent.copy(alpha = 0.3f)),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = Space.s, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(animAccent),
+                        )
+                        Text(
+                            text = "کارت اصلی ••۳۴",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = textColor,
+                            maxLines = 1,
+                        )
+                    }
+                }
+
+                // Mini Income badge
+                Surface(
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(Radius.card),
+                    color = animSurface,
+                    border = BorderStroke(1.dp, Color(0xFF10B981).copy(alpha = 0.3f)),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = Space.s, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF10B981)),
+                        )
+                        Text(
+                            text = "+۳,۵۰۰,۰۰۰",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = ModamFigures,
+                            color = Color(0xFF10B981),
+                            maxLines = 1,
+                        )
+                    }
+                }
+            }
+
+            // Footer active theme name strip
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(animSurface.copy(alpha = 0.6f))
+                    .padding(horizontal = Space.m, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "تم انتخابی: ${spec.mode.fa}",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = textColor,
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(animAccent),
+                    )
+                    Text(
+                        text = "فعال",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = animAccent,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ThemeSwatchCard(
+    theme: ThemeMode,
+    isSelected: Boolean,
+    onSelect: () -> Unit,
+) {
+    val spec = remember(theme) { getThemeVisualSpec(theme) }
+    val cardBg = spec.surfacePreview
+    val textColor = if (spec.isDark) Color(0xFFF8FAFC) else Color(0xFF101A18)
+
+    val activeBorderColor = spec.accentPreview
+    val inactiveBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Radius.group))
+            .clickable(onClick = onSelect),
+        shape = RoundedCornerShape(Radius.group),
+        color = cardBg,
+        border = BorderStroke(
+            width = if (isSelected) 2.dp else 1.dp,
+            color = if (isSelected) activeBorderColor else inactiveBorderColor,
+        ),
+        shadowElevation = if (isSelected) 3.dp else 0.dp,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = Space.m, vertical = Space.s),
+            verticalArrangement = Arrangement.spacedBy(Space.xs),
+        ) {
+            // Top row: Swatches & Selection/Mode tag
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // 3 color dots: Background, Surface/Hero, Accent
+                Row(horizontalArrangement = Arrangement.spacedBy((-3).dp)) {
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .background(spec.bgPreview)
+                            .border(1.dp, Color.White.copy(alpha = 0.4f), CircleShape),
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .background(spec.heroTopPreview)
+                            .border(1.dp, Color.White.copy(alpha = 0.4f), CircleShape),
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .background(spec.accentPreview)
+                            .border(1.dp, Color.White.copy(alpha = 0.6f), CircleShape),
+                    )
+                }
+
+                if (isSelected) {
+                    Box(
+                        modifier = Modifier
+                            .size(18.dp)
+                            .clip(CircleShape)
+                            .background(spec.accentPreview),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        val iconTint = if ((spec.accentPreview.red * 0.299f + spec.accentPreview.green * 0.587f + spec.accentPreview.blue * 0.114f) > 0.5f) Color(0xFF050607) else Color.White
+                        Icon(
+                            imageVector = Icons.Rounded.Check,
+                            contentDescription = "انتخاب شده",
+                            tint = iconTint,
+                            modifier = Modifier.size(12.dp),
+                        )
+                    }
+                } else {
+                    Text(
+                        text = if (theme == ThemeMode.SYSTEM) "خودکار" else if (spec.isDark) "تیره" else "روشن",
+                        fontSize = 10.sp,
+                        color = textColor.copy(alpha = 0.65f),
+                    )
+                }
+            }
+
+            // Bottom row: Theme title
+            Text(
+                text = theme.fa,
+                fontSize = 12.sp,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                color = if (isSelected) spec.accentPreview else textColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 

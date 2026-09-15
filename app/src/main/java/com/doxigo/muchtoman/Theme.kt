@@ -165,18 +165,208 @@ object Hero {
 enum class ThemeMode(val fa: String) {
     SYSTEM("خودکار"),
     ANDIS_TERMINAL("اندیس"),
-    LIGHT("روشن"),
+    LIGHT("کلاسیک روشن"),
     DARK("تیره"),
     AMOLED("آمولد"),
     APPLE_TITANIUM("اپل تیتانیوم"),
+    APPLE_SILVER("اپل سیلور"),
     REVOLUT_OBSIDIAN("رولوت ابسیدین"),
+    NORDIC_FROST("نوردیک فراست"),
+    CHAMPAGNE_GOLD("شامپاین"),
+    PERSIAN_MINT("فیروزه روشن"),
+    ROSE_QUARTZ("رز کوارتز"),
     CASH_APP_NEON("کش‌اپ نئون"),
     MONZO_OCEANIC("مانزو اقیانوسی"),
     DUBAI_GOLD("دبی گلد"),
     OBSIDIAN_EMERALD("زمرد"),
     ROYAL_AMETHYST("ارغوانی"),
     NORDIC_SLATE("نوردیک"),
-    CYBER_GOLD("سایبرگلد"),
+    CYBER_GOLD("سایبرگلد");
+
+    val isDark: Boolean
+        get() = when (this) {
+            LIGHT, APPLE_SILVER, NORDIC_FROST, CHAMPAGNE_GOLD, PERSIAN_MINT, ROSE_QUARTZ -> false
+            else -> true
+        }
+
+    val isLight: Boolean
+        get() = !isDark
+}
+
+/** Visual spec for theme swatch cards and interactive preview. */
+data class ThemeVisualSpec(
+    val mode: ThemeMode,
+    val isDark: Boolean,
+    val bgPreview: Color,
+    val surfacePreview: Color,
+    val accentPreview: Color,
+    val heroTopPreview: Color,
+    val heroBottomPreview: Color,
+)
+
+fun getThemeVisualSpec(mode: ThemeMode): ThemeVisualSpec = when (mode) {
+    ThemeMode.SYSTEM -> ThemeVisualSpec(
+        mode = mode,
+        isDark = false,
+        bgPreview = Color(0xFF14181D),
+        surfacePreview = Color(0xFF1E293B),
+        accentPreview = Color(0xFF38BDF8),
+        heroTopPreview = Color(0xFF0F1622),
+        heroBottomPreview = Color(0xFF070A0F),
+    )
+    ThemeMode.LIGHT -> ThemeVisualSpec(
+        mode = mode,
+        isDark = false,
+        bgPreview = Color(0xFFF8FAFC),
+        surfacePreview = Color.White,
+        accentPreview = Color(0xFFD97706),
+        heroTopPreview = Color(0xFFF8FAFC),
+        heroBottomPreview = Color(0xFFEDF2F7),
+    )
+    ThemeMode.APPLE_SILVER -> ThemeVisualSpec(
+        mode = mode,
+        isDark = false,
+        bgPreview = Color(0xFFF5F5F7),
+        surfacePreview = Color.White,
+        accentPreview = Color(0xFF0071E3),
+        heroTopPreview = Color(0xFFE8EEF5),
+        heroBottomPreview = Color(0xFFF5F5F7),
+    )
+    ThemeMode.NORDIC_FROST -> ThemeVisualSpec(
+        mode = mode,
+        isDark = false,
+        bgPreview = Color(0xFFF0F7FF),
+        surfacePreview = Color.White,
+        accentPreview = Color(0xFF0284C7),
+        heroTopPreview = Color(0xFFE0F2FE),
+        heroBottomPreview = Color(0xFFF0F7FF),
+    )
+    ThemeMode.CHAMPAGNE_GOLD -> ThemeVisualSpec(
+        mode = mode,
+        isDark = false,
+        bgPreview = Color(0xFFFAF8F5),
+        surfacePreview = Color.White,
+        accentPreview = Color(0xFFD97706),
+        heroTopPreview = Color(0xFFF5EFEB),
+        heroBottomPreview = Color(0xFFFAF8F5),
+    )
+    ThemeMode.PERSIAN_MINT -> ThemeVisualSpec(
+        mode = mode,
+        isDark = false,
+        bgPreview = Color(0xFFF0FDF4),
+        surfacePreview = Color.White,
+        accentPreview = Color(0xFF059669),
+        heroTopPreview = Color(0xFFDCFCE7),
+        heroBottomPreview = Color(0xFFF0FDF4),
+    )
+    ThemeMode.ROSE_QUARTZ -> ThemeVisualSpec(
+        mode = mode,
+        isDark = false,
+        bgPreview = Color(0xFFFFF1F2),
+        surfacePreview = Color.White,
+        accentPreview = Color(0xFFE11D48),
+        heroTopPreview = Color(0xFFFFE4E6),
+        heroBottomPreview = Color(0xFFFFF1F2),
+    )
+    ThemeMode.ANDIS_TERMINAL, ThemeMode.DARK -> ThemeVisualSpec(
+        mode = mode,
+        isDark = true,
+        bgPreview = Color(0xFF070A0F),
+        surfacePreview = Color(0xFF0F1622),
+        accentPreview = Color(0xFF38BDF8),
+        heroTopPreview = Color(0xFF0F1622),
+        heroBottomPreview = Color(0xFF070A0F),
+    )
+    ThemeMode.AMOLED -> ThemeVisualSpec(
+        mode = mode,
+        isDark = true,
+        bgPreview = Color(0xFF000000),
+        surfacePreview = Color(0xFF0A0D0F),
+        accentPreview = Color(0xFFD4FF00),
+        heroTopPreview = Color(0xFF000000),
+        heroBottomPreview = Color(0xFF050607),
+    )
+    ThemeMode.APPLE_TITANIUM -> ThemeVisualSpec(
+        mode = mode,
+        isDark = true,
+        bgPreview = Color(0xFF000000),
+        surfacePreview = Color(0xFF141416),
+        accentPreview = Color(0xFFE5E5EA),
+        heroTopPreview = Color(0xFF141416),
+        heroBottomPreview = Color(0xFF000000),
+    )
+    ThemeMode.REVOLUT_OBSIDIAN -> ThemeVisualSpec(
+        mode = mode,
+        isDark = true,
+        bgPreview = Color(0xFF0E1114),
+        surfacePreview = Color(0xFF14181D),
+        accentPreview = Color(0xFF0075FF),
+        heroTopPreview = Color(0xFF14181D),
+        heroBottomPreview = Color(0xFF0E1114),
+    )
+    ThemeMode.CASH_APP_NEON -> ThemeVisualSpec(
+        mode = mode,
+        isDark = true,
+        bgPreview = Color(0xFF000000),
+        surfacePreview = Color(0xFF121212),
+        accentPreview = Color(0xFF00D632),
+        heroTopPreview = Color(0xFF121212),
+        heroBottomPreview = Color(0xFF000000),
+    )
+    ThemeMode.MONZO_OCEANIC -> ThemeVisualSpec(
+        mode = mode,
+        isDark = true,
+        bgPreview = Color(0xFF0E1927),
+        surfacePreview = Color(0xFF14233C),
+        accentPreview = Color(0xFFFF4D5A),
+        heroTopPreview = Color(0xFF14233C),
+        heroBottomPreview = Color(0xFF0E1927),
+    )
+    ThemeMode.DUBAI_GOLD -> ThemeVisualSpec(
+        mode = mode,
+        isDark = true,
+        bgPreview = Color(0xFF0A0A0C),
+        surfacePreview = Color(0xFF14171A),
+        accentPreview = Color(0xFFF7C948),
+        heroTopPreview = Color(0xFF1B1915),
+        heroBottomPreview = Color(0xFF0A0A0C),
+    )
+    ThemeMode.OBSIDIAN_EMERALD -> ThemeVisualSpec(
+        mode = mode,
+        isDark = true,
+        bgPreview = Color(0xFF060B08),
+        surfacePreview = Color(0xFF0B1410),
+        accentPreview = Color(0xFF10B981),
+        heroTopPreview = Color(0xFF063326),
+        heroBottomPreview = Color(0xFF021610),
+    )
+    ThemeMode.ROYAL_AMETHYST -> ThemeVisualSpec(
+        mode = mode,
+        isDark = true,
+        bgPreview = Color(0xFF080612),
+        surfacePreview = Color(0xFF100D22),
+        accentPreview = Color(0xFFA78BFA),
+        heroTopPreview = Color(0xFF3B0764),
+        heroBottomPreview = Color(0xFF120324),
+    )
+    ThemeMode.NORDIC_SLATE -> ThemeVisualSpec(
+        mode = mode,
+        isDark = true,
+        bgPreview = Color(0xFF060B11),
+        surfacePreview = Color(0xFF0C1420),
+        accentPreview = Color(0xFF38BDF8),
+        heroTopPreview = Color(0xFF0C2B4E),
+        heroBottomPreview = Color(0xFF051324),
+    )
+    ThemeMode.CYBER_GOLD -> ThemeVisualSpec(
+        mode = mode,
+        isDark = true,
+        bgPreview = Color(0xFF09090B),
+        surfacePreview = Color(0xFF131316),
+        accentPreview = Color(0xFFFFD700),
+        heroTopPreview = Color(0xFF2C1E03),
+        heroBottomPreview = Color(0xFF0E0901),
+    )
 }
 
 /** One spacing scale. Anything not on it is a decision someone has to defend. */
@@ -286,7 +476,7 @@ object AndisTypography {
 @Composable
 fun HairlineDivider(
     modifier: Modifier = Modifier,
-    color: Color = Color(0xFF1C2327),
+    color: Color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f),
     thickness: Dp = 1.dp,
 ) {
     androidx.compose.foundation.Canvas(
@@ -384,45 +574,44 @@ object Motion {
  * out mauve no matter how carefully `primary` was chosen.
  */
 private val LightColors = lightColorScheme(
-    primary = Color(0xFF0A423B),
+    primary = Color(0xFF0F172A),            // Slate 900 — prestigious authoritative dark slate
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFD7E8E2),
-    onPrimaryContainer = Color(0xFF04231F),
+    primaryContainer = Color(0xFFE2E8F0),   // Slate 200
+    onPrimaryContainer = Color(0xFF0F172A),
 
-    secondary = Color(0xFF8A5E12),          // gold dark enough to read as text on paper
+    secondary = Color(0xFFD97706),          // Amber 600 — classic warm gold
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFFBE7BE),
-    onSecondaryContainer = Color(0xFF33230A),
+    secondaryContainer = Color(0xFFFEF3C7), // Amber 100
+    onSecondaryContainer = Color(0xFF78350F),
 
-    // Gain, and only gain. Borrowing primary for "بیشتر" made the same meaning green in
-    // light mode and gold in dark — and dark gold is also every button on screen.
-    tertiary = Color(0xFF12795A),
+    // Gain, and only gain.
+    tertiary = Color(0xFF10B981),
     onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFBDEEDA),
-    onTertiaryContainer = Color(0xFF04291D),
+    tertiaryContainer = Color(0xFFA7F3D0),
+    onTertiaryContainer = Color(0xFF064E3B),
 
-    background = Color(0xFFF4F1E9),         // warm paper, not clinical white
-    onBackground = Color(0xFF101A18),
+    background = Color(0xFFF8FAFC),         // Slate 50 — clean modern light canvas
+    onBackground = Color(0xFF0F172A),
 
     surface = Color.White,
-    onSurface = Color(0xFF101A18),
-    surfaceVariant = Color(0xFFE4EAE6),
-    onSurfaceVariant = Color(0xFF4A5C57),   // green-tinted muted text, never flat grey
+    onSurface = Color(0xFF0F172A),
+    surfaceVariant = Color(0xFFF1F5F9),     // Slate 100
+    onSurfaceVariant = Color(0xFF64748B),   // Slate 500 — clean neutral secondary text, no green tint
 
     surfaceContainerLowest = Color.White,
-    surfaceContainerLow = Color(0xFFFBF9F4),
-    surfaceContainer = Color(0xFFF0EDE5),
+    surfaceContainerLow = Color(0xFFF8FAFC),
+    surfaceContainer = Color(0xFFF1F5F9),
     surfaceContainerHigh = Color.White,     // dialogs and sheets
-    surfaceContainerHighest = Color(0xFFEAE7DF),
+    surfaceContainerHighest = Color(0xFFE2E8F0),
 
-    outline = Color(0xFF6D807B),
-    outlineVariant = Color(0xFFD5DCD8),
+    outline = Color(0xFFCBD5E1),            // Slate 300
+    outlineVariant = Color(0xFFE2E8F0),     // Slate 200
 
-    error = Color(0xFFB3261E),
+    error = Color(0xFFDC2626),
     onError = Color.White,
-    errorContainer = Color(0xFFFBDAD6),
-    onErrorContainer = Color(0xFF410E0B),
-    scrim = Color(0xFF06100E),
+    errorContainer = Color(0xFFFEE2E2),
+    onErrorContainer = Color(0xFF7F1D1D),
+    scrim = Color(0xFF000000),
 )
 
 private val DarkColors = darkColorScheme(
@@ -851,25 +1040,479 @@ val DubaiGoldColors = darkColorScheme(
     onError = Color(0xFF0A0A0C),
 )
 
+val AppleSilverColors = lightColorScheme(
+    primary = Color(0xFF0071E3),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFDCEBFF),
+    onPrimaryContainer = Color(0xFF003366),
+
+    secondary = Color(0xFF1D1D1F),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFE5E5EA),
+    onSecondaryContainer = Color(0xFF1D1D1F),
+
+    tertiary = Color(0xFF34C759),
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFD1F2D9),
+    onTertiaryContainer = Color(0xFF0C511F),
+
+    background = Color(0xFFF5F5F7),
+    onBackground = Color(0xFF1D1D1F),
+
+    surface = Color.White,
+    onSurface = Color(0xFF1D1D1F),
+    surfaceVariant = Color(0xFFE8E8ED),
+    onSurfaceVariant = Color(0xFF6E6E73),
+
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = Color(0xFFFBFBFD),
+    surfaceContainer = Color(0xFFF5F5F7),
+    surfaceContainerHigh = Color.White,
+    surfaceContainerHighest = Color(0xFFE5E5EA),
+
+    outline = Color(0xFFD2D2D7),
+    outlineVariant = Color(0xFFE5E5EA),
+
+    error = Color(0xFFFF3B30),
+    onError = Color.White,
+)
+
+val NordicFrostColors = lightColorScheme(
+    primary = Color(0xFF0284C7),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFBAE6FD),
+    onPrimaryContainer = Color(0xFF075985),
+
+    secondary = Color(0xFF475569),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFE2E8F0),
+    onSecondaryContainer = Color(0xFF0F172A),
+
+    tertiary = Color(0xFF10B981),
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFA7F3D0),
+    onTertiaryContainer = Color(0xFF065F46),
+
+    background = Color(0xFFF0F7FF),
+    onBackground = Color(0xFF0F172A),
+
+    surface = Color.White,
+    onSurface = Color(0xFF0F172A),
+    surfaceVariant = Color(0xFFE0F2FE),
+    onSurfaceVariant = Color(0xFF475569),
+
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = Color(0xFFF8FAFC),
+    surfaceContainer = Color(0xFFF0F7FF),
+    surfaceContainerHigh = Color.White,
+    surfaceContainerHighest = Color(0xFFBAE6FD),
+
+    outline = Color(0xFFBAE6FD),
+    outlineVariant = Color(0xFFE2E8F0),
+
+    error = Color(0xFFEF4444),
+    onError = Color.White,
+)
+
+val ChampagneGoldColors = lightColorScheme(
+    primary = Color(0xFFD97706),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFFDE68A),
+    onPrimaryContainer = Color(0xFF78350F),
+
+    secondary = Color(0xFF57534E),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFE7E0D6),
+    onSecondaryContainer = Color(0xFF1C1917),
+
+    tertiary = Color(0xFF059669),
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFA7F3D0),
+    onTertiaryContainer = Color(0xFF064E3B),
+
+    background = Color(0xFFFAF8F5),
+    onBackground = Color(0xFF1C1917),
+
+    surface = Color.White,
+    onSurface = Color(0xFF1C1917),
+    surfaceVariant = Color(0xFFF5EFEB),
+    onSurfaceVariant = Color(0xFF57534E),
+
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = Color(0xFFFCFBF9),
+    surfaceContainer = Color(0xFFFAF8F5),
+    surfaceContainerHigh = Color.White,
+    surfaceContainerHighest = Color(0xFFE7E0D6),
+
+    outline = Color(0xFFDDD4C5),
+    outlineVariant = Color(0xFFE7E0D6),
+
+    error = Color(0xFFDC2626),
+    onError = Color.White,
+)
+
+val PersianMintColors = lightColorScheme(
+    primary = Color(0xFF059669),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFA7F3D0),
+    onPrimaryContainer = Color(0xFF064E3B),
+
+    secondary = Color(0xFF0D9488),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFCCFBF1),
+    onSecondaryContainer = Color(0xFF115E59),
+
+    tertiary = Color(0xFF0284C7),
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFBAE6FD),
+    onTertiaryContainer = Color(0xFF0369A1),
+
+    background = Color(0xFFF0FDF4),
+    onBackground = Color(0xFF064E3B),
+
+    surface = Color.White,
+    onSurface = Color(0xFF064E3B),
+    surfaceVariant = Color(0xFFDCFCE7),
+    onSurfaceVariant = Color(0xFF374151),
+
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = Color(0xFFF7FEE7),
+    surfaceContainer = Color(0xFFF0FDF4),
+    surfaceContainerHigh = Color.White,
+    surfaceContainerHighest = Color(0xFFBBF7D0),
+
+    outline = Color(0xFFA7F3D0),
+    outlineVariant = Color(0xFFE5E7EB),
+
+    error = Color(0xFFE11D48),
+    onError = Color.White,
+)
+
+val RoseQuartzColors = lightColorScheme(
+    primary = Color(0xFFE11D48),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFFECDD3),
+    onPrimaryContainer = Color(0xFF881337),
+
+    secondary = Color(0xFF9333EA),
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFFF3E8FF),
+    onSecondaryContainer = Color(0xFF581C87),
+
+    tertiary = Color(0xFF059669),
+    onTertiary = Color.White,
+    tertiaryContainer = Color(0xFFA7F3D0),
+    onTertiaryContainer = Color(0xFF064E3B),
+
+    background = Color(0xFFFFF1F2),
+    onBackground = Color(0xFF4C0519),
+
+    surface = Color.White,
+    onSurface = Color(0xFF4C0519),
+    surfaceVariant = Color(0xFFFFE4E6),
+    onSurfaceVariant = Color(0xFF701A75),
+
+    surfaceContainerLowest = Color.White,
+    surfaceContainerLow = Color(0xFFFFF7F8),
+    surfaceContainer = Color(0xFFFFF1F2),
+    surfaceContainerHigh = Color.White,
+    surfaceContainerHighest = Color(0xFFFECDD3),
+
+    outline = Color(0xFFFECDD3),
+    outlineVariant = Color(0xFFFCE7F3),
+
+    error = Color(0xFFBE123C),
+    onError = Color.White,
+)
+
+fun getColorScheme(mode: ThemeMode, systemDark: Boolean = false): androidx.compose.material3.ColorScheme = when (mode) {
+    ThemeMode.SYSTEM -> if (systemDark) DarkColors else LightColors
+    ThemeMode.ANDIS_TERMINAL -> DarkColors
+    ThemeMode.LIGHT -> LightColors
+    ThemeMode.DARK -> DarkColors
+    ThemeMode.AMOLED -> AmoledDarkColors
+    ThemeMode.APPLE_TITANIUM -> AppleTitaniumColors
+    ThemeMode.APPLE_SILVER -> AppleSilverColors
+    ThemeMode.REVOLUT_OBSIDIAN -> RevolutObsidianColors
+    ThemeMode.NORDIC_FROST -> NordicFrostColors
+    ThemeMode.CHAMPAGNE_GOLD -> ChampagneGoldColors
+    ThemeMode.PERSIAN_MINT -> PersianMintColors
+    ThemeMode.ROSE_QUARTZ -> RoseQuartzColors
+    ThemeMode.CASH_APP_NEON -> CashAppNeonColors
+    ThemeMode.MONZO_OCEANIC -> MonzoOceanicColors
+    ThemeMode.DUBAI_GOLD -> DubaiGoldColors
+    ThemeMode.OBSIDIAN_EMERALD -> ObsidianEmeraldColors
+    ThemeMode.ROYAL_AMETHYST -> RoyalAmethystColors
+    ThemeMode.NORDIC_SLATE -> NordicSlateColors
+    ThemeMode.CYBER_GOLD -> CyberGoldColors
+}
+
+fun getAndisColors(colorScheme: androidx.compose.material3.ColorScheme, isDark: Boolean, heroPalette: HeroPalette): AndisColors =
+    if (isDark) {
+        AndisColors(
+            background = colorScheme.background,
+            backgroundSecondary = colorScheme.surfaceContainerLow,
+            surfacePrimary = colorScheme.surface,
+            surfaceElevated = colorScheme.surfaceVariant,
+            surfaceSecondary = colorScheme.surfaceContainerHigh,
+            border = colorScheme.outline,
+            borderStrong = colorScheme.outlineVariant,
+            borderActive = colorScheme.primary,
+            textPrimary = colorScheme.onSurface,
+            textSecondary = colorScheme.onSurfaceVariant,
+            textMuted = colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+            disabled = colorScheme.onSurface.copy(alpha = 0.38f),
+            accentCyan = heroPalette.gold,
+            accentLime = heroPalette.gold,
+            emerald = Color(0xFF10B981),
+            danger = colorScheme.error,
+            warning = Color(0xFFF59E0B),
+            ghostLed = Color(0x18F8FAFC),
+            ghostLedDark = Color(0x121E293B),
+        )
+    } else {
+        AndisColors(
+            background = colorScheme.background,
+            backgroundSecondary = colorScheme.surfaceContainerLow,
+            surfacePrimary = colorScheme.surface,
+            surfaceElevated = colorScheme.surfaceVariant,
+            surfaceSecondary = colorScheme.surfaceContainerHigh,
+            border = colorScheme.outlineVariant,
+            borderStrong = colorScheme.outline,
+            borderActive = colorScheme.primary,
+            textPrimary = colorScheme.onSurface,
+            textSecondary = colorScheme.onSurfaceVariant,
+            textMuted = colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+            disabled = colorScheme.onSurface.copy(alpha = 0.38f),
+            accentCyan = heroPalette.gold,
+            accentLime = heroPalette.gold,
+            emerald = Color(0xFF10B981),
+            danger = colorScheme.error,
+            warning = Color(0xFFF59E0B),
+            ghostLed = Color(0x0A000000),
+            ghostLedDark = Color(0x14000000),
+        )
+    }
+
+fun getHeroPalette(mode: ThemeMode, systemDark: Boolean = false): HeroPalette = when (mode) {
+    ThemeMode.SYSTEM -> if (systemDark) {
+        HeroPalette(
+            top = Color(0xFF060708),
+            bottom = Color(0xFF0A0D0F),
+            gold = Color(0xFFD4FF00),
+            muted = Color(0xFFA0A7AB),
+            strong = Color(0xFFF3F4F4),
+            mint = Color(0xFFD4FF00),
+            warn = Color(0xFFFF4D4D),
+            well = Color(0xFF0E1214),
+            hairline = Color(0xFF1C2327),
+        )
+    } else {
+        HeroPalette(
+            top = Color(0xFFF8FAFC),
+            bottom = Color(0xFFEDF2F7),
+            gold = Color(0xFFD97706),
+            muted = Color(0xFF64748B),
+            strong = Color(0xFF0F172A),
+            mint = Color(0xFF10B981),
+            warn = Color(0xFFEF4444),
+            well = Color(0x140F172A),
+            hairline = Color(0x1A0F172A),
+        )
+    }
+    ThemeMode.ANDIS_TERMINAL,
+    ThemeMode.DARK -> HeroPalette(
+        top = Color(0xFF0F1622),
+        bottom = Color(0xFF070A0F),
+        gold = Color(0xFF38BDF8),
+        muted = Color(0xFF94A3B8),
+        strong = Color(0xFFF8FAFC),
+        mint = Color(0xFF10B981),
+        warn = Color(0xFFF43F5E),
+        well = Color(0xFF162030),
+        hairline = Color(0xFF1E293B),
+    )
+    ThemeMode.LIGHT -> HeroPalette(
+        top = Color(0xFFF8FAFC),
+        bottom = Color(0xFFEDF2F7),
+        gold = Color(0xFFD97706),
+        muted = Color(0xFF64748B),
+        strong = Color(0xFF0F172A),
+        mint = Color(0xFF10B981),
+        warn = Color(0xFFEF4444),
+        well = Color(0x140F172A),
+        hairline = Color(0x1A0F172A),
+    )
+    ThemeMode.APPLE_SILVER -> HeroPalette(
+        top = Color(0xFFE8EEF5),
+        bottom = Color(0xFFF5F5F7),
+        gold = Color(0xFF0071E3),
+        muted = Color(0xFF6E6E73),
+        strong = Color(0xFF1D1D1F),
+        mint = Color(0xFF34C759),
+        warn = Color(0xFFFF3B30),
+        well = Color(0x140071E3),
+        hairline = Color(0x200071E3),
+    )
+    ThemeMode.NORDIC_FROST -> HeroPalette(
+        top = Color(0xFFE0F2FE),
+        bottom = Color(0xFFF0F7FF),
+        gold = Color(0xFF0284C7),
+        muted = Color(0xFF475569),
+        strong = Color(0xFF0F172A),
+        mint = Color(0xFF10B981),
+        warn = Color(0xFFEF4444),
+        well = Color(0x140284C7),
+        hairline = Color(0x200284C7),
+    )
+    ThemeMode.CHAMPAGNE_GOLD -> HeroPalette(
+        top = Color(0xFFF5EFEB),
+        bottom = Color(0xFFFAF8F5),
+        gold = Color(0xFFD97706),
+        muted = Color(0xFF57534E),
+        strong = Color(0xFF1C1917),
+        mint = Color(0xFF059669),
+        warn = Color(0xFFDC2626),
+        well = Color(0x18D97706),
+        hairline = Color(0x24D97706),
+    )
+    ThemeMode.PERSIAN_MINT -> HeroPalette(
+        top = Color(0xFFDCFCE7),
+        bottom = Color(0xFFF0FDF4),
+        gold = Color(0xFF059669),
+        muted = Color(0xFF374151),
+        strong = Color(0xFF064E3B),
+        mint = Color(0xFF0D9488),
+        warn = Color(0xFFE11D48),
+        well = Color(0x18059669),
+        hairline = Color(0x24059669),
+    )
+    ThemeMode.ROSE_QUARTZ -> HeroPalette(
+        top = Color(0xFFFFE4E6),
+        bottom = Color(0xFFFFF1F2),
+        gold = Color(0xFFE11D48),
+        muted = Color(0xFF701A75),
+        strong = Color(0xFF4C0519),
+        mint = Color(0xFF059669),
+        warn = Color(0xFFBE123C),
+        well = Color(0x18E11D48),
+        hairline = Color(0x24E11D48),
+    )
+    ThemeMode.AMOLED -> HeroPalette(
+        top = Color(0xFF000000),
+        bottom = Color(0xFF050607),
+        gold = Color(0xFFD4FF00),
+        muted = Color(0xFF8A9298),
+        strong = Color(0xFFF1F3F4),
+        mint = Color(0xFFD4FF00),
+        warn = Color(0xFFFF443A),
+        well = Color(0x1FFFFFFF),
+        hairline = Color(0x28FFFFFF),
+    )
+    ThemeMode.OBSIDIAN_EMERALD -> HeroPalette(
+        top = Color(0xFF063326),
+        bottom = Color(0xFF021610),
+        gold = Color(0xFF34D399),
+        muted = Color(0xFF6EE7B7).copy(alpha = 0.85f),
+        strong = Color(0xFFECFDF5),
+        mint = Color(0xFF10B981),
+        well = Color(0x2210B981),
+        hairline = Color(0x3334D399),
+    )
+    ThemeMode.ROYAL_AMETHYST -> HeroPalette(
+        top = Color(0xFF3B0764),
+        bottom = Color(0xFF120324),
+        gold = Color(0xFFFDE047),
+        muted = Color(0xFFD8B4FE),
+        strong = Color(0xFFFAF5FF),
+        mint = Color(0xFFA78BFA),
+        warn = Color(0xFFF43F5E),
+        well = Color(0x22A855F7),
+        hairline = Color(0x33C084FC),
+    )
+    ThemeMode.NORDIC_SLATE -> HeroPalette(
+        top = Color(0xFF0C2B4E),
+        bottom = Color(0xFF051324),
+        gold = Color(0xFF38BDF8),
+        muted = Color(0xFF94A3B8),
+        strong = Color(0xFFF0F9FF),
+        mint = Color(0xFF38BDF8),
+        warn = Color(0xFFF43F5E),
+        well = Color(0x220284C7),
+        hairline = Color(0x3338BDF8),
+    )
+    ThemeMode.APPLE_TITANIUM -> HeroPalette(
+        top = Color(0xFF141416),
+        bottom = Color(0xFF000000),
+        gold = Color(0xFFE5E5EA),
+        muted = Color(0xFF8E8E93),
+        strong = Color(0xFFFFFFFF),
+        mint = Color(0xFF30D158),
+        warn = Color(0xFFFF453A),
+        well = Color(0x18FFFFFF),
+        hairline = Color(0x28FFFFFF),
+    )
+    ThemeMode.REVOLUT_OBSIDIAN -> HeroPalette(
+        top = Color(0xFF14181D),
+        bottom = Color(0xFF0E1114),
+        gold = Color(0xFF0075FF),
+        muted = Color(0xFF94A3B8),
+        strong = Color(0xFFF8FAFC),
+        mint = Color(0xFF10B981),
+        warn = Color(0xFFF43F5E),
+        well = Color(0x1F0075FF),
+        hairline = Color(0x330075FF),
+    )
+    ThemeMode.CASH_APP_NEON -> HeroPalette(
+        top = Color(0xFF121212),
+        bottom = Color(0xFF000000),
+        gold = Color(0xFF00D632),
+        muted = Color(0xFFAAAAAA),
+        strong = Color(0xFFFFFFFF),
+        mint = Color(0xFF00D632),
+        warn = Color(0xFFFF3B30),
+        well = Color(0x1F00D632),
+        hairline = Color(0x3300D632),
+    )
+    ThemeMode.MONZO_OCEANIC -> HeroPalette(
+        top = Color(0xFF14233C),
+        bottom = Color(0xFF0E1927),
+        gold = Color(0xFFFF4D5A),
+        muted = Color(0xFF8FA5C4),
+        strong = Color(0xFFF8FAFC),
+        mint = Color(0xFF00D2A0),
+        warn = Color(0xFFFF4D5A),
+        well = Color(0x1FFF4D5A),
+        hairline = Color(0x33FF4D5A),
+    )
+    ThemeMode.DUBAI_GOLD -> HeroPalette(
+        top = Color(0xFF1B1915),
+        bottom = Color(0xFF0A0A0C),
+        gold = Color(0xFFF7C948),
+        muted = Color(0xFF9E998E),
+        strong = Color(0xFFFAF9F6),
+        mint = Color(0xFF10B981),
+        warn = Color(0xFFFF6B6B),
+        well = Color(0x1FF7C948),
+        hairline = Color(0x33F7C948),
+    )
+    ThemeMode.CYBER_GOLD -> HeroPalette(
+        top = Color(0xFF2C1E03),
+        bottom = Color(0xFF0E0901),
+        gold = Color(0xFFFFD700),
+        muted = Color(0xFFEAB308),
+        strong = Color(0xFFFEFCE8),
+        mint = Color(0xFFFACC15),
+        warn = Color(0xFFF87171),
+        well = Color(0x22CA8A04),
+        hairline = Color(0x33FACC15),
+    )
+}
+
 @Composable
 fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -> Unit) {
     val systemDark = isSystemInDarkTheme()
-    val colorScheme = when (mode) {
-        ThemeMode.SYSTEM -> if (systemDark) DarkColors else LightColors
-        ThemeMode.ANDIS_TERMINAL -> DarkColors
-        ThemeMode.LIGHT -> LightColors
-        ThemeMode.DARK -> DarkColors
-        ThemeMode.AMOLED -> AmoledDarkColors
-        ThemeMode.APPLE_TITANIUM -> AppleTitaniumColors
-        ThemeMode.REVOLUT_OBSIDIAN -> RevolutObsidianColors
-        ThemeMode.CASH_APP_NEON -> CashAppNeonColors
-        ThemeMode.MONZO_OCEANIC -> MonzoOceanicColors
-        ThemeMode.DUBAI_GOLD -> DubaiGoldColors
-        ThemeMode.OBSIDIAN_EMERALD -> ObsidianEmeraldColors
-        ThemeMode.ROYAL_AMETHYST -> RoyalAmethystColors
-        ThemeMode.NORDIC_SLATE -> NordicSlateColors
-        ThemeMode.CYBER_GOLD -> CyberGoldColors
-    }
+    val colorScheme = getColorScheme(mode, systemDark)
     val base = Typography()
     // Roboto has no real Persian coverage, so every style gets Modam — and zero tracking.
     // Persian is a connected script: Material's default letterSpacing (0.5sp on body, more on
@@ -893,151 +1536,9 @@ fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -
         labelSmall = labelSmall.copy(fontFamily = Modam, fontWeight = FontWeight.Medium, letterSpacing = 0.sp),
     )
 
-    val heroPalette = when (mode) {
-        ThemeMode.SYSTEM -> if (systemDark) {
-            HeroPalette(
-                top = Color(0xFF060708),
-                bottom = Color(0xFF0A0D0F),
-                gold = Color(0xFFD4FF00),
-                muted = Color(0xFFA0A7AB),
-                strong = Color(0xFFF3F4F4),
-                mint = Color(0xFFD4FF00),
-                warn = Color(0xFFFF4D4D),
-                well = Color(0xFF0E1214),
-                hairline = Color(0xFF1C2327),
-            )
-        } else {
-            HeroPalette(
-                top = Color(0xFF1E293B),
-                bottom = Color(0xFF0F172A),
-                gold = Color(0xFFF59E0B),
-                muted = Color(0xFF94A3B8),
-                strong = Color(0xFFF8FAFC),
-            )
-        }
-        ThemeMode.ANDIS_TERMINAL,
-        ThemeMode.DARK -> HeroPalette(
-            top = Color(0xFF0F1622),
-            bottom = Color(0xFF070A0F),
-            gold = Color(0xFF38BDF8),
-            muted = Color(0xFF94A3B8),
-            strong = Color(0xFFF8FAFC),
-            mint = Color(0xFF10B981),
-            warn = Color(0xFFF43F5E),
-            well = Color(0xFF162030),
-            hairline = Color(0xFF1E293B),
-        )
-        ThemeMode.LIGHT -> HeroPalette(
-            top = Color(0xFF1E293B),
-            bottom = Color(0xFF0F172A),
-            gold = Color(0xFFF59E0B),
-            muted = Color(0xFF94A3B8),
-            strong = Color(0xFFF8FAFC),
-        )
-        ThemeMode.AMOLED -> HeroPalette(
-            top = Color(0xFF000000),
-            bottom = Color(0xFF050607),
-            gold = Color(0xFFD4FF00),
-            muted = Color(0xFF8A9298),
-            strong = Color(0xFFF1F3F4),
-            mint = Color(0xFFD4FF00),
-            warn = Color(0xFFFF443A),
-            well = Color(0x1FFFFFFF),
-            hairline = Color(0x28FFFFFF),
-        )
-        ThemeMode.OBSIDIAN_EMERALD -> HeroPalette(
-            top = Color(0xFF063326),
-            bottom = Color(0xFF021610),
-            gold = Color(0xFF34D399),
-            muted = Color(0xFF6EE7B7).copy(alpha = 0.85f),
-            strong = Color(0xFFECFDF5),
-            mint = Color(0xFF10B981),
-            well = Color(0x2210B981),
-            hairline = Color(0x3334D399),
-        )
-        ThemeMode.ROYAL_AMETHYST -> HeroPalette(
-            top = Color(0xFF3B0764),
-            bottom = Color(0xFF120324),
-            gold = Color(0xFFFDE047),
-            muted = Color(0xFFD8B4FE),
-            strong = Color(0xFFFAF5FF),
-            well = Color(0x22A855F7),
-            hairline = Color(0x33C084FC),
-        )
-        ThemeMode.NORDIC_SLATE -> HeroPalette(
-            top = Color(0xFF0C2B4E),
-            bottom = Color(0xFF051324),
-            gold = Color(0xFF38BDF8),
-            muted = Color(0xFF94A3B8),
-            strong = Color(0xFFF0F9FF),
-            well = Color(0x220284C7),
-            hairline = Color(0x3338BDF8),
-        )
-        ThemeMode.APPLE_TITANIUM -> HeroPalette(
-            top = Color(0xFF141416),
-            bottom = Color(0xFF000000),
-            gold = Color(0xFFE5E5EA),
-            muted = Color(0xFF8E8E93),
-            strong = Color(0xFFFFFFFF),
-            mint = Color(0xFF30D158),
-            warn = Color(0xFFFF453A),
-            well = Color(0x18FFFFFF),
-            hairline = Color(0x28FFFFFF),
-        )
-        ThemeMode.REVOLUT_OBSIDIAN -> HeroPalette(
-            top = Color(0xFF14181D),
-            bottom = Color(0xFF0E1114),
-            gold = Color(0xFF0075FF),
-            muted = Color(0xFF94A3B8),
-            strong = Color(0xFFF8FAFC),
-            mint = Color(0xFF10B981),
-            warn = Color(0xFFF43F5E),
-            well = Color(0x1F0075FF),
-            hairline = Color(0x330075FF),
-        )
-        ThemeMode.CASH_APP_NEON -> HeroPalette(
-            top = Color(0xFF121212),
-            bottom = Color(0xFF000000),
-            gold = Color(0xFF00D632),
-            muted = Color(0xFFAAAAAA),
-            strong = Color(0xFFFFFFFF),
-            mint = Color(0xFF00D632),
-            warn = Color(0xFFFF3B30),
-            well = Color(0x1F00D632),
-            hairline = Color(0x3300D632),
-        )
-        ThemeMode.MONZO_OCEANIC -> HeroPalette(
-            top = Color(0xFF14233C),
-            bottom = Color(0xFF0E1927),
-            gold = Color(0xFFFF4D5A),
-            muted = Color(0xFF8FA5C4),
-            strong = Color(0xFFF8FAFC),
-            mint = Color(0xFF00D2A0),
-            warn = Color(0xFFFF4D5A),
-            well = Color(0x1FFF4D5A),
-            hairline = Color(0x33FF4D5A),
-        )
-        ThemeMode.DUBAI_GOLD -> HeroPalette(
-            top = Color(0xFF1B1915),
-            bottom = Color(0xFF0A0A0C),
-            gold = Color(0xFFF7C948),
-            muted = Color(0xFF9E998E),
-            strong = Color(0xFFFAF9F6),
-            mint = Color(0xFF10B981),
-            warn = Color(0xFFFF6B6B),
-            well = Color(0x1FF7C948),
-            hairline = Color(0x33F7C948),
-        )
-        ThemeMode.CYBER_GOLD -> HeroPalette(
-            top = Color(0xFF2C1E03),
-            bottom = Color(0xFF0E0901),
-            gold = Color(0xFFFFD700),
-            muted = Color(0xFFEAB308),
-            strong = Color(0xFFFEFCE8),
-            well = Color(0x22CA8A04),
-            hairline = Color(0x33FACC15),
-        )
-    }
+    val heroPalette = getHeroPalette(mode, systemDark)
+    val isDark = mode.isDark || (mode == ThemeMode.SYSTEM && systemDark)
+    val andisColors = getAndisColors(colorScheme, isDark, heroPalette)
 
     val rikkaColors = RikkaColors(
         background = colorScheme.background,
@@ -1057,13 +1558,13 @@ fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -
         onSuccess = Color.White,
         warning = Color(0xFFF59E0B),
         onWarning = Color.Black,
-        border = colorScheme.outline,
+        border = colorScheme.outlineVariant,
         ring = colorScheme.primary,
     )
 
     CompositionLocalProvider(
         LocalHeroPalette provides heroPalette,
-        LocalAndisColors provides AndisColors(),
+        LocalAndisColors provides andisColors,
         LocalRikkaColors provides rikkaColors,
         LocalContentColor provides colorScheme.onSurface,
     ) {

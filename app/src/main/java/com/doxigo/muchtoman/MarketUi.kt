@@ -342,6 +342,7 @@ fun MarketAndAssetsScreen(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     val fintechHaptics = LocalFintechHaptics.current
+                    val onGold = if ((Hero.gold.red * 0.299f + Hero.gold.green * 0.587f + Hero.gold.blue * 0.114f) > 0.55f) Color(0xFF050607) else Color.White
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -360,7 +361,7 @@ fun MarketAndAssetsScreen(
                             text = "● سبد دارایی من (Portfolio)",
                             fontSize = 12.sp,
                             fontWeight = if (marketTabMode == MarketTabMode.PORTFOLIO) FontWeight.Black else FontWeight.Medium,
-                            color = if (marketTabMode == MarketTabMode.PORTFOLIO) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = if (marketTabMode == MarketTabMode.PORTFOLIO) onGold else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
 
@@ -382,7 +383,7 @@ fun MarketAndAssetsScreen(
                             text = "○ دیده‌بان بازار (Live)",
                             fontSize = 12.sp,
                             fontWeight = if (marketTabMode == MarketTabMode.LIVE_MARKET) FontWeight.Black else FontWeight.Medium,
-                            color = if (marketTabMode == MarketTabMode.LIVE_MARKET) Color.Black else MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = if (marketTabMode == MarketTabMode.LIVE_MARKET) onGold else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }
@@ -681,7 +682,7 @@ private fun MarketScreenHeader(
                         .background(Hero.mint.copy(alpha = 0.2f))
                         .padding(horizontal = 8.dp, vertical = 2.dp),
                 ) {
-                    Text("زنده", color = Hero.top, fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                    Text("زنده", color = Hero.mint, fontWeight = FontWeight.Bold, fontSize = 10.sp)
                 }
             }
             Text(
@@ -1709,15 +1710,16 @@ fun PortfolioOverviewCard(
                     }
                 }
 
+                val onAddGold = if ((Hero.gold.red * 0.299f + Hero.gold.green * 0.587f + Hero.gold.blue * 0.114f) > 0.55f) Color(0xFF050607) else Color.White
                 Button(
                     onClick = onAddHolding,
-                    colors = ButtonDefaults.buttonColors(containerColor = Hero.gold),
+                    colors = ButtonDefaults.buttonColors(containerColor = Hero.gold, contentColor = onAddGold),
                     contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.xs),
                     shape = RoundedCornerShape(Radius.pill),
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null, tint = Color.Black, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Add, contentDescription = null, tint = onAddGold, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(Space.xs))
-                    Text("افزودن دارایی", color = Color.Black, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("افزودن دارایی", color = onAddGold, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
 

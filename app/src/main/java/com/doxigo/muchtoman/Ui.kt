@@ -723,7 +723,7 @@ val snackbarHostState = remember { SnackbarHostState() }
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f, fill = false)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = "حساب‌ها و کارت‌های بانکی",
@@ -746,20 +746,100 @@ val snackbarHostState = remember { SnackbarHostState() }
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+
+                    androidx.compose.material3.IconButton(
+                        onClick = { banks = true },
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f))
+                            .size(40.dp),
+                    ) {
+                        Icon(
+                            Icons.Rounded.Settings,
+                            contentDescription = "مدیریت حساب‌ها",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
                 }
             }
 
             item {
-                com.doxigo.muchtoman.ui.cards.AppleWalletAccordionDeck(
-                    accounts = state.bankAccounts,
-                    cardHolderName = state.name,
-                    privacyMode = privacyMode,
-                    onCardClick = { banks = true },
-                    onCardLongPress = { cardEditorKey = it.key },
-                    onFilterLedger = {
-                        tab = Tab.LEDGER
-                    },
-                )
+                if (state.bankAccounts.isEmpty()) {
+                    Surface(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = Space.m),
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerLow,
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        ),
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(56.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Settings,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(28.dp),
+                                )
+                            }
+                            Text(
+                                text = "هنوز کارت بانکی اضافه نشده",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            Text(
+                                text = "با فعال‌کردن خواندن پیامک‌ها، کارت‌ها و موجودی شما به صورت خودکار اضافه می‌شوند. همچنین می‌توانید حساب‌ها را به صورت دستی مدیریت کنید.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                lineHeight = 20.sp,
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            androidx.compose.material3.Button(
+                                onClick = { banks = true },
+                                shape = RoundedCornerShape(Radius.pill),
+                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                                ),
+                            ) {
+                                Text(
+                                    text = "مدیریت و فعال‌سازی حساب‌ها",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    com.doxigo.muchtoman.ui.cards.AppleWalletAccordionDeck(
+                        accounts = state.bankAccounts,
+                        cardHolderName = state.name,
+                        privacyMode = privacyMode,
+                        onCardClick = { banks = true },
+                        onCardLongPress = { cardEditorKey = it.key },
+                        onFilterLedger = {
+                            tab = Tab.LEDGER
+                        },
+                    )
+                }
             }
 
             // Smart Commitments, BNPL & Sayad Checks Summary
@@ -1207,7 +1287,7 @@ internal fun HeroField(
                 Text(
                     // The name turns the header into a greeting; without one the app just
                     // says what it is.
-                    if (state.name.isNotBlank()) "سلام، ${state.name}" else "چقدر تومن",
+                    if (state.name.isNotBlank()) "سلام، ${state.name}" else "اندیس",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = Hero.muted,
@@ -1365,11 +1445,12 @@ internal fun HeroField(
 
             // Digits are quick to scan but easy to misread by a factor of ten. The words
             // are the check on that.
+            // ponytail: verbal text describes activeTotal rather than totalNetWorth to prevent discrepancy when 0.
             val lensDescription = when (currencyLens) {
                 CurrencyDenominator.GOLD_18K -> "معادل $heroDisplayFigure گرم طلای ۱۸ عیار"
                 CurrencyDenominator.USD_TETHER -> "معادل $heroDisplayFigure تتر / دلار"
                 CurrencyDenominator.EMAMI_COIN -> "معادل $heroDisplayFigure تمام سکه بهار آزادی"
-                CurrencyDenominator.TOMAN -> null
+                CurrencyDenominator.TOMAN -> if (activeTotal > 0.0) faWordsToman(activeTotal) else "صفر تومان"
             }
             lensDescription?.let { words ->
                 Text(
@@ -1379,22 +1460,7 @@ internal fun HeroField(
                     color = Hero.strong.copy(alpha = 0.93f),
                     modifier = Modifier.padding(top = Space.s).privacyBlur(privacyMode),
                 )
-            } ?: faWordsToman(total)?.let { words ->
-                Text(
-                    words,
-                    fontSize = 15.sp,
-                    lineHeight = 25.sp,
-                    color = Hero.strong.copy(alpha = 0.93f),
-                    modifier = Modifier.padding(top = Space.s).privacyBlur(privacyMode),
-                )
             }
-            Text(
-                "${faNumber(activeTotal)} تومان",
-                fontSize = 13.sp,
-                fontFamily = ModamFigures,
-                color = Hero.muted,
-                modifier = Modifier.padding(top = Space.xs).privacyBlur(privacyMode),
-            )
 
             // The two perspectives are only honest when the gap between them is named: the
             // difference is gold and long-term holdings, not money she can tap for lunch.
@@ -1457,7 +1523,8 @@ internal fun HeroField(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Hero.well.copy(alpha = 0.65f))
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.75f))
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
                     .clickable(onClick = onReport)
                     .padding(horizontal = Space.m, vertical = 7.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1468,13 +1535,13 @@ internal fun HeroField(
                         modifier = Modifier
                             .size(7.dp)
                             .clip(CircleShape)
-                            .background(if (todaySpentToman > 0L) Color(0xFFFF7043) else Hero.mint)
+                            .background(if (todaySpentToman > 0L) Color(0xFFFF7043) else Color(0xFF10B981))
                     )
                     Spacer(Modifier.width(Space.s))
                     Text(
                         "خرج امروز:",
                         fontSize = 12.sp,
-                        color = Hero.muted,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
@@ -1482,7 +1549,7 @@ internal fun HeroField(
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = ModamFigures,
-                        color = if (todaySpentToman > 0L) Hero.strong else Hero.mint,
+                        color = if (todaySpentToman > 0L) MaterialTheme.colorScheme.onSurface else Color(0xFF10B981),
                         modifier = Modifier.privacyBlur(privacyMode),
                     )
                 }
@@ -1492,13 +1559,13 @@ internal fun HeroField(
                         "خرج ماه: ${faCompact(tomanOf(state.story.month.spentRial))}",
                         fontSize = 11.sp,
                         fontFamily = ModamFigures,
-                        color = Hero.muted,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.privacyBlur(privacyMode),
                     )
                     Icon(
                         Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                         contentDescription = null,
-                        tint = Hero.gold,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(16.dp),
                     )
                 }

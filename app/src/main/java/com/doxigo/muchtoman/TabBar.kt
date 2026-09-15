@@ -207,11 +207,12 @@ fun TabBar(
                                 modifier = Modifier.size(44.dp),
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
+                                    val onGold = if ((Hero.gold.red * 0.299f + Hero.gold.green * 0.587f + Hero.gold.blue * 0.114f) > 0.5f) Color(0xFF050607) else Color.White
                                     Canvas(modifier = Modifier.size(20.dp)) {
                                         val stroke = 2.4.dp.toPx()
                                         // Horizontal plus bar
                                         drawLine(
-                                            color = Color(0xFF050607),
+                                            color = onGold,
                                             start = Offset(0f, size.height / 2),
                                             end = Offset(size.width, size.height / 2),
                                             strokeWidth = stroke,
@@ -219,7 +220,7 @@ fun TabBar(
                                         )
                                         // Vertical plus bar
                                         drawLine(
-                                            color = Color(0xFF050607),
+                                            color = onGold,
                                             start = Offset(size.width / 2, 0f),
                                             end = Offset(size.width / 2, size.height),
                                             strokeWidth = stroke,
@@ -266,13 +267,14 @@ fun TabBar(
                         BadgedBox(
                             badge = {
                                 if (badge > 0) {
+                                    val onGold = if ((Hero.gold.red * 0.299f + Hero.gold.green * 0.587f + Hero.gold.blue * 0.114f) > 0.5f) Color(0xFF050607) else Color.White
                                     Badge(
                                         containerColor = Hero.gold,
-                                        contentColor = Color(0xFF050607),
+                                        contentColor = onGold,
                                     ) {
                                         Text(
                                             faNumber(badge.coerceAtMost(99).toDouble()),
-                                            style = figureStyle(Color(0xFF050607)),
+                                            style = figureStyle(onGold),
                                             fontSize = 10.sp,
                                         )
                                     }

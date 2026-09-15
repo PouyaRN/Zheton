@@ -3,6 +3,13 @@ package com.doxigo.muchtoman
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -146,7 +153,7 @@ fun LeftToSpendDial(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("🛡️", fontSize = 16.sp)
+                    ShieldGlyph(tint = Hero.mint)
                     Spacer(Modifier.width(Space.s))
                     Column {
                         Text(
@@ -536,7 +543,7 @@ fun NetWorthFluctuationCard(
                             .background(Hero.gold.copy(alpha = 0.2f)),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text("💎", fontSize = 20.sp)
+                        NetWorthDiamondGlyph(tint = Hero.gold)
                     }
                     Column {
                         Text(
@@ -693,9 +700,9 @@ fun HomeGlanceBar(
 }
 
 /**
- * Contextual Priority Card consolidating obligations, installments, and reservations (Tier 3).
- * Eliminates multi-card sprawl by highlighting the single most urgent upcoming item
- * with fast one-tap category access chips.
+ * Contextual Financial Priority & Horizon Card.
+ * Gives immediate insight into upcoming commitments, loan installments, and BNPL obligations
+ * with smart urgency classification, clean typography, and zero emojis.
  */
 @Composable
 fun ContextualPriorityCard(
@@ -727,6 +734,7 @@ fun ContextualPriorityCard(
         onClick = onOpenCommitments,
     ) {
         Column(modifier = Modifier.padding(Space.m)) {
+            // Header Row: Title, active count badge, and total remaining debt
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -751,7 +759,7 @@ fun ContextualPriorityCard(
                             .padding(horizontal = 8.dp, vertical = 2.dp),
                     ) {
                         Text(
-                            text = "${fa(totalActiveCount)} مورد فعال",
+                            text = "${fa(totalActiveCount)} فعال",
                             color = Hero.gold,
                             fontWeight = FontWeight.Bold,
                             fontSize = 10.sp,
@@ -769,16 +777,47 @@ fun ContextualPriorityCard(
                 )
             }
 
-            Spacer(Modifier.height(Space.s))
+            Spacer(Modifier.height(10.dp))
 
-            // Urgent highlight banner
+            // Urgent highlight banner (Horizon status with Priority Beacon)
             if (nearestCommitment != null) {
+                val isOverdue = nearestCommitment.nextDueDays < 0
+                val isToday = nearestCommitment.nextDueDays == 0
+                val isTomorrow = nearestCommitment.nextDueDays == 1
+                val isUrgent = isOverdue || isToday || isTomorrow
+
+                val bannerBg = when {
+                    isOverdue -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
+                    isToday || isTomorrow -> Color(0xFFF59E0B).copy(alpha = 0.15f)
+                    else -> MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f)
+                }
+
+                val bannerBorder = when {
+                    isOverdue -> MaterialTheme.colorScheme.error.copy(alpha = 0.4f)
+                    isToday || isTomorrow -> Color(0xFFF59E0B).copy(alpha = 0.35f)
+                    else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                }
+
+                val dueText = when {
+                    isOverdue -> "${fa(-nearestCommitment.nextDueDays)} روز گذشته از سررسید"
+                    isToday -> "سررسید قسط امروز"
+                    isTomorrow -> "فردا موعد سررسید قسط"
+                    else -> "${fa(nearestCommitment.nextDueDays)} روز تا سررسید قسط بعدی"
+                }
+
+                val dueColor = when {
+                    isOverdue -> MaterialTheme.colorScheme.error
+                    isToday || isTomorrow -> Color(0xFFF59E0B)
+                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                }
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f))
-                        .padding(Space.s),
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(bannerBg)
+                        .border(1.dp, bannerBorder, RoundedCornerShape(14.dp))
+                        .padding(horizontal = Space.m, vertical = 10.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -787,10 +826,10 @@ fun ContextualPriorityCard(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Text("⚠️", fontSize = 14.sp)
-                            Spacer(Modifier.width(6.dp))
+                            PriorityAlertBeacon(isUrgent = isUrgent)
+                            Spacer(Modifier.width(8.dp))
                             Text(
-                                nearestCommitment.title,
+                                text = nearestCommitment.title,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 13.sp,
                                 maxLines = 1,
@@ -798,24 +837,19 @@ fun ContextualPriorityCard(
                                 modifier = Modifier.weight(1f, fill = false),
                             )
                         }
-                        val dueText = when {
-                            nearestCommitment.nextDueDays < 0 -> "${fa(-nearestCommitment.nextDueDays)} روز گذشته از سررسید"
-                            nearestCommitment.nextDueDays == 0 -> "سررسید قسط امروز"
-                            nearestCommitment.nextDueDays == 1 -> "فردا موعد سررسید قسط"
-                            else -> "${fa(nearestCommitment.nextDueDays)} روز تا سررسید قسط بعدی"
-                        }
-                        val dueColor = if (nearestCommitment.nextDueDays <= 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                        Spacer(Modifier.height(2.dp))
                         Text(
-                            dueText,
+                            text = dueText,
                             fontSize = 11.sp,
                             color = dueColor,
                             fontFamily = ModamFigures,
+                            fontWeight = if (isUrgent) FontWeight.Bold else FontWeight.Normal,
                         )
                     }
                     Spacer(Modifier.width(Space.s))
                     val amount = if (privacyMode) "••••••••" else "${faCompact(nearestCommitment.remainingAmountToman.toDouble())} ت"
                     Text(
-                        amount,
+                        text = amount,
                         fontWeight = FontWeight.Black,
                         fontSize = 13.sp,
                         fontFamily = ModamFigures,
@@ -827,22 +861,28 @@ fun ContextualPriorityCard(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(14.dp))
                         .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f))
-                        .padding(Space.s),
+                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(14.dp))
+                        .padding(horizontal = Space.m, vertical = 10.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            PriorityAlertBeacon(isUrgent = false)
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = firstOb.provider,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                        Spacer(Modifier.height(2.dp))
                         Text(
-                            firstOb.provider,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            "${fa(firstOb.installmentCount)} قسط باقیمانده",
+                            text = "${fa(firstOb.installmentCount)} قسط باقیمانده",
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontFamily = ModamFigures,
@@ -851,7 +891,7 @@ fun ContextualPriorityCard(
                     Spacer(Modifier.width(Space.s))
                     val amount = if (privacyMode) "••••••••" else "${faCompact((firstOb.installmentRial / 10L).toDouble())} ت"
                     Text(
-                        amount,
+                        text = amount,
                         fontWeight = FontWeight.Black,
                         fontSize = 13.sp,
                         fontFamily = ModamFigures,
@@ -860,61 +900,76 @@ fun ContextualPriorityCard(
                 }
             }
 
-            Spacer(Modifier.height(Space.s))
+            Spacer(Modifier.height(10.dp))
 
-            // Contextual category chips
+            // Contextual category chips with refined micro-borders
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(Space.s),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 if (activeCommitments.isNotEmpty()) {
-                    Box(
+                    Surface(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f))
-                            .clickable(onClick = onOpenCommitments)
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        contentAlignment = Alignment.Center,
+                            .clip(RoundedCornerShape(Radius.pill))
+                            .clickable(onClick = onOpenCommitments),
+                        shape = RoundedCornerShape(Radius.pill),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.4f),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                        ),
                     ) {
                         Text(
-                            "اقساط (${fa(activeCommitments.size)})",
+                            text = "اقساط (${fa(activeCommitments.size)})",
                             fontSize = 11.sp,
                             fontFamily = ModamFigures,
+                            fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                         )
                     }
                 }
                 if (activeObligations.isNotEmpty()) {
-                    Box(
+                    Surface(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f))
-                            .clickable(onClick = onOpenObligations)
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        contentAlignment = Alignment.Center,
+                            .clip(RoundedCornerShape(Radius.pill))
+                            .clickable(onClick = onOpenObligations),
+                        shape = RoundedCornerShape(Radius.pill),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.4f),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                        ),
                     ) {
                         Text(
-                            "تعهدات (${fa(activeObligations.size)})",
+                            text = "تعهدات (${fa(activeObligations.size)})",
                             fontSize = 11.sp,
                             fontFamily = ModamFigures,
+                            fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                         )
                     }
                 }
                 if (activeReservations.isNotEmpty()) {
-                    Box(
+                    Surface(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.35f))
-                            .clickable(onClick = onOpenReservations)
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        contentAlignment = Alignment.Center,
+                            .clip(RoundedCornerShape(Radius.pill))
+                            .clickable(onClick = onOpenReservations),
+                        shape = RoundedCornerShape(Radius.pill),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.4f),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                        ),
                     ) {
                         Text(
-                            "رزروها (${fa(activeReservations.size)})",
+                            text = "رزروها (${fa(activeReservations.size)})",
                             fontSize = 11.sp,
                             fontFamily = ModamFigures,
+                            fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                         )
                     }
                 }
@@ -925,7 +980,7 @@ fun ContextualPriorityCard(
 
 /**
  * Modern 4-Tile Bento Grid for Home Cockpit (Revolut 10 / Apple Card inspired).
- * Consolidates liquid cash, gold/hedging, upcoming debt, and monthly flow into a 2-second glance.
+ * Consolidates liquid cash, gold/hedging, upcoming debt, and monthly flow with crisp vector glyphs.
  */
 @Composable
 fun HomeBentoCockpit(
@@ -955,7 +1010,7 @@ fun HomeBentoCockpit(
         ) {
             BentoTile(
                 modifier = Modifier.weight(1f),
-                emoji = "💳",
+                icon = { BentoCardGlyph(MaterialTheme.colorScheme.primary) },
                 title = "موجودی بانک‌ها",
                 value = if (privacyMode) "••••••••" else "${faCompact(bankToman)} ت",
                 subtitle = "حساب‌های فعال شتاب",
@@ -968,7 +1023,7 @@ fun HomeBentoCockpit(
 
             BentoTile(
                 modifier = Modifier.weight(1f),
-                emoji = "🪙",
+                icon = { BentoGoldGlyph(Hero.gold) },
                 title = "طلای ۱۸ عیار",
                 value = if (privacyMode) "••••••••" else "${faRate(gold18Toman)} ت",
                 subtitle = "سپر ضد تورم",
@@ -986,7 +1041,7 @@ fun HomeBentoCockpit(
         ) {
             BentoTile(
                 modifier = Modifier.weight(1f),
-                emoji = "⏳",
+                icon = { BentoDueGlyph(if (commitmentsCount > 0) Color(0xFFF59E0B) else Color(0xFF10B981)) },
                 title = "اقساط و چک‌ها",
                 value = if (commitmentsCount > 0) "${fa(commitmentsCount)} سررسید فعال" else "بدون سررسید",
                 subtitle = if (upcomingDueDays != null) "${fa(upcomingDueDays)} روز تا موعد" else "وضعیت منظم",
@@ -999,7 +1054,7 @@ fun HomeBentoCockpit(
 
             BentoTile(
                 modifier = Modifier.weight(1f),
-                emoji = "📊",
+                icon = { BentoReportsGlyph(Color(0xFF38BDF8)) },
                 title = "جریان مخارج",
                 value = if (privacyMode) "••••••••" else "${faCompact(monthlySpentToman)} ت",
                 subtitle = "تحلیل ماه جاری",
@@ -1015,13 +1070,13 @@ fun HomeBentoCockpit(
 
 @Composable
 private fun BentoTile(
-    emoji: String,
     title: String,
     value: String,
     subtitle: String,
     accentColor: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    icon: @Composable () -> Unit,
 ) {
     Surface(
         modifier = modifier
@@ -1052,7 +1107,7 @@ private fun BentoTile(
                         .background(accentColor.copy(alpha = 0.15f)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(emoji, fontSize = 16.sp)
+                    icon()
                 }
                 Text(
                     title,
@@ -1084,5 +1139,189 @@ private fun BentoTile(
                 overflow = TextOverflow.Ellipsis,
             )
         }
+    }
+}
+
+/**
+ * Minimalist security shield vector glyph for Safe Spend.
+ */
+@Composable
+fun ShieldGlyph(
+    tint: Color,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier = modifier.size(16.dp)) {
+        val stroke = 1.5.dp.toPx()
+        val path = Path().apply {
+            moveTo(size.width * 0.5f, 0f)
+            lineTo(size.width, size.height * 0.22f)
+            lineTo(size.width, size.height * 0.55f)
+            cubicTo(
+                size.width, size.height * 0.82f,
+                size.width * 0.5f, size.height,
+                size.width * 0.5f, size.height
+            )
+            cubicTo(
+                size.width * 0.5f, size.height,
+                0f, size.height * 0.82f,
+                0f, size.height * 0.55f
+            )
+            lineTo(0f, size.height * 0.22f)
+            close()
+        }
+        drawPath(path, color = tint.copy(alpha = 0.25f))
+        drawPath(path, color = tint, style = Stroke(width = stroke))
+    }
+}
+
+/**
+ * Minimalist geometric jewel / diamond vector glyph for Net Worth.
+ */
+@Composable
+fun NetWorthDiamondGlyph(
+    tint: Color,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier = modifier.size(20.dp)) {
+        val stroke = 1.4.dp.toPx()
+        val path = Path().apply {
+            moveTo(size.width * 0.25f, 0f)
+            lineTo(size.width * 0.75f, 0f)
+            lineTo(size.width, size.height * 0.36f)
+            lineTo(size.width * 0.5f, size.height)
+            lineTo(0f, size.height * 0.36f)
+            close()
+        }
+        drawPath(path, color = tint.copy(alpha = 0.25f))
+        drawPath(path, color = tint, style = Stroke(width = stroke))
+        // Facet lines
+        drawLine(tint.copy(alpha = 0.5f), Offset(0f, size.height * 0.36f), Offset(size.width, size.height * 0.36f), strokeWidth = stroke * 0.8f)
+        drawLine(tint.copy(alpha = 0.5f), Offset(size.width * 0.25f, 0f), Offset(size.width * 0.38f, size.height * 0.36f), strokeWidth = stroke * 0.8f)
+        drawLine(tint.copy(alpha = 0.5f), Offset(size.width * 0.75f, 0f), Offset(size.width * 0.62f, size.height * 0.36f), strokeWidth = stroke * 0.8f)
+    }
+}
+
+/**
+ * Status beacon for commitment priority / urgency.
+ */
+@Composable
+fun PriorityAlertBeacon(
+    isUrgent: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val color = if (isUrgent) MaterialTheme.colorScheme.error else Color(0xFFF59E0B)
+    Box(
+        modifier = modifier
+            .size(20.dp)
+            .clip(CircleShape)
+            .background(color.copy(alpha = 0.15f))
+            .border(1.dp, color.copy(alpha = 0.35f), CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Canvas(modifier = Modifier.size(10.dp)) {
+            val stroke = 1.6.dp.toPx()
+            drawLine(
+                color = color,
+                start = Offset(size.width * 0.5f, 0f),
+                end = Offset(size.width * 0.5f, size.height * 0.55f),
+                strokeWidth = stroke,
+                cap = StrokeCap.Round,
+            )
+            drawCircle(
+                color = color,
+                radius = stroke * 0.6f,
+                center = Offset(size.width * 0.5f, size.height * 0.85f),
+            )
+        }
+    }
+}
+
+/**
+ * Vector Bank Card glyph for Bento Grid.
+ */
+@Composable
+fun BentoCardGlyph(
+    tint: Color,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier = modifier.size(16.dp)) {
+        val stroke = 1.3.dp.toPx()
+        drawRoundRect(
+            color = tint,
+            topLeft = Offset(0f, size.height * 0.15f),
+            size = Size(size.width, size.height * 0.7f),
+            cornerRadius = CornerRadius(2.dp.toPx(), 2.dp.toPx()),
+            style = Stroke(width = stroke),
+        )
+        drawLine(
+            color = tint.copy(alpha = 0.6f),
+            start = Offset(0f, size.height * 0.38f),
+            end = Offset(size.width, size.height * 0.38f),
+            strokeWidth = stroke * 1.1f,
+        )
+    }
+}
+
+/**
+ * Vector Gold Bullion / Coin glyph for Bento Grid.
+ */
+@Composable
+fun BentoGoldGlyph(
+    tint: Color,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier = modifier.size(16.dp)) {
+        val stroke = 1.3.dp.toPx()
+        drawCircle(
+            color = tint,
+            radius = size.width * 0.46f,
+            style = Stroke(width = stroke),
+        )
+        drawCircle(
+            color = tint.copy(alpha = 0.4f),
+            radius = size.width * 0.28f,
+            style = Stroke(width = stroke * 0.8f),
+        )
+    }
+}
+
+/**
+ * Vector Due / Hourglass glyph for Bento Grid.
+ */
+@Composable
+fun BentoDueGlyph(
+    tint: Color,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier = modifier.size(16.dp)) {
+        val stroke = 1.3.dp.toPx()
+        val path = Path().apply {
+            moveTo(0f, 0f)
+            lineTo(size.width, 0f)
+            lineTo(size.width * 0.55f, size.height * 0.5f)
+            lineTo(size.width, size.height)
+            lineTo(0f, size.height)
+            lineTo(size.width * 0.45f, size.height * 0.5f)
+            close()
+        }
+        drawPath(path, color = tint.copy(alpha = 0.2f))
+        drawPath(path, color = tint, style = Stroke(width = stroke))
+    }
+}
+
+/**
+ * Vector Reports / Trend bars glyph for Bento Grid.
+ */
+@Composable
+fun BentoReportsGlyph(
+    tint: Color,
+    modifier: Modifier = Modifier,
+) {
+    Canvas(modifier = modifier.size(16.dp)) {
+        val barW = 2.6.dp.toPx()
+        val r = 1.2.dp.toPx()
+        drawRoundRect(tint.copy(alpha = 0.5f), Offset(size.width * 0.1f, size.height * 0.5f), Size(barW, size.height * 0.5f), CornerRadius(r, r))
+        drawRoundRect(tint.copy(alpha = 0.8f), Offset(size.width * 0.44f, size.height * 0.25f), Size(barW, size.height * 0.75f), CornerRadius(r, r))
+        drawRoundRect(tint, Offset(size.width * 0.78f, size.height * 0.05f), Size(barW, size.height * 0.95f), CornerRadius(r, r))
     }
 }
