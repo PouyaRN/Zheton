@@ -16,6 +16,9 @@ sync/.wrangler/
 pwa/node_modules/
 # Build output: sync/ serves this, and CI builds it before deploying.
 pwa/dist/
+dist/
+graphify-out/cache/
+graphify-out/202*
 keystore.properties
 *.jks
 *.keystore
