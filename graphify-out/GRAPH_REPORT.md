@@ -1,17 +1,17 @@
-# Graph Report - chandtoman  (2026-09-17)
+# Graph Report - chandtoman  (2026-10-13)
 
 ## Corpus Check
-- 297 files · ~979,834 words
+- 298 files · ~983,681 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 105 file(s) not represented in the graph (top: .xml 90, (none) 3, .properties 3)
 
 ## Summary
-- 5988 nodes · 9372 edges · 472 communities (233 shown, 226 thin omitted)
+- 6014 nodes · 9397 edges · 474 communities (228 shown, 233 thin omitted)
 - Extraction: 87% EXTRACTED · 13% INFERRED · 0% AMBIGUOUS · INFERRED: 1180 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `f0e3ec85`
+- Built from commit: `19daa3c6`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -24,8 +24,8 @@
 - CorrectionsStickTest
 - worker/src/index.ts
 - MarketUi.kt
+- Timeline.kt
 - LedgerEntry
-- derive
 - EventTarget
 - TabBar.kt
 - Neobank & Fintech UI/UX Design Systems Research: The European Vanguard & Apple Card
@@ -50,8 +50,8 @@
 - Widget.kt
 - Derived.kt
 - CORE DIRECTIVE: PREMIUM MOBILE APP IMAGE DIRECTION
-- Household
-- Intent
+- sync/src/index.ts
+- 105-ios-spring-haptics-compose.md
 - CategoryGlyph
 - Research: Update Channel & Worker Hosting for Iran Reachability
 - High-Agency Frontend Skill
@@ -61,23 +61,23 @@
 - Home.kt
 - Txn
 - Part I: Persian Currency Rolling Odometer Ticker (`PersianCurrencyTicker`)
-- fetchWalletBalance
+- GlanceTypography.kt
 - 🏛️ گزارش جامع بازطراحی و الهام بصری چندتومان (UI Inspiration Master Report)
 - Data.kt
-- CoreWidgets.kt
+- MoneyWidgets.kt
 - sync/package.json
 - Bank
 - BankAccount
 - parseMarketWatch
-- Kind
+- compositionByKind
 - DeriveTest
 - GoalsTest
 - Research: Statistical Anomaly & Budget Divergence Detection Algorithms
 - Technical Research & Architectural Audit: Radical Simplification & World-Class UI/UX for ChandToman (چندتومان)
 - CycleSpec
-- Card.kt
+- GlanceAppWidget
 - Console
-- .runScan
+- getJson
 - Research: Jetpack Compose Dot-Matrix Rendering & Custom Glyphs for Nothing OS Aesthetics
 - Research: Non-Linear Safe Daily Spend & Cycle Runway Mathematical Models
 - Development
@@ -85,8 +85,8 @@
 - pwa/package.json
 - TransformStream
 - URL
-- MoneyWidgets.kt
-- parseBankSms
+- Family.kt
+- GlanceWidgetTest
 - Theme.kt
 - Design Audit
 - Design Audit
@@ -99,7 +99,7 @@
 - DurableDb
 - Analysis & Synthesis Instructions
 - Agent Skill: Principal UI/UX Architect & Motion Choreographer (Awwwards-Tier)
-- UiState
+- buildRates
 - ThemeMode
 - Reports.kt
 - Agent Skill: Principal UI/UX Architect & Motion Choreographer (Awwwards-Tier)
@@ -130,7 +130,7 @@
 - Headers
 - SubtleCrypto
 - 4. DESIGN ENGINEERING DIRECTIVES (Bias Correction)
-- InstallmentObligation
+- InstallmentPaymentDao
 - evaluateCoinBubble
 - PersianCurrencyTicker.kt
 - 10. REFERENCE VOCABULARY (Pattern Names the Agent Should Know)
@@ -187,8 +187,8 @@
 - Socket
 - WritableStreamDefaultWriter
 - 9. AI TELLS (Forbidden Patterns)
-- CycleMode
-- sync/src/index.ts
+- asRecord
+- InstallmentObligation
 - EventSource
 - TimelineUiFeaturesTest
 - 12. THE COMBINATORIAL VARIATION ENGINE
@@ -227,7 +227,7 @@
 - 5. IMAGE COUNT & PAGE SLICING
 - 29. ANTI-AI-SLOP RULES
 - 5. IMAGE COUNT & PAGE SLICING
-- changeOver
+- Reservation
 - SafeSpendEngineTest
 - ADR 0001: Separation of Analytical Jargon from Core Dashboard & Visual Layout Hierarchy
 - ADR 0002: Offline-First BNPL, Sayad Checks, and Credit Liability Engine
@@ -239,7 +239,7 @@
 - LiabilityType
 - ADR 0003: 50/30/20 Structural Budget Classification, Idle Cash Sweep, and Gold Spend Benchmarks
 - Chandtoman (چندتومان) Design System (DESIGN.md)
-- .getSnapshot
+- MuchTomanTheme
 - ADR 0006: Revolut Bento Cockpit Architecture & Apple Wallet Card Deck Separation
 - 0007. Quad-Tab Consolidation and Radical App Declutter
 - Domain Docs
@@ -293,13 +293,13 @@
 - Text
 - TextEncoder
 - TransformStreamDefaultController
-- Icon
+- ShetabKit
 - 15. DEFAULT SITE PACKS
 - WatchdogStatus
 - WishlistItem
 - WishlistState
 - jalaliDay
-- srcHash
+- HomeDeclutterTest
 - Progress.kt
 - Separator.kt
 - gradlew
@@ -312,6 +312,7 @@
 - 37. EXAMPLE INTERPRETATIONS
 - 15. DEFAULT SITE PACKS
 - 20. EXAMPLE INTERPRETATIONS
+- getThemeVisualSpec
 - triage-labels.md
 - 01-release-signing.md
 - 02-stop-sms-schema-wipes.md
@@ -424,8 +425,10 @@
 - 08-batch-bottom-sheet.md
 - 09-review-removal.md
 - 10-dormant-household.md
-- FintechPrimitives.kt
-- DotProgressBar
+- GoldInput
+- Installments.kt
+- ModamWeight
+- LedgerEngineTest
 - AnalyticsEngineDataset
 - __BaseEnv_Env
 - CacheContext
@@ -465,15 +468,14 @@
 - __RPC_TARGET_BRAND
 - __WORKER_ENTRYPOINT_BRAND
 - __WORKFLOW_ENTRYPOINT_BRAND
-- InstallmentsTest
-- Containers.kt
-- Indicators.kt
-- parseAmount
-- Store
-- DotMatrix.kt
-- fa
+- calculateNoSpendStreak
+- buildObligation
+- RikkaColors
+- BankSheet.kt
+- Daily.kt
+- Commitment
 - CategoryIcon
-- ButtonVariant
+- Button
 - CharacterizationUiContractTest
 
 ## God Nodes (most connected - your core abstractions)
@@ -489,61 +491,61 @@
 10. `parseBankSms()` - 40 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `UnifiedActivityAndTrendsScreen()` --calls--> `compositionByKind()`  [INFERRED]
-  app/src/main/java/com/doxigo/muchtoman/ActivityAndTrendsUi.kt → app/src/main/java/com/doxigo/muchtoman/Catalog.kt
-- `UnifiedActivityAndTrendsScreen()` --calls--> `CycleSpec`  [INFERRED]
-  app/src/main/java/com/doxigo/muchtoman/ActivityAndTrendsUi.kt → app/src/main/java/com/doxigo/muchtoman/Cycle.kt
-- `UnifiedActivityAndTrendsScreen()` --calls--> `ReportsTab()`  [INFERRED]
-  app/src/main/java/com/doxigo/muchtoman/ActivityAndTrendsUi.kt → app/src/main/java/com/doxigo/muchtoman/ReportsUi.kt
-- `UnifiedActivityAndTrendsScreen()` --calls--> `TimelineScreen()`  [INFERRED]
-  app/src/main/java/com/doxigo/muchtoman/ActivityAndTrendsUi.kt → app/src/main/java/com/doxigo/muchtoman/Timeline.kt
-- `AppRoot()` --calls--> `UnifiedActivityAndTrendsScreen()`  [INFERRED]
-  app/src/main/java/com/doxigo/muchtoman/Ui.kt → app/src/main/java/com/doxigo/muchtoman/ActivityAndTrendsUi.kt
+- `recordManualTransaction()` --calls--> `ChandTomanGlanceWidget`  [INFERRED]
+  app/src/main/java/com/doxigo/muchtoman/QuickAddActivity.kt → app/src/main/java/com/doxigo/muchtoman/GlanceWidget.kt
+- `updateTotalWidget()` --calls--> `ChandTomanGlanceWidget`  [INFERRED]
+  app/src/main/java/com/doxigo/muchtoman/Widget.kt → app/src/main/java/com/doxigo/muchtoman/GlanceWidget.kt
+- `updateTotalWidgetAndWait()` --calls--> `ChandTomanGlanceWidget`  [INFERRED]
+  app/src/main/java/com/doxigo/muchtoman/Widget.kt → app/src/main/java/com/doxigo/muchtoman/GlanceWidget.kt
+- `Store` --calls--> `MarketRateHistoryStore`  [INFERRED]
+  app/src/main/java/com/doxigo/muchtoman/Data.kt → app/src/main/java/com/doxigo/muchtoman/Intelligence.kt
+- `ReportsTest` --calls--> `jalaliDay()`  [INFERRED]
+  app/src/test/java/com/doxigo/muchtoman/ReportsTest.kt → app/src/main/java/com/doxigo/muchtoman/Jalali.kt
 
 ## Import Cycles
 - None detected.
 
-## Communities (472 total, 226 thin omitted)
+## Communities (474 total, 233 thin omitted)
 
 ### Community 0 - "worker-configuration.d.ts"
 Cohesion: 0.00
 Nodes (847): RFC-2253, RFC-3339, RFC-5246, RFC-9440, AgentMemoryGetSummaryOptions, AgentMemoryGetSummaryResponse, AgentMemoryIncomingMemory, AgentMemoryIngestOptions (+839 more)
 
 ### Community 1 - "GlanceWidget.kt"
-Cohesion: 0.05
-Nodes (56): ShetabKit, GlanceModamPan(), GlanceModamPill(), GlanceModamText(), GlanceProgressGauge(), GlanceTypographyEngine, Bitmap, Color (+48 more)
+Cohesion: 0.17
+Nodes (25): com, Store, GlanceModamText(), bankLogoRes(), ChandTomanWidgetBody(), Color, Context, LiquidGoldBody() (+17 more)
 
 ### Community 2 - "AppVm"
 Cohesion: 0.04
-Nodes (17): AndroidViewModel, buildObligation(), AppVm, Bundle, com, Context, FragmentActivity, Job (+9 more)
+Nodes (18): AndroidViewModel, WalletLink, AppVm, com, Context, FragmentActivity, Job, MainActivity (+10 more)
 
 ### Community 3 - "main.ts"
 Cohesion: 0.06
 Nodes (70): fromBase64(), fromBase64Url(), generateKey(), importKey(), open(), Pairing, readPairing(), ScopeKey (+62 more)
 
 ### Community 4 - "Sync.kt"
-Cohesion: 0.07
-Nodes (59): familyLocalRef(), hexOf(), ByteArray, sha256Hex(), applyCategory(), applyMember(), applyRecord(), applyTransaction() (+51 more)
+Cohesion: 0.06
+Nodes (63): familyLocalRef(), FamilyMember, FamilyMemberDao, hexOf(), ByteArray, sha256Hex(), applyCategory(), applyMember() (+55 more)
 
 ### Community 5 - "CorrectionsStickTest"
 Cohesion: 0.23
 Nodes (4): deletedSourceHashes(), sourceSkips(), srcHashOfRef(), CorrectionsStickTest
 
 ### Community 6 - "worker/src/index.ts"
-Cohesion: 0.09
-Nodes (62): asArray(), asRecord(), bitcoinBalance(), BodyTooLargeError, BONBAST_MAP, buildRates(), cancelBody(), Coin (+54 more)
+Cohesion: 0.12
+Nodes (18): BONBAST_MAP, Coin, EVM_RPCS, faDigits(), fetchParsian(), JsonRecord, NATIVE_WALLETS, PARSIAN_REFERENCE (+10 more)
 
 ### Community 7 - "MarketUi.kt"
-Cohesion: 0.13
-Nodes (33): calculateCoinIntrinsicToman(), FluctuationSeries, ArbitrageRow(), assetKindColor(), BubbleGaugeRow(), findClosestIndex(), GlanceCard(), GoldCoinBubbleGauge() (+25 more)
-
-### Community 8 - "LedgerEntry"
 Cohesion: 0.08
-Nodes (44): generateLedgerCsv(), LedgerEntry, tomanOf(), GoalProgress, GoalCard(), GoalsScreen(), androidx, BankFeeTracker (+36 more)
+Nodes (49): calculateCoinIntrinsicToman(), FluctuationSeries, ArbitrageRow(), assetKindColor(), BubbleGaugeRow(), findClosestIndex(), GlanceCard(), GoldCoinBubbleGauge() (+41 more)
 
-### Community 9 - "derive"
+### Community 8 - "Timeline.kt"
 Cohesion: 0.08
-Nodes (13): derive(), DurableMeta, MerchantAlias, uuid7(), T, LedgerEngine, recordManualTransaction(), TxnDecision (+5 more)
+Nodes (37): faSignedCompact(), GoalProgress, GoalCard(), GoalsScreen(), androidx, Category, categoryChoices(), CategoryDao (+29 more)
+
+### Community 9 - "LedgerEntry"
+Cohesion: 0.11
+Nodes (12): derive(), LedgerEntry, DurableMeta, uuid7(), T, LedgerEngine, Context, recordManualTransaction() (+4 more)
 
 ### Community 10 - "EventTarget"
 Cohesion: 0.12
@@ -558,8 +560,8 @@ Cohesion: 0.04
 Nodes (45): 1. Cross-Neobank Comparative Architecture Matrix, 2.1 The "Revolut 10" Paradigm Shift, 2.2 Visual Hierarchy & Dashboard Layout Mechanics, 2.3 Color Palette & Elevation Layers: Standard vs. Metal vs. Ultra, 2.4 Typography Scale: Aeonik Pro & Basier Circle, 2.5 Revolut Analytics & Data Visualization, 2. Revolut Design Architecture: Revolut 10, Metal & Ultra, 3.1 Design Philosophy: Bauhaus & Ulm School of Design (+37 more)
 
 ### Community 13 - "BankCard3D.kt"
-Cohesion: 0.11
-Nodes (42): BankCard3D(), BankCardDeck(), BankCardPalette, BankCardThemes, CardCopyIcon(), CardGeometricPattern(), CardQrDialog(), CardQrIcon() (+34 more)
+Cohesion: 0.14
+Nodes (32): BankCard3D(), BankCardDeck(), BankCardPalette, BankCardThemes, CardCopyIcon(), CardGeometricPattern(), CardQrDialog(), CardQrIcon() (+24 more)
 
 ### Community 14 - "Part 2: Kinetic Motion & Micro-Interaction Enhancements"
 Cohesion: 0.04
@@ -574,12 +576,12 @@ Cohesion: 0.05
 Nodes (43): 1. Logo Cover, 1. Monogram + Meaning, 2 × 3 REFERENCE-STYLE LAYOUT, 2. Logo Construction, 2. Product Action, 3. Digital Application, 3. Metaphor Fusion, 4. Brand Essence (+35 more)
 
 ### Community 17 - "AppRoot"
-Cohesion: 0.09
-Nodes (47): ShetabPanVisualTransformation, OffsetMapping, AddCommitmentSheet(), CommitmentsCard(), formatShamsiDate(), Modifier, faAgo(), installmentDueBadge() (+39 more)
+Cohesion: 0.07
+Nodes (57): Dp, Modifier, UnifiedActivityAndTrendsScreen(), installmentDueBadge(), calculateLifeEnergy(), calculateSafeToSpend(), formatInDenominator(), LifeEnergyDuration (+49 more)
 
 ### Community 18 - "Sms.kt"
-Cohesion: 0.08
-Nodes (37): accountIn(), Channel, ATM, BILL, CARD, FEE, PAYA, POS (+29 more)
+Cohesion: 0.06
+Nodes (49): accountIn(), Channel, ATM, BILL, CARD, FEE, PAYA, POS (+41 more)
 
 ### Community 19 - "MuchToman Feature Implementation & Architecture Research"
 Cohesion: 0.05
@@ -594,12 +596,12 @@ Cohesion: 0.11
 Nodes (21): FilterField, AMOUNT, BANK, CATEGORY, DATE, DIRECTION, MERCHANT, FilterOp (+13 more)
 
 ### Community 22 - "MoneyTest"
-Cohesion: 0.12
-Nodes (4): anchorAccount(), applyBankSms(), bankTotal(), MoneyTest
+Cohesion: 0.08
+Nodes (12): changeOver(), anchorAccount(), applyBankSms(), bankOf(), BankSms, bankTotal(), fallbackDivisor(), hasOtpCode() (+4 more)
 
 ### Community 23 - "Intelligence.kt"
-Cohesion: 0.09
-Nodes (21): CardBinInfo, CashBurnResult, detectRecurringExpenses(), FailedTxnWatchdog, GoldSpendBenchmark, IdleCashAnalyzer, IdleCashWarning, ImpulseCluster (+13 more)
+Cohesion: 0.07
+Nodes (24): BankFeeSummary, BankFeeTracker, calculateDailyCashBurn(), calculateGoldSpendBenchmark(), CardBinInfo, CashBurnResult, detectRecurringExpenses(), FailedTxnWatchdog (+16 more)
 
 ### Community 25 - "سند جامع بازسازی رابط کاربری و تجربه کاربری اپلیکیشن چندتومان"
 Cohesion: 0.06
@@ -626,24 +628,24 @@ Cohesion: 0.06
 Nodes (6): CloseEvent, CustomEvent, ErrorEvent, Event, MessageEvent, PromiseRejectionEvent
 
 ### Community 31 - "Widget.kt"
-Cohesion: 0.15
-Nodes (26): chartBitmap(), drawTotalWidget(), Face, COMPACT, TALL, WIDE, fade(), heightDp() (+18 more)
+Cohesion: 0.16
+Nodes (27): chartBitmap(), drawTotalWidget(), Face, COMPACT, TALL, WIDE, fade(), heightDp() (+19 more)
 
 ### Community 32 - "Derived.kt"
-Cohesion: 0.11
-Nodes (20): allBalances(), balanceOf(), consumeHint(), csvEscape(), DerivedDb, hiddenRefs(), Context, RoomDatabase (+12 more)
+Cohesion: 0.10
+Nodes (21): allBalances(), Anchor, balanceOf(), consumeHint(), csvEscape(), DerivedDb, generateLedgerCsv(), hiddenRefs() (+13 more)
 
 ### Community 33 - "CORE DIRECTIVE: PREMIUM MOBILE APP IMAGE DIRECTION"
 Cohesion: 0.06
 Nodes (34): 10. DEVICE MOCKUP FRAME RULE, 11. ONBOARDING FLOW RULE, 12. FIRST SCREEN CLEANLINESS RULE, 13. SAFE AREA AND SYSTEM REGION RULE, 14. NAVIGATION RULE, 15. CLEAN LAYOUT RULE, 16. CREATIVE IMAGE DIRECTION RULE, 17. BACKGROUND TEXTURE AND SURFACE RULE (+26 more)
 
-### Community 34 - "Household"
-Cohesion: 0.28
-Nodes (9): asRecords(), hex(), Household, identity(), jsonResponse(), randomToken(), readTextLimited(), sha256Hex() (+1 more)
+### Community 34 - "sync/src/index.ts"
+Cohesion: 0.19
+Nodes (18): asRecords(), AuthorisedDevice, BodyTooLargeError, errorMessage(), fetch(), hex(), Household, identity() (+10 more)
 
-### Community 35 - "Intent"
-Cohesion: 0.33
-Nodes (8): QuickAddTileService, canReadSms(), Context, openSmsThread(), RawSms, readSmsInbox(), Intent, TileService
+### Community 35 - "105-ios-spring-haptics-compose.md"
+Cohesion: 0.08
+Nodes (25): 1. Cupertino Spring Physics Engine (`CupertinoSprings.kt`), 1. Hardware Architecture Differences, 1. Mathematical Derivation, 1. `TabBar.kt` (Cupertino Frosted Glass Island), 2. `AppleWalletDeck.kt` & `BankCard3D.kt` (Card Deck Fan-out), 2. Complete Mapping Matrix, 2. Standard iOS 17/18 Presets vs. Compose Constants, 2. Studio Tactile Haptic Engine (`FintechHaptics.kt`) (+17 more)
 
 ### Community 36 - "CategoryGlyph"
 Cohesion: 0.06
@@ -666,8 +668,8 @@ Cohesion: 0.06
 Nodes (30): 1. Executive Summary & Problem Formulation, 2.1. Live Foreign Exchange & OTC Tether (تتر و ارز), 2.2. Gold, Coins, and Cash Dollar (طلا، سکه، و ارز کاغذی), 2.3. Gold ETFs & Commodity Certificates (صندوق‌های طلا و شمش در بورس کالا), 2.4. Real Estate Market Intelligence (داده‌ها و شاخص‌های املاک و مسکن), 2. Primary Source API Analysis (Verified Endpoints & Payloads), 3. Macroeconomic Dynamics: The Iranian Dollar Surge Transmission Matrix, 4.1. Input Parameters (+22 more)
 
 ### Community 41 - "Holding"
-Cohesion: 0.10
-Nodes (9): computeTotals(), Holding, listHoldings(), newHoldingId(), snapshotHistory(), Totals, HoldingLabelTest, SnapshotTest (+1 more)
+Cohesion: 0.07
+Nodes (14): computeTotals(), effectiveRates(), Holding, listHoldings(), recordDay(), snapshotHistory(), Context, WidgetSnapshot (+6 more)
 
 ### Community 42 - "Home.kt"
 Cohesion: 0.25
@@ -681,21 +683,21 @@ Nodes (26): Txn, findDuplicates(), findLinks(), findLooseFees(), findRefunds(), 
 Cohesion: 0.06
 Nodes (30): 1.1 Actuator Mechanics: ERM vs. LRA vs. X-Axis Linear, 1.1 The Horizontal Jitter Problem, 1.2 OpenType Layout Engine & `ModamFigures`, 1.2 The Flaw of Jetpack Compose `LocalHapticFeedback`, 1. Android Haptic Landscape & Hardware Fragmentation Audit, 1. Hero Balance Integration (`Home.kt`), 1. Typographic Foundation & OpenType Tabular Numerals (`tnum`), 2.1 The Fatal Flaw of Index-Based Diffing (+22 more)
 
-### Community 45 - "fetchWalletBalance"
-Cohesion: 0.18
-Nodes (10): fetchWalletBalance(), isWalletBalanceValid(), T, readUtf8Limited(), WalletBalance, WalletBalanceRequest, WalletFetchException, WalletLink (+2 more)
+### Community 45 - "GlanceTypography.kt"
+Cohesion: 0.30
+Nodes (9): GlanceModamPan(), GlanceModamPill(), GlanceProgressGauge(), GlanceTypographyEngine, Bitmap, Color, Context, GlanceModifier (+1 more)
 
 ### Community 46 - "🏛️ گزارش جامع بازطراحی و الهام بصری چندتومان (UI Inspiration Master Report)"
 Cohesion: 0.06
 Nodes (30): بخش اول: کابین فرمان مالی (Home Cockpit - «فرمان»), بخش دوم: بازار نرخ‌ها، پایش طلا و سبد دارایی‌ها (Market & Assets - «بازار»), بخش سوم: دسته‌کارت‌های بانکی شتاب، حساب‌ها و تعهدات اقساط (Bank Cards & Commitments - «حساب‌ها»), بخش ششم: پوسته ناوبری شناور، تم تاریک و ویجت‌های اندروید (Navigation Shell & Glance Widgets), بخش پنجم: دیده‌بان مالی، گزارش ۵۰/۳۰/۲۰ و اهداف (Reports & Analytics - «دیده‌بان»), بخش چهارم: تایم‌لاین ریزتراکنش‌ها و دفتر مالی (Transactions Ledger & Feed - «دفتر»), جمع‌بندی معیارهای کنترل کیفیت و استانداردهای پیاده‌سازی, فهرست بخش‌های ارزیابی‌شده (+22 more)
 
 ### Community 47 - "Data.kt"
-Cohesion: 0.11
-Nodes (21): Coin, effectiveRates(), fetchRates(), isNewerVersion(), isWalletAddressFormatValid(), isWalletContractFormatValid(), mergeRates(), origin() (+13 more)
+Cohesion: 0.09
+Nodes (29): Coin, fetchRates(), fetchWalletBalance(), isNewerVersion(), isWalletAddressFormatValid(), isWalletBalanceValid(), isWalletContractFormatValid(), T (+21 more)
 
-### Community 48 - "CoreWidgets.kt"
-Cohesion: 0.18
-Nodes (23): CurrencyWidget(), Modifier, MarketWatchWidget(), NetWorthWidget(), PortfolioWidget(), EditorialRow(), MarketRow(), WidgetDensity (+15 more)
+### Community 48 - "MoneyWidgets.kt"
+Cohesion: 0.07
+Nodes (75): fa(), tomanOf(), AndisTheme, HairlineDivider(), BillsWidget(), GoalsWidget(), InstallmentsWidget(), Modifier (+67 more)
 
 ### Community 49 - "sync/package.json"
 Cohesion: 0.08
@@ -706,20 +708,20 @@ Cohesion: 0.12
 Nodes (16): Bank, BLU, EGHTESAD_NOVIN, KHAVARMIANEH, MASKAN, MELLAT, MELLI, OTHER (+8 more)
 
 ### Community 51 - "BankAccount"
-Cohesion: 0.12
+Cohesion: 0.13
 Nodes (5): DerivedBalance, reconcileBalances(), BankAccount, collapseAccounts(), BankCardTest
 
 ### Community 52 - "parseMarketWatch"
-Cohesion: 0.36
-Nodes (4): parseMarketWatch(), body(), row(), TseParseTest
+Cohesion: 0.22
+Nodes (8): fetchTse(), isStockId(), parseMarketWatch(), price(), TseSnapshot, body(), row(), TseParseTest
 
-### Community 53 - "Kind"
-Cohesion: 0.11
-Nodes (20): AssetType, catalog(), compositionByKind(), faLetters(), holdingsByKind(), Kind, CASH, COIN (+12 more)
+### Community 53 - "compositionByKind"
+Cohesion: 0.17
+Nodes (11): AssetType, catalog(), compositionByKind(), faLetters(), holdingsByKind(), Coin, matchesSearch(), resolveType() (+3 more)
 
 ### Community 54 - "DeriveTest"
-Cohesion: 0.21
-Nodes (5): Anchor, applyDirectionOverride(), applyMerchantAliases(), deriveBalance(), DeriveTest
+Cohesion: 0.16
+Nodes (6): applyDirectionOverride(), applyMerchantAliases(), deriveBalance(), BalanceAnchor, BalanceAnchorDao, DeriveTest
 
 ### Community 55 - "GoalsTest"
 Cohesion: 0.17
@@ -737,13 +739,13 @@ Nodes (28): 1.1 The Neobank Paradox: Feature Saturation vs. Cognitive Clarity, 1
 Cohesion: 0.25
 Nodes (6): CycleSpec, DayOfWeekWeights, SafeDailySpendAlgorithmTest, SafeDailySpendEngine, SafeSpendSnapshot, ScheduledLiability
 
-### Community 59 - "Card.kt"
-Cohesion: 0.12
-Nodes (20): Bundle, Context, QuickAddActivity, CardAnimation, None, Press, CardColorValues, CardContent() (+12 more)
+### Community 59 - "GlanceAppWidget"
+Cohesion: 0.24
+Nodes (17): ChandTomanGlanceWidget, ChandTomanGlanceWidgetReceiver, LiquidGoldGlanceWidget, LiquidGoldGlanceWidgetReceiver, MarketTickerWidget, MarketTickerWidgetReceiver, QuickAddGlanceWidget, QuickAddGlanceWidgetReceiver (+9 more)
 
-### Community 61 - ".runScan"
-Cohesion: 0.16
-Nodes (12): containsWord(), guessBank(), isIgnoredBankSms(), isMaskanHint(), legacySmsKey(), looksLikeBankSms(), normalise(), rememberSeen() (+4 more)
+### Community 61 - "getJson"
+Cohesion: 0.26
+Nodes (17): BodyTooLargeError, cancelBody(), coinIconSource(), errorMessage(), fetch(), fetchApk(), fetchBonbast(), fetchCoinIcon() (+9 more)
 
 ### Community 62 - "Research: Jetpack Compose Dot-Matrix Rendering & Custom Glyphs for Nothing OS Aesthetics"
 Cohesion: 0.07
@@ -758,8 +760,8 @@ Cohesion: 0.08
 Nodes (22): Adding an asset, Building, Deploying, Development, Editions, Implementation notes, Releasing, Shipping a parser fix (+14 more)
 
 ### Community 65 - "faCompact"
-Cohesion: 0.09
-Nodes (41): Change, faCompact(), faDecimal(), faHeld(), faNumber(), SafeSpendBody(), HomeGlanceBar(), BankFeeSummary (+33 more)
+Cohesion: 0.08
+Nodes (47): Kind, CASH, COIN, CRYPTO, FIAT, GOLD, SILVER, STOCK (+39 more)
 
 ### Community 66 - "pwa/package.json"
 Cohesion: 0.10
@@ -769,17 +771,17 @@ Nodes (18): devDependencies, @types/node, typescript, vite, vitest, @types/node,
 Cohesion: 0.10
 Nodes (7): CompressionStream, DecompressionStream, FixedLengthStream, IdentityTransformStream, TextDecoderStream, TextEncoderStream, TransformStream
 
-### Community 69 - "MoneyWidgets.kt"
-Cohesion: 0.53
-Nodes (9): HomeStory, AccountsWidget(), BankCardWidget(), BudgetWidget(), DailyBurnWidget(), FinancialHealthWidget(), Modifier, SpendingWidget() (+1 more)
+### Community 69 - "Family.kt"
+Cohesion: 0.28
+Nodes (15): CompanionScreen(), FamilyMemberRow(), FamilyState, JoinCard(), androidx, Bitmap, Shape, MemberAvatar() (+7 more)
 
-### Community 70 - "parseBankSms"
-Cohesion: 0.12
-Nodes (9): scanHints(), bankOf(), BankSms, fallbackDivisor(), hasOtpCode(), labeledAccount(), maskanDate(), merchantInHint() (+1 more)
+### Community 70 - "GlanceWidgetTest"
+Cohesion: 0.15
+Nodes (3): GlanceWidgetState, marketTickers(), GlanceWidgetTest
 
 ### Community 71 - "Theme.kt"
-Cohesion: 0.11
-Nodes (26): AndisColors, AndisRadius, AndisTheme, AndisTypography, getAndisColors(), getColorScheme(), getHeroPalette(), getThemeVisualSpec() (+18 more)
+Cohesion: 0.24
+Nodes (12): AndisRadius, AndisTypography, GlassSurface(), heroFigure(), AnnotatedString, Color, Dp, Modifier (+4 more)
 
 ### Community 72 - "Design Audit"
 Cohesion: 0.10
@@ -810,12 +812,12 @@ Cohesion: 0.11
 Nodes (17): @cloudflare/workers-types, devDependencies, @cloudflare/workers-types, typescript, wrangler, typescript, wrangler, name (+9 more)
 
 ### Community 80 - "Lock.kt"
-Cohesion: 0.15
-Nodes (21): canLock(), CyclePicker(), faVersion(), Composable, Context, FragmentActivity, Modifier, Shape (+13 more)
+Cohesion: 0.14
+Nodes (22): canLock(), CyclePicker(), faVersion(), Composable, Context, FragmentActivity, Modifier, Shape (+14 more)
 
 ### Community 81 - "DurableDb"
-Cohesion: 0.08
-Nodes (19): BalanceAnchor, BalanceAnchorDao, DurableDb, DurableMetaDao, FamilyMember, FamilyMemberDao, ingestBankSms(), Context (+11 more)
+Cohesion: 0.06
+Nodes (25): manualToRow(), merchantNorm(), DurableDb, DurableMetaDao, ingestBankSms(), Context, RoomDatabase, manualRef() (+17 more)
 
 ### Community 82 - "Analysis & Synthesis Instructions"
 Cohesion: 0.11
@@ -825,17 +827,17 @@ Nodes (18): 1. Define the Atmosphere, 2. Map the Color Palette, 3. Establish Typ
 Cohesion: 0.11
 Nodes (17): 1. Meta Information & Core Directive, 2. THE "ABSOLUTE ZERO" DIRECTIVE (STRICT ANTI-PATTERNS), 3. THE CREATIVE VARIANCE ENGINE, 4. HAPTIC MICRO-AESTHETICS (COMPONENT MASTERY), 5. MOTION CHOREOGRAPHY (FLUID DYNAMICS), 6. PERFORMANCE GUARDRAILS, 7. EXECUTION PROTOCOL, 8. PRE-OUTPUT CHECKLIST (+9 more)
 
-### Community 84 - "UiState"
-Cohesion: 0.26
-Nodes (15): Dp, Modifier, UnifiedActivityAndTrendsScreen(), RunwayWidgetState, calculateDailyCashBurn(), calculateSafeToSpend(), jalaliMonthLength(), tehranDay() (+7 more)
+### Community 84 - "buildRates"
+Cohesion: 0.21
+Nodes (16): asArray(), buildRates(), fetchBinanceUsd(), fetchBitpin(), fetchCoinGecko(), fetchFiat(), fetchSilver(), fetchTetherland() (+8 more)
 
 ### Community 85 - "ThemeMode"
 Cohesion: 0.10
 Nodes (20): ThemeMode, AMOLED, ANDIS_TERMINAL, APPLE_SILVER, APPLE_TITANIUM, CASH_APP_NEON, CHAMPAGNE_GOLD, CYBER_GOLD (+12 more)
 
 ### Community 86 - "Reports.kt"
-Cohesion: 0.23
-Nodes (16): bufferDays(), buildStory(), calendarStory(), currentMonthReport(), cycleMonthReport(), faPercent(), Insight, MonthReport (+8 more)
+Cohesion: 0.29
+Nodes (16): bufferDays(), buildStory(), calendarStory(), currentMonthReport(), cycleMonthReport(), faPercent(), HomeStory, Insight (+8 more)
 
 ### Community 87 - "Agent Skill: Principal UI/UX Architect & Motion Choreographer (Awwwards-Tier)"
 Cohesion: 0.11
@@ -921,10 +923,6 @@ Nodes (12): 4.10 Quotes & Testimonials, 4.11 Page Theme Lock (Light / Dark Mode 
 Cohesion: 0.17
 Nodes (12): 4.10 Quotes & Testimonials, 4.11 Page Theme Lock (Light / Dark Mode Consistency), 4.1 Typography, 4.2 Color Calibration, 4.3 Layout Diversification, 4.4 Materiality, Shadows, Cards, 4.5 Interactive UI States, 4.6 Data & Form Patterns (+4 more)
 
-### Community 115 - "InstallmentObligation"
-Cohesion: 0.05
-Nodes (13): maskFinancialAmount(), DueDateBadge, InstallmentObligation, InstallmentObligationDao, InstallmentPayment, InstallmentPaymentDao, UrgencyLevel, NORMAL (+5 more)
-
 ### Community 116 - "evaluateCoinBubble"
 Cohesion: 0.20
 Nodes (9): calculateBubblePercent(), evaluateCoinBubble(), GoldBubbleInfo, GoldCoinType, BAHAR, EMAMI, GERAMI, NIM (+1 more)
@@ -942,8 +940,8 @@ Cohesion: 0.15
 Nodes (3): Body, Request, Response
 
 ### Community 123 - "Cycle.kt"
-Cohesion: 0.50
-Nodes (8): addJalaliMonth(), cycleEndOfDay(), cycleStartOfDay(), CycleWindow, monthAnchorDay(), nextDayAnchor(), previousDayAnchor(), reportWindowForCycle()
+Cohesion: 0.28
+Nodes (11): addJalaliMonth(), cycleEndOfDay(), CycleMode, ANCHOR, JALALI_MONTH, cycleStartOfDay(), CycleWindow, monthAnchorDay() (+3 more)
 
 ### Community 124 - "CORE DIRECTIVE: AWWWARDS-LEVEL DESIGN ENGINEERING"
 Cohesion: 0.20
@@ -966,8 +964,8 @@ Cohesion: 0.28
 Nodes (8): Badge(), BadgeVariant, Default, Destructive, Outline, Secondary, Success, Modifier
 
 ### Community 131 - "jalaliOf"
-Cohesion: 0.13
-Nodes (14): faDigits(), floorDiv(), gregorianToJdn(), JalaliDate, jalaliMonthsBack(), jalaliMonthStart(), jalaliOf(), jalaliToJdn() (+6 more)
+Cohesion: 0.19
+Nodes (12): faDigits(), floorDiv(), gregorianToJdn(), JalaliDate, jalaliMonthsBack(), jalaliMonthStart(), jalaliOf(), jalaliToJdn() (+4 more)
 
 ### Community 132 - "compilerOptions"
 Cohesion: 0.18
@@ -1081,13 +1079,9 @@ Nodes (3): ByteLengthQueuingStrategy, CountQueuingStrategy, QueuingStrategy
 Cohesion: 0.25
 Nodes (8): 9.A Visual & CSS, 9. AI TELLS (Forbidden Patterns), 9.B Typography, 9.C Layout & Spacing, 9.D Content & Data ("Jane Doe" Effect), 9.E External Resources & Components, 9.F Production-Test Tells (banned outright), 9.G EM-DASH BAN (the single most-violated Tell)
 
-### Community 172 - "CycleMode"
-Cohesion: 0.50
-Nodes (3): CycleMode, ANCHOR, JALALI_MONTH
-
-### Community 173 - "sync/src/index.ts"
-Cohesion: 0.33
-Nodes (9): AuthorisedDevice, BodyTooLargeError, errorMessage(), fetch(), PushRecord, splitToken(), textResponse(), timingSafeEqual() (+1 more)
+### Community 172 - "asRecord"
+Cohesion: 0.32
+Nodes (11): asRecord(), bitcoinBalance(), evmBalance(), firstRpc(), lookupWalletBalance(), rpc(), scaledAmount(), solanaBalance() (+3 more)
 
 ### Community 176 - "12. THE COMBINATORIAL VARIATION ENGINE"
 Cohesion: 0.25
@@ -1225,9 +1219,9 @@ Nodes (5): ADR 0003: 50/30/20 Structural Budget Classification, Idle Cash Sweep,
 Cohesion: 0.12
 Nodes (16): 1. Price Bento Card (Core Unit), 2. Market Delta Pill, 3. Category Filter Tabs, 4. Fast Currency Calculator Input, Border Radius, Chandtoman (چندتومان) Design System (DESIGN.md), Colors, Components (+8 more)
 
-### Community 224 - ".getSnapshot"
-Cohesion: 0.53
-Nodes (3): Context, WidgetSnapshot, WidgetSnapshotEngine
+### Community 224 - "MuchTomanTheme"
+Cohesion: 0.29
+Nodes (8): Bundle, AndisColors, getAndisColors(), getColorScheme(), getHeroPalette(), HeroPalette, androidx, MuchTomanTheme()
 
 ### Community 225 - "ADR 0006: Revolut Bento Cockpit Architecture & Apple Wallet Card Deck Separation"
 Cohesion: 0.33
@@ -1321,10 +1315,6 @@ Nodes (4): 2. PLATFORM MODE RULE, Android-native premium, Cross-platform premium
 Cohesion: 0.50
 Nodes (4): 37. EXAMPLE INTERPRETATIONS, Example 1, Example 2, Example 3
 
-### Community 278 - "Icon"
-Cohesion: 0.12
-Nodes (26): bidi(), faRate(), faSignedCompact(), faSignedParts(), faWords(), faWordsToman(), ltrFigure(), trimNumber() (+18 more)
-
 ### Community 279 - "15. DEFAULT SITE PACKS"
 Cohesion: 0.50
 Nodes (4): 12-section pack, 15. DEFAULT SITE PACKS, 4-section pack, 8-section pack
@@ -1337,9 +1327,9 @@ Nodes (4): WatchdogStatus, OVERDUE, PENDING, REFUNDED
 Cohesion: 0.50
 Nodes (4): WishlistState, COOLING, PURCHASED, RECONSIDERED
 
-### Community 284 - "srcHash"
-Cohesion: 0.12
-Nodes (9): manualToRow(), merchantNorm(), manualRef(), ManualTxn, ManualTxnDao, srcAddrKeyV1(), srcHash(), CorpusFixtures (+1 more)
+### Community 283 - "jalaliDay"
+Cohesion: 0.17
+Nodes (5): jalaliDay(), jalaliMonthLength(), tehranDayStart(), CycleTest, JalaliTest
 
 ### Community 285 - "Progress.kt"
 Cohesion: 0.70
@@ -1389,6 +1379,10 @@ Nodes (4): 12-section pack, 15. DEFAULT SITE PACKS, 4-section pack, 8-section pa
 Cohesion: 0.50
 Nodes (4): 20. EXAMPLE INTERPRETATIONS, Example 1, Example 2, Example 3
 
+### Community 297 - "getThemeVisualSpec"
+Cohesion: 0.33
+Nodes (3): getThemeVisualSpec(), ThemeVisualSpec, ThemeTest
+
 ### Community 334 - "BasicImageTransformations"
 Cohesion: 0.67
 Nodes (3): BasicImageTransformations, RequestInitCfPropertiesImage, RequestInitCfPropertiesImageDraw
@@ -1397,60 +1391,48 @@ Nodes (3): BasicImageTransformations, RequestInitCfPropertiesImage, RequestInitC
 Cohesion: 0.67
 Nodes (3): RequestInitCfPropertiesVaryAcceptHeader, RequestInitCfPropertiesVaryAcceptLanguageHeader, RequestInitCfPropertiesVaryHeader
 
-### Community 418 - "FintechPrimitives.kt"
-Cohesion: 0.54
-Nodes (7): Color, Modifier, NeobankCard(), PotsProgress(), QuickActionButton(), QuickActionsDock(), TransactionFeedItem()
+### Community 418 - "Installments.kt"
+Cohesion: 0.33
+Nodes (5): DueDateBadge, UrgencyLevel, NORMAL, OVERDUE, WARNING
 
-### Community 420 - "DotProgressBar"
-Cohesion: 0.64
-Nodes (8): DotGraphCanvas(), DotProgressBar(), Color, Dp, Modifier, SegmentedProgress(), Sparkline(), SubtleLineChart()
+### Community 419 - "ModamWeight"
+Cohesion: 0.40
+Nodes (5): ModamWeight, HEAVY, MEDIUM, REGULAR, SEMIBOLD
 
-### Community 468 - "Containers.kt"
-Cohesion: 0.54
-Nodes (7): AccountRow(), Color, Composable, Modifier, TransactionRow(), WidgetContainer(), WidgetHeader()
+### Community 474 - "BankSheet.kt"
+Cohesion: 0.09
+Nodes (23): bidi(), faAgo(), faSignedParts(), faWords(), faWordsToman(), groupDigits(), GroupedDigits, ltrFigure() (+15 more)
 
-### Community 471 - "Indicators.kt"
-Cohesion: 0.62
-Nodes (6): FinancialTimeline(), Color, Dp, Modifier, Metric(), StatusIndicator()
+### Community 478 - "Daily.kt"
+Cohesion: 0.60
+Nodes (4): DailySnapshotWorker, Context, scheduleDailySnapshot(), CoroutineWorker
 
-### Community 474 - "parseAmount"
-Cohesion: 0.12
-Nodes (5): groupDigits(), GroupedDigits, parseAmount(), persianDigit(), GoldInput
-
-### Community 478 - "Store"
-Cohesion: 0.14
-Nodes (12): DailySnapshotWorker, Context, scheduleDailySnapshot(), com, Store, fetchTse(), isStockId(), price() (+4 more)
-
-### Community 479 - "DotMatrix.kt"
-Cohesion: 0.47
-Nodes (7): DotMatrixBadge(), DotMatrixGlyphs, DotMatrixText(), Color, Dp, IntArray, Modifier
-
-### Community 480 - "fa"
+### Community 480 - "Commitment"
 Cohesion: 0.22
-Nodes (10): Commitment, CommitmentItemRow(), CommitmentsHubSheet(), fa(), BillsWidget(), GoalsWidget(), InstallmentsWidget(), Modifier (+2 more)
+Nodes (8): Commitment, AddCommitmentSheet(), CommitmentItemRow(), CommitmentsCard(), CommitmentsHubSheet(), formatShamsiDate(), Modifier, CommitmentTest
 
 ### Community 482 - "CategoryIcon"
 Cohesion: 0.73
 Nodes (5): CategoryIcon(), drawGlyph(), Color, Dp, Modifier
 
-### Community 484 - "ButtonVariant"
-Cohesion: 0.33
-Nodes (6): ButtonVariant, Default, Destructive, Ghost, Outline, Secondary
+### Community 484 - "Button"
+Cohesion: 0.14
+Nodes (18): Bundle, QuickAddActivity, QuickAddDialogContent(), CreditPurchaseForm(), Button(), ButtonSize, Default, Lg (+10 more)
 
 ## Knowledge Gaps
-- **2638 isolated node(s):** `CASH`, `FIAT`, `CRYPTO`, `GOLD`, `SILVER` (+2633 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 3650 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **226 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **2655 isolated node(s):** `ChandToman (MuchToman) — Master UI/UX & Design System Specification`, `پارادایم بصری تلفیقی (Triple Aesthetic Blend):`, `الف) پالت حالت روشن (Day Market - Light Theme):`, `ب) پالت حالت تاریک (Night Trading - Dark Theme):`, `ج) رنگ‌های پاستلی کارت‌ها و چیپ‌ها (Cute Pastel Accents):` (+2650 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 3667 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **233 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `AppVm` connect `AppVm` to `Derived.kt`, `GlanceWidget.kt`, `jalaliOf`, `LedgerEntry`, `derive`, `CycleMode`, `fetchWalletBalance`, `AppRoot`, `UiState`, `ThemeMode`, `.runScan`, `Store`, `Widget.kt`?**
+- **Why does `LedgerEntry` connect `LedgerEntry` to `Derived.kt`, `faCompact`, `AppVm`, `Button`, `Timeline.kt`, `TimeSlot`, `ReportsTest`, `TimelineUiFeaturesTest`, `MoneyWidgets.kt`, `calculateNoSpendStreak`, `AppRoot`, `FilterToken`, `Reports.kt`, `Intelligence.kt`, `GoalsTest`, `IntelligenceTest`, `HomeDeclutterTest`, `NecessityType`?**
   _High betweenness centrality (0.018) - this node is a cross-community bridge._
-- **Why does `LedgerEntry` connect `LedgerEntry` to `Derived.kt`, `faCompact`, `AppVm`, `fa`, `TimeSlot`, `derive`, `ReportsTest`, `TimelineUiFeaturesTest`, `AppRoot`, `InstallmentObligation`, `FilterToken`, `Reports.kt`, `Intelligence.kt`, `Icon`, `GoalsTest`, `IntelligenceTest`, `NecessityType`?**
-  _High betweenness centrality (0.016) - this node is a cross-community bridge._
-- **Why does `AppRoot()` connect `AppRoot` to `fa`, `faCompact`, `AppVm`, `FintechPrimitives.kt`, `MarketUi.kt`, `LedgerEntry`, `Holding`, `Home.kt`, `TabBar.kt`, `BankCard3D.kt`, `Lock.kt`, `UiState`, `Kind`, `Icon`, `CycleSpec`, `Separator.kt`?**
-  _High betweenness centrality (0.011) - this node is a cross-community bridge._
+- **Why does `AbortSignal` connect `AbortSignal` to `worker-configuration.d.ts`, `EventTarget`?**
+  _High betweenness centrality (0.017) - this node is a cross-community bridge._
+- **Why does `fetchWithTimeout()` connect `getJson` to `AbortSignal`, `worker/src/index.ts`?**
+  _High betweenness centrality (0.014) - this node is a cross-community bridge._
 - **Are the 2 inferred relationships involving `AppVm` (e.g. with `Store` and `LedgerEngine`) actually correct?**
   _`AppVm` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 4 inferred relationships involving `MoneyTest` (e.g. with `Coin` and `effectiveRates()`) actually correct?**

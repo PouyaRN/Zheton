@@ -1931,316 +1931,322 @@
     "ast_hash": "f7add49ec1a9edc780f8c5191425bf1d",
     "semantic_hash": ""
   },
-  "screen_01_launch.png": {
-    "mtime": 1789306056.1833496,
-    "seen": 1789306262.7552433,
-    "ast_hash": "e718774e60f27b1f6c5a9454454e49fd",
-    "semantic_hash": ""
-  },
-  "screen_02_home_scrolled.png": {
-    "mtime": 1789306071.6073494,
-    "seen": 1789306262.7552438,
-    "ast_hash": "d4edb17be8bc9e50bd2bb464080815d9",
-    "semantic_hash": ""
-  },
-  "screen_03_market.png": {
-    "mtime": 1789306081.467349,
-    "seen": 1789306262.755244,
-    "ast_hash": "0c862fbfe18609bb0c523f6828039285",
-    "semantic_hash": ""
-  },
-  "screen_04_market_live.png": {
-    "mtime": 1789306092.5793488,
-    "seen": 1789306262.7552447,
-    "ast_hash": "7d9e35d6a6181293350e6c403e1535c4",
-    "semantic_hash": ""
-  },
-  "screen_05_cards.png": {
-    "mtime": 1789306102.5393484,
-    "seen": 1789306262.7552452,
-    "ast_hash": "726c32d1822645161ac6f66238cd7ca8",
-    "semantic_hash": ""
-  },
-  "screen_06_reports.png": {
-    "mtime": 1789306113.4953477,
-    "seen": 1789306262.755246,
-    "ast_hash": "267881058b4dab856880c050cabf5f56",
-    "semantic_hash": ""
-  },
-  "screen_07_trends.png": {
-    "mtime": 1789306128.5953472,
-    "seen": 1789306262.7552462,
-    "ast_hash": "ada223f4b801c58753435e7553a69946",
-    "semantic_hash": ""
-  },
-  "screen_08_quick_add.png": {
-    "mtime": 1789306141.5713456,
-    "seen": 1789306262.7552466,
-    "ast_hash": "95989bc337ad964c61dc79c7f4d83a7a",
-    "semantic_hash": ""
-  },
-  "screen_09_back_to_home.png": {
-    "mtime": 1789306156.6273456,
-    "seen": 1789306262.7552469,
-    "ast_hash": "8a8290d14d16f533a079f1bbae18b036",
-    "semantic_hash": ""
-  },
-  "screen_10_settings.png": {
-    "mtime": 1789306164.1313455,
-    "seen": 1789306262.7552474,
-    "ast_hash": "fb703d32092b8ecff7b0ce4f9d75ff11",
-    "semantic_hash": ""
-  },
-  "screen_11_top.png": {
-    "mtime": 1789306179.6433465,
-    "seen": 1789306262.7552476,
-    "ast_hash": "236e6b805180ca19c76b45d6c7ab20ae",
-    "semantic_hash": ""
-  },
-  "screen_12_settings_opened.png": {
-    "mtime": 1789306188.6433465,
-    "seen": 1789306262.755248,
-    "ast_hash": "82c4fc03fa537784548d359789ef5595",
-    "semantic_hash": ""
-  },
-  "screen_13_settings_scrolled.png": {
-    "mtime": 1789306204.0633461,
-    "seen": 1789306262.7552485,
-    "ast_hash": "87784adf63380e79fec63ed08fb5268f",
-    "semantic_hash": ""
-  },
-  "screen_14_settings_scrolled2.png": {
-    "mtime": 1789306216.671345,
-    "seen": 1789306262.7552493,
-    "ast_hash": "c4367aef387984d68b74ca996056b85d",
-    "semantic_hash": ""
-  },
-  "screen_15_settings_scrolled3.png": {
-    "mtime": 1789306229.3993442,
-    "seen": 1789306262.7552495,
-    "ast_hash": "659bb5e19439ca56e3bd092bc68c6e14",
-    "semantic_hash": ""
-  },
-  "screen_16_categories.png": {
-    "mtime": 1789306246.4353426,
-    "seen": 1789306262.7552502,
-    "ast_hash": "b1e2d497cfcd8ef5b5006b1fddfb30c4",
-    "semantic_hash": ""
-  },
   "DESIGN.md": {
     "mtime": 1789635302.130791,
     "seen": 1789635305.0412977,
     "ast_hash": "10675d5e461e3d2d550cabfac0839308",
     "semantic_hash": ""
   },
-  "screen_17_add_category.png": {
-    "mtime": 1789306263.2353413,
-    "seen": 1789503143.9508927,
-    "ast_hash": "4b04fbf49b69b0f56010c73c0d0f449b",
-    "semantic_hash": ""
-  },
-  "screen_18_back_home.png": {
-    "mtime": 1789306288.3993402,
-    "seen": 1789503143.9508934,
-    "ast_hash": "75b5fd3836ecfc62c30206b65bc02f18",
-    "semantic_hash": ""
-  },
-  "screen_19_relaunch.png": {
-    "mtime": 1789306305.2513397,
-    "seen": 1789503143.9508939,
-    "ast_hash": "25cbef9ecf61112ef06d4fb00dc65ea6",
-    "semantic_hash": ""
-  },
-  "screen_20_lock_tapped.png": {
-    "mtime": 1789306312.4153395,
-    "seen": 1789503143.9508967,
-    "ast_hash": "5ed24915533660b9a6ce160145f2d361",
-    "semantic_hash": ""
-  },
-  "screen_21_bank_card_tapped.png": {
-    "mtime": 1789306338.4473379,
-    "seen": 1789503143.9508972,
-    "ast_hash": "24f5b46e77bc063ebf34f80e72512ec0",
-    "semantic_hash": ""
-  },
-  "screen_22_cards_gear.png": {
-    "mtime": 1789306352.515337,
-    "seen": 1789503143.9508977,
-    "ast_hash": "24f5b46e77bc063ebf34f80e72512ec0",
-    "semantic_hash": ""
-  },
-  "screen_23_cards_gear.png": {
-    "mtime": 1789306371.6593359,
-    "seen": 1789503143.950898,
-    "ast_hash": "9e87854d1d2f7dbfd0dec42841072d81",
-    "semantic_hash": ""
-  },
-  "screen_24_market_portfolio.png": {
-    "mtime": 1789306399.9313333,
-    "seen": 1789503143.9508982,
-    "ast_hash": "4482487f99fb3946a9e97206ce221870",
-    "semantic_hash": ""
-  },
-  "screen_25_add_asset.png": {
-    "mtime": 1789306423.7713318,
-    "seen": 1789503143.9508986,
-    "ast_hash": "68bdc2d9e9aa4b9bd1adca8487aee444",
-    "semantic_hash": ""
-  },
-  "screen_26_add_usd.png": {
-    "mtime": 1789306445.1713307,
-    "seen": 1789503143.950899,
-    "ast_hash": "9d38c51570e6d6f5a756b6b9d21a87cb",
-    "semantic_hash": ""
-  },
-  "screen_27_usd_sheet.png": {
-    "mtime": 1789306464.9633296,
-    "seen": 1789503143.9508991,
-    "ast_hash": "fcfcc9bcb7305878360611a82beb009b",
-    "semantic_hash": ""
-  },
-  "screen_28_holding_dialog.png": {
-    "mtime": 1789306485.1313286,
-    "seen": 1789503143.9508996,
-    "ast_hash": "29b8c4690237a660fe6c56ac920079d3",
-    "semantic_hash": ""
-  },
-  "screen_29_holding_amount.png": {
-    "mtime": 1789306517.9473267,
-    "seen": 1789503143.9509,
-    "ast_hash": "e2c98091a2494a3c77c7a82d00f9f70c",
-    "semantic_hash": ""
-  },
-  "screen_30_holding_saved.png": {
-    "mtime": 1789306547.4593234,
-    "seen": 1789503143.9509003,
-    "ast_hash": "d7746c8bcb45c4746c0308f3dae12f73",
-    "semantic_hash": ""
-  },
-  "screen_31_after_holding.png": {
-    "mtime": 1789306557.0953226,
-    "seen": 1789503143.9509008,
-    "ast_hash": "9c973a365ce4d094c7273be14305aef1",
-    "semantic_hash": ""
-  },
-  "screen_32_portfolio_with_asset.png": {
-    "mtime": 1789306575.9193213,
-    "seen": 1789503143.950901,
-    "ast_hash": "0a08a43300a10242c135e34399f8de60",
-    "semantic_hash": ""
-  },
-  "screen_33_asset_saved_portfolio.png": {
-    "mtime": 1789306607.8353205,
-    "seen": 1789503143.9509013,
-    "ast_hash": "bb7d5f827da231b71f3986b48ce923cd",
-    "semantic_hash": ""
-  },
-  "screen_34_home_updated.png": {
-    "mtime": 1789306628.8913183,
-    "seen": 1789503143.9509017,
-    "ast_hash": "ec05bf6491f130c9ace840d0ca3eac5f",
-    "semantic_hash": ""
-  },
-  "screen_35_net_worth_selected.png": {
-    "mtime": 1789306650.3913162,
-    "seen": 1789503143.950902,
-    "ast_hash": "0e33ebc0730f90be5da03862f76146b8",
-    "semantic_hash": ""
-  },
-  "screen_36_dark_mode.png": {
-    "mtime": 1789306686.9553142,
-    "seen": 1789503143.9509025,
-    "ast_hash": "737ecaf573ca6a9d877fa2f8ee0e1340",
-    "semantic_hash": ""
-  },
-  "screen_37_system_dark_mode.png": {
-    "mtime": 1789306709.2633128,
-    "seen": 1789503143.9509027,
-    "ast_hash": "b8203a3ec142bce8d0ef9e4c27ffd3fa",
-    "semantic_hash": ""
-  },
-  "screen_38_fresh_light.png": {
-    "mtime": 1789307156.5272946,
-    "seen": 1789503143.950903,
-    "ast_hash": "7e4e71c0304bbea516103e2e18a20257",
-    "semantic_hash": ""
-  },
-  "screen_39_loaded.png": {
-    "mtime": 1789307180.3032935,
-    "seen": 1789503143.9509032,
-    "ast_hash": "38502022ed64b152c0830588c32cb6da",
-    "semantic_hash": ""
-  },
-  "screen_40_fresh_reports.png": {
-    "mtime": 1789307244.8872907,
-    "seen": 1789503143.950904,
-    "ast_hash": "d001ae7c28fee188c799a3da4410cca3",
-    "semantic_hash": ""
-  },
-  "screen_41_fresh_trends.png": {
-    "mtime": 1789307271.38329,
-    "seen": 1789503143.9509041,
-    "ast_hash": "d001ae7c28fee188c799a3da4410cca3",
-    "semantic_hash": ""
-  },
-  "screen_42_fresh_trends_active.png": {
-    "mtime": 1789307312.499286,
-    "seen": 1789503143.9509044,
-    "ast_hash": "c60c7e74fa59fb0c275e97459d122640",
-    "semantic_hash": ""
-  },
-  "screen_43_reports_scrolled.png": {
-    "mtime": 1789307416.28328,
-    "seen": 1789503143.9509048,
-    "ast_hash": "c7185142bb4fceee023145e8772b39c4",
-    "semantic_hash": ""
-  },
-  "screen_44_fixed_home.png": {
-    "mtime": 1789308103.0872447,
-    "seen": 1789503143.950905,
-    "ast_hash": "3fee7b947625f51fc0e4f1e2809af12c",
-    "semantic_hash": ""
-  },
-  "screen_45_fixed_home_ready.png": {
-    "mtime": 1789308152.563243,
-    "seen": 1789503143.9509056,
-    "ast_hash": "65e2d6da3bf5ee7aaedb46e036eb37b4",
-    "semantic_hash": ""
-  },
-  "screen_46_fixed_net_worth.png": {
-    "mtime": 1789308181.4232414,
-    "seen": 1789503143.9509058,
-    "ast_hash": "755fba69e8465db68926cdc8058e1ba9",
-    "semantic_hash": ""
-  },
-  "screen_47_net_worth_clean.png": {
-    "mtime": 1789308209.94724,
-    "seen": 1789503143.950906,
-    "ast_hash": "054e3b946328a0bc6b6dc4c747a92d1f",
-    "semantic_hash": ""
-  },
-  "screen_48_fixed_cards_empty.png": {
-    "mtime": 1789308239.611239,
-    "seen": 1789503143.9509065,
-    "ast_hash": "4b79119ad7a66f49c77e6e86388bd10f",
-    "semantic_hash": ""
-  },
-  "screen_49_cards_sheet_opened.png": {
-    "mtime": 1789308282.0912375,
-    "seen": 1789503143.950907,
-    "ast_hash": "4a9ef5e06cf969e02b17ebbe3e09bff8",
-    "semantic_hash": ""
-  },
-  "screen_50_fixed_timeline_empty.png": {
-    "mtime": 1789308300.4912367,
-    "seen": 1789503143.9509075,
-    "ast_hash": "278735b912282b4e52cdee8dcba5f2a1",
-    "semantic_hash": ""
-  },
   "docs/UI_SPECIFICATION.md": {
     "mtime": 1789625017.9607499,
     "seen": 1789635305.0413141,
     "ast_hash": "7c6f1c59184eb30f3a852e7513553190",
+    "semantic_hash": ""
+  },
+  "docs/wayfinder/105-ios-spring-haptics-compose.md": {
+    "mtime": 1789806559.971292,
+    "seen": 1791921493.9970727,
+    "ast_hash": "0e4a6bfa0a12db8bc0d55162a00cf4cb",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_01_launch.png": {
+    "mtime": 1789306056.1833496,
+    "seen": 1791921493.9970918,
+    "ast_hash": "e718774e60f27b1f6c5a9454454e49fd",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_02_home_scrolled.png": {
+    "mtime": 1789306071.6073494,
+    "seen": 1791921493.997093,
+    "ast_hash": "d4edb17be8bc9e50bd2bb464080815d9",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_03_market.png": {
+    "mtime": 1789306081.467349,
+    "seen": 1791921493.997094,
+    "ast_hash": "0c862fbfe18609bb0c523f6828039285",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_04_market_live.png": {
+    "mtime": 1789306092.5793488,
+    "seen": 1791921493.9970946,
+    "ast_hash": "7d9e35d6a6181293350e6c403e1535c4",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_05_cards.png": {
+    "mtime": 1789306102.5393484,
+    "seen": 1791921493.997095,
+    "ast_hash": "726c32d1822645161ac6f66238cd7ca8",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_06_reports.png": {
+    "mtime": 1789306113.4953477,
+    "seen": 1791921493.9970958,
+    "ast_hash": "267881058b4dab856880c050cabf5f56",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_07_trends.png": {
+    "mtime": 1789306128.5953472,
+    "seen": 1791921493.9970968,
+    "ast_hash": "ada223f4b801c58753435e7553a69946",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_08_quick_add.png": {
+    "mtime": 1789306141.5713456,
+    "seen": 1791921493.9970973,
+    "ast_hash": "95989bc337ad964c61dc79c7f4d83a7a",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_09_back_to_home.png": {
+    "mtime": 1789306156.6273456,
+    "seen": 1791921493.9970977,
+    "ast_hash": "8a8290d14d16f533a079f1bbae18b036",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_10_settings.png": {
+    "mtime": 1789306164.1313455,
+    "seen": 1791921493.9970984,
+    "ast_hash": "fb703d32092b8ecff7b0ce4f9d75ff11",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_11_top.png": {
+    "mtime": 1789306179.6433465,
+    "seen": 1791921493.9970992,
+    "ast_hash": "236e6b805180ca19c76b45d6c7ab20ae",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_12_settings_opened.png": {
+    "mtime": 1789306188.6433465,
+    "seen": 1791921493.9970999,
+    "ast_hash": "82c4fc03fa537784548d359789ef5595",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_13_settings_scrolled.png": {
+    "mtime": 1789306204.0633461,
+    "seen": 1791921493.9971006,
+    "ast_hash": "87784adf63380e79fec63ed08fb5268f",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_14_settings_scrolled2.png": {
+    "mtime": 1789306216.671345,
+    "seen": 1791921493.997101,
+    "ast_hash": "c4367aef387984d68b74ca996056b85d",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_15_settings_scrolled3.png": {
+    "mtime": 1789306229.3993442,
+    "seen": 1791921493.9971018,
+    "ast_hash": "659bb5e19439ca56e3bd092bc68c6e14",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_16_categories.png": {
+    "mtime": 1789306246.4353426,
+    "seen": 1791921493.9971023,
+    "ast_hash": "b1e2d497cfcd8ef5b5006b1fddfb30c4",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_17_add_category.png": {
+    "mtime": 1789306263.2353413,
+    "seen": 1791921493.9971032,
+    "ast_hash": "4b04fbf49b69b0f56010c73c0d0f449b",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_18_back_home.png": {
+    "mtime": 1789306288.3993402,
+    "seen": 1791921493.9971077,
+    "ast_hash": "75b5fd3836ecfc62c30206b65bc02f18",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_19_relaunch.png": {
+    "mtime": 1789306305.2513397,
+    "seen": 1791921493.9971087,
+    "ast_hash": "25cbef9ecf61112ef06d4fb00dc65ea6",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_20_lock_tapped.png": {
+    "mtime": 1789306312.4153395,
+    "seen": 1791921493.9971094,
+    "ast_hash": "5ed24915533660b9a6ce160145f2d361",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_21_bank_card_tapped.png": {
+    "mtime": 1789306338.4473379,
+    "seen": 1791921493.9971101,
+    "ast_hash": "24f5b46e77bc063ebf34f80e72512ec0",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_22_cards_gear.png": {
+    "mtime": 1789306352.515337,
+    "seen": 1791921493.9971108,
+    "ast_hash": "24f5b46e77bc063ebf34f80e72512ec0",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_23_cards_gear.png": {
+    "mtime": 1789306371.6593359,
+    "seen": 1791921493.9971113,
+    "ast_hash": "9e87854d1d2f7dbfd0dec42841072d81",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_24_market_portfolio.png": {
+    "mtime": 1789306399.9313333,
+    "seen": 1791921493.997112,
+    "ast_hash": "4482487f99fb3946a9e97206ce221870",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_25_add_asset.png": {
+    "mtime": 1789306423.7713318,
+    "seen": 1791921493.9971125,
+    "ast_hash": "68bdc2d9e9aa4b9bd1adca8487aee444",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_26_add_usd.png": {
+    "mtime": 1789306445.1713307,
+    "seen": 1791921493.997113,
+    "ast_hash": "9d38c51570e6d6f5a756b6b9d21a87cb",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_27_usd_sheet.png": {
+    "mtime": 1789306464.9633296,
+    "seen": 1791921493.997114,
+    "ast_hash": "fcfcc9bcb7305878360611a82beb009b",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_28_holding_dialog.png": {
+    "mtime": 1789306485.1313286,
+    "seen": 1791921493.9971144,
+    "ast_hash": "29b8c4690237a660fe6c56ac920079d3",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_29_holding_amount.png": {
+    "mtime": 1789306517.9473267,
+    "seen": 1791921493.997115,
+    "ast_hash": "e2c98091a2494a3c77c7a82d00f9f70c",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_30_holding_saved.png": {
+    "mtime": 1789306547.4593234,
+    "seen": 1791921493.9971154,
+    "ast_hash": "d7746c8bcb45c4746c0308f3dae12f73",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_31_after_holding.png": {
+    "mtime": 1789306557.0953226,
+    "seen": 1791921493.9971159,
+    "ast_hash": "9c973a365ce4d094c7273be14305aef1",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_32_portfolio_with_asset.png": {
+    "mtime": 1789306575.9193213,
+    "seen": 1791921493.9971166,
+    "ast_hash": "0a08a43300a10242c135e34399f8de60",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_33_asset_saved_portfolio.png": {
+    "mtime": 1789306607.8353205,
+    "seen": 1791921493.9971173,
+    "ast_hash": "bb7d5f827da231b71f3986b48ce923cd",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_34_home_updated.png": {
+    "mtime": 1789306628.8913183,
+    "seen": 1791921493.9971178,
+    "ast_hash": "ec05bf6491f130c9ace840d0ca3eac5f",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_35_net_worth_selected.png": {
+    "mtime": 1789306650.3913162,
+    "seen": 1791921493.9971185,
+    "ast_hash": "0e33ebc0730f90be5da03862f76146b8",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_36_dark_mode.png": {
+    "mtime": 1789306686.9553142,
+    "seen": 1791921493.997119,
+    "ast_hash": "737ecaf573ca6a9d877fa2f8ee0e1340",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_37_system_dark_mode.png": {
+    "mtime": 1789306709.2633128,
+    "seen": 1791921493.9971194,
+    "ast_hash": "b8203a3ec142bce8d0ef9e4c27ffd3fa",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_38_fresh_light.png": {
+    "mtime": 1789307156.5272946,
+    "seen": 1791921493.9971201,
+    "ast_hash": "7e4e71c0304bbea516103e2e18a20257",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_39_loaded.png": {
+    "mtime": 1789307180.3032935,
+    "seen": 1791921493.997121,
+    "ast_hash": "38502022ed64b152c0830588c32cb6da",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_40_fresh_reports.png": {
+    "mtime": 1789307244.8872907,
+    "seen": 1791921493.9971216,
+    "ast_hash": "d001ae7c28fee188c799a3da4410cca3",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_41_fresh_trends.png": {
+    "mtime": 1789307271.38329,
+    "seen": 1791921493.9971223,
+    "ast_hash": "d001ae7c28fee188c799a3da4410cca3",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_42_fresh_trends_active.png": {
+    "mtime": 1789307312.499286,
+    "seen": 1791921493.9971228,
+    "ast_hash": "c60c7e74fa59fb0c275e97459d122640",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_43_reports_scrolled.png": {
+    "mtime": 1789307416.28328,
+    "seen": 1791921493.9971235,
+    "ast_hash": "c7185142bb4fceee023145e8772b39c4",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_44_fixed_home.png": {
+    "mtime": 1789308103.0872447,
+    "seen": 1791921493.9971242,
+    "ast_hash": "3fee7b947625f51fc0e4f1e2809af12c",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_45_fixed_home_ready.png": {
+    "mtime": 1789308152.563243,
+    "seen": 1791921493.9971247,
+    "ast_hash": "65e2d6da3bf5ee7aaedb46e036eb37b4",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_46_fixed_net_worth.png": {
+    "mtime": 1789308181.4232414,
+    "seen": 1791921493.9971254,
+    "ast_hash": "755fba69e8465db68926cdc8058e1ba9",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_47_net_worth_clean.png": {
+    "mtime": 1789308209.94724,
+    "seen": 1791921493.997126,
+    "ast_hash": "054e3b946328a0bc6b6dc4c747a92d1f",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_48_fixed_cards_empty.png": {
+    "mtime": 1789308239.611239,
+    "seen": 1791921493.9971268,
+    "ast_hash": "4b79119ad7a66f49c77e6e86388bd10f",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_49_cards_sheet_opened.png": {
+    "mtime": 1789308282.0912375,
+    "seen": 1791921493.9971275,
+    "ast_hash": "4a9ef5e06cf969e02b17ebbe3e09bff8",
+    "semantic_hash": ""
+  },
+  "docs/screenshots/walkthrough/screen_50_fixed_timeline_empty.png": {
+    "mtime": 1789308300.4912367,
+    "seen": 1791921493.9971282,
+    "ast_hash": "278735b912282b4e52cdee8dcba5f2a1",
     "semantic_hash": ""
   }
 }
