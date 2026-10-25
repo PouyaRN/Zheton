@@ -73693,7 +73693,7 @@
       "node_kind": "heading",
       "norm_label": "decisions so far",
       "source_file": "docs/wayfinder/106-poolaki-inspired-depth-map.md",
-      "source_location": "L47"
+      "source_location": "L49"
     },
     {
       "id": "docs_wayfinder_106_poolaki_inspired_depth_map_destination",
@@ -73717,7 +73717,7 @@
       "node_kind": "heading",
       "norm_label": "not yet specified (fog)",
       "source_file": "docs/wayfinder/106-poolaki-inspired-depth-map.md",
-      "source_location": "L51"
+      "source_location": "L54"
     },
     {
       "id": "docs_wayfinder_106_poolaki_inspired_depth_map_notes",
@@ -73741,7 +73741,7 @@
       "node_kind": "heading",
       "norm_label": "out of scope",
       "source_file": "docs/wayfinder/106-poolaki-inspired-depth-map.md",
-      "source_location": "L59"
+      "source_location": "L62"
     },
     {
       "id": "docs_wayfinder_106_poolaki_inspired_depth_map_research_artifact_final",
@@ -73753,7 +73753,7 @@
       "node_kind": "heading",
       "norm_label": "research artifact (final)",
       "source_file": "docs/wayfinder/106-poolaki-inspired-depth-map.md",
-      "source_location": "L66"
+      "source_location": "L69"
     },
     {
       "id": "docs_wayfinder_106_poolaki_inspired_depth_map_ticket_table",
@@ -165765,7 +165765,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/wayfinder/106-poolaki-inspired-depth-map.md",
-      "source_location": "L66",
+      "source_location": "L69",
       "weight": 1.0
     },
     {
@@ -165809,7 +165809,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/wayfinder/106-poolaki-inspired-depth-map.md",
-      "source_location": "L47",
+      "source_location": "L49",
       "weight": 1.0
     },
     {
@@ -165820,18 +165820,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "docs/wayfinder/106-poolaki-inspired-depth-map.md",
-      "source_location": "L51",
-      "weight": 1.0
-    },
-    {
-      "source": "docs_wayfinder_106_poolaki_inspired_depth_map_wayfinder_map_106_poolaki_inspired_depth",
-      "target": "docs_wayfinder_106_poolaki_inspired_depth_map_out_of_scope",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "docs/wayfinder/106-poolaki-inspired-depth-map.md",
-      "source_location": "L59",
+      "source_location": "L54",
       "weight": 1.0
     },
     {
@@ -165843,6 +165832,17 @@
       "confidence_score": 1.0,
       "source_file": "docs/wayfinder/106-poolaki-inspired-depth-map.md",
       "source_location": "L6",
+      "weight": 1.0
+    },
+    {
+      "source": "docs_wayfinder_106_poolaki_inspired_depth_map_wayfinder_map_106_poolaki_inspired_depth",
+      "target": "docs_wayfinder_106_poolaki_inspired_depth_map_out_of_scope",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "docs/wayfinder/106-poolaki-inspired-depth-map.md",
+      "source_location": "L62",
       "weight": 1.0
     },
     {
@@ -220427,5 +220427,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "abf6d3fc116aa63241c1a8ab962b12f3f9863785"
+  "built_at_commit": "9fa16d1a295033e4ec5fc674456cf8e1d310cbc0"
 }

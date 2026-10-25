@@ -1,7 +1,7 @@
 # Graph Report - chandtoman  (2026-10-25)
 
 ## Corpus Check
-- 363 files · ~1,051,476 words
+- 363 files · ~1,051,537 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 107 file(s) not represented in the graph (top: .xml 91, (none) 3, .properties 3)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `abf6d3fc`
+- Built from commit: `9fa16d1a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -537,21 +537,21 @@
 5. `LedgerEntry` - 79 edges
 6. `jalaliDay()` - 66 edges
 7. `AppRoot()` - 53 edges
-8. `parseBankSms()` - 44 edges
-9. `IntelligenceTest` - 44 edges
+8. `IntelligenceTest` - 44 edges
+9. `parseBankSms()` - 44 edges
 10. `UiState` - 41 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `scanHints()` --calls--> `bankOf()`  [INFERRED]
-  app/src/main/java/com/doxigo/muchtoman/Derived.kt → app/src/main/java/com/doxigo/muchtoman/Sms.kt
-- `scanHints()` --calls--> `merchantInHint()`  [INFERRED]
-  app/src/main/java/com/doxigo/muchtoman/Derived.kt → app/src/main/java/com/doxigo/muchtoman/Sms.kt
-- `scanHints()` --calls--> `parseBankSms()`  [INFERRED]
-  app/src/main/java/com/doxigo/muchtoman/Derived.kt → app/src/main/java/com/doxigo/muchtoman/Sms.kt
-- `parseToRows()` --calls--> `tehranDay()`  [INFERRED]
-  app/src/main/java/com/doxigo/muchtoman/Derived.kt → app/src/main/java/com/doxigo/muchtoman/Jalali.kt
-- `parseToRows()` --calls--> `refOf()`  [INFERRED]
-  app/src/main/java/com/doxigo/muchtoman/Derived.kt → app/src/main/java/com/doxigo/muchtoman/Ledger.kt
+- `recordManualTransaction()` --calls--> `ChandTomanGlanceWidget`  [INFERRED]
+  app/src/main/java/com/doxigo/muchtoman/QuickAddActivity.kt → app/src/main/java/com/doxigo/muchtoman/GlanceWidget.kt
+- `updateTotalWidget()` --calls--> `ChandTomanGlanceWidget`  [INFERRED]
+  app/src/main/java/com/doxigo/muchtoman/Widget.kt → app/src/main/java/com/doxigo/muchtoman/GlanceWidget.kt
+- `updateTotalWidgetAndWait()` --calls--> `ChandTomanGlanceWidget`  [INFERRED]
+  app/src/main/java/com/doxigo/muchtoman/Widget.kt → app/src/main/java/com/doxigo/muchtoman/GlanceWidget.kt
+- `RunwayWidgetState` --calls--> `calculateDailyCashBurn()`  [INFERRED]
+  app/src/main/java/com/doxigo/muchtoman/GlanceWidget.kt → app/src/main/java/com/doxigo/muchtoman/Intelligence.kt
+- `RunwayWidgetState` --calls--> `calculateSafeToSpend()`  [INFERRED]
+  app/src/main/java/com/doxigo/muchtoman/GlanceWidget.kt → app/src/main/java/com/doxigo/muchtoman/Intelligence.kt
 
 ## Import Cycles
 - None detected.
@@ -1611,18 +1611,18 @@ Cohesion: 0.50
 Nodes (4): Tone, ATTENTION, GOOD, NEUTRAL
 
 ## Knowledge Gaps
-- **2724 isolated node(s):** `Screenshots`, `What it does`, `Banks it reads`, `Install`, `Where the prices come from` (+2719 more)
+- **2724 isolated node(s):** `Destination`, `Notes`, `Tickets (children) — live on GitHub`, `Ticket table`, `Decisions so far` (+2719 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 3817 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **249 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `faNumber()` connect `faNumber` to `GlanceWidget.kt`, `SmsPickerState.kt`, `SmsPickerData.kt`, `MarketUi.kt`, `Timeline.kt`, `TabBar.kt`, `BankCard3D.kt`, `AppRoot`, `Intelligence.kt`, `ReminderSettingsActivity.kt`, `loadReminderItems`, `Widget.kt`, `parseAmount`, `ReminderNotifications`, `LedgerEntry`, `Canvas`, `SmsPickerScreen.kt`, `fa`, `TextRole`, `faCompact`, `Family.kt`, `ReportModel.kt`, `Lock.kt`, `BackupActivity.kt`, `Format.kt`, `Commitment`, `QuickAddActivity.kt`, `SafeSpendEngine`, `.getSnapshot`?**
-  _High betweenness centrality (0.021) - this node is a cross-community bridge._
-- **Why does `BankAccount` connect `BankAccount` to `GlanceWidget.kt`, `faCompact`, `BackupCodec`, `Family.kt`, `faNumber`, `Holding`, `BankCard3D.kt`, `MoneyWidgets.kt`, `Lock.kt`, `Ledger.kt`, `Sms.kt`, `BankCardTest`, `.sample`, `MoneyTest`, `BackupPayload.kt`, `Store`?**
-  _High betweenness centrality (0.015) - this node is a cross-community bridge._
 - **Why does `AppVm` connect `AppVm` to `MainActivity.kt`, `LedgerEntry`, `UnifiedActivityAndTrendsScreen`, `derive`, `Rates`, `AppRoot`, `SmsPickerStateTest`, `MoneyTest`, `Store`?**
+  _High betweenness centrality (0.019) - this node is a cross-community bridge._
+- **Why does `LedgerEntry` connect `LedgerEntry` to `detectRecurringExpenses`, `jalaliOf`, `AppVm`, `TimeSlot`, `derive`, `Timeline.kt`, `AppRoot`, `FilterToken`, `Intelligence.kt`, `IntelligenceTest`, `Derived.kt`, `GoalsTest`, `NecessityType`, `faCompact`, `ReportModel.kt`, `faNumber`, `ReportsTest`, `HomeDeclutterTest`, `TimelineUiFeaturesTest`, `CommitmentWidgets.kt`, `ReportBuilderTest`, `.findClusters`?**
+  _High betweenness centrality (0.014) - this node is a cross-community bridge._
+- **Why does `faNumber()` connect `faNumber` to `GlanceWidget.kt`, `SmsPickerState.kt`, `SmsPickerData.kt`, `MarketUi.kt`, `Timeline.kt`, `TabBar.kt`, `BankCard3D.kt`, `AppRoot`, `Intelligence.kt`, `ReminderSettingsActivity.kt`, `loadReminderItems`, `Widget.kt`, `parseAmount`, `ReminderNotifications`, `LedgerEntry`, `Canvas`, `SmsPickerScreen.kt`, `fa`, `TextRole`, `faCompact`, `Family.kt`, `ReportModel.kt`, `Lock.kt`, `BackupActivity.kt`, `Format.kt`, `Commitment`, `QuickAddActivity.kt`, `SafeSpendEngine`, `.getSnapshot`?**
   _High betweenness centrality (0.012) - this node is a cross-community bridge._
 - **Are the 2 inferred relationships involving `AppVm` (e.g. with `Store` and `LedgerEngine`) actually correct?**
   _`AppVm` has 2 INFERRED edges - model-reasoned connections that need verification._
