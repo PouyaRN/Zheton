@@ -36,6 +36,8 @@
 | # | Ticket | Type | Frontier |
 |---|--------|------|----------|
 | 107 | Bank Coverage research | research | **closed** |
+| 108–116 | implemented | mixed | **implemented** @ `abf6d3f` |
+| 117 | Ship wave: merge, vault deploy, device QA | task | frontier |
 | 108 | Data Safety Net: encrypted backup + E2E vault + recovery code | grilling | yes |
 | 109 | SMS Inbox Picker: load all SMS, user chooses | prototype | yes |
 | 110 | Reminders & Due Dates: commitment/cheque notifications | grilling | yes |
@@ -46,6 +48,7 @@
 
 ## Decisions so far
 
+- **Wave implemented** on `feat/poolaki-inspired-depth` @ `abf6d3f`: backup/vault (#108), SMS picker (#109), reminders (#110), PDF/Excel (#113), PWA calculators (#114), notice guard (#116); 931 JVM + 57 PWA tests green, debug APK built. Release/QA follow-up: #117.
 - **#107 Bank Coverage** (closed): شکاف دقیقاً ۱۰ بانک؛ پولکی سرشماره ندارد (۲۴ پارسر، thread انتخابی کاربر)؛ موتور چندتومان قوی‌تر (balance anchoring)؛ ریسک اصلی FP روی senderهای موجود → #115 (شواهد) + #116 (گارد) قبل از پارسرهای جدید. سند: `poolaki-re/docs/BANK_COVERAGE.md`.
 
 ## Not yet specified (fog)
