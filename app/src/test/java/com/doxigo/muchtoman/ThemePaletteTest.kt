@@ -116,6 +116,18 @@ class ThemePaletteTest {
         assertTrue("accent text below 4.5:1:\n" + bad.joinToString("\n"), bad.isEmpty())
     }
 
+
+    @Test
+    fun `selected swatch label is readable on its own card`() {
+        val bad = mutableListOf<String>()
+        for (mode in ThemeMode.entries) {
+            val spec = getThemeVisualSpec(mode)
+            val ratio = contrast(spec.accentPreview, spec.surfacePreview)
+            if (ratio < 4.5) bad += "$mode accent on swatch = ${"%.2f".format(ratio)}:1"
+        }
+        assertTrue("swatch labels below 4.5:1:\n" + bad.joinToString("\n"), bad.isEmpty())
+    }
+
     @Test
     fun `income colour stays readable on paper and on ink`() {
         // Mirrors incomeColor()'s two branches without a Compose runtime: if either constant is

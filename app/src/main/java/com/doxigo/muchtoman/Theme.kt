@@ -220,7 +220,7 @@ fun getThemeVisualSpec(mode: ThemeMode): ThemeVisualSpec = when (mode) {
         isDark = false,
         bgPreview = Color(0xFFF8FAFC),
         surfacePreview = Color.White,
-        accentPreview = Color(0xFFD97706),
+        accentPreview = Color(0xFF92400E),
         heroTopPreview = Color(0xFFF8FAFC),
         heroBottomPreview = Color(0xFFEDF2F7),
     )
@@ -238,7 +238,7 @@ fun getThemeVisualSpec(mode: ThemeMode): ThemeVisualSpec = when (mode) {
         isDark = false,
         bgPreview = Color(0xFFF0F7FF),
         surfacePreview = Color.White,
-        accentPreview = Color(0xFF0284C7),
+        accentPreview = Color(0xFF0369A1),
         heroTopPreview = Color(0xFFE0F2FE),
         heroBottomPreview = Color(0xFFF0F7FF),
     )
@@ -247,7 +247,7 @@ fun getThemeVisualSpec(mode: ThemeMode): ThemeVisualSpec = when (mode) {
         isDark = false,
         bgPreview = Color(0xFFFAF8F5),
         surfacePreview = Color.White,
-        accentPreview = Color(0xFFD97706),
+        accentPreview = Color(0xFF92400E),
         heroTopPreview = Color(0xFFF5EFEB),
         heroBottomPreview = Color(0xFFFAF8F5),
     )
@@ -256,7 +256,7 @@ fun getThemeVisualSpec(mode: ThemeMode): ThemeVisualSpec = when (mode) {
         isDark = false,
         bgPreview = Color(0xFFF0FDF4),
         surfacePreview = Color.White,
-        accentPreview = Color(0xFF059669),
+        accentPreview = Color(0xFF047857),
         heroTopPreview = Color(0xFFDCFCE7),
         heroBottomPreview = Color(0xFFF0FDF4),
     )
@@ -301,7 +301,7 @@ fun getThemeVisualSpec(mode: ThemeMode): ThemeVisualSpec = when (mode) {
         isDark = true,
         bgPreview = Color(0xFF0E1114),
         surfacePreview = Color(0xFF14181D),
-        accentPreview = Color(0xFF0075FF),
+        accentPreview = Color(0xFF0A84FF),
         heroTopPreview = Color(0xFF14181D),
         heroBottomPreview = Color(0xFF0E1114),
     )
