@@ -1,10 +1,28 @@
-# چقدر تومن — MuchToman
+# اندیس — Andis
 
 An Android app that answers one question: *how much is all my money, in Toman?*
+
+Andis (اندیس) is offline-first: the ledger, the bank-SMS parser, the reminders and the
+encrypted backup all run on the phone, with no account and no telemetry. The PWA and the
+Cloudflare Worker in this repo are companion surfaces, not the source of truth.
 
 Persian UI, RTL, Persian digits, big type, and large amounts spoken the way people actually
 say them ("۴٫۷ میلیارد تومان", not "۴٬۶۶۶٬۲۵۱٬۱۳۶"). Built for a Persian-speaking parent, so
 legibility beats density everywhere.
+
+## Where things live
+
+| Path | What it is |
+| --- | --- |
+| `app/` | The Android app (Kotlin, Compose, Room). Everything the phone does offline lives here. |
+| `pwa/` | The companion web app (Vite + TypeScript): family ledger and the Persian finance calculators. |
+| `sync/` | Cloudflare Worker for end-to-end-encrypted family sync and the optional encrypted backup vault. |
+| `worker/` | Cloudflare Worker for rates, release info and the APK update channel. |
+| `docs/` | Design notes, research, release specs and the wayfinder map mirrors. |
+| `graphify-out/` | Generated code graph (index only; caches and dated snapshots are not committed). |
+
+The historical repository `securityvisions/Dakh-o-kharj` is **superseded by this one**; issues
+still live there until they are migrated, and this repo is the source of truth for code.
 
 Holds plain Toman, fiat (USD, EUR, GBP, NOK, TRY, AED, CAD), **any of the top 250
 cryptocurrencies**, 18k gold by the gram or the مثقال, silver by the gram at ۹۹۹ and ۹۲۵,
