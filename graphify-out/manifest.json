@@ -150,8 +150,8 @@
     "semantic_hash": "229ba40271c02cb5e279f978a8231e4a"
   },
   "app/src/main/java/com/doxigo/muchtoman/Derived.kt": {
-    "mtime": 1792928056.5231705,
-    "seen": 1792928061.3740742,
+    "mtime": 1792934521.310235,
+    "seen": 1792934525.6065912,
     "ast_hash": "04076873738fa7ebeeebc457e84e352d",
     "semantic_hash": ""
   },
@@ -192,10 +192,10 @@
     "semantic_hash": "d390436084da0e51e0d5326f7c80eb12"
   },
   "app/src/main/java/com/doxigo/muchtoman/GoalsUi.kt": {
-    "mtime": 1792928056.376168,
-    "seen": 1792928061.37408,
-    "ast_hash": "2fc8a668df3d6cd41b80afeb521fc32d",
-    "semantic_hash": "2fc8a668df3d6cd41b80afeb521fc32d"
+    "mtime": 1792934521.310235,
+    "seen": 1792934525.606604,
+    "ast_hash": "de003ca0ca13e602802f59faa1cdb0f2",
+    "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/GoldInput.kt": {
     "mtime": 1792928056.376168,
@@ -204,9 +204,9 @@
     "semantic_hash": "91a1ef24977a7fa4fd0dae0d59712980"
   },
   "app/src/main/java/com/doxigo/muchtoman/Home.kt": {
-    "mtime": 1792928056.376168,
-    "seen": 1792928061.3740816,
-    "ast_hash": "ecb83a22229c71a37a191a02f709ee16",
+    "mtime": 1792934521.310235,
+    "seen": 1792934525.6066074,
+    "ast_hash": "c1ec9cf563907e2ed863f4a41c282389",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/Installments.kt": {
@@ -246,14 +246,14 @@
     "semantic_hash": "327a847ddfdc267c0c50d595d56bc25e"
   },
   "app/src/main/java/com/doxigo/muchtoman/Lock.kt": {
-    "mtime": 1792928056.5231705,
-    "seen": 1792928061.3740873,
-    "ast_hash": "59159bc30e94ea41dc79012a35f9270f",
+    "mtime": 1792934521.310235,
+    "seen": 1792934525.606619,
+    "ast_hash": "95050747033b42bbede8448d14c92f93",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/MainActivity.kt": {
-    "mtime": 1792928056.5231705,
-    "seen": 1792928061.3740885,
+    "mtime": 1792934521.310235,
+    "seen": 1792934525.6066203,
     "ast_hash": "3c052c1bb17720c636c45996618bb59c",
     "semantic_hash": ""
   },
@@ -288,9 +288,9 @@
     "semantic_hash": "2a2bb5e293cfeada6664d79c0413bcaf"
   },
   "app/src/main/java/com/doxigo/muchtoman/ReportsUi.kt": {
-    "mtime": 1792928056.377168,
-    "seen": 1792928061.374093,
-    "ast_hash": "add4dccde7aa7b6cf76dcd4942e2e697",
+    "mtime": 1792934521.310235,
+    "seen": 1792934525.6066298,
+    "ast_hash": "36aa79a8e490f2789d006f26d6f06e18",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/Reservations.kt": {
@@ -306,8 +306,8 @@
     "semantic_hash": "7368b32b327204c7fe55c4f93816c2da"
   },
   "app/src/main/java/com/doxigo/muchtoman/Sms.kt": {
-    "mtime": 1792928056.5231705,
-    "seen": 1792928061.374097,
+    "mtime": 1792934521.310235,
+    "seen": 1792934525.6066372,
     "ast_hash": "37586c35c80ea73b6109c8032668e9da",
     "semantic_hash": ""
   },
@@ -330,15 +330,15 @@
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/Theme.kt": {
-    "mtime": 1792928056.377168,
-    "seen": 1792928061.3741007,
-    "ast_hash": "272708b93a8e8b830f3d81f88cf27f93",
+    "mtime": 1792934521.310235,
+    "seen": 1792934525.6066473,
+    "ast_hash": "25b66bca28d398650255615315607862",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/Timeline.kt": {
-    "mtime": 1792928056.3781679,
-    "seen": 1792928061.3741014,
-    "ast_hash": "60850a663b7fdc5e121afc9d10325fd1",
+    "mtime": 1792934521.311235,
+    "seen": 1792934525.606649,
+    "ast_hash": "bdcae6ad4bfdd8c0cbe4380891dab476",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/Tse.kt": {
@@ -348,9 +348,9 @@
     "semantic_hash": "0bc515e20d654b396c196c49f8497700"
   },
   "app/src/main/java/com/doxigo/muchtoman/Ui.kt": {
-    "mtime": 1792928056.3781679,
-    "seen": 1792928061.374103,
-    "ast_hash": "447361cc524298cd437379e41f523a04",
+    "mtime": 1792934521.311235,
+    "seen": 1792934525.6066523,
+    "ast_hash": "cb6664d70a875107d88389cc316b6c81",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/UiAssetBadge.kt": {
@@ -438,10 +438,10 @@
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/ui/haptics/FintechHaptics.kt": {
-    "mtime": 1792928056.3807256,
-    "seen": 1792928061.3741498,
-    "ast_hash": "fe7e333e7eaaca999136468ebd55048e",
-    "semantic_hash": "fe7e333e7eaaca999136468ebd55048e"
+    "mtime": 1792934521.313389,
+    "seen": 1792934525.6067402,
+    "ast_hash": "81f8439c873677b7167084b416815717",
+    "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/ui/rikka/components/badge/Badge.kt": {
     "mtime": 1792928056.3807256,
@@ -900,14 +900,14 @@
     "semantic_hash": "313aa51c50edde5378f409f879c0d7dd"
   },
   "pwa/src/main.ts": {
-    "mtime": 1792928056.5371706,
-    "seen": 1792928061.3742278,
+    "mtime": 1792934521.320235,
+    "seen": 1792934525.606903,
     "ast_hash": "04e517f888cb73463ccc1951603694a9",
     "semantic_hash": ""
   },
   "pwa/src/paste.ts": {
-    "mtime": 1792928056.5371706,
-    "seen": 1792928061.3742285,
+    "mtime": 1792934521.320235,
+    "seen": 1792934525.6069045,
     "ast_hash": "5387d25b0bd3bc134ef57473cedc2706",
     "semantic_hash": ""
   },
@@ -918,8 +918,8 @@
     "semantic_hash": "7fdd5c2ec27687fe681facc8bc02c99e"
   },
   "pwa/test/paste.test.ts": {
-    "mtime": 1792928056.538411,
-    "seen": 1792928061.3742375,
+    "mtime": 1792934521.3213396,
+    "seen": 1792934525.606916,
     "ast_hash": "d7e514753c11143f6c11057dee5c854d",
     "semantic_hash": ""
   },
@@ -930,8 +930,8 @@
     "semantic_hash": "bb5712ed4db0f8d4450040d3e61e9165"
   },
   "pwa/vite.config.ts": {
-    "mtime": 1792928056.5388393,
-    "seen": 1792928061.3742404,
+    "mtime": 1792934521.321982,
+    "seen": 1792934525.6069188,
     "ast_hash": "4d72ab0219a6f9393e57a583d1e9c452",
     "semantic_hash": ""
   },
@@ -954,8 +954,8 @@
     "semantic_hash": "9f8b12f0d5dfd38e1bd74410cda2dcc9"
   },
   "sync/src/index.ts": {
-    "mtime": 1792928056.5388393,
-    "seen": 1792928061.3742435,
+    "mtime": 1792934521.321982,
+    "seen": 1792934525.606922,
     "ast_hash": "78a25d9e74dc956a8f0e72ca9b65f7d8",
     "semantic_hash": ""
   },
@@ -1524,8 +1524,8 @@
     "semantic_hash": "f3e79a6bf929bdf71aa0e239731366d5"
   },
   "README.md": {
-    "mtime": 1792928056.5221703,
-    "seen": 1792928061.3743236,
+    "mtime": 1792934521.310235,
+    "seen": 1792934525.6070035,
     "ast_hash": "c5ba1cb3a1177984bb48e6c9a85fb4cc",
     "semantic_hash": ""
   },
@@ -1746,8 +1746,8 @@
     "semantic_hash": "1d511c0118077bbda0925698abcfb47b"
   },
   "pwa/index.html": {
-    "mtime": 1792928056.5371706,
-    "seen": 1792928061.3743582,
+    "mtime": 1792934521.320235,
+    "seen": 1792934525.607039,
     "ast_hash": "9b78981db2874cdb9b8da2e9c3e5a415",
     "semantic_hash": ""
   },
@@ -2250,447 +2250,459 @@
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/backup/BackupActivity.kt": {
-    "mtime": 1792928056.5242803,
-    "seen": 1792928061.374109,
-    "ast_hash": "ef98a0ac37394658cbd21a225c14e1eb",
+    "mtime": 1792934521.3122797,
+    "seen": 1792934525.606663,
+    "ast_hash": "eb0dcfd6ee22c01ca201041136e6356d",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/backup/BackupCodec.kt": {
-    "mtime": 1792928056.524375,
-    "seen": 1792928061.3741102,
+    "mtime": 1792934521.3123782,
+    "seen": 1792934525.6066647,
     "ast_hash": "18fa8869a778df6e718d090a90650422",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/backup/BackupController.kt": {
-    "mtime": 1792928056.524375,
-    "seen": 1792928061.374111,
+    "mtime": 1792934521.3123782,
+    "seen": 1792934525.606666,
     "ast_hash": "d4f4511929ab84f5fcbd1c489731f6bd",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/backup/BackupCrypto.kt": {
-    "mtime": 1792928056.524375,
-    "seen": 1792928061.374112,
+    "mtime": 1792934521.3123782,
+    "seen": 1792934525.6066678,
     "ast_hash": "11e8711909c222158a93326e2cc333cc",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/backup/BackupFile.kt": {
-    "mtime": 1792928056.524375,
-    "seen": 1792928061.374113,
+    "mtime": 1792934521.3123782,
+    "seen": 1792934525.6066697,
     "ast_hash": "1024d9f5207247e7e04454671f3d3200",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/backup/BackupLocalState.kt": {
-    "mtime": 1792928056.524375,
-    "seen": 1792928061.374114,
+    "mtime": 1792934521.3123782,
+    "seen": 1792934525.6066713,
     "ast_hash": "6493c57af8a5885107b810bf7f863e44",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/backup/BackupPayload.kt": {
-    "mtime": 1792928056.524375,
-    "seen": 1792928061.3741155,
+    "mtime": 1792934521.3123782,
+    "seen": 1792934525.6066737,
     "ast_hash": "56241b11381cbe0e8e9f1c86bb934760",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/backup/BackupSource.kt": {
-    "mtime": 1792928056.524375,
-    "seen": 1792928061.3741164,
+    "mtime": 1792934521.3123782,
+    "seen": 1792934525.6066751,
     "ast_hash": "244bf4e6314892fa0a656662a3ae6b78",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/backup/BackupTarget.kt": {
-    "mtime": 1792928056.524375,
-    "seen": 1792928061.3741176,
+    "mtime": 1792934521.3123782,
+    "seen": 1792934525.6066775,
     "ast_hash": "e914bf9af5c1efa232ee6dee52a8b2ad",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/backup/VaultClient.kt": {
-    "mtime": 1792928056.524375,
-    "seen": 1792928061.3741186,
+    "mtime": 1792934521.3123782,
+    "seen": 1792934525.606679,
     "ast_hash": "d98a8ac63e3438186fbdf1e4b615de32",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/backup/VaultRecoveryCode.kt": {
-    "mtime": 1792928056.524375,
-    "seen": 1792928061.3741198,
+    "mtime": 1792934521.3123782,
+    "seen": 1792934525.606681,
     "ast_hash": "aab5edaa21f8c47815987a720266c0dd",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/export/ExportFiles.kt": {
-    "mtime": 1792928056.524375,
-    "seen": 1792928061.3741207,
+    "mtime": 1792934521.3123782,
+    "seen": 1792934525.6066825,
     "ast_hash": "e7c46aa162bc70747dfc249fe4fff0e1",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/export/PdfReportRenderer.kt": {
-    "mtime": 1792928056.5247352,
-    "seen": 1792928061.3741214,
+    "mtime": 1792934521.312714,
+    "seen": 1792934525.6066842,
     "ast_hash": "6eecf962a5a5656932eed89def32bfc3",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/export/ReportAssets.kt": {
-    "mtime": 1792928056.5247352,
-    "seen": 1792928061.3741221,
+    "mtime": 1792934521.312714,
+    "seen": 1792934525.6066859,
     "ast_hash": "3bc01b30f04949225c42790b2fbda777",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/export/ReportBuilder.kt": {
-    "mtime": 1792928056.5247352,
-    "seen": 1792928061.3741236,
+    "mtime": 1792934521.312714,
+    "seen": 1792934525.606688,
     "ast_hash": "76995acd260b07fbefd873d0da1a50c6",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/export/ReportExport.kt": {
-    "mtime": 1792928056.5247352,
-    "seen": 1792928061.3741245,
+    "mtime": 1792934521.312714,
+    "seen": 1792934525.6066895,
     "ast_hash": "c6771164e64747703b957e6bf61a5bad",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/export/ReportExportActivity.kt": {
-    "mtime": 1792928056.5247352,
-    "seen": 1792928061.3741252,
-    "ast_hash": "bdd827264a5bd1055eb7a4ee662f1be6",
+    "mtime": 1792934521.312714,
+    "seen": 1792934525.6066916,
+    "ast_hash": "0868a29259c1635994ee8fa3f02dcf6b",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/export/ReportLayout.kt": {
-    "mtime": 1792928056.5247352,
-    "seen": 1792928061.3741262,
+    "mtime": 1792934521.312714,
+    "seen": 1792934525.606693,
     "ast_hash": "14c98e48441286fb8e5584999aca6c68",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/export/ReportModel.kt": {
-    "mtime": 1792928056.5247352,
-    "seen": 1792928061.374127,
+    "mtime": 1792934521.312714,
+    "seen": 1792934525.606695,
     "ast_hash": "dd2b45b4ed1a808137ba298edeab10a3",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/export/ReportRenderer.kt": {
-    "mtime": 1792928056.5247352,
-    "seen": 1792928061.3741279,
+    "mtime": 1792934521.312714,
+    "seen": 1792934525.6066964,
     "ast_hash": "b622cc9c196e7f823f66bbb7080de52b",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/export/ReportSource.kt": {
-    "mtime": 1792928056.5247352,
-    "seen": 1792928061.3741286,
+    "mtime": 1792934521.312714,
+    "seen": 1792934525.606698,
     "ast_hash": "13db67467354e0d62313c5b861980eda",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/export/XlsxWriter.kt": {
-    "mtime": 1792928056.5247352,
-    "seen": 1792928061.3741293,
+    "mtime": 1792934521.312714,
+    "seen": 1792934525.6066995,
     "ast_hash": "17e195dd89e2e353b1c29111b361d859",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/reminders/NotificationPermission.kt": {
-    "mtime": 1792928056.5247352,
-    "seen": 1792928061.3741302,
+    "mtime": 1792934521.312714,
+    "seen": 1792934525.6067014,
     "ast_hash": "9be6505b2de50d9f9a0b79f335068730",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/reminders/ReminderActionReceiver.kt": {
-    "mtime": 1792928056.5251086,
-    "seen": 1792928061.3741312,
+    "mtime": 1792934521.3130887,
+    "seen": 1792934525.606703,
     "ast_hash": "9810b51e37a3bc3a3e765b4e03e3138a",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/reminders/ReminderActions.kt": {
-    "mtime": 1792928056.5251086,
-    "seen": 1792928061.374132,
+    "mtime": 1792934521.3130887,
+    "seen": 1792934525.6067047,
     "ast_hash": "24398bb628ff8c423843f00d5e93f862",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/reminders/ReminderItems.kt": {
-    "mtime": 1792928056.5251086,
-    "seen": 1792928061.3741326,
+    "mtime": 1792934521.3130887,
+    "seen": 1792934525.6067061,
     "ast_hash": "3c2ff5856bbcc0d240f8a14f24e4a959",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/reminders/ReminderNotifications.kt": {
-    "mtime": 1792928056.5251086,
-    "seen": 1792928061.374134,
-    "ast_hash": "8452f504a330f953eadb34ed4156d354",
+    "mtime": 1792934521.3130887,
+    "seen": 1792934525.6067083,
+    "ast_hash": "66dd7c4d759a61040771b092c5b76ec8",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/reminders/ReminderPlanner.kt": {
-    "mtime": 1792928056.5251086,
-    "seen": 1792928061.3741348,
+    "mtime": 1792934521.3130887,
+    "seen": 1792934525.60671,
     "ast_hash": "0420a1450ea6e7bb0b7772124088273c",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/reminders/ReminderPrefs.kt": {
-    "mtime": 1792928056.5251086,
-    "seen": 1792928061.3741355,
+    "mtime": 1792934521.3130887,
+    "seen": 1792934525.6067116,
     "ast_hash": "12374848212fbb207bc964c9e29729b7",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/reminders/ReminderScheduler.kt": {
-    "mtime": 1792928056.5251086,
-    "seen": 1792928061.3741362,
+    "mtime": 1792934521.3130887,
+    "seen": 1792934525.606713,
     "ast_hash": "69f56a609d12017ea46a7660b856be23",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/reminders/ReminderSettingsActivity.kt": {
-    "mtime": 1792928056.5251086,
-    "seen": 1792928061.3741372,
-    "ast_hash": "a36cafd8288bd12f0b45e7711b457567",
+    "mtime": 1792934521.3130887,
+    "seen": 1792934525.6067147,
+    "ast_hash": "fe183006545a2e893c8d99f7b3c1b33f",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/reminders/ReminderWorker.kt": {
-    "mtime": 1792928056.5251086,
-    "seen": 1792928061.3741379,
+    "mtime": 1792934521.3130887,
+    "seen": 1792934525.6067162,
     "ast_hash": "9a927fec99617925429824823e67a87f",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/smspicker/SmsPickerActivity.kt": {
-    "mtime": 1792928056.5251086,
-    "seen": 1792928061.3741386,
-    "ast_hash": "5d7dc590a4ef388cb7cdfafcb7c52c24",
+    "mtime": 1792934521.3130887,
+    "seen": 1792934525.6067183,
+    "ast_hash": "05892a85178baead96e0ec1c718d4f7e",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/smspicker/SmsPickerData.kt": {
-    "mtime": 1792928056.525443,
-    "seen": 1792928061.3741395,
-    "ast_hash": "62425fa65ea25f3547a72cee76f246a6",
+    "mtime": 1792934521.313389,
+    "seen": 1792934525.6067197,
+    "ast_hash": "16de446f458fe3c4aac89fb8505bb8fd",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/smspicker/SmsPickerScreen.kt": {
-    "mtime": 1792928056.525443,
-    "seen": 1792928061.3741405,
+    "mtime": 1792934521.313389,
+    "seen": 1792934525.6067212,
     "ast_hash": "237886f87339ba3ffc13f02dc76ed0c5",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/smspicker/SmsPickerState.kt": {
-    "mtime": 1792928056.525443,
-    "seen": 1792928061.3741412,
+    "mtime": 1792934521.313389,
+    "seen": 1792934525.6067228,
     "ast_hash": "c04aea4d840301fe84215b2902602a12",
     "semantic_hash": ""
   },
   "app/src/test/java/com/doxigo/muchtoman/features/backup/BackupCodecTest.kt": {
-    "mtime": 1792928056.5256155,
-    "seen": 1792928061.3741977,
+    "mtime": 1792934521.3136644,
+    "seen": 1792934525.606844,
     "ast_hash": "0170c4b6b17f0affbb4bdd0fd3dd2095",
     "semantic_hash": ""
   },
   "app/src/test/java/com/doxigo/muchtoman/features/backup/BackupControllerTest.kt": {
-    "mtime": 1792928056.525686,
-    "seen": 1792928061.3741984,
+    "mtime": 1792934521.3137238,
+    "seen": 1792934525.6068456,
     "ast_hash": "b9ca3af659ba53363cf1958d49cb1c95",
     "semantic_hash": ""
   },
   "app/src/test/java/com/doxigo/muchtoman/features/backup/BackupCryptoTest.kt": {
-    "mtime": 1792928056.525686,
-    "seen": 1792928061.3741996,
+    "mtime": 1792934521.3137238,
+    "seen": 1792934525.6068475,
     "ast_hash": "4d1f1c3e2aedb0f099121ea0040e3246",
     "semantic_hash": ""
   },
   "app/src/test/java/com/doxigo/muchtoman/features/backup/BackupFileTest.kt": {
-    "mtime": 1792928056.525686,
-    "seen": 1792928061.3742003,
+    "mtime": 1792934521.3137238,
+    "seen": 1792934525.606849,
     "ast_hash": "b664875c5b20a845a07182f2708a6ce6",
     "semantic_hash": ""
   },
   "app/src/test/java/com/doxigo/muchtoman/features/backup/BackupPayloadMappingTest.kt": {
-    "mtime": 1792928056.525686,
-    "seen": 1792928061.374201,
+    "mtime": 1792934521.3137238,
+    "seen": 1792934525.6068506,
     "ast_hash": "2796f8605344392fe56bdc2537b3a073",
     "semantic_hash": ""
   },
   "app/src/test/java/com/doxigo/muchtoman/features/backup/VaultClientTest.kt": {
-    "mtime": 1792928056.525686,
-    "seen": 1792928061.3742018,
+    "mtime": 1792934521.3137238,
+    "seen": 1792934525.606852,
     "ast_hash": "1aa4e17d0eb4262a190b1cb607817574",
     "semantic_hash": ""
   },
   "app/src/test/java/com/doxigo/muchtoman/features/backup/VaultRecoveryCodeTest.kt": {
-    "mtime": 1792928056.525686,
-    "seen": 1792928061.374203,
+    "mtime": 1792934521.3137238,
+    "seen": 1792934525.6068542,
     "ast_hash": "e508149a34523e44803b8c493bda9ebd",
     "semantic_hash": ""
   },
   "app/src/test/java/com/doxigo/muchtoman/features/export/ExportFilesTest.kt": {
-    "mtime": 1792928056.525686,
-    "seen": 1792928061.3742037,
+    "mtime": 1792934521.3137238,
+    "seen": 1792934525.6068556,
     "ast_hash": "c1154d4f182f84dad9d11d33b1ab4fad",
     "semantic_hash": ""
   },
   "app/src/test/java/com/doxigo/muchtoman/features/export/ReportAssetsTest.kt": {
-    "mtime": 1792928056.5258923,
-    "seen": 1792928061.3742042,
+    "mtime": 1792934521.3139005,
+    "seen": 1792934525.6068573,
     "ast_hash": "c918bc09b10401343c2ccec26fffee3f",
     "semantic_hash": ""
   },
   "app/src/test/java/com/doxigo/muchtoman/features/export/ReportBuilderTest.kt": {
-    "mtime": 1792928056.5258923,
-    "seen": 1792928061.3742049,
+    "mtime": 1792934521.3139005,
+    "seen": 1792934525.6068587,
     "ast_hash": "fa7e74c1c8c779fe00bbf52ca6acda25",
     "semantic_hash": ""
   },
   "app/src/test/java/com/doxigo/muchtoman/features/export/ReportLayoutTest.kt": {
-    "mtime": 1792928056.5258923,
-    "seen": 1792928061.3742056,
+    "mtime": 1792934521.3139005,
+    "seen": 1792934525.60686,
     "ast_hash": "1100cb92b2b6fe3f482891c04e9253a5",
     "semantic_hash": ""
   },
   "app/src/test/java/com/doxigo/muchtoman/features/export/XlsxWriterTest.kt": {
-    "mtime": 1792928056.5258923,
-    "seen": 1792928061.3742063,
+    "mtime": 1792934521.3139005,
+    "seen": 1792934525.6068616,
     "ast_hash": "0c52f9ee78fae05cf12aaecf854be087",
     "semantic_hash": ""
   },
   "app/src/test/java/com/doxigo/muchtoman/features/reminders/ReminderPlannerTest.kt": {
-    "mtime": 1792928056.5258923,
-    "seen": 1792928061.374207,
+    "mtime": 1792934521.3139005,
+    "seen": 1792934525.6068628,
     "ast_hash": "2337597bd2cb68adef47fe515dfa9fe3",
     "semantic_hash": ""
   },
   "app/src/test/java/com/doxigo/muchtoman/features/smspicker/SmsPickerStateTest.kt": {
-    "mtime": 1792928056.5258923,
-    "seen": 1792928061.374208,
+    "mtime": 1792934521.3139005,
+    "seen": 1792934525.6068645,
     "ast_hash": "103ea26dd5c37b1fb457f18176b6ff63",
     "semantic_hash": ""
   },
   "app/src/test/resources/sms/notices.json": {
-    "mtime": 1792928056.5258923,
-    "seen": 1792928061.3742137,
+    "mtime": 1792934521.3139005,
+    "seen": 1792934525.6068757,
     "ast_hash": "dc49a4cce3ca64fdc83f40d63eae9048",
     "semantic_hash": ""
   },
   "pwa/src/tools/app.ts": {
-    "mtime": 1792928056.5371706,
-    "seen": 1792928061.3742304,
+    "mtime": 1792934521.320235,
+    "seen": 1792934525.606908,
     "ast_hash": "aa3dd7aee9794c7a16072f8f8a732dd9",
     "semantic_hash": ""
   },
   "pwa/src/tools/calc.ts": {
-    "mtime": 1792928056.538411,
-    "seen": 1792928061.374231,
+    "mtime": 1792934521.3213396,
+    "seen": 1792934525.6069095,
     "ast_hash": "cd9211f5695a807fe008ae469759fca5",
     "semantic_hash": ""
   },
   "pwa/src/tools/coins.ts": {
-    "mtime": 1792928056.538411,
-    "seen": 1792928061.3742318,
+    "mtime": 1792934521.3213396,
+    "seen": 1792934525.6069107,
     "ast_hash": "7997c22cf25f0dabd03b6f9464e7a4f2",
     "semantic_hash": ""
   },
   "pwa/src/tools/cpi.ts": {
-    "mtime": 1792928056.538411,
-    "seen": 1792928061.3742325,
+    "mtime": 1792934521.3213396,
+    "seen": 1792934525.6069114,
     "ast_hash": "d4a030d882e9ddb64c0b2ec4d7b307aa",
     "semantic_hash": ""
   },
   "pwa/src/tools/meta.ts": {
-    "mtime": 1792928056.538411,
-    "seen": 1792928061.3742332,
+    "mtime": 1792934521.3213396,
+    "seen": 1792934525.6069124,
     "ast_hash": "d15b582cb4a927b66beb314a53a9ea2b",
     "semantic_hash": ""
   },
   "pwa/src/tools/number.ts": {
-    "mtime": 1792928056.538411,
-    "seen": 1792928061.3742344,
+    "mtime": 1792934521.3213396,
+    "seen": 1792934525.606913,
     "ast_hash": "979632a8554b66980c9035fdab7bedb3",
     "semantic_hash": ""
   },
   "pwa/src/tools/pages.ts": {
-    "mtime": 1792928056.538411,
-    "seen": 1792928061.3742352,
+    "mtime": 1792934521.3213396,
+    "seen": 1792934525.6069138,
     "ast_hash": "d5ebb1b62d3bb91fc91019a05be90d0d",
     "semantic_hash": ""
   },
   "pwa/src/tools/rates.ts": {
-    "mtime": 1792928056.538411,
-    "seen": 1792928061.374236,
+    "mtime": 1792934521.3213396,
+    "seen": 1792934525.6069145,
     "ast_hash": "b71840a57f71090fa4681e17cdef0a93",
     "semantic_hash": ""
   },
   "pwa/src/tools/ui.ts": {
-    "mtime": 1792928056.538411,
-    "seen": 1792928061.3742366,
+    "mtime": 1792934521.3213396,
+    "seen": 1792934525.6069152,
     "ast_hash": "9968c687bc9cfec4c714a12b8e33896e",
     "semantic_hash": ""
   },
   "pwa/test/tools/calc.test.ts": {
-    "mtime": 1792928056.538411,
-    "seen": 1792928061.3742383,
+    "mtime": 1792934521.3213396,
+    "seen": 1792934525.6069167,
     "ast_hash": "ffc54c9a5ffc524c56b895f6542320ef",
     "semantic_hash": ""
   },
   "pwa/test/tools/pages.test.ts": {
-    "mtime": 1792928056.5388021,
-    "seen": 1792928061.374239,
+    "mtime": 1792934521.3219302,
+    "seen": 1792934525.6069174,
     "ast_hash": "7159773d9d84960031d33ed30118fabf",
     "semantic_hash": ""
   },
   "sync/src/vault.ts": {
-    "mtime": 1792928056.5388393,
-    "seen": 1792928061.3742445,
+    "mtime": 1792934521.321982,
+    "seen": 1792934525.6069229,
     "ast_hash": "e310cd1445f64376d5bf404fee771056",
     "semantic_hash": ""
   },
   "docs/sms-intake.md": {
-    "mtime": 1792928056.5258923,
-    "seen": 1792928061.3743546,
+    "mtime": 1792934521.3139005,
+    "seen": 1792934525.6070352,
     "ast_hash": "a4189f75f922a84169ea66026e7bda6d",
     "semantic_hash": ""
   },
   "docs/wayfinder/106-poolaki-inspired-depth-map.md": {
-    "mtime": 1792928056.5258923,
-    "seen": 1792928061.3743572,
+    "mtime": 1792934521.3139005,
+    "seen": 1792934525.607038,
     "ast_hash": "472d21f36434969654649a381ea19e2c",
     "semantic_hash": ""
   },
   "pwa/public/robots.txt": {
-    "mtime": 1792928056.5371706,
-    "seen": 1792928061.37436,
+    "mtime": 1792934521.320235,
+    "seen": 1792934525.607041,
     "ast_hash": "9fc8e030350e72353244f2dfc4162c9f",
     "semantic_hash": ""
   },
   "pwa/tools/ghast-vam/index.html": {
-    "mtime": 1792928056.5388393,
-    "seen": 1792928061.3743608,
+    "mtime": 1792934521.321982,
+    "seen": 1792934525.6070416,
     "ast_hash": "08ffdd3ce0eb812d8cb4b6fc5d7e4b97",
     "semantic_hash": ""
   },
   "pwa/tools/hazine-adi/index.html": {
-    "mtime": 1792928056.5388393,
-    "seen": 1792928061.3743615,
+    "mtime": 1792934521.321982,
+    "seen": 1792934525.6070423,
     "ast_hash": "c126d9dfd13c2c9b0340c77483682814",
     "semantic_hash": ""
   },
   "pwa/tools/hobab-sekke/index.html": {
-    "mtime": 1792928056.5388393,
-    "seen": 1792928061.3743625,
+    "mtime": 1792934521.321982,
+    "seen": 1792934525.607043,
     "ast_hash": "a4c4269b60fcf8906e7e171dd4d43a0b",
     "semantic_hash": ""
   },
   "pwa/tools/hoghugh/index.html": {
-    "mtime": 1792928056.5388393,
-    "seen": 1792928061.374363,
+    "mtime": 1792934521.321982,
+    "seen": 1792934525.6070437,
     "ast_hash": "deb67a22fb7fddb6c57f28bcadafd1b0",
     "semantic_hash": ""
   },
   "pwa/tools/index.html": {
-    "mtime": 1792928056.5388393,
-    "seen": 1792928061.3743637,
+    "mtime": 1792934521.321982,
+    "seen": 1792934525.6070447,
     "ast_hash": "53d01264a01daa0466914ea46b43dc5e",
     "semantic_hash": ""
   },
   "pwa/tools/mehrieh/index.html": {
-    "mtime": 1792928056.5388393,
-    "seen": 1792928061.3743644,
+    "mtime": 1792934521.321982,
+    "seen": 1792934525.6070452,
     "ast_hash": "09ff6811e36f7c7e9fcfb7c4a8cba2ec",
     "semantic_hash": ""
   },
   "pwa/tools/takhir-tadieh/index.html": {
-    "mtime": 1792928056.5388393,
-    "seen": 1792928061.374365,
+    "mtime": 1792934521.321982,
+    "seen": 1792934525.607046,
     "ast_hash": "cf4e15e22181988b3e222b3cad6f13db",
     "semantic_hash": ""
   },
   "pwa/tools/tavarom/index.html": {
-    "mtime": 1792928056.5388393,
-    "seen": 1792928061.374366,
+    "mtime": 1792934521.321982,
+    "seen": 1792934525.6070466,
     "ast_hash": "8a29e2d0b4924efaf3ed8e7e3fdcf245",
+    "semantic_hash": ""
+  },
+  "app/src/main/java/com/doxigo/muchtoman/SystemBars.kt": {
+    "mtime": 1792934521.310235,
+    "seen": 1792934525.606643,
+    "ast_hash": "530779c9e5ebcbf7c371726bfc5ea271",
+    "semantic_hash": ""
+  },
+  "app/src/test/java/com/doxigo/muchtoman/ThemePaletteTest.kt": {
+    "mtime": 1792934521.3135839,
+    "seen": 1792934525.6068275,
+    "ast_hash": "eba2caed3131c44c9b1f2559b82b822a",
     "semantic_hash": ""
   }
 }
