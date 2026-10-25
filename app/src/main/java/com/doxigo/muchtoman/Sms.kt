@@ -365,6 +365,51 @@ private fun labeledAccount(text: String): String {
     return ""
 }
 
+// ─────────────────────── non-transaction notices ───────────────────────
+
+/**
+ * Markers that a message is a notice *about* an account rather than a movement *on* it.
+ *
+ * These are the shapes that moved money without meaning to: «یادآوری بازپرداخت» contains
+ * «پرداخت», so a repayment reminder read as a withdrawal; a «خوش آمدید … موجودی …» greeting
+ * anchored a balance nobody said was current; and a «رمز پویا» prompt carrying a مبلغ and a
+ * مانده slipped past the one-time-password gate, which only declines a رمز message that states
+ * no مانده. The list is deliberately narrow, and two entries from the competitor's own list are
+ * left out on purpose:
+ *
+ *  - bare «کد» would decline every real receipt that prints a «کد پیگیری»;
+ *  - a blanket «رمز» would decline every fee («کارمزد») and every fused receipt that carries
+ *    both a booked figure and an OTP tail. A standalone «رمز» plus a code is already declined
+ *    by [hasOtpCode], unless the message states a مانده — which is a transaction's own shape.
+ *
+ * «ورود»/«وارد» match as whole words, so «ورودی» — how a deposit introduces itself — is still a
+ * transaction. The Arabic-yeh spelling of «خوش آمدید» needs no entry: [normalise] folds it
+ * first, and matching is done on the normalised text.
+ */
+private val NOTICE_WORDS = listOf(
+    "پویا",                 // رمز پویا / رمز دوم پویا — a second factor, never a movement
+    "کد تایید",             // only the OTP spelling: a receipt's approval code is «کد تأیید»
+    "یادآوری بازپرداخت",    // a loan is about to be collected, not collected now
+    "خوش آمدید",
+    "اعتبار تا",            // when a credit line lapses, not when money left the account
+)
+private val NOTICE_WORDS_WHOLE = listOf("ورود", "وارد")
+
+/**
+ * Whether this body is a bank notice rather than a transaction.
+ *
+ * Takes the raw body and normalises it, so no caller has to remember which form it owes and a
+ * message stored by an older build reads the same. Declining here means "not a movement": the
+ * message itself is untouched — it stays in her inbox and in the source table, and the evidence
+ * and reminder paths still see it — but it never moves money and never anchors a balance on
+ * words that were about the account rather than about a payment.
+ */
+internal fun isNonTransactionNotice(body: String): Boolean {
+    val text = normalise(body)
+    return NOTICE_WORDS.any { text.contains(it) } ||
+        NOTICE_WORDS_WHOLE.any { containsWord(text, it) }
+}
+
 /**
  * Read one message, or decline it.
  *
@@ -393,6 +438,13 @@ fun parseBankSms(
     // own. Another bank's identical shape (e.g. a Tejarat purchase OTP) gets no such leeway —
     // nothing correlates its merchant, so it is dropped like every other OTP.
     val text = normalise(body)
+
+    // A notice is about the account, not a movement on it. This runs before any figure is read,
+    // so the «مبلغ» of a repayment reminder never becomes a withdrawal and the «موجودی» of a
+    // welcome message never anchors. It is not the message being deleted — only its reading as
+    // money: see [isNonTransactionNotice].
+    if (isNonTransactionNotice(body)) return null
+
     val isMaskanHintBody = isMaskanHint(body)
     if (hasOtpCode(text) && !text.contains("مانده") && !(isMaskanHintBody && bank == Bank.MASKAN)) return null
     val fallback = fallbackDivisor(text)
@@ -726,6 +778,11 @@ fun isIgnoredBankSms(sender: String, body: String): Boolean {
  */
 fun looksLikeBankSms(body: String): Boolean {
     val text = normalise(body)
+    // A notice is not evidence of a bank we cannot read either. Once [parseBankSms] declines it
+    // as a movement, this is the only gate left that could still speak about the message — and
+    // it would offer a registered bank's own number back to her as a stranger, because a
+    // welcome message restates a موجودی big enough to look like money.
+    if (isNonTransactionNotice(body)) return false
     val f = figureAfter(text, BALANCE_WORDS, veto = NOT_A_BALANCE + OPERATOR_WORDS)
     if (f != null && f.value >= 100_000) return true
     // Also fire on "مبلغ" (amount) ≥ 1M — this catches Maskan hint messages that carry an

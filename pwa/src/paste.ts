@@ -20,6 +20,17 @@ const AMOUNT_WORDS = ['مبلغ', 'مقدار'];
 const BALANCE_WORDS = ['مانده', 'موجودی'];
 const NOT_A_BALANCE = ['بدهی', 'تسهیلات', 'وام', 'قسط', 'چک', 'کارت اعتباری'];
 
+/**
+ * Notices about an account, not movements on it. The same narrow list as `isNonTransactionNotice`
+ * in the Android parser, and narrow for the same reasons: bare «کد» would drop a real receipt
+ * printing a «کد پیگیری», and a blanket «رمز» would drop every fee («کارمزد»). Mirrored rather
+ * than left to the review screen because the corpus's `expect: null` is the shared contract: a
+ * repayment reminder parsed here as a withdrawal would quietly prefill the amount she is
+ * looking at, and «it is in front of her» is not a correction.
+ */
+const NOTICE_WORDS = ['پویا', 'کد تایید', 'یادآوری بازپرداخت', 'خوش آمدید', 'اعتبار تا'];
+const NOTICE_WORDS_WHOLE = ['ورود', 'وارد'];
+
 export interface Pasted {
   amountRial: number | null;
   direction: 'in' | 'out' | null;
@@ -144,9 +155,42 @@ function hasOtpCode(text: string): boolean {
   return false;
 }
 
+/**
+ * The word with no letter glued to either side. «ورودی» — how a deposit introduces itself — is
+ * still a transaction, while «ورود به موبایل بانک» is a login.
+ */
+function containsWord(text: string, word: string): boolean {
+  let i = text.indexOf(word);
+  while (i >= 0) {
+    const before = i === 0 ? undefined : text[i - 1];
+    const after = text[i + word.length];
+    if ((!before || !/\p{L}/u.test(before)) && (!after || !/\p{L}/u.test(after))) return true;
+    i = text.indexOf(word, i + 1);
+  }
+  return false;
+}
+
+/**
+ * Whether this body is a bank notice rather than a transaction — the mirror of
+ * `isNonTransactionNotice` in Sms.kt, taking text already through `normalise`.
+ */
+export function isNonTransactionNotice(text: string): boolean {
+  return (
+    NOTICE_WORDS.some((w) => text.includes(w)) ||
+    NOTICE_WORDS_WHOLE.some((w) => containsWord(text, w))
+  );
+}
+
 export function parsePasted(body: string): Pasted {
   const text = normalise(body);
   const fallback = fallbackDivisor(text);
+
+  // A notice is about the account, not a movement on it: read it and the «مبلغ» of a repayment
+  // reminder becomes a withdrawal and a welcome message's «موجودی» a balance. Nothing is
+  // prefilled from one — not even the date, which belongs to the notice rather than a payment.
+  if (isNonTransactionNotice(text)) {
+    return { amountRial: null, direction: null, balanceRial: null, printedAt: '' };
+  }
 
   const balance = figureAfter(text, BALANCE_WORDS, { allowZero: true, veto: NOT_A_BALANCE });
   let deposit = IN_WORDS.some((w) => text.includes(w));

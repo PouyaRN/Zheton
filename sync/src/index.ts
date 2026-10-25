@@ -22,6 +22,8 @@
 
 import { DurableObject } from 'cloudflare:workers';
 
+import { routeVault } from './vault';
+
 const MAX_SYNC_REQUEST_BYTES = 2 * 1024 * 1024;
 const MAX_RECORDS_PER_PUSH = 500;
 const MAX_BODY_BYTES = 64 * 1024;
@@ -608,6 +610,11 @@ export default {
           }),
         );
       }
+
+      // Opaque backup vault. Routed before the household token gate on purpose: the blob is
+      // encrypted on the phone and the unguessable id in the path is the only capability, so a
+      // freshly restored phone (no pairing yet) can still fetch its own backup.
+      if (path.startsWith('/v1/vault')) return await routeVault(request, env);
 
       if (path.startsWith('/v1/')) {
         const token = splitToken(

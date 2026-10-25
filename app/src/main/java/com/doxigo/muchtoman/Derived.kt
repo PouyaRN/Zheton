@@ -25,7 +25,10 @@ import androidx.room.withTransaction
 // 2: implausible figures are dropped rather than saturating Long. Bumping this is the whole
 // mechanism — the next launch rebuilds every transaction from the stored messages, offline,
 // with no inbox read and no permission, and every correction and anchor stays exactly put.
-const val PARSER_VERSION = 3
+// 4: bank notices (repayment reminders, welcome/credit messages, dynamic-password bodies) are
+//    refused before they can anchor a balance — see Sms.isNonTransactionNotice. The bump is what
+//    rebuilds away a bogus row an older parser derived from one of those messages.
+const val PARSER_VERSION = 4
 
 private const val META_PARSER_VER = "parser_ver"
 private const val META_DERIVED_AT = "derived_at"

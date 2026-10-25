@@ -1,9 +1,11 @@
+import './styles.css';
 import { importKey, readPairing } from './crypto';
 import type { Pairing } from './crypto';
 import { allRecords, getMeta, setMeta } from './db';
 import { memberId, save, saveProfile, syncNow } from './sync';
 import type { CategoryDecision, Entry, MemberProfile, Session } from './sync';
 import { parsePasted } from './paste';
+import { renderToolsRoute } from './tools/app';
 
 const app = document.getElementById('app')!;
 const FA_DIGITS = '۰۱۲۳۴۵۶۷۸۹';
@@ -94,6 +96,13 @@ function renderPairing(error?: string): void {
         <header class="hero"><h1>چقدر تومن</h1></header>
         <div class="page stack">
           <div class="panel"><p>از بخش خانواده روی گوشی یکی از اعضا، کد دعوت رو اسکن کن.</p></div>
+          <a class="panel tools-entry" href="/tools/">
+            <span class="tools-entry-body">
+              <strong>ماشین‌حساب‌ها</strong>
+              <span class="muted">مهریه، تورم، حباب سکه، قسط وام…</span>
+            </span>
+            <span aria-hidden="true">←</span>
+          </a>
           ${error ? `<p class="error">${escape(error)}</p>` : ''}
         </div>
       </div>
@@ -118,6 +127,13 @@ function renderJoin(pairing: Pairing, originalHash: string): void {
             <input id="name" maxlength="32" required />
             <button type="submit">پیوستن در مرورگر</button>
           </form>
+          <a class="panel tools-entry" href="/tools/">
+            <span class="tools-entry-body">
+              <strong>ماشین‌حساب‌ها</strong>
+              <span class="muted">مهریه، تورم، حباب سکه، قسط وام…</span>
+            </span>
+            <span aria-hidden="true">←</span>
+          </a>
           <p id="join-error" class="error"></p>
         </div>
       </div>
@@ -222,6 +238,13 @@ async function renderLedger(session: Session, note?: string, warn = false): Prom
               </div>` : ''}
           </div>
           ${members.length ? `<div class="muted">اعضا: ${members.map((m) => escape(m.name)).join('، ')}</div>` : ''}
+          <a class="panel tools-entry" href="/tools/">
+            <span class="tools-entry-body">
+              <strong>ماشین‌حساب‌ها</strong>
+              <span class="muted">مهریه، تورم، حباب سکه، قسط وام…</span>
+            </span>
+            <span aria-hidden="true">←</span>
+          </a>
           <div class="panel">
             <label for="paste">متن پیامک بانکی رو اینجا بچسبون</label>
             <textarea id="paste" rows="3"></textarea>
@@ -307,6 +330,9 @@ async function trySync(session: Session, loud = false): Promise<void> {
 
 async function start(): Promise<void> {
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+  // The calculators are public and need no household; dispatch before the session check so they
+  // work on a fresh browser, offline, and with no pairing code.
+  if (renderToolsRoute(app)) return;
   try {
     const pairing = readPairing(location.hash);
     if (pairing) {

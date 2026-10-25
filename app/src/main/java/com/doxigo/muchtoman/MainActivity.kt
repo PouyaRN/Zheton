@@ -40,6 +40,9 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import com.doxigo.muchtoman.features.reminders.HandledReminder
+import com.doxigo.muchtoman.features.reminders.ReminderActions
+import com.doxigo.muchtoman.features.reminders.ReminderScheduler
 
 private const val WALLET_REFRESH_MS = 10 * 60_000L
 private const val STOCK_REFRESH_MS = 10 * 60_000L
@@ -108,6 +111,33 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             requestFamilySync(silent = true)
         }
         scheduleDailySnapshot(app)
+
+        // Reminders are local WorkManager jobs: re-plan on every cold start, because a rebuild
+        // after an app update, a restore or a reboot must not leave a due date unarmed. The
+        // planner is idempotent and cheap (prefs + one Room read), so this runs beside the
+        // daily snapshot rather than behind a flag.
+        viewModelScope.launch { ReminderScheduler.reschedule(app) }
+        // A tap on «رسیدگی شد» arrives from a notification receiver. While this VM is alive it
+        // is handled here (mark the installment paid / settle the commitment); a tap that landed
+        // while the app was dead was queued in prefs and is drained now, exactly once.
+        ReminderActions.onHandled = ::onReminderHandled
+        viewModelScope.launch {
+            ReminderActions.drainPending(app).forEach(::onReminderHandled)
+        }
+    }
+
+    /**
+     * One handled reminder, from the notification shade to the obligation it was about.
+     *
+     * The planner tags items `installment:<paymentId>` / `commitment:<id>`; anything else (the
+     * daily check-in) only needs the schedule rebuilt.
+     */
+    private fun onReminderHandled(event: HandledReminder) {
+        when (event.source) {
+            "installment" -> event.rawId?.let { markInstallmentPaid(it) }
+            "commitment" -> event.rawId?.let { toggleCommitmentSettled(it) }
+        }
+        viewModelScope.launch { ReminderScheduler.reschedule(getApplication()) }
     }
 
     /**
@@ -1547,6 +1577,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 refreshObligations(durable)
             }.onFailure { android.util.Log.w("muchtoman", "markInstallmentPaid failed: $it") }
         }
+        viewModelScope.launch { ReminderScheduler.reschedule(getApplication()) }
     }
 
     /** Pay off all remaining installments of an obligation at once. */
@@ -1560,6 +1591,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 refreshObligations(durable)
             }.onFailure { android.util.Log.w("muchtoman", "payOffRemaining failed: $it") }
         }
+        viewModelScope.launch { ReminderScheduler.reschedule(getApplication()) }
     }
 
     /** Archive a completed obligation. */
@@ -1591,6 +1623,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         val updated = (store.commitments.filterNot { it.id == commitment.id } + commitment)
         store.commitments = updated
         _state.update { it.copy(commitments = updated) }
+        viewModelScope.launch { ReminderScheduler.reschedule(getApplication()) }
     }
 
     fun toggleCommitmentSettled(commitmentId: String) {
@@ -1605,12 +1638,14 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         }
         store.commitments = updated
         _state.update { it.copy(commitments = updated) }
+        viewModelScope.launch { ReminderScheduler.reschedule(getApplication()) }
     }
 
     fun deleteCommitment(commitmentId: String) {
         val updated = store.commitments.filterNot { it.id == commitmentId }
         store.commitments = updated
         _state.update { it.copy(commitments = updated) }
+        viewModelScope.launch { ReminderScheduler.reschedule(getApplication()) }
     }
 
     // ──────────────────────── fund reservations ────────────────────────

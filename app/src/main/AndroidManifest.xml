@@ -12,6 +12,12 @@
     <uses-permission android:name="android.permission.READ_SMS" />
 
     <!--
+        Reminders are local notifications (WorkManager, no server). Asked for only when she
+        switches reminders on in settings — never at launch, where it would read as noise.
+    -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!--
         READ_SMS is taken to mean "this app needs a radio", which would hide it from every
         tablet and Chromebook that has none. It does not: it reads the message store, and on a
         device with nothing in it the feature simply has nothing to show.
@@ -193,6 +199,38 @@
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
         </service>
+
+        <!--
+            Offline tools added by the Poolaki-inspired map (#106). All four are opened from
+            Settings and are deliberately not exported: nothing outside the app can start them,
+            and they read the same on-device store the app does.
+        -->
+        <activity
+            android:name=".features.smspicker.SmsPickerActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density|fontScale|layoutDirection"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".features.reminders.ReminderSettingsActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".features.export.ReportExportActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
+            android:name=".features.backup.BackupActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- «رسیدگی شد» on a reminder notification must work with the app not on screen. -->
+        <receiver
+            android:name=".features.reminders.ReminderActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.doxigo.muchtoman.action.REMINDER_HANDLED" />
+            </intent-filter>
+        </receiver>
 
         <provider
             android:name="androidx.core.content.FileProvider"

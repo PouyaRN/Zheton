@@ -74,6 +74,43 @@ describe('quick paste', () => {
   });
 });
 
+describe('bank notices', () => {
+  // The non-transaction guard the Android parser grew, mirrored here. The corpus loop above
+  // skips `expect: null` cases because on this side the sender is never consulted — but these
+  // bodies are declined for their shape, not their sender, so the same JSON expectations hold:
+  // app/src/test/resources/sms/notices.json.
+  it('reads no movement and no balance out of a repayment reminder', () => {
+    const got = parsePasted(
+      'بانک سامان\nیادآوری بازپرداخت تسهیلات\nمبلغ 4,000,000 ریال\nمانده 12,000,000 ریال',
+    );
+    expect(got.amountRial).toBeNull();
+    expect(got.direction).toBeNull();
+    expect(got.balanceRial).toBeNull();
+  });
+
+  it('does not anchor a welcome message on its موجودی', () => {
+    const got = parsePasted('بلو بانک\nخوش آمدید\nموجودی: 5,000,000 ریال');
+    expect(got.amountRial).toBeNull();
+    expect(got.balanceRial).toBeNull();
+  });
+
+  it('reads a dynamic-password prompt as nothing even when it prints a مبلغ and a مانده', () => {
+    const got = parsePasted('بانک ملت\nرمز پویا: 123456\nمبلغ 2,000,000 ریال\nمانده 9,000,000 ریال');
+    expect(got.amountRial).toBeNull();
+    expect(got.direction).toBeNull();
+    expect(got.balanceRial).toBeNull();
+  });
+
+  it('still reads a real withdrawal that prints a tracking code', () => {
+    // «کد پیگیری» is not «کد تایید». The competitor's blanket «کد » rule would decline every
+    // real receipt, which is exactly why the guard list is narrow.
+    const got = parsePasted('بانک سامان\nبرداشت: 5,000,000 ریال\nکد پیگیری: 123456\nمانده: 12,000,000 ریال');
+    expect(got.amountRial).toBe(5_000_000);
+    expect(got.direction).toBe('out');
+    expect(got.balanceRial).toBe(12_000_000);
+  });
+});
+
 describe('sync bookkeeping', () => {
   it('never stamps a record at or before the one it replaces', () => {
     // A phone with a hand-set clock is not hypothetical in Iran, and plain wall-clock

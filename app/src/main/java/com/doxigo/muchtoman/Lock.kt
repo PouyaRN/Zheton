@@ -2,6 +2,7 @@ package com.doxigo.muchtoman
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -86,6 +87,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.FragmentActivity
+import com.doxigo.muchtoman.features.backup.BackupActivity
+import com.doxigo.muchtoman.features.export.ReportExportActivity
+import com.doxigo.muchtoman.features.reminders.ReminderSettingsActivity
+import com.doxigo.muchtoman.features.smspicker.SmsPickerActivity
 
 /**
  * Combining BIOMETRIC_STRONG with DEVICE_CREDENTIAL is not supported below API 30, so the
@@ -230,6 +235,16 @@ fun SettingsScreen(
     val askSms = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
     ) { ok -> granted = ok; onSmsChange(ok) }
+    // A restore replaces the store the running AppVm already read; recreating the activity is
+    // the cheapest honest way to show the restored ledger instead of the stale one behind it.
+    val backupLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            onBack()
+            activity.recreate()
+        }
+    }
     // Held locally while typing so each keystroke is not a disk write; committed on leaving.
     var draft by remember { mutableStateOf(name) }
 
@@ -554,6 +569,46 @@ fun SettingsScreen(
                 onAnchorChange = onCycleAnchorChange,
             )
 
+            SectionLabel("داده و ابزارها")
+            Text(
+                "همهٔ این‌ها روی همین گوشی کار می‌کنند؛ نه حسابی لازم دارند نه اینترنتی.",
+                fontSize = 13.sp,
+                lineHeight = 20.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = Space.s, start = Space.xs, end = Space.xs),
+            )
+            ToolRow(
+                emoji = "💾",
+                title = "پشتیبان‌گیری و بازیابی",
+                subtitle = "یک فایل رمزدار از داده‌هایت بگیر، یا از فایل برگردان",
+                onClick = { backupLauncher.launch(Intent(context, BackupActivity::class.java)) },
+                shape = bandShape(0, 4),
+                divided = true,
+            )
+            ToolRow(
+                emoji = "🔔",
+                title = "یادآورها و سررسید",
+                subtitle = "قسط و چک نزدیک سررسید را روی گوشی یادآوری کن",
+                onClick = { context.startActivity(Intent(context, ReminderSettingsActivity::class.java)) },
+                shape = bandShape(1, 4),
+                divided = true,
+            )
+            ToolRow(
+                emoji = "📄",
+                title = "گزارش PDF و Excel",
+                subtitle = "گزارش ماهانه یا خانوادگی برای خودت یا حسابدار",
+                onClick = { ReportExportActivity.launch(context) },
+                shape = bandShape(2, 4),
+                divided = true,
+            )
+            ToolRow(
+                emoji = "📥",
+                title = "پیامک‌های خوانده‌نشده",
+                subtitle = "همهٔ پیامک‌های گوشی را ببین و خودت انتخاب کن کدام تراکنش شود",
+                onClick = { context.startActivity(SmsPickerActivity.intent(context)) },
+                shape = bandShape(3, 4),
+            )
+
             // The answer to "which version do you have?" over the phone, without her having
             // to find the system app-info page. A fixed gap, not weight(1f): inside a scrolling
             // column a weighted spacer has nothing to push against.
@@ -586,6 +641,67 @@ fun SettingsScreen(
 private fun faVersion(v: String): String =
     v.map { c -> if (c in '0'..'9') '۰' + (c - '0') else if (c == '.') '٫' else c }
         .joinToString("")
+
+/**
+ * One tappable row in a settings band — the same geometry as a bank row, without a switch.
+ * A settings row that opens a screen is not a toggle, and drawing it as one taught her to tap
+ * the wrong half of it.
+ */
+@Composable
+private fun ToolRow(
+    emoji: String,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    shape: androidx.compose.ui.graphics.Shape,
+    divided: Boolean = false,
+) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .clickable { onClick() },
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Space.l, vertical = Space.l),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                contentAlignment = Alignment.Center,
+            ) { Text(emoji, fontSize = 20.sp) }
+            Column(Modifier.padding(horizontal = Space.m).weight(1f)) {
+                Text(title, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    subtitle,
+                    fontSize = 13.sp,
+                    lineHeight = 20.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+            Icon(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+        if (divided) {
+            HorizontalDivider(
+                modifier = Modifier.padding(start = 72.dp),
+                thickness = 0.5.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+            )
+        }
+    }
+}
 
 @Composable
 private fun SectionLabel(text: String) {
