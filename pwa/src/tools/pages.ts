@@ -701,7 +701,7 @@ export function renderToolsIndex(root: HTMLElement): void {
     el(`
       <div>
         <header class="hero tool-hero">
-          <a class="crumb" href="/">چقدر تومن</a>
+          <a class="crumb" href="/">اندیس</a>
           <h1>${escape(TOOLS_INDEX_META.heading)}</h1>
           <p class="hero-label">${escape(TOOLS_INDEX_META.lead)}</p>
         </header>
@@ -719,7 +719,7 @@ export function renderToolsIndex(root: HTMLElement): void {
             ).join('')}
           </div>
           <p class="fineprint">
-            نرخ‌ها از همان سرویس نرخ چقدر تومن می‌آیند و روی دستگاه ذخیره می‌شوند؛ هیچ
+            نرخ‌ها از همان سرویس نرخ اندیس می‌آیند و روی دستگاه ذخیره می‌شوند؛ هیچ
             ورودی‌ای به سرور فرستاده نمی‌شود. محاسبه‌ها تخمینی‌اند، نه مشاورهٔ مالی یا حقوقی.
           </p>
         </div>
@@ -733,7 +733,7 @@ export function renderToolsNotFound(root: HTMLElement): void {
     el(`
       <div>
         <header class="hero tool-hero">
-          <a class="crumb" href="/">چقدر تومن</a>
+          <a class="crumb" href="/">اندیس</a>
           <h1>این صفحه پیدا نشد</h1>
           <p class="hero-label">نشانی اشتباه است یا این ماشین‌حساب هنوز ساخته نشده.</p>
         </header>

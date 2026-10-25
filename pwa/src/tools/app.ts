@@ -20,7 +20,7 @@ export function renderToolsRoute(app: HTMLElement): boolean {
     setPageMeta(route.tool.title, route.tool.description, route.tool.href);
     PAGES[route.tool.id]?.(app);
   } else {
-    setPageMeta('این صفحه پیدا نشد | چقدر تومن', 'نشانی درخواستی در ماشین‌حساب‌ها پیدا نشد.', location.pathname);
+    setPageMeta('این صفحه پیدا نشد | اندیس', 'نشانی درخواستی در ماشین‌حساب‌ها پیدا نشد.', location.pathname);
     renderToolsNotFound(app);
   }
   window.scrollTo(0, 0);

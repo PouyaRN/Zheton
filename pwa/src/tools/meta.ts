@@ -23,7 +23,7 @@ export interface ToolMeta {
 }
 
 export const TOOLS_INDEX_META = {
-  title: 'ماشین‌حساب‌های مالی | چقدر تومن',
+  title: 'ماشین‌حساب‌های مالی | اندیس',
   description:
     'هفت ماشین‌حساب فارسی برای مهریه، تأخیر تادیه، تورم، قدرت خرید حقوق، حباب سکه، هزینهٔ عادت روزانه و قسط وام.',
   heading: 'ماشین‌حساب‌ها',
@@ -34,7 +34,7 @@ export const TOOLS: readonly ToolMeta[] = Object.freeze([
   {
     id: 'mehrieh',
     href: '/tools/mehrieh/',
-    title: 'محاسبهٔ ارزش مهریه با نرخ سکه | چقدر تومن',
+    title: 'محاسبهٔ ارزش مهریه با نرخ سکه | اندیس',
     description:
       'ارزش مهریه را بر اساس تعداد سکه و نرخ زندهٔ سکهٔ امامی، بهار، نیم، ربع و گرمی حساب کن؛ با ورودی دستی نرخ. تخمینی و بدون ثبت‌نام.',
     heading: 'ارزش مهریه',
@@ -44,7 +44,7 @@ export const TOOLS: readonly ToolMeta[] = Object.freeze([
   {
     id: 'takhir-tadieh',
     href: '/tools/takhir-tadieh/',
-    title: 'محاسبهٔ خسارت تأخیر تادیه با تورم | چقدر تومن',
+    title: 'محاسبهٔ خسارت تأخیر تادیه با تورم | اندیس',
     description:
       'خسارت تأخیر تادیه را با شاخص قیمت مصرف‌کننده و مادهٔ ۵۲۲ قانون آیین دادرسی مدنی تخمین بزن. مبلغ بدهی، سال سررسید و سال پرداخت را وارد کن.',
     heading: 'خسارت تأخیر تادیه',
@@ -54,7 +54,7 @@ export const TOOLS: readonly ToolMeta[] = Object.freeze([
   {
     id: 'tavarom',
     href: '/tools/tavarom/',
-    title: 'محاسبهٔ تورم و قدرت خرید تومان | چقدر تومن',
+    title: 'محاسبهٔ تورم و قدرت خرید تومان | اندیس',
     description:
       'قدرت خرید مبلغی تومان را از سالی به سال دیگر با شاخص CPI محاسبه کن؛ هم‌ارز اسمی و تورم انباشته را ببین. دادهٔ ۱۳۸۰ تا ۱۴۰۵.',
     heading: 'تورم و قدرت خرید',
@@ -64,7 +64,7 @@ export const TOOLS: readonly ToolMeta[] = Object.freeze([
   {
     id: 'hoghugh',
     href: '/tools/hoghugh/',
-    title: 'قدرت خرید حقوق ۱۴۰۰ تا ۱۴۰۵ | چقدر تومن',
+    title: 'قدرت خرید حقوق ۱۴۰۰ تا ۱۴۰۵ | اندیس',
     description:
       'قدرت خرید حقوق ۱۴۰۰ را با قیمت‌های ۱۴۰۵ بسنج: چقدر ارزشش کم شده و در ۱۴۰۵ چقدر حقوق لازم است تا همان قدرت خرید حفظ شود.',
     heading: 'قدرت خرید حقوق',
@@ -74,7 +74,7 @@ export const TOOLS: readonly ToolMeta[] = Object.freeze([
   {
     id: 'hobab-sekke',
     href: '/tools/hobab-sekke/',
-    title: 'محاسبهٔ حباب سکه | چقدر تومن',
+    title: 'محاسبهٔ حباب سکه | اندیس',
     description:
       'حباب سکه را با وزن، عیار، قیمت سکه و قیمت گرم طلای ۱۸ عیار حساب کن؛ ارزش ذاتی و درصد حباب را ببین. نرخ زنده یا دستی.',
     heading: 'حباب سکه',
@@ -84,7 +84,7 @@ export const TOOLS: readonly ToolMeta[] = Object.freeze([
   {
     id: 'hazine-adi',
     href: '/tools/hazine-adi/',
-    title: 'هزینهٔ سالانهٔ قهوه و سیگار | چقدر تومن',
+    title: 'هزینهٔ سالانهٔ قهوه و سیگار | اندیس',
     description:
       'هزینهٔ سالانه و چندسالهٔ قهوه یا سیگار را با هزینهٔ روزانه و نرخ تورم قابل انتخاب محاسبه کن؛ هزینهٔ هر سال و مجموع را ببین.',
     heading: 'هزینهٔ قهوه و سیگار',
@@ -94,7 +94,7 @@ export const TOOLS: readonly ToolMeta[] = Object.freeze([
   {
     id: 'ghast-vam',
     href: '/tools/ghast-vam/',
-    title: 'محاسبهٔ قسط وام | چقدر تومن',
+    title: 'محاسبهٔ قسط وام | اندیس',
     description:
       'قسط ماهانهٔ وام را با مبلغ اصل، نرخ سالانه و تعداد ماه حساب کن؛ مجموع بازپرداخت و سود را هم ببین. فرمول قسط ثابت (PMT).',
     heading: 'قسط وام',
