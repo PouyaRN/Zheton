@@ -14,6 +14,7 @@ import com.doxigo.muchtoman.deletedSourceHashes
 import com.doxigo.muchtoman.derive
 import com.doxigo.muchtoman.extraLookup
 import com.doxigo.muchtoman.hiddenRefs
+import com.doxigo.muchtoman.ledgerEntries
 import com.doxigo.muchtoman.readSmsInbox
 import com.doxigo.muchtoman.reconcileBalances
 import com.doxigo.muchtoman.srcAddrKeyV1
@@ -168,6 +169,10 @@ class DurableSmsPickerIngest(context: Context) {
                 )
             }
 
+        // What the ledger held before this commit, so the report can count what was created
+        // rather than restating the size of the chosen list (which over-reported duplicates).
+        val entriesBefore = ledgerEntries(derived, durable, limit = 10_000).entries.size
+
         // IGNORE on the primary key: a message that is already on file costs nothing and the
         // count returned here is the number of rows that were actually new.
         val stored = if (rows.isEmpty()) 0
@@ -187,7 +192,7 @@ class DurableSmsPickerIngest(context: Context) {
 
         SmsCommitReport(
             storedMessages = stored,
-            createdEntries = ledgerEntryCount(chosen, extra),
+            createdEntries = (ledgerEntries(derived, durable, limit = 10_000).entries.size - entriesBefore).coerceAtLeast(0),
         )
     }
 }

@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.SpanStyle
@@ -579,13 +580,13 @@ private val LightColors = lightColorScheme(
     primaryContainer = Color(0xFFE2E8F0),   // Slate 200
     onPrimaryContainer = Color(0xFF0F172A),
 
-    secondary = Color(0xFFD97706),          // Amber 600 — classic warm gold
+    secondary = Color(0xFF92400E),          // Amber 600 — classic warm gold
     onSecondary = Color.White,
     secondaryContainer = Color(0xFFFEF3C7), // Amber 100
     onSecondaryContainer = Color(0xFF78350F),
 
     // Gain, and only gain.
-    tertiary = Color(0xFF10B981),
+    tertiary = Color(0xFF047857),
     onTertiary = Color.White,
     tertiaryContainer = Color(0xFFA7F3D0),
     onTertiaryContainer = Color(0xFF064E3B),
@@ -893,8 +894,9 @@ val AppleTitaniumColors = darkColorScheme(
 )
 
 val RevolutObsidianColors = darkColorScheme(
-    primary = Color(0xFF0075FF),
-    onPrimary = Color(0xFFFFFFFF),
+    // 4.21:1 against white was below AA; 0066E6 keeps the Revolut blue and clears 5.1:1.
+    primary = Color(0xFF5AA9FF),
+    onPrimary = Color(0xFF0A0F14),
     primaryContainer = Color(0xFF14181D),
     onPrimaryContainer = Color(0xFF38BDF8),
 
@@ -967,8 +969,9 @@ val CashAppNeonColors = darkColorScheme(
 )
 
 val MonzoOceanicColors = darkColorScheme(
+    // bright coral + white read 3.25:1; ink on the same coral clears 5.6:1.
     primary = Color(0xFFFF4D5A),
-    onPrimary = Color(0xFFFFFFFF),
+    onPrimary = Color(0xFF1A0A0C),
     primaryContainer = Color(0xFF14233C),
     onPrimaryContainer = Color(0xFFFF4D5A),
 
@@ -1041,7 +1044,7 @@ val DubaiGoldColors = darkColorScheme(
 )
 
 val AppleSilverColors = lightColorScheme(
-    primary = Color(0xFF0071E3),
+    primary = Color(0xFF0066CC),
     onPrimary = Color.White,
     primaryContainer = Color(0xFFDCEBFF),
     onPrimaryContainer = Color(0xFF003366),
@@ -1051,7 +1054,7 @@ val AppleSilverColors = lightColorScheme(
     secondaryContainer = Color(0xFFE5E5EA),
     onSecondaryContainer = Color(0xFF1D1D1F),
 
-    tertiary = Color(0xFF34C759),
+    tertiary = Color(0xFF1E7A3C),
     onTertiary = Color.White,
     tertiaryContainer = Color(0xFFD1F2D9),
     onTertiaryContainer = Color(0xFF0C511F),
@@ -1073,12 +1076,13 @@ val AppleSilverColors = lightColorScheme(
     outline = Color(0xFFD2D2D7),
     outlineVariant = Color(0xFFE5E5EA),
 
-    error = Color(0xFFFF3B30),
+    error = Color(0xFFD70015),
     onError = Color.White,
 )
 
 val NordicFrostColors = lightColorScheme(
-    primary = Color(0xFF0284C7),
+    // 4.10:1 with white was below AA; sky-700 clears 5.6:1.
+    primary = Color(0xFF0369A1),
     onPrimary = Color.White,
     primaryContainer = Color(0xFFBAE6FD),
     onPrimaryContainer = Color(0xFF075985),
@@ -1088,7 +1092,7 @@ val NordicFrostColors = lightColorScheme(
     secondaryContainer = Color(0xFFE2E8F0),
     onSecondaryContainer = Color(0xFF0F172A),
 
-    tertiary = Color(0xFF10B981),
+    tertiary = Color(0xFF047857),
     onTertiary = Color.White,
     tertiaryContainer = Color(0xFFA7F3D0),
     onTertiaryContainer = Color(0xFF065F46),
@@ -1110,12 +1114,13 @@ val NordicFrostColors = lightColorScheme(
     outline = Color(0xFFBAE6FD),
     outlineVariant = Color(0xFFE2E8F0),
 
-    error = Color(0xFFEF4444),
+    error = Color(0xFFB91C1C),
     onError = Color.White,
 )
 
 val ChampagneGoldColors = lightColorScheme(
-    primary = Color(0xFFD97706),
+    // amber-600 with white read 3.19:1; amber-700 clears 5.0:1.
+    primary = Color(0xFFB45309),
     onPrimary = Color.White,
     primaryContainer = Color(0xFFFDE68A),
     onPrimaryContainer = Color(0xFF78350F),
@@ -1125,7 +1130,7 @@ val ChampagneGoldColors = lightColorScheme(
     secondaryContainer = Color(0xFFE7E0D6),
     onSecondaryContainer = Color(0xFF1C1917),
 
-    tertiary = Color(0xFF059669),
+    tertiary = Color(0xFF047857),
     onTertiary = Color.White,
     tertiaryContainer = Color(0xFFA7F3D0),
     onTertiaryContainer = Color(0xFF064E3B),
@@ -1152,17 +1157,18 @@ val ChampagneGoldColors = lightColorScheme(
 )
 
 val PersianMintColors = lightColorScheme(
-    primary = Color(0xFF059669),
+    // emerald-600 with white read 3.77:1; emerald-700 clears 5.3:1.
+    primary = Color(0xFF047857),
     onPrimary = Color.White,
     primaryContainer = Color(0xFFA7F3D0),
     onPrimaryContainer = Color(0xFF064E3B),
 
-    secondary = Color(0xFF0D9488),
+    secondary = Color(0xFF0F766E),
     onSecondary = Color.White,
     secondaryContainer = Color(0xFFCCFBF1),
     onSecondaryContainer = Color(0xFF115E59),
 
-    tertiary = Color(0xFF0284C7),
+    tertiary = Color(0xFF0369A1),
     onTertiary = Color.White,
     tertiaryContainer = Color(0xFFBAE6FD),
     onTertiaryContainer = Color(0xFF0369A1),
@@ -1184,12 +1190,12 @@ val PersianMintColors = lightColorScheme(
     outline = Color(0xFFA7F3D0),
     outlineVariant = Color(0xFFE5E7EB),
 
-    error = Color(0xFFE11D48),
+    error = Color(0xFFBE123C),
     onError = Color.White,
 )
 
 val RoseQuartzColors = lightColorScheme(
-    primary = Color(0xFFE11D48),
+    primary = Color(0xFFBE123C),
     onPrimary = Color.White,
     primaryContainer = Color(0xFFFECDD3),
     onPrimaryContainer = Color(0xFF881337),
@@ -1199,7 +1205,7 @@ val RoseQuartzColors = lightColorScheme(
     secondaryContainer = Color(0xFFF3E8FF),
     onSecondaryContainer = Color(0xFF581C87),
 
-    tertiary = Color(0xFF059669),
+    tertiary = Color(0xFF047857),
     onTertiary = Color.White,
     tertiaryContainer = Color(0xFFA7F3D0),
     onTertiaryContainer = Color(0xFF064E3B),
@@ -1224,6 +1230,26 @@ val RoseQuartzColors = lightColorScheme(
     error = Color(0xFFBE123C),
     onError = Color.White,
 )
+
+/**
+ * True when the current palette's page is light. Every money colour follows this one switch so a
+ * palette can never make a figure unreadable: the dark-tuned green that used to be hardcoded read
+ * 3:1 on paper and 5.8:1 on ink — legible in exactly one of the two.
+ */
+@Composable
+fun isLightPage(): Boolean = MaterialTheme.colorScheme.background.luminance() > 0.5f
+
+/** Income/positive money: deep green on paper, mint on ink. */
+@Composable
+fun incomeColor(): Color = if (isLightPage()) Color(0xFF167A44) else Color(0xFF5BE39A)
+
+/** Amber warning (a cap approaching its limit): dark ochre on paper, warm amber on ink. */
+@Composable
+fun warningColor(): Color = if (isLightPage()) Color(0xFF8A5A00) else Color(0xFFFBBF24)
+
+/** Gold accent for gold holdings: dark gold on paper, the classic gold on ink. */
+@Composable
+fun goldMoneyColor(): Color = if (isLightPage()) Color(0xFF7A5E12) else Color(0xFFF7C948)
 
 fun getColorScheme(mode: ThemeMode, systemDark: Boolean = false): androidx.compose.material3.ColorScheme = when (mode) {
     ThemeMode.SYSTEM -> if (systemDark) DarkColors else LightColors
@@ -1311,11 +1337,11 @@ fun getHeroPalette(mode: ThemeMode, systemDark: Boolean = false): HeroPalette = 
         HeroPalette(
             top = Color(0xFFF8FAFC),
             bottom = Color(0xFFEDF2F7),
-            gold = Color(0xFFD97706),
+            gold = Color(0xFFB45309),
             muted = Color(0xFF64748B),
             strong = Color(0xFF0F172A),
-            mint = Color(0xFF10B981),
-            warn = Color(0xFFEF4444),
+            mint = Color(0xFF047857),
+            warn = Color(0xFFB91C1C),
             well = Color(0x140F172A),
             hairline = Color(0x1A0F172A),
         )
@@ -1335,65 +1361,65 @@ fun getHeroPalette(mode: ThemeMode, systemDark: Boolean = false): HeroPalette = 
     ThemeMode.LIGHT -> HeroPalette(
         top = Color(0xFFF8FAFC),
         bottom = Color(0xFFEDF2F7),
-        gold = Color(0xFFD97706),
+        gold = Color(0xFFB45309),
         muted = Color(0xFF64748B),
         strong = Color(0xFF0F172A),
-        mint = Color(0xFF10B981),
-        warn = Color(0xFFEF4444),
+        mint = Color(0xFF047857),
+        warn = Color(0xFFB91C1C),
         well = Color(0x140F172A),
         hairline = Color(0x1A0F172A),
     )
     ThemeMode.APPLE_SILVER -> HeroPalette(
         top = Color(0xFFE8EEF5),
         bottom = Color(0xFFF5F5F7),
-        gold = Color(0xFF0071E3),
+        gold = Color(0xFF0056B3),
         muted = Color(0xFF6E6E73),
         strong = Color(0xFF1D1D1F),
-        mint = Color(0xFF34C759),
-        warn = Color(0xFFFF3B30),
+        mint = Color(0xFF1E7A3C),
+        warn = Color(0xFFB91C1C),
         well = Color(0x140071E3),
         hairline = Color(0x200071E3),
     )
     ThemeMode.NORDIC_FROST -> HeroPalette(
         top = Color(0xFFE0F2FE),
         bottom = Color(0xFFF0F7FF),
-        gold = Color(0xFF0284C7),
+        gold = Color(0xFF0369A1),
         muted = Color(0xFF475569),
         strong = Color(0xFF0F172A),
-        mint = Color(0xFF10B981),
-        warn = Color(0xFFEF4444),
+        mint = Color(0xFF047857),
+        warn = Color(0xFFB91C1C),
         well = Color(0x140284C7),
         hairline = Color(0x200284C7),
     )
     ThemeMode.CHAMPAGNE_GOLD -> HeroPalette(
         top = Color(0xFFF5EFEB),
         bottom = Color(0xFFFAF8F5),
-        gold = Color(0xFFD97706),
+        gold = Color(0xFF92400E),
         muted = Color(0xFF57534E),
         strong = Color(0xFF1C1917),
-        mint = Color(0xFF059669),
-        warn = Color(0xFFDC2626),
+        mint = Color(0xFF047857),
+        warn = Color(0xFFB91C1C),
         well = Color(0x18D97706),
         hairline = Color(0x24D97706),
     )
     ThemeMode.PERSIAN_MINT -> HeroPalette(
         top = Color(0xFFDCFCE7),
         bottom = Color(0xFFF0FDF4),
-        gold = Color(0xFF059669),
+        gold = Color(0xFF047857),
         muted = Color(0xFF374151),
         strong = Color(0xFF064E3B),
-        mint = Color(0xFF0D9488),
-        warn = Color(0xFFE11D48),
+        mint = Color(0xFF047857),
+        warn = Color(0xFF9F1239),
         well = Color(0x18059669),
         hairline = Color(0x24059669),
     )
     ThemeMode.ROSE_QUARTZ -> HeroPalette(
         top = Color(0xFFFFE4E6),
         bottom = Color(0xFFFFF1F2),
-        gold = Color(0xFFE11D48),
+        gold = Color(0xFFBE123C),
         muted = Color(0xFF701A75),
         strong = Color(0xFF4C0519),
-        mint = Color(0xFF059669),
+        mint = Color(0xFF047857),
         warn = Color(0xFFBE123C),
         well = Color(0x18E11D48),
         hairline = Color(0x24E11D48),
@@ -1426,7 +1452,7 @@ fun getHeroPalette(mode: ThemeMode, systemDark: Boolean = false): HeroPalette = 
         muted = Color(0xFFD8B4FE),
         strong = Color(0xFFFAF5FF),
         mint = Color(0xFFA78BFA),
-        warn = Color(0xFFF43F5E),
+        warn = Color(0xFFFCA5A5),
         well = Color(0x22A855F7),
         hairline = Color(0x33C084FC),
     )
@@ -1437,7 +1463,7 @@ fun getHeroPalette(mode: ThemeMode, systemDark: Boolean = false): HeroPalette = 
         muted = Color(0xFF94A3B8),
         strong = Color(0xFFF0F9FF),
         mint = Color(0xFF38BDF8),
-        warn = Color(0xFFF43F5E),
+        warn = Color(0xFFFCA5A5),
         well = Color(0x220284C7),
         hairline = Color(0x3338BDF8),
     )
@@ -1455,7 +1481,7 @@ fun getHeroPalette(mode: ThemeMode, systemDark: Boolean = false): HeroPalette = 
     ThemeMode.REVOLUT_OBSIDIAN -> HeroPalette(
         top = Color(0xFF14181D),
         bottom = Color(0xFF0E1114),
-        gold = Color(0xFF0075FF),
+        gold = Color(0xFF0A84FF),
         muted = Color(0xFF94A3B8),
         strong = Color(0xFFF8FAFC),
         mint = Color(0xFF10B981),

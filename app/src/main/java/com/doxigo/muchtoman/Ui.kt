@@ -345,9 +345,13 @@ val snackbarHostState = remember { SnackbarHostState() }
             !heroUnderStatusBar
         )
     val lightScheme = MaterialTheme.colorScheme.background.luminance() > 0.5f
-    LaunchedEffect(paperUnderStatusBar, lightScheme) {
+    // The hero is not always dark: in the light palettes the field behind the status bar is cream,
+    // and the old rule ("paper → light icons, hero → dark icons") painted a white clock on it.
+    val heroIsLight = LocalHeroPalette.current.top.luminance() > 0.5f
+    val statusBarIsLight = if (paperUnderStatusBar) lightScheme else heroIsLight
+    LaunchedEffect(paperUnderStatusBar, lightScheme, heroIsLight) {
         WindowCompat.getInsetsController(activity.window, activity.window.decorView).apply {
-            isAppearanceLightStatusBars = paperUnderStatusBar && lightScheme
+            isAppearanceLightStatusBars = statusBarIsLight
             isAppearanceLightNavigationBars = lightScheme
         }
     }

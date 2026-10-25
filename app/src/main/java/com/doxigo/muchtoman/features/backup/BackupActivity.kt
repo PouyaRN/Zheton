@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.view.Window
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -68,6 +69,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.doxigo.muchtoman.DerivedDb
 import com.doxigo.muchtoman.DurableDb
+import com.doxigo.muchtoman.ApplySystemBars
 import com.doxigo.muchtoman.MuchTomanTheme
 import com.doxigo.muchtoman.Radius
 import com.doxigo.muchtoman.Space
@@ -134,9 +136,11 @@ class BackupActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         val store = Store(applicationContext)
         setContent {
             MuchTomanTheme(mode = store.themeMode) {
+            ApplySystemBars()
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                     BackupScreen(
                         controller = remember { BackupController() },
@@ -145,7 +149,17 @@ class BackupActivity : ComponentActivity() {
                         target = remember { BackupWiring.targetFactory(applicationContext) },
                         transportFactory = BackupWiring.transportFactory,
                         window = this@BackupActivity.window,
-                        onRestored = { setResult(RESULT_OK) },
+                        onRestored = {
+                            setResult(RESULT_OK)
+                            // The ViewModel behind Home was built before the restore and survives
+                            // recreation, so it would keep serving the pre-restore state forever.
+                            // A clean task restart is the only honest way to show what was restored.
+                            startActivity(
+                                Intent(this@BackupActivity, com.doxigo.muchtoman.MainActivity::class.java)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
+                            )
+                            finish()
+                        },
                         onClose = { finish() },
                     )
                 }
@@ -284,7 +298,7 @@ private fun BackupScreen(
                 pending = null
                 onRestored()
                 status = "بازگردانی انجام شد: ${faNumber(report.totalRows)} ردیف. " +
-                    "برای دیدن دادهٔ تازه، این صفحه را ببند."
+                    "برنامه با دادهٔ بازیابی‌شده دوباره باز می‌شود."
             } catch (_: Exception) {
                 error = "بازگردانی کامل نشد. ممکن است بخشی از داده‌ها نوشته شده باشد؛ " +
                     "قبل از تکرار، برنامه را دوباره باز کن."

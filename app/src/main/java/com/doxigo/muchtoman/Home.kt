@@ -88,7 +88,7 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun MonthFlow(story: HomeStory, modifier: Modifier = Modifier) {
     val month = story.month
-    val gain = Color(0xFF2E9E5B)
+    val gain = incomeColor()
     val spend = MaterialTheme.colorScheme.onSurfaceVariant
     Panel(modifier) {
         Row(Modifier.fillMaxWidth()) {
@@ -390,7 +390,7 @@ fun InsightCard(
     onAction: () -> Unit = {},
 ) {
     val accent = when (insight.tone) {
-        Insight.Tone.GOOD -> Color(0xFF2E9E5B)
+        Insight.Tone.GOOD -> incomeColor()
         // Not `tertiary`: in dark theme that is the same green income speaks in, so the one
         // thing asking for her read as a deposit.
         Insight.Tone.ATTENTION -> MaterialTheme.colorScheme.primary

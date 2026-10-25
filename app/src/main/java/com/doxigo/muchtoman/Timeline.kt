@@ -1199,7 +1199,7 @@ private fun DayBand(
                 Text(
                     if (privacyMode) "••••••" else faSignedCompact(tomanOf(net), net > 0),
                     style = figureStyle(
-                        if (net > 0) Color(0xFF2E9E5B) else MaterialTheme.colorScheme.onSurfaceVariant,
+                        if (net > 0) incomeColor() else MaterialTheme.colorScheme.onSurfaceVariant,
                         FontWeight.Bold,
                     ),
                     fontSize = 13.sp,
@@ -1912,7 +1912,7 @@ fun TransactionScreen(
                                             "${faDecimal(usdtUnits, if (usdtUnits >= 10.0) 1 else 2)} USDT",
                                             fontSize = 14.sp,
                                             fontWeight = FontWeight.ExtraBold,
-                                            color = Color(0xFF2E9E5B),
+                                            color = incomeColor(),
                                         )
                                     }
                                 }
@@ -2894,7 +2894,7 @@ internal fun DailyOutflowSparkCard(
                             if (privacyMode) "•••••• تومان" else if (sel.toman > 0.0) "${faNumber(sel.toman)} تومان خرج" else "روز بدون خرج 🌿",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (sel.toman > 0.0) MaterialTheme.colorScheme.error else Color(0xFF2E9E5B),
+                            color = if (sel.toman > 0.0) MaterialTheme.colorScheme.error else incomeColor(),
                         )
                     }
                 }
@@ -2906,7 +2906,7 @@ internal fun DailyOutflowSparkCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(6.dp))
-                    .background(Color(0xFF2E9E5B).copy(alpha = 0.08f))
+                    .background(incomeColor().copy(alpha = 0.08f))
                     .padding(horizontal = Space.s, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -2915,7 +2915,7 @@ internal fun DailyOutflowSparkCard(
                     "🌿 ${streak.motivationFa}",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color(0xFF2E9E5B),
+                    color = incomeColor(),
                     modifier = Modifier.weight(1f),
                 )
                 if (streak.currentStreakDays > 0) {
@@ -2923,7 +2923,7 @@ internal fun DailyOutflowSparkCard(
                         "${faNumber(streak.currentStreakDays)} روز",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF2E9E5B),
+                        color = incomeColor(),
                     )
                 }
             }

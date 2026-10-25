@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import com.doxigo.muchtoman.ApplySystemBars
 import com.doxigo.muchtoman.MuchTomanTheme
 import com.doxigo.muchtoman.Store
 import com.doxigo.muchtoman.canReadSms
@@ -41,9 +43,11 @@ class SmsPickerActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         val store = Store(applicationContext)
         setContent {
             MuchTomanTheme(mode = store.themeMode) {
+            ApplySystemBars()
                 // The whole app is RTL because every transaction is read in Persian; this
                 // screen has no exception, and inheriting the phone's locale would flip the
                 // numbers and the checkboxes for an English-locale phone.

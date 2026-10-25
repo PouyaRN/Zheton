@@ -251,10 +251,10 @@ fun GoalsScreen(
 private fun GoalCard(progress: GoalProgress, categories: List<Category>, onDelete: () -> Unit) {
     // Green ≤70%, amber 70–90%, red >90% for caps; green when done for savings.
     val barColor = when {
-        progress.cap && progress.share <= 0.7f -> Color(0xFF2E9E5B)
-        progress.cap && progress.share <= 0.9f -> Color(0xFFF9A825)
+        progress.cap && progress.share <= 0.7f -> incomeColor()
+        progress.cap && progress.share <= 0.9f -> warningColor()
         progress.cap -> MaterialTheme.colorScheme.error
-        progress.done -> Color(0xFF2E9E5B)
+        progress.done -> incomeColor()
         else -> MaterialTheme.colorScheme.primary
     }
     val animatedShare by animateFloatAsState(

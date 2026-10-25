@@ -473,7 +473,7 @@ private fun ExecutiveCashFlowCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("درآمد / واریز", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.weight(1f))
-                        Text("↑", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E9E5B))
+                        Text("↑", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = incomeColor())
                     }
                     Spacer(Modifier.height(4.dp))
                     Text(
@@ -481,7 +481,7 @@ private fun ExecutiveCashFlowCard(
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Black,
                         fontFamily = ModamFigures,
-                        color = Color(0xFF2E9E5B),
+                        color = incomeColor(),
                     )
                     Text("تومان", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
@@ -529,12 +529,12 @@ private fun ExecutiveCashFlowCard(
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Black,
                         fontFamily = ModamFigures,
-                        color = if (snapshot.net >= 0) Color(0xFF2E9E5B) else MaterialTheme.colorScheme.error,
+                        color = if (snapshot.net >= 0) incomeColor() else MaterialTheme.colorScheme.error,
                     )
                     Text(
                         if (snapshot.net >= 0) "مازاد نقدی مثبت" else "کسری تراز نقدینگی",
                         fontSize = 10.sp,
-                        color = if (snapshot.net >= 0) Color(0xFF2E9E5B) else MaterialTheme.colorScheme.error,
+                        color = if (snapshot.net >= 0) incomeColor() else MaterialTheme.colorScheme.error,
                     )
                 }
 
@@ -553,7 +553,7 @@ private fun ExecutiveCashFlowCard(
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Black,
                         fontFamily = ModamFigures,
-                        color = if (snapshot.savingsRate >= 20) Color(0xFF2E9E5B) else MaterialTheme.colorScheme.primary,
+                        color = if (snapshot.savingsRate >= 20) incomeColor() else MaterialTheme.colorScheme.primary,
                     )
                     Text(
                         when {
@@ -1142,7 +1142,7 @@ fun OpportunityCostSimulatorCard(
                         "+${faNumber(result.goldGainPercent.toInt().toDouble())}٪ بازدهی",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF2E9E5B),
+                        color = incomeColor(),
                     )
                 }
 
@@ -1170,7 +1170,7 @@ fun OpportunityCostSimulatorCard(
                         "+${faNumber(result.tetherGainPercent.toInt().toDouble())}٪ بازدهی",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF2E9E5B),
+                        color = incomeColor(),
                     )
                 }
             }

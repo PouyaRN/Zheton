@@ -55,6 +55,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.doxigo.muchtoman.ApplySystemBars
 import com.doxigo.muchtoman.MuchTomanTheme
 import com.doxigo.muchtoman.Radius
 import com.doxigo.muchtoman.Space
@@ -94,6 +95,7 @@ class ReminderSettingsActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             MuchTomanTheme(mode = store.themeMode) {
+            ApplySystemBars()
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),

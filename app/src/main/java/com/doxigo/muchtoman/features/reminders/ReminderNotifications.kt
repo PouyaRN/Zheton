@@ -1,5 +1,7 @@
 package com.doxigo.muchtoman.features.reminders
 
+import android.annotation.SuppressLint
+
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -90,6 +92,7 @@ object ReminderNotifications {
      * is what decides whether the dedupe key is recorded — a notification the system refused must
      * be retried later, not marked as delivered.
      */
+    @SuppressLint("MissingPermission") // guarded by NotificationPermission.isGranted above
     fun post(context: Context, fire: ReminderFire, dueSoonCount: Int = 0): Boolean {
         if (!NotificationPermission.isGranted(context)) return false
         ensureChannel(context)
@@ -126,6 +129,7 @@ object ReminderNotifications {
      * app decided to show her. It does not ignore a switched-off permission or a muted channel —
      * pretending it worked would be worse than saying it did not.
      */
+    @SuppressLint("MissingPermission") // guarded by NotificationPermission.isGranted above
     fun postTest(context: Context): Boolean {
         if (!NotificationPermission.isGranted(context)) return false
         ensureChannel(context)

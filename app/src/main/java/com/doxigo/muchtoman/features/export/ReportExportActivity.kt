@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
 import com.doxigo.muchtoman.JalaliDate
+import com.doxigo.muchtoman.ApplySystemBars
 import com.doxigo.muchtoman.MuchTomanTheme
 import com.doxigo.muchtoman.Radius
 import com.doxigo.muchtoman.Space
@@ -94,6 +95,7 @@ class ReportExportActivity : ComponentActivity() {
         val store = Store(applicationContext)
         setContent {
             MuchTomanTheme(mode = store.themeMode) {
+            ApplySystemBars()
                 // The app is Persian regardless of the phone locale, so the export screen is
                 // forced right-to-left even on a device set to English.
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {

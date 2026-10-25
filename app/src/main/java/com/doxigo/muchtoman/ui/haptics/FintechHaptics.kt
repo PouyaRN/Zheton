@@ -125,6 +125,20 @@ class AndroidFintechHaptics(
         }
     }
 
+    /**
+     * Composed effects are API 30+; the per-usage attributes overload is API 33+. The old code
+     * called it behind a 31 check, which would have thrown on Android 12/12L (API 31–32).
+     */
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.O)
+    private fun vibrateComposed(effect: VibrationEffect) {
+        val v = vibrator ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            v.vibrate(effect, VibrationAttributes.createForUsage(VibrationAttributes.USAGE_TOUCH))
+        } else {
+            v.vibrate(effect)
+        }
+    }
+
     @SuppressLint("MissingPermission")
     override fun tick() {
         try {
@@ -150,10 +164,7 @@ class AndroidFintechHaptics(
                 val composition = VibrationEffect.startComposition()
                     .addPrimitive(VibrationEffect.Composition.PRIMITIVE_TICK, 0.6f)
                     .compose()
-                vibrator.vibrate(
-                    composition,
-                    VibrationAttributes.createForUsage(VibrationAttributes.USAGE_TOUCH),
-                )
+                vibrateComposed(composition)
                 return
             }
 
@@ -196,10 +207,7 @@ class AndroidFintechHaptics(
                 val composition = VibrationEffect.startComposition()
                     .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 0.85f)
                     .compose()
-                vibrator.vibrate(
-                    composition,
-                    VibrationAttributes.createForUsage(VibrationAttributes.USAGE_TOUCH),
-                )
+                vibrateComposed(composition)
                 return
             }
 
@@ -236,10 +244,7 @@ class AndroidFintechHaptics(
                 val composition = VibrationEffect.startComposition()
                     .addPrimitive(VibrationEffect.Composition.PRIMITIVE_THUD, 1.0f)
                     .compose()
-                vibrator.vibrate(
-                    composition,
-                    VibrationAttributes.createForUsage(VibrationAttributes.USAGE_TOUCH),
-                )
+                vibrateComposed(composition)
                 return
             }
 
@@ -277,10 +282,7 @@ class AndroidFintechHaptics(
                     .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 0.7f, 0)
                     .addPrimitive(VibrationEffect.Composition.PRIMITIVE_CLICK, 1.0f, 50)
                     .compose()
-                vibrator.vibrate(
-                    composition,
-                    VibrationAttributes.createForUsage(VibrationAttributes.USAGE_TOUCH),
-                )
+                vibrateComposed(composition)
                 return
             }
 

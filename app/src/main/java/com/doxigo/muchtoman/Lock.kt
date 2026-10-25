@@ -991,7 +991,10 @@ private fun ThemeSwatchCard(
 ) {
     val spec = remember(theme) { getThemeVisualSpec(theme) }
     val cardBg = spec.surfacePreview
-    val textColor = if (spec.isDark) Color(0xFFF8FAFC) else Color(0xFF101A18)
+    // Derive the label colour from the card that is actually drawn: `spec.isDark` disagrees with
+    // the SYSTEM swatch and printed a near-black «خودکار» on a near-black card.
+    val cardIsLight = (cardBg.red * 0.299f + cardBg.green * 0.587f + cardBg.blue * 0.114f) > 0.5f
+    val textColor = if (cardIsLight) Color(0xFF101A18) else Color(0xFFF8FAFC)
 
     val activeBorderColor = spec.accentPreview
     val inactiveBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.45f)
