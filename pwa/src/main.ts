@@ -91,7 +91,7 @@ function renderPairing(error?: string): void {
   app.replaceChildren(
     el(`
       <div>
-        <header class="hero"><h1>چقدر تومن</h1></header>
+        <header class="hero"><h1>اندیس</h1></header>
         <div class="page stack">
           <div class="panel"><p>از بخش خانواده روی گوشی یکی از اعضا، کد دعوت رو اسکن کن.</p></div>
           ${error ? `<p class="error">${escape(error)}</p>` : ''}

@@ -66,7 +66,7 @@ self.addEventListener('fetch', (event) => {
  */
 self.addEventListener('push', (event) => {
   event.waitUntil(
-    self.registration.showNotification('چقدر تومن', {
+    self.registration.showNotification('اندیس', {
       body: 'بررسی هفتگی‌ات آماده است.',
       tag: 'weekly-close',
       dir: 'rtl',

@@ -150,8 +150,8 @@
     "semantic_hash": "229ba40271c02cb5e279f978a8231e4a"
   },
   "app/src/main/java/com/doxigo/muchtoman/Derived.kt": {
-    "mtime": 1792924149.2244444,
-    "seen": 1792924152.8898315,
+    "mtime": 1792924233.69108,
+    "seen": 1792924237.4460192,
     "ast_hash": "17ca6f07863fe25ea5f063a65efd487b",
     "semantic_hash": "17ca6f07863fe25ea5f063a65efd487b"
   },
@@ -246,14 +246,14 @@
     "semantic_hash": "327a847ddfdc267c0c50d595d56bc25e"
   },
   "app/src/main/java/com/doxigo/muchtoman/Lock.kt": {
-    "mtime": 1792924149.2244444,
-    "seen": 1792924152.8898535,
+    "mtime": 1792924233.69108,
+    "seen": 1792924237.446032,
     "ast_hash": "6ddb6d57bff2c7efad9dd4c1af85b42c",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/MainActivity.kt": {
-    "mtime": 1792924149.2244444,
-    "seen": 1792924152.889855,
+    "mtime": 1792924233.69108,
+    "seen": 1792924237.446033,
     "ast_hash": "f460cd55caf648fc341e90b135271861",
     "semantic_hash": "f460cd55caf648fc341e90b135271861"
   },
@@ -306,8 +306,8 @@
     "semantic_hash": "7368b32b327204c7fe55c4f93816c2da"
   },
   "app/src/main/java/com/doxigo/muchtoman/Sms.kt": {
-    "mtime": 1792924149.2254446,
-    "seen": 1792924152.8898687,
+    "mtime": 1792924233.69108,
+    "seen": 1792924237.4460409,
     "ast_hash": "8ac7a43b22ed14bdb1f1fa608f550fdb",
     "semantic_hash": "8ac7a43b22ed14bdb1f1fa608f550fdb"
   },
@@ -882,10 +882,10 @@
     "semantic_hash": "75dc2d5313bb55c7325fc9cb1cb5116c"
   },
   "pwa/public/sw.js": {
-    "mtime": 1786106874.773878,
-    "seen": 1789253680.5501153,
-    "ast_hash": "c76271be17cd3d480b8ea21c8d4ca96e",
-    "semantic_hash": "c76271be17cd3d480b8ea21c8d4ca96e"
+    "mtime": 1792924233.7483535,
+    "seen": 1792924237.4461186,
+    "ast_hash": "6c6088232b46a8519c931776ff83dd86",
+    "semantic_hash": ""
   },
   "pwa/src/crypto.ts": {
     "mtime": 1786106874.773878,
@@ -900,14 +900,14 @@
     "semantic_hash": "313aa51c50edde5378f409f879c0d7dd"
   },
   "pwa/src/main.ts": {
-    "mtime": 1792924149.2314446,
-    "seen": 1792924152.890003,
-    "ast_hash": "0b58f889cfacbebc495535ecdfd8557e",
-    "semantic_hash": "0b58f889cfacbebc495535ecdfd8557e"
+    "mtime": 1792924233.7477124,
+    "seen": 1792924237.446121,
+    "ast_hash": "19956e22ab594019b4294b98027c2ee2",
+    "semantic_hash": ""
   },
   "pwa/src/paste.ts": {
-    "mtime": 1792924149.2314446,
-    "seen": 1792924152.8900042,
+    "mtime": 1792924233.696823,
+    "seen": 1792924237.4461215,
     "ast_hash": "0b6a40999469fb98ac13b2f46dc2c60e",
     "semantic_hash": "0b6a40999469fb98ac13b2f46dc2c60e"
   },
@@ -918,8 +918,8 @@
     "semantic_hash": "7fdd5c2ec27687fe681facc8bc02c99e"
   },
   "pwa/test/paste.test.ts": {
-    "mtime": 1792924149.2314446,
-    "seen": 1792924152.8900068,
+    "mtime": 1792924233.696823,
+    "seen": 1792924237.4461231,
     "ast_hash": "9fb1779ccda73e8eb9996ee6dba93dc0",
     "semantic_hash": "9fb1779ccda73e8eb9996ee6dba93dc0"
   },
@@ -930,8 +930,8 @@
     "semantic_hash": "bb5712ed4db0f8d4450040d3e61e9165"
   },
   "pwa/vite.config.ts": {
-    "mtime": 1792924149.2314446,
-    "seen": 1792924152.8900094,
+    "mtime": 1792924233.696823,
+    "seen": 1792924237.4461243,
     "ast_hash": "336beffc03df079ce709307093e549fe",
     "semantic_hash": "336beffc03df079ce709307093e549fe"
   },
@@ -954,8 +954,8 @@
     "semantic_hash": "9f8b12f0d5dfd38e1bd74410cda2dcc9"
   },
   "sync/src/index.ts": {
-    "mtime": 1792924149.2314446,
-    "seen": 1792924152.8900144,
+    "mtime": 1792924233.696823,
+    "seen": 1792924237.4461272,
     "ast_hash": "acb099ba5c97ea597f9ae8d4a31e519b",
     "semantic_hash": "acb099ba5c97ea597f9ae8d4a31e519b"
   },
@@ -1524,9 +1524,9 @@
     "semantic_hash": "f3e79a6bf929bdf71aa0e239731366d5"
   },
   "README.md": {
-    "mtime": 1792924149.3500597,
-    "seen": 1792924152.8901293,
-    "ast_hash": "bd1e9c47e2dfb6774d341d88399b41f5",
+    "mtime": 1792924233.69108,
+    "seen": 1792924237.4461982,
+    "ast_hash": "ef03e3f4ee864034a7b6614e56e0bb06",
     "semantic_hash": ""
   },
   "agent/skills/brandkit/SKILL.md": {
@@ -1746,8 +1746,8 @@
     "semantic_hash": "1d511c0118077bbda0925698abcfb47b"
   },
   "pwa/index.html": {
-    "mtime": 1792924149.2314446,
-    "seen": 1792924152.8901627,
+    "mtime": 1792924233.696823,
+    "seen": 1792924237.4462285,
     "ast_hash": "566502a7752368614973328196c96d23",
     "semantic_hash": ""
   },
