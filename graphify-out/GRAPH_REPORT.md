@@ -1,7 +1,7 @@
-# Graph Report - chandtoman  (2026-10-13)
+# Graph Report - chandtoman  (2026-10-25)
 
 ## Corpus Check
-- 298 files · ~983,681 words
+- 298 files · ~983,723 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 105 file(s) not represented in the graph (top: .xml 90, (none) 3, .properties 3)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `19daa3c6`
+- Built from commit: `c188c24c`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -491,16 +491,16 @@
 10. `parseBankSms()` - 40 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `recordManualTransaction()` --calls--> `ChandTomanGlanceWidget`  [INFERRED]
-  app/src/main/java/com/doxigo/muchtoman/QuickAddActivity.kt → app/src/main/java/com/doxigo/muchtoman/GlanceWidget.kt
-- `updateTotalWidget()` --calls--> `ChandTomanGlanceWidget`  [INFERRED]
-  app/src/main/java/com/doxigo/muchtoman/Widget.kt → app/src/main/java/com/doxigo/muchtoman/GlanceWidget.kt
-- `updateTotalWidgetAndWait()` --calls--> `ChandTomanGlanceWidget`  [INFERRED]
-  app/src/main/java/com/doxigo/muchtoman/Widget.kt → app/src/main/java/com/doxigo/muchtoman/GlanceWidget.kt
-- `Store` --calls--> `MarketRateHistoryStore`  [INFERRED]
-  app/src/main/java/com/doxigo/muchtoman/Data.kt → app/src/main/java/com/doxigo/muchtoman/Intelligence.kt
-- `ReportsTest` --calls--> `jalaliDay()`  [INFERRED]
-  app/src/test/java/com/doxigo/muchtoman/ReportsTest.kt → app/src/main/java/com/doxigo/muchtoman/Jalali.kt
+- `UnifiedActivityAndTrendsScreen()` --calls--> `compositionByKind()`  [INFERRED]
+  app/src/main/java/com/doxigo/muchtoman/ActivityAndTrendsUi.kt → app/src/main/java/com/doxigo/muchtoman/Catalog.kt
+- `UnifiedActivityAndTrendsScreen()` --calls--> `CycleSpec`  [INFERRED]
+  app/src/main/java/com/doxigo/muchtoman/ActivityAndTrendsUi.kt → app/src/main/java/com/doxigo/muchtoman/Cycle.kt
+- `UnifiedActivityAndTrendsScreen()` --calls--> `ReportsTab()`  [INFERRED]
+  app/src/main/java/com/doxigo/muchtoman/ActivityAndTrendsUi.kt → app/src/main/java/com/doxigo/muchtoman/ReportsUi.kt
+- `UnifiedActivityAndTrendsScreen()` --calls--> `TimelineScreen()`  [INFERRED]
+  app/src/main/java/com/doxigo/muchtoman/ActivityAndTrendsUi.kt → app/src/main/java/com/doxigo/muchtoman/Timeline.kt
+- `BankCard3D()` --calls--> `faNumber()`  [INFERRED]
+  app/src/main/java/com/doxigo/muchtoman/BankCard3D.kt → app/src/main/java/com/doxigo/muchtoman/Format.kt
 
 ## Import Cycles
 - None detected.
@@ -1420,19 +1420,19 @@ Cohesion: 0.14
 Nodes (18): Bundle, QuickAddActivity, QuickAddDialogContent(), CreditPurchaseForm(), Button(), ButtonSize, Default, Lg (+10 more)
 
 ## Knowledge Gaps
-- **2655 isolated node(s):** `ChandToman (MuchToman) — Master UI/UX & Design System Specification`, `پارادایم بصری تلفیقی (Triple Aesthetic Blend):`, `الف) پالت حالت روشن (Day Market - Light Theme):`, `ب) پالت حالت تاریک (Night Trading - Dark Theme):`, `ج) رنگ‌های پاستلی کارت‌ها و چیپ‌ها (Cute Pastel Accents):` (+2650 more)
+- **2655 isolated node(s):** `CASH`, `FIAT`, `CRYPTO`, `GOLD`, `SILVER` (+2650 more)
   These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 3667 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **233 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `LedgerEntry` connect `LedgerEntry` to `Derived.kt`, `faCompact`, `AppVm`, `Button`, `Timeline.kt`, `TimeSlot`, `ReportsTest`, `TimelineUiFeaturesTest`, `MoneyWidgets.kt`, `calculateNoSpendStreak`, `AppRoot`, `FilterToken`, `Reports.kt`, `Intelligence.kt`, `GoalsTest`, `IntelligenceTest`, `HomeDeclutterTest`, `NecessityType`?**
+- **Why does `AppVm` connect `AppVm` to `GlanceWidget.kt`, `Sync.kt`, `LedgerEntry`, `AppRoot`, `Sms.kt`, `parseMarketWatch`, `ThemeMode`, `ShetabKit`, `Cycle.kt`, `Widget.kt`?**
   _High betweenness centrality (0.018) - this node is a cross-community bridge._
-- **Why does `AbortSignal` connect `AbortSignal` to `worker-configuration.d.ts`, `EventTarget`?**
-  _High betweenness centrality (0.017) - this node is a cross-community bridge._
-- **Why does `fetchWithTimeout()` connect `getJson` to `AbortSignal`, `worker/src/index.ts`?**
-  _High betweenness centrality (0.014) - this node is a cross-community bridge._
+- **Why does `LedgerEntry` connect `LedgerEntry` to `Derived.kt`, `faCompact`, `AppVm`, `Button`, `Timeline.kt`, `TimeSlot`, `ReportsTest`, `TimelineUiFeaturesTest`, `MoneyWidgets.kt`, `calculateNoSpendStreak`, `AppRoot`, `FilterToken`, `Reports.kt`, `Intelligence.kt`, `GoalsTest`, `IntelligenceTest`, `HomeDeclutterTest`, `NecessityType`?**
+  _High betweenness centrality (0.015) - this node is a cross-community bridge._
+- **Why does `AppRoot()` connect `AppRoot` to `MuchTomanTheme`, `Commitment`, `faCompact`, `AppVm`, `Button`, `MarketUi.kt`, `Timeline.kt`, `Holding`, `Home.kt`, `TabBar.kt`, `BankCard3D.kt`, `Data.kt`, `MoneyWidgets.kt`, `Lock.kt`, `BankSheet.kt`, `compositionByKind`, `CycleSpec`, `Separator.kt`?**
+  _High betweenness centrality (0.011) - this node is a cross-community bridge._
 - **Are the 2 inferred relationships involving `AppVm` (e.g. with `Store` and `LedgerEngine`) actually correct?**
   _`AppVm` has 2 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 4 inferred relationships involving `MoneyTest` (e.g. with `Coin` and `effectiveRates()`) actually correct?**

@@ -67345,7 +67345,7 @@
       "node_kind": "heading",
       "norm_label": "banks it reads",
       "source_file": "README.md",
-      "source_location": "L49"
+      "source_location": "L53"
     },
     {
       "id": "readme_building_it_yourself",
@@ -67357,7 +67357,7 @@
       "node_kind": "heading",
       "norm_label": "building it yourself",
       "source_file": "README.md",
-      "source_location": "L125"
+      "source_location": "L129"
     },
     {
       "id": "readme_install",
@@ -67369,7 +67369,7 @@
       "node_kind": "heading",
       "norm_label": "install",
       "source_file": "README.md",
-      "source_location": "L80"
+      "source_location": "L84"
     },
     {
       "id": "readme_privacy",
@@ -67381,7 +67381,7 @@
       "node_kind": "heading",
       "norm_label": "privacy",
       "source_file": "README.md",
-      "source_location": "L108"
+      "source_location": "L112"
     },
     {
       "id": "readme_screenshots",
@@ -67393,7 +67393,7 @@
       "node_kind": "heading",
       "norm_label": "screenshots",
       "source_file": "README.md",
-      "source_location": "L18"
+      "source_location": "L22"
     },
     {
       "id": "readme_what_it_does",
@@ -67405,7 +67405,7 @@
       "node_kind": "heading",
       "norm_label": "what it does",
       "source_file": "README.md",
-      "source_location": "L27"
+      "source_location": "L31"
     },
     {
       "id": "readme_where_the_prices_come_from",
@@ -67417,17 +67417,17 @@
       "node_kind": "heading",
       "norm_label": "where the prices come from",
       "source_file": "README.md",
-      "source_location": "L103"
+      "source_location": "L107"
     },
     {
-      "id": "readme_\u0686\u0642\u062f\u0631_\u062a\u0648\u0645\u0646_muchtoman",
-      "label": "\u0686\u0642\u062f\u0631 \u062a\u0648\u0645\u0646 \u2014 MuchToman",
+      "id": "readme_\u0627\u0646\u062f\u06cc\u0633_andis",
+      "label": "\u0627\u0646\u062f\u06cc\u0633 \u2014 Andis",
       "_origin": "ast",
       "community": 64,
       "community_name": "Development",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "\u0686\u0642\u062f\u0631 \u062a\u0648\u0645\u0646 \u2014 muchtoman",
+      "norm_label": "\u0627\u0646\u062f\u06cc\u0633 \u2014 andis",
       "source_file": "README.md",
       "source_location": "L1"
     },
@@ -136433,7 +136433,7 @@
     },
     {
       "source": "readme",
-      "target": "readme_\u0686\u0642\u062f\u0631_\u062a\u0648\u0645\u0646_muchtoman",
+      "target": "readme_\u0627\u0646\u062f\u06cc\u0633_andis",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -136443,80 +136443,80 @@
       "weight": 1.0
     },
     {
-      "source": "readme_\u0686\u0642\u062f\u0631_\u062a\u0648\u0645\u0646_muchtoman",
+      "source": "readme_\u0627\u0646\u062f\u06cc\u0633_andis",
       "target": "readme_where_the_prices_come_from",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L103",
+      "source_location": "L107",
       "weight": 1.0
     },
     {
-      "source": "readme_\u0686\u0642\u062f\u0631_\u062a\u0648\u0645\u0646_muchtoman",
+      "source": "readme_\u0627\u0646\u062f\u06cc\u0633_andis",
       "target": "readme_privacy",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L108",
+      "source_location": "L112",
       "weight": 1.0
     },
     {
-      "source": "readme_\u0686\u0642\u062f\u0631_\u062a\u0648\u0645\u0646_muchtoman",
+      "source": "readme_\u0627\u0646\u062f\u06cc\u0633_andis",
       "target": "readme_building_it_yourself",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L125",
+      "source_location": "L129",
       "weight": 1.0
     },
     {
-      "source": "readme_\u0686\u0642\u062f\u0631_\u062a\u0648\u0645\u0646_muchtoman",
+      "source": "readme_\u0627\u0646\u062f\u06cc\u0633_andis",
       "target": "readme_screenshots",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L18",
+      "source_location": "L22",
       "weight": 1.0
     },
     {
-      "source": "readme_\u0686\u0642\u062f\u0631_\u062a\u0648\u0645\u0646_muchtoman",
+      "source": "readme_\u0627\u0646\u062f\u06cc\u0633_andis",
       "target": "readme_what_it_does",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L27",
+      "source_location": "L31",
       "weight": 1.0
     },
     {
-      "source": "readme_\u0686\u0642\u062f\u0631_\u062a\u0648\u0645\u0646_muchtoman",
+      "source": "readme_\u0627\u0646\u062f\u06cc\u0633_andis",
       "target": "readme_banks_it_reads",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L49",
+      "source_location": "L53",
       "weight": 1.0
     },
     {
-      "source": "readme_\u0686\u0642\u062f\u0631_\u062a\u0648\u0645\u0646_muchtoman",
+      "source": "readme_\u0627\u0646\u062f\u06cc\u0633_andis",
       "target": "readme_install",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L80",
+      "source_location": "L84",
       "weight": 1.0
     },
     {
@@ -167160,7 +167160,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "README.md",
-      "source_location": "L127",
+      "source_location": "L131",
       "weight": 1.0
     },
     {
@@ -181325,5 +181325,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "19daa3c6dd26a5f586b131cf8c665054ad85229f"
+  "built_at_commit": "c188c24ca035edee6b338c23b6fc7f7a107c3ef7"
 }
