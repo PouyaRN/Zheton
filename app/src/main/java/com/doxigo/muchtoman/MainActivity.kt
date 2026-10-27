@@ -1704,6 +1704,32 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    // ──────────────────────── category suggestion ────────────────────────
+
+    /** Quick-add's pre-selected category, its row and reason line, from the ledger in memory. */
+    fun suggestCategory(
+        amountRial: Long?,
+        accountId: String?,
+        at: Long = System.currentTimeMillis(),
+        merchant: String? = null,
+        note: String? = null,
+        direction: String = "out",
+    ): CategorySuggestion {
+        val s = _state.value
+        return com.doxigo.muchtoman.suggestCategory(
+            entries = s.ledger.allEntries,
+            categories = s.ledger.categories,
+            amountRial = amountRial,
+            accountId = accountId,
+            at = at,
+            merchant = merchant,
+            note = note,
+            notes = s.ledger.notes,
+            direction = direction,
+            hidden = s.hiddenCategories,
+        )
+    }
+
     // ──────────────────────── CSV export ────────────────────────
 
     /** Export ledger entries to CSV and share via Android intent. */
