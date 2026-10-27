@@ -111,6 +111,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             requestFamilySync(silent = true)
         }
         scheduleDailySnapshot(app)
+        com.doxigo.muchtoman.features.pricealerts.PriceAlertWorker.sync(app)
 
         // Reminders are local WorkManager jobs: re-plan on every cold start, because a rebuild
         // after an app update, a restore or a reboot must not leave a due date unarmed. The
@@ -200,6 +201,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     timestampMs = if (fresh.updatedAt > 0L) fresh.updatedAt else System.currentTimeMillis(),
                 )
                 _state.update { it.copy(rates = fresh) }
+                checkPriceAlerts()
             }.onFailure { e ->
                 // Keep showing the cached rates; an old number beats a blank screen. The
                 // log line is the only place the real reason survives — the UI stays Persian
@@ -210,6 +212,19 @@ class AppVm(app: Application) : AndroidViewModel(app) {
 
             _state.update { it.copy(loading = false, error = failure) }
             recordSnapshot()
+        }
+    }
+
+    /** Price alerts are checked on every successful foreground rate refresh. */
+    private fun checkPriceAlerts() {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                com.doxigo.muchtoman.features.pricealerts.PriceAlerts.check(
+                    app,
+                    effectiveRates(store.cachedRates, store.overrides, store.cachedStocks),
+                )
+            }
         }
     }
 
@@ -231,6 +246,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 changed = true
                 store.cachedStocks = fresh
                 _state.update { it.copy(tse = fresh) }
+                checkPriceAlerts()
                 android.util.Log.i("muchtoman", "tse ok: ${fresh.stocks.size} instruments")
             }.onFailure { error ->
                 android.util.Log.w("muchtoman", "tse fetch failed: $error")
