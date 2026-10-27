@@ -34,6 +34,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
+import com.doxigo.muchtoman.ui.haptics.LocalFintechHaptics
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -109,14 +110,14 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
+import com.doxigo.muchtoman.ui.components.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import com.doxigo.muchtoman.ui.components.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -224,8 +225,9 @@ internal val GroupedNumber = VisualTransformation { text ->
 internal fun Modifier.panel(): Modifier = this
     .fillMaxWidth()
     .clip(RoundedCornerShape(Radius.card))
+    // No border, no shadow: the card is separated from the page by tone alone, which is what
+    // makes Revolut's surfaces read as one calm sheet rather than a stack of outlined boxes.
     .background(MaterialTheme.colorScheme.surfaceContainer)
-    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.card))
     .padding(Space.l)
 
 @Composable
@@ -718,68 +720,30 @@ val snackbarHostState = remember { SnackbarHostState() }
         val context = androidx.compose.ui.platform.LocalContext.current
         LazyColumn(
             modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
-            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 0.dp, bottom = pad.calculateBottomPadding() + 96.dp),
+            contentPadding = PaddingValues(top = 0.dp, bottom = pad.calculateBottomPadding() + 96.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = Space.m, vertical = Space.m),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                com.doxigo.muchtoman.ui.components.PageHeader(
+                    title = "حساب‌ها",
+                    subtitle = if (state.bankAccounts.isEmpty()) "کارت‌های بانکی و موجودی لحظه‌ای"
+                    else "${fa(state.bankAccounts.size)} کارت · موجودی لحظه‌ای و شبا",
                 ) {
-                    Column(modifier = Modifier.weight(1f, fill = false)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "حساب‌ها و کارت‌های بانکی",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Black,
-                            )
-                            Spacer(Modifier.width(Space.s))
-                            Box(
-                                modifier = Modifier
-                                    .clip(CircleShape)
-                                    .background(Hero.gold.copy(alpha = 0.2f))
-                                    .padding(horizontal = 8.dp, vertical = 2.dp),
-                            ) {
-                                Text("${fa(state.bankAccounts.size)} کارت", color = Hero.gold, fontWeight = FontWeight.Bold, fontSize = 10.sp)
-                            }
-                        }
-                        Text(
-                            text = "مدیریت کارت‌های شتاب، کپی شماره شبا و موجودی لحظه‌ای",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-
-                    androidx.compose.material3.IconButton(
-                        onClick = { banks = true },
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.6f))
-                            .size(40.dp),
-                    ) {
-                        Icon(
-                            Icons.Rounded.Settings,
-                            contentDescription = "مدیریت حساب‌ها",
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(20.dp),
-                        )
+                    com.doxigo.muchtoman.ui.components.RoundIconButton("مدیریت حساب‌ها", { banks = true }) { tint ->
+                        Icon(Icons.Rounded.Settings, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
                     }
                 }
             }
 
             item {
+              Box(Modifier.padding(horizontal = Space.l)) {
                 if (state.bankAccounts.isEmpty()) {
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = Space.m),
-                        shape = RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(Radius.card),
                         color = MaterialTheme.colorScheme.surfaceContainerLow,
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                        ),
                     ) {
                         Column(
                             modifier = Modifier
@@ -844,6 +808,7 @@ val snackbarHostState = remember { SnackbarHostState() }
                         },
                     )
                 }
+              }
             }
 
             // Smart Commitments, BNPL & Sayad Checks Summary
@@ -852,6 +817,7 @@ val snackbarHostState = remember { SnackbarHostState() }
             val activeReservations = state.reservations.filter { !it.released }
             if (activeCommitments.isNotEmpty() || activeObligations.isNotEmpty() || activeReservations.isNotEmpty()) {
                 item {
+                  Box(Modifier.padding(horizontal = Space.l)) {
                     ContextualPriorityCard(
                         commitments = state.commitments,
                         obligations = state.obligations,
@@ -871,6 +837,7 @@ val snackbarHostState = remember { SnackbarHostState() }
                         },
                         privacyMode = privacyMode,
                     )
+                  }
                 }
             }
         }
@@ -928,6 +895,7 @@ val snackbarHostState = remember { SnackbarHostState() }
                     onCurrencyLensChange = { currencyLens = it },
                     privacyMode = privacyMode,
                     onTogglePrivacy = { privacyMode = !privacyMode },
+                    onQuickAdd = { showQuickAdd = true },
                 )
             }
 
@@ -1256,6 +1224,7 @@ internal fun HeroField(
     onCurrencyLensChange: (CurrencyDenominator) -> Unit = {},
     privacyMode: Boolean = false,
     onTogglePrivacy: () -> Unit = {},
+    onQuickAdd: (() -> Unit)? = null,
 ) {
     val total = state.totals.toman
 
@@ -1286,135 +1255,93 @@ internal fun HeroField(
     }
 
     HeroPanel {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                val context = LocalContext.current
-                Text(
-                    // The name turns the header into a greeting; without one the app just
-                    // says what it is.
-                    if (state.name.isNotBlank()) "سلام، ${state.name}" else "اندیس",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Hero.muted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier
-                        .weight(1f)
-                        .pointerInput(privacyMode) {
-                            detectTapGestures(
-                                onDoubleTap = {
-                                    onTogglePrivacy()
-                                    val msg = if (!privacyMode) "حالت حریم خصوصی فعال شد" else "حالت حریم خصوصی غیرفعال شد"
-                                    android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
-                                }
-                            )
-                        },
-                )
-                IconButton(onClick = onTogglePrivacy) {
-                    Icon(
-                        Icons.Rounded.Lock,
-                        contentDescription = if (privacyMode) "حالت امن (فعال)" else "حالت عادی",
-                        tint = if (privacyMode) Hero.gold else Hero.muted,
-                    )
-                }
-                IconButton(onClick = onSettings) {
-                    // Rounded, like every other icon on this field: Material's Outlined and
-                    // Rounded sets differ in corner treatment, and one gear drawn from the
-                    // other set is the sort of mismatch that reads as sloppiness without ever
-                    // being noticed. Still not filled — fill is the selected-state variant in
-                    // Material's icon language, and this marks no active state.
-                    Icon(
-                        Icons.Rounded.Settings,
-                        contentDescription = "تنظیمات",
-                        tint = Hero.muted,
-                    )
-                }
-            }
+        val context = LocalContext.current
 
-            Spacer(Modifier.height(Space.m))
-
-            var showLiquidPerspective by remember(portfolio) { mutableStateOf(!portfolio) }
-
-            val liquidCashToman = state.bankToman.toLong()
-            val upcomingObligationsToman = (state.obligations.filter { !it.archived }.sumOf { obligation ->
-                val paid = state.obligationPayments[obligation.id]?.count { it.paidDate != null } ?: 0
-                val unpaidCount = (obligation.installmentCount - paid).coerceAtLeast(0)
-                unpaidCount.toLong() * obligation.installmentRial
-            } / 10L)
-            val reservationsToman = (state.reservations.filter { !it.released }.sumOf { it.amountRial } / 10L)
-            val safeLiquidToman = (liquidCashToman - upcomingObligationsToman - reservationsToman).coerceAtLeast(0L).toDouble()
-
-            val activeTotal = if (showLiquidPerspective) safeLiquidToman else total
-            val activeUsd = usdRate?.let { if (it > 0) activeTotal / it else null }
-
-            // Perspective toggle pill
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(Radius.pill))
-                    .background(Hero.well)
-                    .padding(2.dp),
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
+        // ── Identity bar: avatar, greeting, and two quiet round controls ─────────────────────
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            val initial = state.name.trim().firstOrNull()?.toString() ?: "ا"
+            Box(
+                Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Brush.linearGradient(listOf(Hero.gold, LocalHeroPalette.current.glow)))
+                    .clickable(role = Role.Button, onClick = onSettings)
+                    .semantics { contentDescription = "تنظیمات" },
+                contentAlignment = Alignment.Center,
             ) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(Radius.pill))
-                        .background(if (!showLiquidPerspective) Hero.gold.copy(alpha = 0.28f) else Color.Transparent)
-                        .clickable { showLiquidPerspective = false }
-                        .padding(horizontal = Space.s, vertical = 3.dp),
-                ) {
-                    Text(
-                        "کل دارایی",
-                        fontSize = 12.sp,
-                        fontWeight = if (!showLiquidPerspective) FontWeight.ExtraBold else FontWeight.Medium,
-                        fontFamily = ModamFigures,
-                        color = if (!showLiquidPerspective) Hero.gold else Hero.muted,
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(Radius.pill))
-                        .background(if (showLiquidPerspective) Hero.gold.copy(alpha = 0.28f) else Color.Transparent)
-                        .clickable { showLiquidPerspective = true }
-                        .padding(horizontal = Space.s, vertical = 3.dp),
-                ) {
-                    Text(
-                        "نقدینگی آزاد",
-                        fontSize = 12.sp,
-                        fontWeight = if (showLiquidPerspective) FontWeight.ExtraBold else FontWeight.Medium,
-                        fontFamily = ModamFigures,
-                        color = if (showLiquidPerspective) Hero.gold else Hero.muted,
-                    )
-                }
+                Text(initial, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
-
-            Spacer(Modifier.height(Space.s))
-
-            // Label and dollar figure share a line
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Spacer(Modifier.width(Space.m))
+            Column(
+                Modifier
+                    .weight(1f)
+                    .pointerInput(privacyMode) {
+                        detectTapGestures(
+                            onDoubleTap = {
+                                onTogglePrivacy()
+                                val msg = if (!privacyMode) "حالت حریم خصوصی فعال شد" else "حالت حریم خصوصی غیرفعال شد"
+                                android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
+                            },
+                        )
+                    },
+            ) {
                 Text(
-                    if (showLiquidPerspective) "تنخواه آزاد نقد (پس از کسر اقساط)" else "جمع دارایی‌هات",
-                    fontSize = 14.sp,
-                    color = Hero.muted,
+                    if (state.name.isNotBlank()) "سلام، ${state.name}" else "سلام",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Hero.strong,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
                 )
-                activeUsd?.let {
-                    Text(
-                        "≈ \$${bidi(faRate(it))}",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        fontFamily = ModamFigures,
-                        color = Hero.muted,
-                        maxLines = 1,
-                        modifier = Modifier
-                            .padding(start = Space.s)
-                            .privacyBlur(privacyMode)
-                            .semantics { contentDescription = "حدود ${faRate(it)} دلار" },
-                    )
-                }
+                Text("اندیس · شخصی", fontSize = 12.sp, color = Hero.muted, maxLines = 1)
             }
+            HeroRoundButton(
+                label = if (privacyMode) "حالت امن (فعال)" else "حالت عادی",
+                active = privacyMode,
+                onClick = onTogglePrivacy,
+            ) { tint -> Icon(Icons.Rounded.Lock, null, tint = tint, modifier = Modifier.size(18.dp)) }
+            Spacer(Modifier.width(Space.s))
+            HeroRoundButton(label = "تنظیمات", onClick = onSettings) { tint ->
+                Icon(Icons.Rounded.Settings, null, tint = tint, modifier = Modifier.size(18.dp))
+            }
+        }
 
+        var showLiquidPerspective by remember(portfolio) { mutableStateOf(!portfolio) }
+
+        val liquidCashToman = state.bankToman.toLong()
+        val upcomingObligationsToman = (state.obligations.filter { !it.archived }.sumOf { obligation ->
+            val paid = state.obligationPayments[obligation.id]?.count { it.paidDate != null } ?: 0
+            val unpaidCount = (obligation.installmentCount - paid).coerceAtLeast(0)
+            unpaidCount.toLong() * obligation.installmentRial
+        } / 10L)
+        val reservationsToman = (state.reservations.filter { !it.released }.sumOf { it.amountRial } / 10L)
+        val safeLiquidToman = (liquidCashToman - upcomingObligationsToman - reservationsToman).coerceAtLeast(0L).toDouble()
+
+        val activeTotal = if (showLiquidPerspective) safeLiquidToman else total
+        val activeUsd = usdRate?.let { if (it > 0) activeTotal / it else null }
+
+        // ── The balance, centred and alone — the one thing this screen is for ───────────────
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(top = Space.xxl),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            HeroSegmented(
+                options = listOf("کل دارایی", "نقدینگی آزاد"),
+                selected = if (showLiquidPerspective) 1 else 0,
+                onSelect = { showLiquidPerspective = it == 1 },
+            )
+
+            Spacer(Modifier.height(Space.l))
+            Text(
+                if (showLiquidPerspective) "قابل خرج، پس از کسر اقساط" else "جمع دارایی‌هات",
+                fontSize = 13.sp,
+                color = Hero.muted,
+                maxLines = 1,
+            )
             Spacer(Modifier.height(Space.xs))
+
             val (heroDisplayFigure, heroDisplayUnit) = remember(activeTotal, currencyLens, state.effective) {
                 if (currencyLens == CurrencyDenominator.TOMAN) {
                     faCompact(activeTotal, 3, pad = true) to "تومان"
@@ -1423,298 +1350,348 @@ internal fun HeroField(
                 }
             }
 
-            Row(modifier = Modifier.fillMaxWidth().privacyBlur(privacyMode)) {
+            Box(Modifier.privacyBlur(privacyMode), contentAlignment = Alignment.Center) {
                 com.doxigo.muchtoman.ui.components.PersianCurrencyTicker(
                     amount = activeTotal,
                     unit = heroDisplayUnit,
-                    fontSize = 38.sp,
-                    textColor = Hero.gold,
-                    unitColor = Hero.gold.copy(alpha = 0.8f),
+                    fontSize = 42.sp,
+                    textColor = Hero.strong,
+                    unitColor = Hero.muted,
                 )
             }
 
-            if (showLiquidPerspective) {
+            activeUsd?.let {
                 Text(
-                    text = "ارزش کل دارایی‌ها: ${if (privacyMode) "••••••••" else faCompact(total)} تومان",
-                    fontSize = 12.sp,
-                    fontFamily = ModamFigures,
+                    "≈ \$${bidi(faRate(it))}",
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = Hero.muted.copy(alpha = 0.85f),
+                    fontFamily = ModamFigures,
+                    color = Hero.muted,
+                    maxLines = 1,
                     modifier = Modifier
-                        .padding(top = Space.xs)
-                        .clickable { onReport() }
-                        .semantics { contentDescription = "مشاهده جزئیات دارایی‌ها" },
+                        .padding(top = 2.dp)
+                        .privacyBlur(privacyMode)
+                        .semantics { contentDescription = "حدود ${faRate(it)} دلار" },
                 )
             }
 
             // Digits are quick to scan but easy to misread by a factor of ten. The words
-            // are the check on that.
-            // ponytail: verbal text describes activeTotal rather than totalNetWorth to prevent discrepancy when 0.
+            // are the check on that — kept, but set as a caption rather than a paragraph.
             val lensDescription = when (currencyLens) {
                 CurrencyDenominator.GOLD_18K -> "معادل $heroDisplayFigure گرم طلای ۱۸ عیار"
                 CurrencyDenominator.USD_TETHER -> "معادل $heroDisplayFigure تتر / دلار"
                 CurrencyDenominator.EMAMI_COIN -> "معادل $heroDisplayFigure تمام سکه بهار آزادی"
                 CurrencyDenominator.TOMAN -> if (activeTotal > 0.0) faWordsToman(activeTotal) else "صفر تومان"
             }
-            lensDescription?.let { words ->
-                Text(
-                    words,
-                    fontSize = 15.sp,
-                    lineHeight = 25.sp,
-                    color = Hero.strong.copy(alpha = 0.93f),
-                    modifier = Modifier.padding(top = Space.s).privacyBlur(privacyMode),
-                )
+            Text(
+                lensDescription.orEmpty(),
+                fontSize = 12.sp,
+                lineHeight = 19.sp,
+                color = Hero.muted,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .padding(top = Space.s, start = Space.l, end = Space.l)
+                    .privacyBlur(privacyMode),
+            )
+
+            // The two perspectives are only honest when the gap between them is named.
+            val illiquidToman = state.illiquidToman
+            val gapNote = when {
+                showLiquidPerspective -> "ارزش کل دارایی‌ها: ${if (privacyMode) "••••••" else faCompact(total)} تومان"
+                illiquidToman > 0.0 && !portfolio -> "${faCompact(illiquidToman)} از این رقم طلا و دارایی بلندمدته"
+                else -> null
             }
 
-            // The two perspectives are only honest when the gap between them is named: the
-            // difference is gold and long-term holdings, not money she can tap for lunch.
-            // Shown on both sides of the toggle, because either side can mislead alone.
-            val illiquidToman = state.illiquidToman
-            if (illiquidToman > 0.0 && !portfolio) {
-                Spacer(Modifier.height(Space.xs))
+            Spacer(Modifier.height(Space.m))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(Space.s, Alignment.CenterHorizontally),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                when {
+                    change != null -> ChangePill(change, onClick = onReport)
+                    else -> ReportLink(onClick = onReport)
+                }
+            }
+            gapNote?.let {
                 Text(
-                    if (showLiquidPerspective) "طلا و پس‌انداز بلندمدتت جدا حساب می‌شه"
-                    else "${faCompact(illiquidToman)} از این رقم طلا و دارایی بلندمدته، نه پول نقد",
+                    it,
                     fontSize = 12.sp,
+                    fontFamily = ModamFigures,
                     color = Hero.muted,
                     modifier = Modifier.privacyBlur(privacyMode),
                 )
             }
+        }
 
-            // Currency Lens Selector Pill Strip (Ticket 01)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = Space.m)
-                    .clip(RoundedCornerShape(Radius.pill))
-                    .background(Hero.well)
-                    .padding(2.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                CurrencyDenominator.entries.forEach { den ->
-                    val selected = den == currencyLens
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(Radius.pill))
-                            .background(if (selected) Hero.gold.copy(alpha = 0.28f) else Color.Transparent)
-                            .clickable { onCurrencyLensChange(den) }
-                            .padding(vertical = Space.xs),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = den.labelFa,
-                            fontSize = 12.sp,
-                            fontWeight = if (selected) FontWeight.ExtraBold else FontWeight.Medium,
-                            fontFamily = ModamFigures,
-                            color = if (selected) Hero.gold else Hero.muted,
-                        )
-                    }
-                }
+        // ── Round actions, Revolut's signature row ─────────────────────────────────────────
+        Spacer(Modifier.height(Space.xl))
+        Row(Modifier.fillMaxWidth()) {
+            if (onQuickAdd != null) {
+                HeroAction(
+                    label = "ثبت خرج",
+                    icon = Icons.Rounded.Add,
+                    onClick = onQuickAdd,
+                    modifier = Modifier.weight(1f),
+                )
             }
+            HeroAction(
+                label = "افزودن دارایی",
+                onClick = onAdd,
+                modifier = Modifier.weight(1f),
+            ) { CoinsGlyph(Hero.strong) }
+            HeroAction(
+                label = "گزارش",
+                onClick = onReport,
+                modifier = Modifier.weight(1f),
+            ) { BarsIcon(Hero.strong) }
+            HeroAction(
+                label = "به‌روزرسانی",
+                icon = Icons.Rounded.Refresh,
+                spinning = state.refreshing,
+                enabled = !state.refreshing,
+                onClick = onRefresh,
+                modifier = Modifier.weight(1f),
+            )
+        }
 
-            // 2-Second Financial Vital Signs: Immediate Answer to "How much did I spend today?"
-            val todayDay = remember { tehranDay(System.currentTimeMillis()) }
-            val todaySpentToman = remember(state.ledger.allEntries, todayDay) {
-                val rial = state.ledger.allEntries
-                    .filter { !it.duplicate && !it.hidden && !it.transfer && it.txn.direction == "out" && it.txn.day == todayDay }
-                    .sumOf { kotlin.math.abs(it.txn.signedRial ?: 0L) }
-                rial / 10L
-            }
+        // ── Lens: what unit the total is told in ───────────────────────────────────────────
+        Spacer(Modifier.height(Space.l))
+        HeroSegmented(
+            options = CurrencyDenominator.entries.map { it.labelFa },
+            selected = CurrencyDenominator.entries.indexOf(currencyLens),
+            onSelect = { onCurrencyLensChange(CurrencyDenominator.entries[it]) },
+            modifier = Modifier.fillMaxWidth(),
+        )
 
-            Spacer(Modifier.height(Space.s))
+        // ── Today and this month, as one card ──────────────────────────────────────────────
+        val todayDay = remember { tehranDay(System.currentTimeMillis()) }
+        val todaySpentToman = remember(state.ledger.allEntries, todayDay) {
+            val rial = state.ledger.allEntries
+                .filter { !it.duplicate && !it.hidden && !it.transfer && it.txn.direction == "out" && it.txn.day == todayDay }
+                .sumOf { kotlin.math.abs(it.txn.signedRial ?: 0L) }
+            rial / 10L
+        }
+        val band = !portfolio && state.story.month.transactions > 0
+
+        Spacer(Modifier.height(Space.l))
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(Radius.card))
+                .background(MaterialTheme.colorScheme.surfaceContainer)
+                .padding(horizontal = Space.l, vertical = Space.m),
+        ) {
             Row(
-                modifier = Modifier
+                Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.75f))
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(Radius.field))
                     .clickable(onClick = onReport)
-                    .padding(horizontal = Space.m, vertical = 7.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                    .padding(vertical = Space.xs),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(
+                            (if (todaySpentToman > 0L) Hero.warn else Hero.mint).copy(alpha = 0.14f),
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
                     Box(
-                        modifier = Modifier
-                            .size(7.dp)
+                        Modifier
+                            .size(8.dp)
                             .clip(CircleShape)
-                            .background(if (todaySpentToman > 0L) Color(0xFFFF7043) else Color(0xFF10B981))
+                            .background(if (todaySpentToman > 0L) Hero.warn else Hero.mint),
                     )
-                    Spacer(Modifier.width(Space.s))
+                }
+                Spacer(Modifier.width(Space.m))
+                Column(Modifier.weight(1f)) {
+                    Text("خرج امروز", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
-                        "خرج امروز:",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        if (todaySpentToman > 0L) "${faCompact(todaySpentToman.toDouble())} تومان" else "امروز خرجی ثبت نشده",
-                        fontSize = 13.sp,
+                        if (todaySpentToman > 0L) "${faCompact(todaySpentToman.toDouble())} تومان" else "هنوز خرجی ثبت نشده",
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = ModamFigures,
-                        color = if (todaySpentToman > 0L) MaterialTheme.colorScheme.onSurface else Color(0xFF10B981),
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.privacyBlur(privacyMode),
                     )
                 }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                if (!band) Column(horizontalAlignment = Alignment.End) {
+                    Text("این ماه", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(
-                        "خرج ماه: ${faCompact(tomanOf(state.story.month.spentRial))}",
-                        fontSize = 11.sp,
+                        faCompact(tomanOf(state.story.month.spentRial)),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold,
                         fontFamily = ModamFigures,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.privacyBlur(privacyMode),
                     )
-                    Icon(
-                        Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(16.dp),
-                    )
                 }
+                Icon(
+                    Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp),
+                )
             }
 
             // Show "available to spend" when there are active installment obligations.
             if (state.committedRial > 0) {
-                Spacer(Modifier.height(Space.s))
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                    modifier = Modifier.padding(vertical = Space.s),
+                )
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "قابل خرج:",
-                        fontSize = 13.sp,
-                        color = Hero.muted,
-                    )
-                    Spacer(Modifier.width(Space.xs))
+                    Text("قابل خرج", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
                     Text(
                         "${faNumber(state.availableToman)} تومان",
                         fontSize = 14.sp,
                         fontFamily = ModamFigures,
                         fontWeight = FontWeight.SemiBold,
-                        color = Hero.strong,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
-                // Warn when available balance is low relative to the bank balance.
                 if (state.bankToman > 0 && state.availableToman < state.bankToman * 0.2) {
-                    Spacer(Modifier.height(Space.xs))
                     Text(
                         "موجودی قابل خرج کمتر از ۲۰٪ کل موجودی است",
                         fontSize = 11.sp,
-                        color = Color(0xFFFFB74D),
+                        color = warningColor(),
+                        modifier = Modifier.padding(top = Space.xs),
                     )
                 }
             }
 
-            // The month band is خانه's door to the report, so the field only needs a standalone
-            // link when there is no band — a first month with nothing recorded in it yet.
-            val band = !portfolio && state.story.month.transactions > 0
-            when {
-                change != null -> {
-                    Spacer(Modifier.height(Space.m))
-                    ChangePill(change, onClick = onReport)
-                }
-                // Before there are thirty days to compare against, the pill has nothing it can
-                // honestly state. A door that only appears in the second month is a door nobody
-                // finds, so the slot keeps its target and drops the figure.
-                // No spacer: the link's own 48dp target already carries more air than the pill
-                // needs, and stacked they left a hole under the total.
-                !portfolio && !band -> ReportLink(onClick = onReport)
-            }
-
-            if (portfolio) {
-                // Kept whole on دارایی, where all three verbs are real: اضافه کردن adds,
-                // گزارش is this screen's only way into the report, and تازه کردن is the
-                // labelled refresh. On خانه every one of them was navigation wearing a verb's
-                // icon — «اضافه کردن» went to this very screen, and the tab bar was already
-                // going there — so there the band carries the month instead.
-                Spacer(Modifier.height(Space.xl))
-                Row(Modifier.fillMaxWidth()) {
-                    HeroAction(
-                        label = "اضافه کردن",
-                        icon = Icons.Rounded.Add,
-                        onClick = onAdd,
-                        modifier = Modifier.weight(1f),
-                    )
-                    HeroAction(
-                        label = "گزارش",
-                        onClick = onReport,
-                        modifier = Modifier.weight(1f),
-                    ) { BarsIcon(Hero.strong) }
-                    HeroAction(
-                        label = "تازه کردن",
-                        icon = Icons.Rounded.Refresh,
-                        spinning = state.refreshing,
-                        enabled = !state.refreshing,
-                        onClick = onRefresh,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            } else if (band) {
-                // What she has, and how the month is going, in one screen without scrolling.
-                // This used to sit in a card below the fold, which meant the answer the home
-                // screen exists to give arrived only if she thought to scroll for it.
-                Spacer(Modifier.height(Space.l))
-                HorizontalDivider(color = Hero.hairline)
-                Spacer(Modifier.height(Space.l))
+            if (band) {
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                    modifier = Modifier.padding(top = Space.s, bottom = Space.m),
+                )
                 HeroMonth(state.story, onOpen = onReport)
+                Spacer(Modifier.height(Space.xs))
             }
+        }
 
-            Spacer(Modifier.height(if (portfolio) Space.xl else Space.l))
-            HorizontalDivider(color = Hero.hairline)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                // The control carries its own optical space, so the strip does not need the
-                // full step above it when one is there.
-                modifier = Modifier.padding(top = if (portfolio) Space.m else Space.xs),
+        // ── How fresh the numbers are ──────────────────────────────────────────────────────
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = Space.m),
+        ) {
+            val failed = state.error != null && state.rates.updatedAt == 0L
+            // Colour confirms; the words carry it.
+            Box(
+                Modifier
+                    .size(6.dp)
+                    .clip(CircleShape)
+                    .background(if (failed || stale) Hero.warn else Hero.mint),
+            )
+            Spacer(Modifier.width(Space.s))
+            Text(
+                when {
+                    failed -> "نرخ‌ها به‌روز نشدن. اینترنتت رو چک کن"
+                    stale -> "نرخ‌ها قدیمی‌ان؛ " + faAgo(state.rates.updatedAt, now)
+                    else -> "نرخ‌ها: " + faAgo(state.rates.updatedAt, now)
+                },
+                fontSize = 12.sp,
+                color = if (stale || failed) Hero.warn else Hero.muted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (state.error != null && state.rates.updatedAt > 0L) {
+            Text(
+                "اتصال نشد. نرخ‌های قبلی نشون داده می‌شن.",
+                fontSize = 12.sp,
+                color = Hero.muted,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = Space.xs),
+            )
+        }
+    }
+}
+
+/** A 40dp round control on the hero: the avatar's neighbours. Filled with accent when on. */
+@Composable
+private fun HeroRoundButton(
+    label: String,
+    onClick: () -> Unit,
+    active: Boolean = false,
+    icon: @Composable (Color) -> Unit,
+) {
+    Box(
+        Modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(if (active) Hero.gold else Hero.well)
+            .clickable(role = Role.Button, onClick = onClick)
+            .semantics { contentDescription = label },
+        contentAlignment = Alignment.Center,
+    ) { icon(if (active) Color.White else Hero.strong) }
+}
+
+/**
+ * A capsule switch on the hero. The chosen option is inverted — ink on paper, paper on ink —
+ * which is how Revolut marks a selection: by contrast, never by a second accent colour.
+ */
+@Composable
+private fun HeroSegmented(
+    options: List<String>,
+    selected: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val haptics = LocalFintechHaptics.current
+    Row(
+        modifier
+            .clip(RoundedCornerShape(Radius.pill))
+            .background(Hero.well)
+            .padding(3.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        options.forEachIndexed { i, label ->
+            val on = i == selected
+            val bg by animateColorAsState(if (on) Hero.strong else Color.Transparent, tween(Motion.fast), label = "seg")
+            Box(
+                Modifier
+                    .then(if (modifier == Modifier) Modifier else Modifier.weight(1f))
+                    .clip(RoundedCornerShape(Radius.pill))
+                    .background(bg)
+                    .clickable(role = Role.Tab) {
+                        if (!on) {
+                            haptics.click()
+                            onSelect(i)
+                        }
+                    }
+                    .padding(horizontal = Space.m, vertical = 7.dp),
+                contentAlignment = Alignment.Center,
             ) {
-                val failed = state.error != null && state.rates.updatedAt == 0L
-                // Colour confirms; the words carry it. A dot on its own would be the one
-                // thing in this app that says "something is wrong" in hue alone.
-                Box(
-                    Modifier
-                        .size(7.dp)
-                        .clip(CircleShape)
-                        .background(
-                            when {
-                                failed -> Hero.warn
-                                stale -> Hero.warn
-                                else -> Hero.mint
-                            },
-                        ),
-                )
-                Spacer(Modifier.width(Space.s))
                 Text(
-                    when {
-                        failed -> "نرخ‌ها به‌روز نشدن. اینترنتت رو چک کن"
-                        stale -> "نرخ‌ها قدیمی‌ان؛ " + faAgo(state.rates.updatedAt, now)
-                        else -> "نرخ‌ها: " + faAgo(state.rates.updatedAt, now)
-                    },
-                    fontSize = 13.sp,
-                    // Not gold: inside this field gold is the answer and the action, and a
-                    // warning wearing it read as a second call to act.
-                    color = if (stale || failed) Hero.warn else Hero.muted,
-                    modifier = Modifier.weight(1f),
-                )
-                // The circle that used to carry this is gone from خانه, and the strip is where
-                // it belonged all along: this line is about how fresh the numbers are, and the
-                // control that changes that answer now sits at the end of the sentence stating
-                // it. Labelled, not a bare glyph — a control you can be told about over the
-                // phone has to have a name.
-                if (!portfolio) {
-                    HeroRefresh(
-                        spinning = state.refreshing,
-                        onClick = onRefresh,
-                    )
-                }
-            }
-            if (state.error != null && state.rates.updatedAt > 0L) {
-                Text(
-                    "اتصال نشد. نرخ‌های قبلی نشون داده می‌شن.",
+                    label,
                     fontSize = 12.sp,
-                    lineHeight = 19.sp,
-                    color = Hero.muted,
-                    modifier = Modifier.padding(top = Space.xs),
+                    fontWeight = if (on) FontWeight.Bold else FontWeight.Medium,
+                    color = if (on) Hero.bottom else Hero.muted,
+                    maxLines = 1,
                 )
             }
+        }
+    }
+}
+
+/** Two stacked coins, for «افزودن دارایی»: the same drawing as the market tab's glyph. */
+@Composable
+private fun CoinsGlyph(tint: Color) {
+    Canvas(Modifier.size(22.dp)) {
+        val r = size.minDimension * 0.27f
+        val stroke = androidx.compose.ui.graphics.drawscope.Stroke(width = 2.dp.toPx())
+        drawCircle(tint, r, Offset(size.width * 0.66f, size.height * 0.36f), style = stroke)
+        drawCircle(tint, r, Offset(size.width * 0.36f, size.height * 0.64f), style = stroke)
     }
 }
 
@@ -1791,21 +1768,26 @@ private fun HeroRefresh(spinning: Boolean, onClick: () -> Unit) {
 private fun ReportLink(onClick: () -> Unit) {
     Row(
         Modifier
-            .clip(RoundedCornerShape(Radius.pill))
-            .clickable(role = Role.Button, onClick = onClick)
             .heightIn(min = 48.dp)
-            .padding(end = Space.m),
+            .clip(RoundedCornerShape(Radius.pill))
+            .clickable(role = Role.Button, onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Weighted like the pill's own tail, which is what it stands in for. At `strong` and
-        // SemiBold it read as a heading — the loudest line under a total it is subordinate to.
-        Text("گزارش دارایی", fontSize = 13.sp, color = Hero.muted)
-        Icon(
-            Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-            contentDescription = null,
-            tint = Hero.muted,
-            modifier = Modifier.size(18.dp),
-        )
+        Row(
+            Modifier
+                .clip(RoundedCornerShape(Radius.pill))
+                .background(Hero.well)
+                .padding(start = Space.l, end = Space.m, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("گزارش دارایی", fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = Hero.strong)
+            Icon(
+                Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = null,
+                tint = Hero.muted,
+                modifier = Modifier.size(18.dp),
+            )
+        }
     }
 }
 
@@ -1874,7 +1856,7 @@ private fun HeroAction(
         Box(contentAlignment = Alignment.TopEnd) {
             Box(
                 Modifier
-                    .size(54.dp)
+                    .size(52.dp)
                     .clip(CircleShape)
                     .background(Hero.well),
                 contentAlignment = Alignment.Center,
@@ -1918,8 +1900,8 @@ private fun HeroAction(
         Text(
             label,
             fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            color = Hero.muted,
+            fontWeight = FontWeight.SemiBold,
+            color = Hero.strong,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
@@ -1996,14 +1978,13 @@ private fun ChangePill(change: Change, onClick: () -> Unit) {
             .clickable(role = Role.Button, onClick = onClick)
             // The pill is 32dp tall on purpose — it must not compete with the action circles
             // below it — so the row around it carries the touch target.
-            .heightIn(min = 48.dp)
-            .padding(end = Space.m),
+            .heightIn(min = 48.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
             Modifier
                 .clip(RoundedCornerShape(Radius.pill))
-                .background(tone.copy(alpha = 0.18f))
+                .background(tone.copy(alpha = 0.16f))
                 .padding(horizontal = Space.m, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -2983,21 +2964,22 @@ internal fun <T> SegmentedChoice(
             .fillMaxWidth()
             .clip(RoundedCornerShape(Radius.pill))
             .background(MaterialTheme.colorScheme.surfaceContainer)
-            .padding(Space.xs)
+            .padding(3.dp)
             .selectableGroup(),
     ) {
         options.forEach { option ->
             val active = option == selected
             val usable = enabled(option)
             val animatedBg by animateColorAsState(
-                targetValue = if (active) MaterialTheme.colorScheme.primary else Color.Transparent,
+                // Inverted, not accent-filled: the same selection language as every switch in the app.
+                targetValue = if (active) MaterialTheme.colorScheme.onSurface else Color.Transparent,
                 animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
                 label = "segment_bg",
             )
             val animatedTextColor by animateColorAsState(
                 targetValue = when {
-                    active -> MaterialTheme.colorScheme.onPrimary
-                    usable -> MaterialTheme.colorScheme.onSurface
+                    active -> MaterialTheme.colorScheme.surface
+                    usable -> MaterialTheme.colorScheme.onSurfaceVariant
                     else -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                 },
                 animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
@@ -3014,12 +2996,12 @@ internal fun <T> SegmentedChoice(
                         role = role,
                         onClick = { onSelect(option) },
                     )
-                    .heightIn(min = 48.dp),
+                    .heightIn(min = 42.dp),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     label(option),
-                    fontSize = fontSize,
+                    fontSize = fontSize.value.coerceAtMost(14f).sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,

@@ -59,13 +59,13 @@ object CardDefaults {
         return when (variant) {
             CardVariant.Default -> CardColorValues(
                 background = themeColors.surface,
-                border = themeColors.border,
+                border = Color.Transparent,
                 elevation = 0.dp
             )
             CardVariant.Elevated -> CardColorValues(
-                background = themeColors.surfaceElevated,
-                border = themeColors.border.copy(alpha = 0.6f),
-                elevation = 2.dp
+                background = themeColors.surface,
+                border = Color.Transparent,
+                elevation = 0.dp
             )
             CardVariant.Ghost -> CardColorValues(
                 background = Color.Transparent,

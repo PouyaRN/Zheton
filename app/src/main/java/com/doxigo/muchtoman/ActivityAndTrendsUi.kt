@@ -70,66 +70,15 @@ fun UnifiedActivityAndTrendsScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Top Obsidian Segmented Switcher Pill
-        Box(
+        com.doxigo.muchtoman.ui.components.PageHeader(title = "دفتر")
+        com.doxigo.muchtoman.ui.components.SegmentedPill(
+            options = listOf("تراکنش‌ها", "تحلیل و بودجه"),
+            selected = pagerState.currentPage,
+            onSelect = { index -> scope.launch { pagerState.animateScrollToPage(index) } },
             modifier = Modifier
                 .fillMaxWidth()
-                .statusBarsPadding()
-                .padding(horizontal = Space.m, vertical = Space.xs),
-            contentAlignment = Alignment.Center,
-        ) {
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(24.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(24.dp))
-                    .padding(3.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                val pages = listOf("ریزتراکنش‌ها", "دیده‌بان و بودجه")
-                pages.forEachIndexed { index, title ->
-                    val isSelected = pagerState.currentPage == index
-                    val bgCol by animateColorAsState(
-                        targetValue = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f) else Color.Transparent,
-                        animationSpec = spring(stiffness = Spring.StiffnessMedium),
-                        label = "pill_bg_$index"
-                    )
-                    val textCol by animateColorAsState(
-                        targetValue = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        animationSpec = spring(stiffness = Spring.StiffnessMedium),
-                        label = "pill_text_$index"
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(bgCol)
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                            ) {
-                                if (!isSelected) {
-                                    fintechHaptics.click()
-                                    scope.launch {
-                                        pagerState.animateScrollToPage(index)
-                                    }
-                                }
-                            }
-                            .padding(horizontal = 16.dp, vertical = 6.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = title,
-                            fontSize = 13.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            fontFamily = ModamFigures,
-                            color = textCol,
-                        )
-                    }
-                }
-            }
-        }
+                .padding(horizontal = Space.xl, vertical = Space.xs),
+        )
 
         // Horizontal Pager hosting both views
         HorizontalPager(

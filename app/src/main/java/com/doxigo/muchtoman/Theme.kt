@@ -89,11 +89,13 @@ val ModamFigures = FontFamily(
 )
 
 /**
- * Tabular figures. Modam's default digits are proportional, so an unchanged ۱ next to a
- * changed ۸ shifts the whole number sideways every time a rate lands — visible as a twitch on
- * the one line she is watching. `tnum` pins every digit to the same advance.
+ * Figure settings for every amount in the app. This used to be `tnum`, and Modam's tabular
+ * Persian digits pad a ۱ out to the width of an ۸ — so «۱۲۵ هزار» set as «۱ ۲ ۵ هزار», with a
+ * visible hole beside every one. That looked like broken type everywhere money appeared. The
+ * twitch tabular figures prevented only matters on a figure that animates, and the one figure
+ * that does — the hero total — eases each slot's width itself (see PersianCurrencyTicker).
  */
-const val TABULAR = "tnum"
+const val TABULAR = "pnum"
 
 /** The hero total and any figure that stands on its own. */
 fun figureStyle(color: Color, weight: FontWeight = FontWeight.ExtraBold) = TextStyle(
@@ -131,6 +133,8 @@ data class HeroPalette(
     val warn: Color = Color(0xFFFFB4A6),
     val well: Color = Color(0x1AFFFFFF),
     val hairline: Color = Color(0x1FFFFFFF),
+    /** The second light behind the total; the first is [gold]. Revolut's signature two-tone aura. */
+    val glow: Color = gold,
 )
 
 val LocalHeroPalette = staticCompositionLocalOf {
@@ -209,20 +213,20 @@ fun getThemeVisualSpec(mode: ThemeMode): ThemeVisualSpec = when (mode) {
     ThemeMode.SYSTEM -> ThemeVisualSpec(
         mode = mode,
         isDark = false,
-        bgPreview = Color(0xFF14181D),
-        surfacePreview = Color(0xFF1E293B),
-        accentPreview = Color(0xFF38BDF8),
-        heroTopPreview = Color(0xFF0F1622),
-        heroBottomPreview = Color(0xFF070A0F),
+        bgPreview = Rev.graphite,
+        surfacePreview = Rev.graphiteHigh,
+        accentPreview = Rev.blueNight,
+        heroTopPreview = Rev.graphite,
+        heroBottomPreview = Rev.night,
     )
     ThemeMode.LIGHT -> ThemeVisualSpec(
         mode = mode,
         isDark = false,
-        bgPreview = Color(0xFFF8FAFC),
+        bgPreview = Rev.paper,
         surfacePreview = Color.White,
-        accentPreview = Color(0xFF92400E),
-        heroTopPreview = Color(0xFFF8FAFC),
-        heroBottomPreview = Color(0xFFEDF2F7),
+        accentPreview = Rev.blue,
+        heroTopPreview = Rev.paper,
+        heroBottomPreview = Rev.paper,
     )
     ThemeMode.APPLE_SILVER -> ThemeVisualSpec(
         mode = mode,
@@ -272,11 +276,11 @@ fun getThemeVisualSpec(mode: ThemeMode): ThemeVisualSpec = when (mode) {
     ThemeMode.ANDIS_TERMINAL, ThemeMode.DARK -> ThemeVisualSpec(
         mode = mode,
         isDark = true,
-        bgPreview = Color(0xFF070A0F),
-        surfacePreview = Color(0xFF0F1622),
-        accentPreview = Color(0xFF38BDF8),
-        heroTopPreview = Color(0xFF0F1622),
-        heroBottomPreview = Color(0xFF070A0F),
+        bgPreview = Rev.night,
+        surfacePreview = Rev.graphite,
+        accentPreview = Rev.blueNight,
+        heroTopPreview = Rev.graphite,
+        heroBottomPreview = Rev.night,
     )
     ThemeMode.AMOLED -> ThemeVisualSpec(
         mode = mode,
@@ -299,11 +303,11 @@ fun getThemeVisualSpec(mode: ThemeMode): ThemeVisualSpec = when (mode) {
     ThemeMode.REVOLUT_OBSIDIAN -> ThemeVisualSpec(
         mode = mode,
         isDark = true,
-        bgPreview = Color(0xFF0E1114),
-        surfacePreview = Color(0xFF14181D),
-        accentPreview = Color(0xFF0A84FF),
-        heroTopPreview = Color(0xFF14181D),
-        heroBottomPreview = Color(0xFF0E1114),
+        bgPreview = Rev.night,
+        surfacePreview = Rev.graphite,
+        accentPreview = Color(0xFF9B85FF),
+        heroTopPreview = Rev.graphite,
+        heroBottomPreview = Rev.night,
     )
     ThemeMode.CASH_APP_NEON -> ThemeVisualSpec(
         mode = mode,
@@ -384,15 +388,15 @@ object Space {
 object Radius {
     /** Fully round. Pills, chips, action circles. */
     val pill = 999.dp
-    val field = 10.dp
-    val card = 12.dp
+    val field = 14.dp
+    val card = 22.dp
 
     /** The container a band of rows sits in, as one object rather than a stack of cards. */
-    val group = 14.dp
+    val group = 22.dp
 
-    /** Only the two bottom corners; the field runs off the top of the screen. */
-    val hero = 16.dp
-    val sheet = 18.dp
+    /** The field melts into the page now, so it has no corners of its own. */
+    val hero = 0.dp
+    val sheet = 28.dp
 }
 
 /**
@@ -402,9 +406,9 @@ object AndisRadius {
     val sharp = 0.dp
     val xs = 4.dp
     val sm = 8.dp
-    val md = 12.dp
-    val card = 16.dp
-    val cardElevated = 20.dp
+    val md = 14.dp
+    val card = 22.dp
+    val cardElevated = 24.dp
     val pill = 999.dp
 }
 
@@ -570,89 +574,110 @@ object Motion {
 }
 
 /**
+ * The Revolut-grade base palette the default themes are built from. Kept as named stones so the
+ * hero glow, the tab bar and the cards all pull from one place instead of six near-identical hexes.
+ */
+object Rev {
+    val blue = Color(0xFF0666EB)
+    val blueNight = Color(0xFF4C8DFF)
+    val violet = Color(0xFF7B5CFF)
+    val ink = Color(0xFF16171C)
+    val paper = Color(0xFFF2F3F7)
+    val night = Color(0xFF000000)
+    val graphite = Color(0xFF16161A)
+    val graphiteHigh = Color(0xFF212127)
+}
+
+/**
  * Every role is set on purpose. Leaving the container roles unset is what makes an app look
  * unfinished: Material's default baseline is violet, so dialogs, sheets and text fields come
  * out mauve no matter how carefully `primary` was chosen.
  */
 private val LightColors = lightColorScheme(
-    primary = Color(0xFF0F172A),            // Slate 900 — prestigious authoritative dark slate
+    // Revolut's day palette: one confident blue, near-black ink, and a cool grey page that lets
+    // white cards float without needing a single border or shadow to separate them.
+    primary = Rev.blue,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFE2E8F0),   // Slate 200
-    onPrimaryContainer = Color(0xFF0F172A),
+    primaryContainer = Color(0xFFE6EFFE),
+    onPrimaryContainer = Color(0xFF0A3E8F),
 
-    secondary = Color(0xFF92400E),          // Amber 600 — classic warm gold
+    secondary = Rev.ink,
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFFEF3C7), // Amber 100
-    onSecondaryContainer = Color(0xFF78350F),
+    secondaryContainer = Color(0xFFEDEEF2),
+    onSecondaryContainer = Rev.ink,
 
     // Gain, and only gain.
-    tertiary = Color(0xFF047857),
+    tertiary = Color(0xFF007A5B),
     onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFA7F3D0),
-    onTertiaryContainer = Color(0xFF064E3B),
+    tertiaryContainer = Color(0xFFD7F5EC),
+    onTertiaryContainer = Color(0xFF00513D),
 
-    background = Color(0xFFF8FAFC),         // Slate 50 — clean modern light canvas
-    onBackground = Color(0xFF0F172A),
+    background = Rev.paper,
+    onBackground = Rev.ink,
 
     surface = Color.White,
-    onSurface = Color(0xFF0F172A),
-    surfaceVariant = Color(0xFFF1F5F9),     // Slate 100
-    onSurfaceVariant = Color(0xFF64748B),   // Slate 500 — clean neutral secondary text, no green tint
+    onSurface = Rev.ink,
+    surfaceVariant = Color(0xFFEFF0F4),
+    onSurfaceVariant = Color(0xFF6A6D7A),
 
     surfaceContainerLowest = Color.White,
-    surfaceContainerLow = Color(0xFFF8FAFC),
-    surfaceContainer = Color(0xFFF1F5F9),
+    surfaceContainerLow = Color(0xFFF7F7FA),
+    surfaceContainer = Color.White,
     surfaceContainerHigh = Color.White,     // dialogs and sheets
-    surfaceContainerHighest = Color(0xFFE2E8F0),
+    surfaceContainerHighest = Color(0xFFE9EAEF),
 
-    outline = Color(0xFFCBD5E1),            // Slate 300
-    outlineVariant = Color(0xFFE2E8F0),     // Slate 200
+    outline = Color(0xFFDCDDE3),
+    outlineVariant = Color(0xFFE9EAEF),
 
-    error = Color(0xFFDC2626),
+    error = Color(0xFFC8262C),
     onError = Color.White,
-    errorContainer = Color(0xFFFEE2E2),
-    onErrorContainer = Color(0xFF7F1D1D),
+    errorContainer = Color(0xFFFDECEC),
+    onErrorContainer = Color(0xFF7A1418),
     scrim = Color(0xFF000000),
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFF38BDF8),            // Electric cyan / refined blue
-    onPrimary = VanguardTokens.Canvas,
-    primaryContainer = VanguardTokens.Surface,
-    onPrimaryContainer = Color(0xFF38BDF8),
+    // Revolut's night palette: true-black page, graphite cards a step above it, and the blue
+    // lifted just enough to hold 4.5:1 on graphite.
+    primary = Rev.blueNight,
+    // Ink on the blue, not white: no blue is both bright enough to read as text on graphite
+    // and dark enough to carry white type at 4.5:1, and text-on-card is the far commoner use.
+    onPrimary = Rev.night,
+    primaryContainer = Color(0xFF13264A),
+    onPrimaryContainer = Color(0xFFBBD3FF),
 
-    secondary = Color(0xFFF8FAFC),
-    onSecondary = VanguardTokens.Canvas,
-    secondaryContainer = VanguardTokens.SurfaceElevated,
-    onSecondaryContainer = Color(0xFFF8FAFC),
+    secondary = Color(0xFFF5F5F7),
+    onSecondary = Rev.night,
+    secondaryContainer = Rev.graphiteHigh,
+    onSecondaryContainer = Color(0xFFF5F5F7),
 
-    // Gain stays emerald green
-    tertiary = Color(0xFF10B981),
-    onTertiary = VanguardTokens.Canvas,
-    tertiaryContainer = VanguardTokens.Surface,
-    onTertiaryContainer = Color(0xFF10B981),
+    // Gain stays green
+    tertiary = Color(0xFF2FD3A3),
+    onTertiary = Rev.night,
+    tertiaryContainer = Color(0xFF0E2A22),
+    onTertiaryContainer = Color(0xFF2FD3A3),
 
-    background = VanguardTokens.Canvas,
-    onBackground = VanguardTokens.TextPrimary,
+    background = Rev.night,
+    onBackground = Color(0xFFF5F5F7),
 
-    surface = VanguardTokens.Surface,
-    onSurface = VanguardTokens.TextPrimary,
-    surfaceVariant = VanguardTokens.SurfaceElevated,
-    onSurfaceVariant = VanguardTokens.TextSecondary,
+    surface = Rev.graphite,
+    onSurface = Color(0xFFF5F5F7),
+    surfaceVariant = Rev.graphiteHigh,
+    onSurfaceVariant = Color(0xFF8E8F99),
 
-    surfaceContainerLowest = VanguardTokens.Canvas,
-    surfaceContainerLow = Color(0xFF0E1114),
-    surfaceContainer = VanguardTokens.Surface,
-    surfaceContainerHigh = VanguardTokens.SurfaceElevated,
-    surfaceContainerHighest = VanguardTokens.BorderHairline,
+    surfaceContainerLowest = Rev.night,
+    surfaceContainerLow = Color(0xFF111114),
+    surfaceContainer = Rev.graphite,
+    surfaceContainerHigh = Color(0xFF1C1C21),
+    surfaceContainerHighest = Color(0xFF2A2A31),
 
-    outline = VanguardTokens.BorderHairline,
-    outlineVariant = VanguardTokens.BorderStrong,
+    outline = Color(0xFF2E2E36),
+    outlineVariant = Color(0xFF24242A),
 
-    error = Color(0xFFF43F5E),
-    onError = VanguardTokens.Canvas,
-    errorContainer = Color(0xFF2A0F17),
-    onErrorContainer = Color(0xFFFDA4AF),
+    error = Color(0xFFFF5C61),
+    onError = Rev.night,
+    errorContainer = Color(0xFF3A1517),
+    onErrorContainer = Color(0xFFFFB3B5),
     scrim = Color(0xFF000000),
 )
 
@@ -1241,7 +1266,7 @@ fun isLightPage(): Boolean = MaterialTheme.colorScheme.background.luminance() > 
 
 /** Income/positive money: deep green on paper, mint on ink. */
 @Composable
-fun incomeColor(): Color = if (isLightPage()) Color(0xFF167A44) else Color(0xFF5BE39A)
+fun incomeColor(): Color = if (isLightPage()) Color(0xFF00875F) else Color(0xFF2FD3A3)
 
 /** Amber warning (a cap approaching its limit): dark ochre on paper, warm amber on ink. */
 @Composable
@@ -1259,7 +1284,7 @@ fun getColorScheme(mode: ThemeMode, systemDark: Boolean = false): androidx.compo
     ThemeMode.AMOLED -> AmoledDarkColors
     ThemeMode.APPLE_TITANIUM -> AppleTitaniumColors
     ThemeMode.APPLE_SILVER -> AppleSilverColors
-    ThemeMode.REVOLUT_OBSIDIAN -> RevolutObsidianColors
+    ThemeMode.REVOLUT_OBSIDIAN -> DarkColors
     ThemeMode.NORDIC_FROST -> NordicFrostColors
     ThemeMode.CHAMPAGNE_GOLD -> ChampagneGoldColors
     ThemeMode.PERSIAN_MINT -> PersianMintColors
@@ -1290,7 +1315,7 @@ fun getAndisColors(colorScheme: androidx.compose.material3.ColorScheme, isDark: 
             disabled = colorScheme.onSurface.copy(alpha = 0.38f),
             accentCyan = heroPalette.gold,
             accentLime = heroPalette.gold,
-            emerald = Color(0xFF10B981),
+            emerald = colorScheme.tertiary,
             danger = colorScheme.error,
             warning = Color(0xFFF59E0B),
             ghostLed = Color(0x18F8FAFC),
@@ -1312,7 +1337,7 @@ fun getAndisColors(colorScheme: androidx.compose.material3.ColorScheme, isDark: 
             disabled = colorScheme.onSurface.copy(alpha = 0.38f),
             accentCyan = heroPalette.gold,
             accentLime = heroPalette.gold,
-            emerald = Color(0xFF10B981),
+            emerald = colorScheme.tertiary,
             danger = colorScheme.error,
             warning = Color(0xFFF59E0B),
             ghostLed = Color(0x0A000000),
@@ -1323,51 +1348,56 @@ fun getAndisColors(colorScheme: androidx.compose.material3.ColorScheme, isDark: 
 fun getHeroPalette(mode: ThemeMode, systemDark: Boolean = false): HeroPalette = when (mode) {
     ThemeMode.SYSTEM -> if (systemDark) {
         HeroPalette(
-            top = Color(0xFF060708),
-            bottom = Color(0xFF0A0D0F),
-            gold = Color(0xFFD4FF00),
-            muted = Color(0xFFA0A7AB),
-            strong = Color(0xFFF3F4F4),
-            mint = Color(0xFFD4FF00),
-            warn = Color(0xFFFF4D4D),
-            well = Color(0xFF0E1214),
-            hairline = Color(0xFF1C2327),
-        )
+        top = Rev.night,
+        bottom = Rev.night,
+        gold = Rev.blueNight,
+        muted = Color(0xFF9A9BA5),
+        strong = Color(0xFFFFFFFF),
+        mint = Color(0xFF2FD3A3),
+        warn = Color(0xFFFF6B6F),
+        well = Color(0xFF1E1E24),
+        hairline = Color(0x1AFFFFFF),
+        glow = Rev.violet,
+    )
     } else {
         HeroPalette(
-            top = Color(0xFFF8FAFC),
-            bottom = Color(0xFFEDF2F7),
-            gold = Color(0xFFB45309),
-            muted = Color(0xFF64748B),
-            strong = Color(0xFF0F172A),
-            mint = Color(0xFF047857),
-            warn = Color(0xFFB91C1C),
-            well = Color(0x140F172A),
-            hairline = Color(0x1A0F172A),
-        )
+        top = Rev.paper,
+        bottom = Rev.paper,
+        gold = Rev.blue,
+        muted = Color(0xFF6A6D7A),
+        strong = Rev.ink,
+        mint = Color(0xFF007A5B),
+        warn = Color(0xFFC8262C),
+        well = Color.White,
+        hairline = Color(0x1416171C),
+        glow = Rev.violet,
+    )
     }
     ThemeMode.ANDIS_TERMINAL,
-    ThemeMode.DARK -> HeroPalette(
-        top = Color(0xFF0F1622),
-        bottom = Color(0xFF070A0F),
-        gold = Color(0xFF38BDF8),
-        muted = Color(0xFF94A3B8),
-        strong = Color(0xFFF8FAFC),
-        mint = Color(0xFF10B981),
-        warn = Color(0xFFF43F5E),
-        well = Color(0xFF162030),
-        hairline = Color(0xFF1E293B),
+    ThemeMode.DARK,
+    ThemeMode.REVOLUT_OBSIDIAN -> HeroPalette(
+        top = Rev.night,
+        bottom = Rev.night,
+        gold = Rev.blueNight,
+        muted = Color(0xFF9A9BA5),
+        strong = Color(0xFFFFFFFF),
+        mint = Color(0xFF2FD3A3),
+        warn = Color(0xFFFF6B6F),
+        well = Color(0xFF1E1E24),
+        hairline = Color(0x1AFFFFFF),
+        glow = Rev.violet,
     )
     ThemeMode.LIGHT -> HeroPalette(
-        top = Color(0xFFF8FAFC),
-        bottom = Color(0xFFEDF2F7),
-        gold = Color(0xFFB45309),
-        muted = Color(0xFF64748B),
-        strong = Color(0xFF0F172A),
-        mint = Color(0xFF047857),
-        warn = Color(0xFFB91C1C),
-        well = Color(0x140F172A),
-        hairline = Color(0x1A0F172A),
+        top = Rev.paper,
+        bottom = Rev.paper,
+        gold = Rev.blue,
+        muted = Color(0xFF6A6D7A),
+        strong = Rev.ink,
+        mint = Color(0xFF007A5B),
+        warn = Color(0xFFC8262C),
+        well = Color.White,
+        hairline = Color(0x1416171C),
+        glow = Rev.violet,
     )
     ThemeMode.APPLE_SILVER -> HeroPalette(
         top = Color(0xFFE8EEF5),
@@ -1478,17 +1508,6 @@ fun getHeroPalette(mode: ThemeMode, systemDark: Boolean = false): HeroPalette = 
         well = Color(0x18FFFFFF),
         hairline = Color(0x28FFFFFF),
     )
-    ThemeMode.REVOLUT_OBSIDIAN -> HeroPalette(
-        top = Color(0xFF14181D),
-        bottom = Color(0xFF0E1114),
-        gold = Color(0xFF0A84FF),
-        muted = Color(0xFF94A3B8),
-        strong = Color(0xFFF8FAFC),
-        mint = Color(0xFF10B981),
-        warn = Color(0xFFF43F5E),
-        well = Color(0x1F0075FF),
-        hairline = Color(0x330075FF),
-    )
     ThemeMode.CASH_APP_NEON -> HeroPalette(
         top = Color(0xFF121212),
         bottom = Color(0xFF000000),
@@ -1580,7 +1599,7 @@ fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -
         onMuted = colorScheme.onSurfaceVariant,
         destructive = colorScheme.error,
         onDestructive = colorScheme.onError,
-        success = Color(0xFF10B981),
+        success = colorScheme.tertiary,
         onSuccess = Color.White,
         warning = Color(0xFFF59E0B),
         onWarning = Color.Black,

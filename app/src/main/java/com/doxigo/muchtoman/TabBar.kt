@@ -121,145 +121,91 @@ fun TabBar(
     onQuickAdd: (() -> Unit)? = null,
 ) {
     val fintechHaptics = LocalFintechHaptics.current
+    val ink = MaterialTheme.colorScheme.onSurface
+    val quiet = MaterialTheme.colorScheme.onSurfaceVariant
 
-    Surface(
-        modifier = modifier
-            .navigationBarsPadding()
-            .padding(horizontal = Space.m, vertical = Space.s),
-        shape = RoundedCornerShape(22.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.95f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.45f)),
-        shadowElevation = 8.dp,
+    // A flat floor, the way Revolut does it: the page's own card colour, one hairline on top,
+    // and nothing that moves except the tint of the tab she is on. Selection is said in ink
+    // and weight — no gliding pill, no glow — so the bar never competes with the balance.
+    Column(
+        modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.97f)),
     ) {
-        BoxWithConstraints(
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)),
+        )
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(68.dp)
-                .padding(horizontal = 4.dp, vertical = 4.dp),
+                .navigationBarsPadding()
+                .height(64.dp)
+                .padding(horizontal = Space.s),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            val totalWidth = maxWidth
             val half = tabs.size / 2
-            val slotCount = if (onQuickAdd != null) tabs.size + 1 else tabs.size
-            val slotWidth = totalWidth / slotCount
-
-            val selectedIndex = tabs.indexOf(selected).coerceAtLeast(0)
-            val selectedSlot = if (onQuickAdd != null && selectedIndex >= half) {
-                selectedIndex + 1
-            } else {
-                selectedIndex
-            }
-
-            // Both Row children and Modifier.offset(x) use relative coordinates (distance from start).
-            // In RTL, start is the right edge and positive offset moves leftward toward the end;
-            // in LTR, start is the left edge and positive offset moves rightward.
-            // Therefore, selectedSlot * slotWidth exactly tracks the slot in both RTL and LTR viewports.
-            val targetOffset = slotWidth * selectedSlot
-
-            val animatedPillOffset by animateDpAsState(
-                targetValue = targetOffset,
-                animationSpec = spring(
-                    dampingRatio = 0.75f,
-                    stiffness = 400f,
-                ),
-                label = "gliding_pill_offset",
-            )
-
-            // Animated floating spring gliding pill indicator
-            Box(
-                modifier = Modifier
-                    .offset(x = animatedPillOffset)
-                    .width(slotWidth)
-                    .fillMaxHeight()
-                    .padding(vertical = 3.dp, horizontal = 2.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(
-                                Hero.top,
-                                Hero.bottom.copy(alpha = 0.90f),
-                            )
-                        )
-                    )
-                    .border(1.dp, Hero.gold.copy(alpha = 0.35f), RoundedCornerShape(16.dp)),
-            )
-
-            Row(
-                modifier = Modifier.fillMaxSize(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                tabs.forEachIndexed { index, tab ->
-                    if (onQuickAdd != null && index == half) {
-                        // Central high-velocity quick entry action FAB
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight(),
-                            contentAlignment = Alignment.Center,
+            tabs.forEachIndexed { index, tab ->
+                if (onQuickAdd != null && index == half) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Surface(
+                            onClick = {
+                                fintechHaptics.heavyClick()
+                                onQuickAdd()
+                            },
+                            shape = CircleShape,
+                            color = ink,
+                            modifier = Modifier.size(46.dp),
                         ) {
-                            Surface(
-                                onClick = {
-                                    fintechHaptics.heavyClick()
-                                    onQuickAdd()
-                                },
-                                shape = CircleShape,
-                                color = Hero.gold,
-                                shadowElevation = 4.dp,
-                                modifier = Modifier.size(44.dp),
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    val onGold = if ((Hero.gold.red * 0.299f + Hero.gold.green * 0.587f + Hero.gold.blue * 0.114f) > 0.5f) Color(0xFF050607) else Color.White
-                                    Canvas(modifier = Modifier.size(20.dp)) {
-                                        val stroke = 2.4.dp.toPx()
-                                        // Horizontal plus bar
-                                        drawLine(
-                                            color = onGold,
-                                            start = Offset(0f, size.height / 2),
-                                            end = Offset(size.width, size.height / 2),
-                                            strokeWidth = stroke,
-                                            cap = StrokeCap.Round,
-                                        )
-                                        // Vertical plus bar
-                                        drawLine(
-                                            color = onGold,
-                                            start = Offset(size.width / 2, 0f),
-                                            end = Offset(size.width / 2, size.height),
-                                            strokeWidth = stroke,
-                                            cap = StrokeCap.Round,
-                                        )
-                                    }
+                            Box(contentAlignment = Alignment.Center) {
+                                val onInk = MaterialTheme.colorScheme.surface
+                                Canvas(modifier = Modifier.size(18.dp)) {
+                                    val stroke = 2.2.dp.toPx()
+                                    drawLine(onInk, Offset(0f, size.height / 2), Offset(size.width, size.height / 2), stroke, StrokeCap.Round)
+                                    drawLine(onInk, Offset(size.width / 2, 0f), Offset(size.width / 2, size.height), stroke, StrokeCap.Round)
                                 }
                             }
                         }
                     }
+                }
 
-                    val badge = if (tab == Tab.ACTIVITY_AND_TRENDS) ledgerBadge else 0
-                    val isSelected = tab == selected
-                    val iconScale by animateFloatAsState(
-                        targetValue = if (isSelected) 1.08f else 1.0f,
-                        animationSpec = spring(
-                            dampingRatio = Spring.DampingRatioMediumBouncy,
-                            stiffness = Spring.StiffnessMedium,
-                        ),
-                        label = "tab_icon_scale",
-                    )
+                val badge = if (tab == Tab.ACTIVITY_AND_TRENDS) ledgerBadge else 0
+                val isSelected = tab == selected
+                val tint by androidx.compose.animation.animateColorAsState(
+                    if (isSelected) ink else quiet,
+                    label = "tab_tint",
+                )
+                val iconScale by animateFloatAsState(
+                    targetValue = if (isSelected) 1.06f else 1.0f,
+                    animationSpec = spring(
+                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        stiffness = Spring.StiffnessMedium,
+                    ),
+                    label = "tab_icon_scale",
+                )
 
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .padding(vertical = 3.dp, horizontal = 2.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                            ) {
-                                if (!isSelected) {
-                                    fintechHaptics.click()
-                                    onSelect(tab)
-                                }
-                            },
-                        contentAlignment = Alignment.Center,
-                    ) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                        ) {
+                            if (!isSelected) {
+                                fintechHaptics.click()
+                                onSelect(tab)
+                            }
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
@@ -267,24 +213,22 @@ fun TabBar(
                         BadgedBox(
                             badge = {
                                 if (badge > 0) {
-                                    val onGold = if ((Hero.gold.red * 0.299f + Hero.gold.green * 0.587f + Hero.gold.blue * 0.114f) > 0.5f) Color(0xFF050607) else Color.White
                                     Badge(
-                                        containerColor = Hero.gold,
-                                        contentColor = onGold,
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary,
                                     ) {
                                         Text(
                                             faNumber(badge.coerceAtMost(99).toDouble()),
-                                            style = figureStyle(onGold),
+                                            style = figureStyle(MaterialTheme.colorScheme.onPrimary),
                                             fontSize = 10.sp,
                                         )
                                     }
                                 }
                             },
                         ) {
-                            val tint = if (isSelected) Hero.gold else MaterialTheme.colorScheme.onSurfaceVariant
                             Canvas(
                                 Modifier
-                                    .size(22.dp)
+                                    .size(24.dp)
                                     .graphicsLayer {
                                         scaleX = iconScale
                                         scaleY = iconScale
@@ -293,7 +237,7 @@ fun TabBar(
                             ) { drawTabIcon(tab, tint) }
                         }
 
-                        Spacer(Modifier.height(3.dp))
+                        Spacer(Modifier.height(4.dp))
 
                         Text(
                             tab.fa,
@@ -301,9 +245,9 @@ fun TabBar(
                             overflow = TextOverflow.Ellipsis,
                             style = TextStyle(
                                 fontFamily = Modam,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 fontSize = 11.sp,
-                                color = if (isSelected) Hero.gold else MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = tint,
                             ),
                         )
                     }
@@ -311,7 +255,6 @@ fun TabBar(
             }
         }
     }
-}
 }
 
 /**

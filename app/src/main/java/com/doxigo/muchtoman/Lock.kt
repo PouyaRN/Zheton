@@ -53,7 +53,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.doxigo.muchtoman.ui.components.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -269,7 +269,7 @@ fun SettingsScreen(
                         .semantics { heading() },
                 )
                 TextButton(onClick = { onNameChange(draft); onBack() }) {
-                    Text("ذخیره", fontSize = 17.sp)
+                    Text("ذخیره", fontSize = 15.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
