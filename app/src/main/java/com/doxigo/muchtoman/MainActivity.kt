@@ -2118,6 +2118,23 @@ data class UiState(
     /** The tracked balances as one figure, minus the banks she switched off. */
     val bankToman: Double get() = bankTotal(bankAccounts, disabledBanks)
 
+    /** Per account, when its last bank SMS was read and "… پیش" for it (Accounts screen). */
+    fun smsFreshness(now: Long = System.currentTimeMillis()): List<SmsFreshness> =
+        com.doxigo.muchtoman.smsFreshness(bankAccounts, ledger.allEntries + ledger.hiddenEntries, now)
+
+    /** 30 days of deposits/withdrawals across every account she has not switched off. */
+    val accountsFlow: AccountFlow by lazy {
+        com.doxigo.muchtoman.accountFlow(
+            ledger.allEntries,
+            bankAccounts.filter { it.bank !in disabledBanks }.map { it.key }.toSet(),
+            tehranDay(System.currentTimeMillis()),
+        )
+    }
+
+    /** 30 days of deposits/withdrawals for one account, by [BankAccount.key]. */
+    fun accountFlow(accountKey: String): AccountFlow =
+        com.doxigo.muchtoman.accountFlow(ledger.allEntries, setOf(accountKey), tehranDay(System.currentTimeMillis()))
+
     /**
      * Committed money: the sum of unpaid installments across all active obligations,
      * plus active reservations. Whole Rial, like everything else in the financial model.
