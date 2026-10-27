@@ -665,6 +665,11 @@ class Store(context: Context) {
         get() = prefs.getLong("hourlyWageToman", 0L)
         set(v) { prefs.edit().putLong("hourlyWageToman", v).apply() }
 
+    /** Monthly budget in Toman for the cycle; 0 = unset (see [monthlyBudget]). */
+    var monthlyBudgetToman: Long
+        get() = prefs.getLong("monthlyBudgetToman", 0L).coerceAtLeast(0L)
+        set(v) { prefs.edit().putLong("monthlyBudgetToman", v.coerceAtLeast(0L)).apply() }
+
     /** Which window one financial month spans; see [CycleMode]. */
     var cycleMode: CycleMode
         get() = if (prefs.getBoolean("cycleAnchored", false)) CycleMode.ANCHOR else CycleMode.JALALI_MONTH
