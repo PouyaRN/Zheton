@@ -661,9 +661,9 @@ val snackbarHostState = remember { SnackbarHostState() }
             SnackbarHost(snackbarHostState)
         },
         bottomBar = {
-            // A full-width «اضافه کردن دارایی» used to sit above this, and the + in the field
-            // already opens the same picker on this tab. Two buttons for one action, one of
-            // them a gold slab against a gold slug, and the bar is where she looks anyway.
+            // The canvas's floating pill. It used to carry a + for quick add; the canvas puts
+            // that on Home's round actions («ثبت خرج»), alongside the tile and the widget.
+            // Content runs under the pill: screens pad their lists by the Scaffold's bottom pad.
             if (tabs.size > 1) {
                 androidx.compose.animation.AnimatedVisibility(
                     visible = !isTimelineSelecting,
@@ -672,9 +672,7 @@ val snackbarHostState = remember { SnackbarHostState() }
                 ) {
                     TabBar(
                         selected = tab,
-                        ledgerBadge = 0,
                         onSelect = { tab = it },
-                        onQuickAdd = { showQuickAdd = true },
                     )
                 }
             } else {
@@ -687,18 +685,30 @@ val snackbarHostState = remember { SnackbarHostState() }
     ) { pad ->
       // The tabs that are their own screens. They sit inside the Scaffold rather than
       // returning early, so the bar stays under them and there is always a way out.
-      if (tab == Tab.ACTIVITY_AND_TRENDS) {
-        UnifiedActivityAndTrendsScreen(
+      if (tab == Tab.LEDGER) {
+        LedgerTabScreen(
             state = state,
             vm = vm,
             bottomInset = pad.calculateBottomPadding(),
             timelineCategoryId = timelineCategoryId,
             timelineSearchQuery = timelineSearchQuery,
             onOpenTransaction = { transactionRef = it },
-            onCategorySelected = { timelineCategoryId = it },
-            onSearchQueryChanged = { timelineSearchQuery = it },
             privacyMode = privacyMode,
             onSelectionModeChanged = { isTimelineSelecting = it },
+        )
+        return@Scaffold
+      }
+      if (tab == Tab.REPORTS) {
+        ReportTabScreen(
+            state = state,
+            bottomInset = pad.calculateBottomPadding(),
+            privacyMode = privacyMode,
+            // A category tapped in the report opens the ledger filtered to it.
+            onSelectCategory = { catId ->
+                timelineCategoryId = catId
+                timelineSearchQuery = null
+                tab = Tab.LEDGER
+            },
         )
         return@Scaffold
       }
@@ -870,9 +880,9 @@ val snackbarHostState = remember { SnackbarHostState() }
                         .statusBarsPadding(),
                 )
             },
-            modifier = Modifier
-                .padding(pad)
-                .fillMaxSize(),
+            // No padding(pad): the list runs under the floating nav and fades into its scrim;
+            // the list's own end padding keeps the last row clear of the pill.
+            modifier = Modifier.fillMaxSize(),
         ) {
         // No horizontal contentPadding and no vertical arrangement: the hero field is
         // full-bleed and the rows in a band have to sit flush against each other, so every
@@ -929,7 +939,7 @@ val snackbarHostState = remember { SnackbarHostState() }
                         cycleSpec = CycleSpec(state.cycleMode, state.cycleAnchorDay),
                         liquidToman = state.bankToman,
                         privacyMode = privacyMode,
-                        onClick = { tab = Tab.ACTIVITY_AND_TRENDS },
+                        onClick = { tab = Tab.LEDGER },
                     )
                 }
             }

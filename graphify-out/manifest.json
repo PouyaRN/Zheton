@@ -96,9 +96,9 @@
     "semantic_hash": "0ea962189f467f61a81d5092ea127a0f"
   },
   "app/src/main/java/com/doxigo/muchtoman/ActivityAndTrendsUi.kt": {
-    "mtime": 1792928056.3758967,
-    "seen": 1792928061.3740654,
-    "ast_hash": "5236f177ee68d210fbc7385ebb01f833",
+    "mtime": 1793136246.7281256,
+    "seen": 1793136384.6657925,
+    "ast_hash": "f9059f818152bd6980043eccb0c1e577",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/BankCard3D.kt": {
@@ -126,10 +126,10 @@
     "semantic_hash": "d79966b388c0a2027303e34a51e77cfb"
   },
   "app/src/main/java/com/doxigo/muchtoman/CommitmentsUi.kt": {
-    "mtime": 1792928056.3758967,
-    "seen": 1792928061.3740706,
-    "ast_hash": "14ab7149058bc6d76b5adc4b4177104d",
-    "semantic_hash": "14ab7149058bc6d76b5adc4b4177104d"
+    "mtime": 1793131980.1488597,
+    "seen": 1793132404.3535407,
+    "ast_hash": "ef8f22e90a0722af73cf34a03bf166eb",
+    "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/Cycle.kt": {
     "mtime": 1792928056.3758967,
@@ -156,9 +156,9 @@
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/Family.kt": {
-    "mtime": 1792928056.3758967,
-    "seen": 1792928061.374075,
-    "ast_hash": "ff7e4db42d7eec048c9209f8a0271f16",
+    "mtime": 1793131980.1497514,
+    "seen": 1793132404.353545,
+    "ast_hash": "d9d8a55ad9def042c8baec1ea5dd099b",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/Filter.kt": {
@@ -192,9 +192,9 @@
     "semantic_hash": "d390436084da0e51e0d5326f7c80eb12"
   },
   "app/src/main/java/com/doxigo/muchtoman/GoalsUi.kt": {
-    "mtime": 1792934521.310235,
-    "seen": 1792934525.606604,
-    "ast_hash": "de003ca0ca13e602802f59faa1cdb0f2",
+    "mtime": 1793131980.152744,
+    "seen": 1793132404.3535497,
+    "ast_hash": "1cc2a3a09e62382353d2e5ea3aad5078",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/GoldInput.kt": {
@@ -204,9 +204,9 @@
     "semantic_hash": "91a1ef24977a7fa4fd0dae0d59712980"
   },
   "app/src/main/java/com/doxigo/muchtoman/Home.kt": {
-    "mtime": 1792934521.310235,
-    "seen": 1792934525.6066074,
-    "ast_hash": "c1ec9cf563907e2ed863f4a41c282389",
+    "mtime": 1793131889.077152,
+    "seen": 1793132404.3535516,
+    "ast_hash": "f96a93261700b0fd237c8b67b68a99be",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/Installments.kt": {
@@ -246,9 +246,9 @@
     "semantic_hash": "327a847ddfdc267c0c50d595d56bc25e"
   },
   "app/src/main/java/com/doxigo/muchtoman/Lock.kt": {
-    "mtime": 1792934521.310235,
-    "seen": 1792934525.606619,
-    "ast_hash": "95050747033b42bbede8448d14c92f93",
+    "mtime": 1793132175.6559172,
+    "seen": 1793132404.3535564,
+    "ast_hash": "4e6cb0b3adfc341fb0d880673469ec2f",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/MainActivity.kt": {
@@ -258,16 +258,16 @@
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/MarketUi.kt": {
-    "mtime": 1792928056.377168,
-    "seen": 1792928061.3740895,
-    "ast_hash": "1aac04459663f085eb7eca4b812875c5",
+    "mtime": 1793132092.9937537,
+    "seen": 1793132404.353558,
+    "ast_hash": "8526e5939e0a1031c2824738605a3691",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/QuickAddActivity.kt": {
-    "mtime": 1792928056.377168,
-    "seen": 1792928061.3740902,
-    "ast_hash": "51c6501c0a1e4f575165c1d4d709996a",
-    "semantic_hash": "51c6501c0a1e4f575165c1d4d709996a"
+    "mtime": 1793131980.151571,
+    "seen": 1793132404.3535588,
+    "ast_hash": "9f8dd607ff6e8c5fc1a740e75d6f9244",
+    "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/QuickAddTileService.kt": {
     "mtime": 1792928056.377168,
@@ -288,9 +288,9 @@
     "semantic_hash": "2a2bb5e293cfeada6664d79c0413bcaf"
   },
   "app/src/main/java/com/doxigo/muchtoman/ReportsUi.kt": {
-    "mtime": 1792934521.310235,
-    "seen": 1792934525.6066298,
-    "ast_hash": "36aa79a8e490f2789d006f26d6f06e18",
+    "mtime": 1793132092.9923296,
+    "seen": 1793132404.3535619,
+    "ast_hash": "e39491574bb6ceff70e5b6ee4517bebe",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/Reservations.kt": {
@@ -324,21 +324,21 @@
     "semantic_hash": "af475d2ad6220cdb171a6201ec798cb2"
   },
   "app/src/main/java/com/doxigo/muchtoman/TabBar.kt": {
-    "mtime": 1792928056.377168,
-    "seen": 1792928061.3740997,
-    "ast_hash": "c12d519d012b3ec3d56866a1eb3458cb",
+    "mtime": 1793136212.3662436,
+    "seen": 1793136384.665839,
+    "ast_hash": "9808e2d9b0d06fdeec4249797b8a7f3a",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/Theme.kt": {
-    "mtime": 1792934617.672815,
-    "seen": 1792934727.8121705,
-    "ast_hash": "3c580e0b15a3a31005e1011e5dd3a746",
+    "mtime": 1793136140.2119336,
+    "seen": 1793136384.6658401,
+    "ast_hash": "ea0703a22563c5254461d0197d056acb",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/Timeline.kt": {
-    "mtime": 1792934521.311235,
-    "seen": 1792934525.606649,
-    "ast_hash": "bdcae6ad4bfdd8c0cbe4380891dab476",
+    "mtime": 1793132092.9952042,
+    "seen": 1793132404.3535764,
+    "ast_hash": "ff6f6450c13ecfb6f7049880d8fa347e",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/Tse.kt": {
@@ -348,9 +348,9 @@
     "semantic_hash": "0bc515e20d654b396c196c49f8497700"
   },
   "app/src/main/java/com/doxigo/muchtoman/Ui.kt": {
-    "mtime": 1792934521.311235,
-    "seen": 1792934525.6066523,
-    "ast_hash": "cb6664d70a875107d88389cc316b6c81",
+    "mtime": 1793136231.1465604,
+    "seen": 1793136384.665844,
+    "ast_hash": "489ae666ea8358f92433d4190cb6d5ed",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/UiAssetBadge.kt": {
@@ -360,10 +360,10 @@
     "semantic_hash": "733abfc626fccc21cdd164456d32475c"
   },
   "app/src/main/java/com/doxigo/muchtoman/UiIntelligence.kt": {
-    "mtime": 1792928056.3781679,
-    "seen": 1792928061.3741055,
-    "ast_hash": "69ed8344af284a125115fa6c98ea7dfe",
-    "semantic_hash": "69ed8344af284a125115fa6c98ea7dfe"
+    "mtime": 1793131980.152301,
+    "seen": 1793132404.3535795,
+    "ast_hash": "7d615b29eda007e1eee3965f3c5da47f",
+    "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/Widget.kt": {
     "mtime": 1792928056.379168,
@@ -390,34 +390,34 @@
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/ui/cards/BankSheet.kt": {
-    "mtime": 1792928056.3804135,
-    "seen": 1792928061.3741426,
-    "ast_hash": "e460365690b14762e49365e1304e8237",
-    "semantic_hash": "e460365690b14762e49365e1304e8237"
+    "mtime": 1793131980.1592262,
+    "seen": 1793132404.3536174,
+    "ast_hash": "11bb624c66c550f633607eb1e91ac3d7",
+    "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/ui/cards/CardEditorSheet.kt": {
-    "mtime": 1792928056.3804135,
-    "seen": 1792928061.3741436,
-    "ast_hash": "22231798a9b6b40b31b48a19bd857697",
-    "semantic_hash": "22231798a9b6b40b31b48a19bd857697"
+    "mtime": 1793131980.1600585,
+    "seen": 1793132404.3536184,
+    "ast_hash": "d2b439fb04fa76f7be60229ff40d6021",
+    "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/ui/categories/CategoriesScreen.kt": {
-    "mtime": 1792928056.3804135,
-    "seen": 1792928061.3741446,
-    "ast_hash": "a8f6ffe8886672e6368963a08ff918eb",
-    "semantic_hash": "a8f6ffe8886672e6368963a08ff918eb"
+    "mtime": 1793131980.1602366,
+    "seen": 1793132404.353619,
+    "ast_hash": "6953359575639a0b682ba70ba26c6a32",
+    "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/ui/commitments/CommitmentCards.kt": {
-    "mtime": 1792928056.3804135,
-    "seen": 1792928061.3741453,
-    "ast_hash": "f021d211ece43241b15f7c2dfd9a052b",
-    "semantic_hash": "f021d211ece43241b15f7c2dfd9a052b"
+    "mtime": 1793131980.1604211,
+    "seen": 1793132404.3536198,
+    "ast_hash": "9638b3556b6e333e29f358cc1d3a9cb4",
+    "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/ui/commitments/CommitmentSheets.kt": {
-    "mtime": 1792928056.3806388,
-    "seen": 1792928061.3741462,
-    "ast_hash": "c9de5380359410562e8918dbecc50c0e",
-    "semantic_hash": "c9de5380359410562e8918dbecc50c0e"
+    "mtime": 1793131980.16061,
+    "seen": 1793132404.3536205,
+    "ast_hash": "d6080f43beb3616c6752d4843c922066",
+    "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/ui/components/DetailRow.kt": {
     "mtime": 1792928056.3806388,
@@ -426,15 +426,15 @@
     "semantic_hash": "f26cea0a7f4cf5c45213fb44181a9b67"
   },
   "app/src/main/java/com/doxigo/muchtoman/ui/components/HeroPanel.kt": {
-    "mtime": 1792928056.3807256,
-    "seen": 1792928061.3741481,
-    "ast_hash": "96dc17563db84d14d9e27479e834e628",
-    "semantic_hash": "96dc17563db84d14d9e27479e834e628"
+    "mtime": 1793131499.3743038,
+    "seen": 1793132404.353622,
+    "ast_hash": "7cc1d1b4d1b4ccacc00ea3a728213cc8",
+    "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/ui/components/PersianCurrencyTicker.kt": {
-    "mtime": 1792928056.3807256,
-    "seen": 1792928061.374149,
-    "ast_hash": "68a25796097c677d784963a0730228e7",
+    "mtime": 1793131792.2337623,
+    "seen": 1793132404.3536224,
+    "ast_hash": "21e5b2a99bb502e1e70b4101b258e67d",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/ui/haptics/FintechHaptics.kt": {
@@ -456,10 +456,10 @@
     "semantic_hash": "1596a0a37c28dbc837625fdd6e40b7d8"
   },
   "app/src/main/java/com/doxigo/muchtoman/ui/rikka/components/card/Card.kt": {
-    "mtime": 1792928056.3807256,
-    "seen": 1792928061.3741522,
-    "ast_hash": "b0544d2df0b3245970c587313f21a530",
-    "semantic_hash": "b0544d2df0b3245970c587313f21a530"
+    "mtime": 1793131499.3700764,
+    "seen": 1793132404.3536286,
+    "ast_hash": "e396b2d7d9b81a9d3eac64148798c888",
+    "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/ui/rikka/components/progress/Progress.kt": {
     "mtime": 1792928056.3807256,
@@ -486,10 +486,10 @@
     "semantic_hash": "ae6176d5e6fce8d992d9dda9b21598bc"
   },
   "app/src/main/java/com/doxigo/muchtoman/ui/rikka/foundation/RikkaTokens.kt": {
-    "mtime": 1792928056.3807256,
-    "seen": 1792928061.3741567,
-    "ast_hash": "f84eab1ae73d7f9532f80a3cfb5c3476",
-    "semantic_hash": "f84eab1ae73d7f9532f80a3cfb5c3476"
+    "mtime": 1793131499.370172,
+    "seen": 1793132404.3536325,
+    "ast_hash": "7ccf5f17d6d458bc37461f3ce25d368c",
+    "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/widget/engine/WidgetEngine.kt": {
     "mtime": 1792928056.3810334,
@@ -564,10 +564,10 @@
     "semantic_hash": "40cb5cc85e63a4c92ae2398598b406f6"
   },
   "app/src/test/java/com/doxigo/muchtoman/CharacterizationUiContractTest.kt": {
-    "mtime": 1792928056.3820002,
-    "seen": 1792928061.374167,
-    "ast_hash": "e22a5b5ee704288f57142f935f800180",
-    "semantic_hash": "e22a5b5ee704288f57142f935f800180"
+    "mtime": 1793136328.2397401,
+    "seen": 1793136384.6659286,
+    "ast_hash": "5e4bd52db26ccdb303612b314c3ef339",
+    "semantic_hash": ""
   },
   "app/src/test/java/com/doxigo/muchtoman/ClassifyTest.kt": {
     "mtime": 1792928056.3820002,
@@ -654,10 +654,10 @@
     "semantic_hash": "358a344337bcc832578eee7bcb38732c"
   },
   "app/src/test/java/com/doxigo/muchtoman/HomeDeclutterTest.kt": {
-    "mtime": 1792928056.3820002,
-    "seen": 1792928061.3741798,
-    "ast_hash": "79ea74d4b37067eb44d9ab86e1fd028d",
-    "semantic_hash": "79ea74d4b37067eb44d9ab86e1fd028d"
+    "mtime": 1793136312.1028533,
+    "seen": 1793136384.6659427,
+    "ast_hash": "9ce817571378fb61b0bb5e7926c22f59",
+    "semantic_hash": ""
   },
   "app/src/test/java/com/doxigo/muchtoman/InstallmentsTest.kt": {
     "mtime": 1792928056.3820002,
@@ -1656,9 +1656,9 @@
     "semantic_hash": ""
   },
   "app/src/test/java/com/doxigo/muchtoman/UiBugDiagnosticsTest.kt": {
-    "mtime": 1792928056.382168,
-    "seen": 1792928061.3741934,
-    "ast_hash": "4371a71aafe9f3a9aa356afb76d2f11a",
+    "mtime": 1793136312.103248,
+    "seen": 1793136384.665961,
+    "ast_hash": "abc67ab4a60ce9785fcb6d4b1d70ea5c",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/SafeSpendEngine.kt": {
@@ -2094,9 +2094,9 @@
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/backup/BackupActivity.kt": {
-    "mtime": 1792934521.3122797,
-    "seen": 1792934525.606663,
-    "ast_hash": "eb0dcfd6ee22c01ca201041136e6356d",
+    "mtime": 1793131980.1614408,
+    "seen": 1793132404.353583,
+    "ast_hash": "672ac72c7ebaeea88c59ec748395ac95",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/backup/BackupCodec.kt": {
@@ -2190,9 +2190,9 @@
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/export/ReportExportActivity.kt": {
-    "mtime": 1792934521.312714,
-    "seen": 1792934525.6066916,
-    "ast_hash": "0868a29259c1635994ee8fa3f02dcf6b",
+    "mtime": 1793131980.1624315,
+    "seen": 1793132404.3535988,
+    "ast_hash": "a055eea33e59c48927400bcc90a95ffe",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/export/ReportLayout.kt": {
@@ -2298,9 +2298,9 @@
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/smspicker/SmsPickerScreen.kt": {
-    "mtime": 1792934521.313389,
-    "seen": 1792934525.6067212,
-    "ast_hash": "237886f87339ba3ffc13f02dc76ed0c5",
+    "mtime": 1793131980.163031,
+    "seen": 1793132404.3536146,
+    "ast_hash": "870427ab47ee8454c00573e566707022",
     "semantic_hash": ""
   },
   "app/src/main/java/com/doxigo/muchtoman/features/smspicker/SmsPickerState.kt": {
@@ -2613,6 +2613,72 @@
     "mtime": 1792928056.383168,
     "seen": 1793131294.187476,
     "ast_hash": "15b8b6928d6dbd3bd754cffca82147d9",
+    "semantic_hash": ""
+  },
+  "app/src/main/java/com/doxigo/muchtoman/ui/components/RevolutFields.kt": {
+    "mtime": 1793132355.4507587,
+    "seen": 1793132404.353624,
+    "ast_hash": "f40dbb6b935e1934b0fbd5b21c31428f",
+    "semantic_hash": ""
+  },
+  "app/src/main/java/com/doxigo/muchtoman/ui/components/RevolutKit.kt": {
+    "mtime": 1793131857.0771732,
+    "seen": 1793132404.353625,
+    "ast_hash": "a458541bf99991aecdf8c16ca70fb233",
+    "semantic_hash": ""
+  },
+  "docs/design/canvas/project/Accounts.dc.html": {
+    "mtime": 1793135628.38253,
+    "seen": 1793135644.591371,
+    "ast_hash": "a119bde9b56614df43309448425bff09",
+    "semantic_hash": ""
+  },
+  "docs/design/canvas/project/Asset.dc.html": {
+    "mtime": 1793135628.38453,
+    "seen": 1793135644.591373,
+    "ast_hash": "d98a03f08c0d2af5d94d46a180c40a20",
+    "semantic_hash": ""
+  },
+  "docs/design/canvas/project/HomeLight.dc.html": {
+    "mtime": 1793135628.38753,
+    "seen": 1793135644.591374,
+    "ast_hash": "a86847501efe6fbd55584bd21da987f0",
+    "semantic_hash": ""
+  },
+  "docs/design/canvas/project/Ledger.dc.html": {
+    "mtime": 1793135628.3815298,
+    "seen": 1793135644.5913749,
+    "ast_hash": "1eb4caaa24c145e86cd7e3ba5e800e96",
+    "semantic_hash": ""
+  },
+  "docs/design/canvas/project/Main.dc.html": {
+    "mtime": 1793135628.3785298,
+    "seen": 1793135644.5913754,
+    "ast_hash": "5df45024f0d2194a0f2045aa9a705f4d",
+    "semantic_hash": ""
+  },
+  "docs/design/canvas/project/Market.dc.html": {
+    "mtime": 1793135628.3842986,
+    "seen": 1793135644.5913758,
+    "ast_hash": "c22c6696a51a243435bc1d806378991b",
+    "semantic_hash": ""
+  },
+  "docs/design/canvas/project/QuickAdd.dc.html": {
+    "mtime": 1793135628.3805299,
+    "seen": 1793135644.5913763,
+    "ast_hash": "9145a9b73778b26a70150b411761bddd",
+    "semantic_hash": ""
+  },
+  "docs/design/canvas/project/Report.dc.html": {
+    "mtime": 1793135628.38653,
+    "seen": 1793135644.5913773,
+    "ast_hash": "9df5b02923a44c3f80407ae20f6c9389",
+    "semantic_hash": ""
+  },
+  "app/src/main/java/com/doxigo/muchtoman/ui/components/CanvasKit.kt": {
+    "mtime": 1793136196.5279562,
+    "seen": 1793136384.6658986,
+    "ast_hash": "0253631c01d298af5bead225e46e6374",
     "semantic_hash": ""
   }
 }

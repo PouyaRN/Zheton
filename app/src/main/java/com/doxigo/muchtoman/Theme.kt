@@ -8,6 +8,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -210,23 +211,24 @@ data class ThemeVisualSpec(
 )
 
 fun getThemeVisualSpec(mode: ThemeMode): ThemeVisualSpec = when (mode) {
+    // Half day, half night: the swatch for "follow the phone" shows both canvases.
     ThemeMode.SYSTEM -> ThemeVisualSpec(
         mode = mode,
         isDark = false,
-        bgPreview = Rev.graphite,
-        surfacePreview = Rev.graphiteHigh,
-        accentPreview = Rev.blueNight,
-        heroTopPreview = Rev.graphite,
-        heroBottomPreview = Rev.night,
+        bgPreview = CanvasLight.ground,
+        surfacePreview = CanvasDark.card,
+        accentPreview = CanvasDark.accent,
+        heroTopPreview = CanvasLight.ground,
+        heroBottomPreview = CanvasDark.ground,
     )
     ThemeMode.LIGHT -> ThemeVisualSpec(
         mode = mode,
         isDark = false,
-        bgPreview = Rev.paper,
-        surfacePreview = Color.White,
-        accentPreview = Rev.blue,
-        heroTopPreview = Rev.paper,
-        heroBottomPreview = Rev.paper,
+        bgPreview = CanvasLight.ground,
+        surfacePreview = CanvasLight.card,
+        accentPreview = CanvasLight.accentText,
+        heroTopPreview = CanvasLight.ground,
+        heroBottomPreview = CanvasLight.ground,
     )
     ThemeMode.APPLE_SILVER -> ThemeVisualSpec(
         mode = mode,
@@ -276,11 +278,11 @@ fun getThemeVisualSpec(mode: ThemeMode): ThemeVisualSpec = when (mode) {
     ThemeMode.ANDIS_TERMINAL, ThemeMode.DARK -> ThemeVisualSpec(
         mode = mode,
         isDark = true,
-        bgPreview = Rev.night,
-        surfacePreview = Rev.graphite,
-        accentPreview = Rev.blueNight,
-        heroTopPreview = Rev.graphite,
-        heroBottomPreview = Rev.night,
+        bgPreview = CanvasDark.ground,
+        surfacePreview = CanvasDark.card,
+        accentPreview = CanvasDark.accent,
+        heroTopPreview = CanvasDark.card,
+        heroBottomPreview = CanvasDark.ground,
     )
     ThemeMode.AMOLED -> ThemeVisualSpec(
         mode = mode,
@@ -589,47 +591,246 @@ object Rev {
 }
 
 /**
+ * The redesign canvas's own vocabulary (docs/design/canvas/project). Material's roles cannot say
+ * "the 1px edge of a card", "the nav glass" or "saffron as a fill but ochre as text", so the
+ * canvas components read these instead of guessing from a [androidx.compose.material3.ColorScheme].
+ *
+ * The canvas themes (SYSTEM/DARK/ANDIS_TERMINAL at night, SYSTEM/LIGHT by day) get the drawn
+ * values exactly; every other theme gets the same roles derived from its own scheme, so the new
+ * layouts work under all nineteen without those themes changing colour.
+ */
+@Immutable
+data class CanvasTokens(
+    val isDark: Boolean,
+    /** The page. */
+    val ground: Color,
+    /** Big cards, 26dp radius. */
+    val card: Color,
+    /** The card's 1px edge. */
+    val cardBorder: Color,
+    val ink: Color,
+    /** Secondary copy: the caption under the hero figure. */
+    val inkSecondary: Color,
+    /** Muted copy: dates, units, idle nav icons. */
+    val muted: Color,
+    /** Saffron as a fill: progress, today's dot, the primary round action at night. */
+    val accent: Color,
+    /** Saffron as text: links and section actions. */
+    val accentText: Color,
+    /** The tinted well behind a saffron glyph. */
+    val accentWell: Color,
+    val gain: Color,
+    val gainWell: Color,
+    val loss: Color,
+    /** Empty part of a bar. */
+    val track: Color,
+    /** Floating nav glass. */
+    val navFill: Color,
+    val navBorder: Color,
+    val navShadow: Boolean,
+    /** The active nav pill and the selected chip: inverted ink. */
+    val inverse: Color,
+    val onInverse: Color,
+    /** The one filled round action (ثبت خرج): saffron at night, ink by day. */
+    val primaryAction: Color,
+    val onPrimaryAction: Color,
+    /** The other round actions. */
+    val actionFill: Color,
+    val actionBorder: Color,
+    /** 40/44dp outline icon buttons in a page header. */
+    val outlineFill: Color,
+    val outlineBorder: Color,
+    /** Unselected chip label. */
+    val chipText: Color,
+    /** The radial light behind the top of a page, and its two stops' alpha. */
+    val glow: Color,
+    val glowCore: Float,
+    val glowMid: Float,
+)
+
+/** Canvas night: Main.dc.html and every dark artboard. */
+object CanvasDark {
+    val ground = Color(0xFF000000)
+    val card = Color(0xFF0F0F11)
+    val cardBorder = Color(0x12FFFFFF)        // rgba(255,255,255,.07)
+    val ink = Color(0xFFF5F5F4)
+    val inkSecondary = Color(0xFFB5B5B8)
+    val muted = Color(0xFF8E8E93)
+    val accent = Color(0xFFF5B840)
+    val accentWell = Color(0xFF1C1608)
+    val gain = Color(0xFF3FD98B)
+    val gainWell = Color(0x1F3FD98B)          // rgba(63,217,139,.12)
+    val loss = Color(0xFFFF7B6B)
+    val track = Color(0xFF1C1C1F)
+    val navFill = Color(0xDB1C1C1E)           // rgba(28,28,30,.86)
+    val navBorder = Color(0x17FFFFFF)         // rgba(255,255,255,.09)
+    val actionFill = Color(0xFF161618)
+    val actionBorder = Color(0x14FFFFFF)      // .08
+    val outlineFill = Color(0x0AFFFFFF)       // .04
+    val outlineBorder = Color(0x1FFFFFFF)     // .12
+    val chipText = Color(0xFFD4D4D6)
+
+    val tokens = CanvasTokens(
+        isDark = true, ground = ground, card = card, cardBorder = cardBorder, ink = ink,
+        inkSecondary = inkSecondary, muted = muted, accent = accent, accentText = accent,
+        accentWell = accentWell, gain = gain, gainWell = gainWell, loss = loss, track = track,
+        navFill = navFill, navBorder = navBorder, navShadow = false, inverse = ink,
+        onInverse = Color.Black, primaryAction = accent, onPrimaryAction = Color.Black,
+        actionFill = actionFill, actionBorder = actionBorder, outlineFill = outlineFill,
+        outlineBorder = outlineBorder, chipText = chipText, glow = accent,
+        glowCore = 0.22f, glowMid = 0.07f,
+    )
+
+    fun hero() = HeroPalette(
+        top = ground, bottom = ground, gold = accent, muted = muted, strong = ink,
+        mint = gain, warn = loss, well = actionFill, hairline = cardBorder, glow = accent,
+    )
+}
+
+/** Canvas day: HomeLight.dc.html. */
+object CanvasLight {
+    val ground = Color(0xFFF6F6F7)
+    val card = Color(0xFFFFFFFF)
+    val cardBorder = Color(0x0F000000)        // rgba(0,0,0,.06)
+    val ink = Color(0xFF0B0B0C)
+    val inkSecondary = Color(0xFF3E3E44)
+    val muted = Color(0xFF5E5E66)
+    val accent = Color(0xFFE9A425)
+    val accentText = Color(0xFF8A5A00)
+    val accentWell = Color(0xFFFBEFD6)
+    val gain = Color(0xFF0A6B42)
+    val gainWell = Color(0xFFE2F5EB)
+    /** Not drawn on the light artboard; the darkest loss that still reads as the night coral. */
+    val loss = Color(0xFFC0392B)
+    val track = Color(0xFFE4E4E7)
+    val navFill = Color(0xEBFFFFFF)           // rgba(255,255,255,.92)
+    val navBorder = Color(0x14000000)         // rgba(0,0,0,.08)
+    val actionBorder = Color(0x12000000)      // .07
+
+    val tokens = CanvasTokens(
+        isDark = false, ground = ground, card = card, cardBorder = cardBorder, ink = ink,
+        inkSecondary = inkSecondary, muted = muted, accent = accent, accentText = accentText,
+        accentWell = accentWell, gain = gain, gainWell = gainWell, loss = loss, track = track,
+        navFill = navFill, navBorder = navBorder, navShadow = true, inverse = ink,
+        onInverse = Color.White, primaryAction = ink, onPrimaryAction = Color.White,
+        actionFill = card, actionBorder = actionBorder, outlineFill = card,
+        outlineBorder = navBorder, chipText = inkSecondary, glow = accent,
+        glowCore = 0.26f, glowMid = 0.08f,
+    )
+
+    fun hero() = HeroPalette(
+        top = ground, bottom = ground, gold = accentText, muted = muted, strong = ink,
+        mint = gain, warn = loss, well = card, hairline = cardBorder, glow = accent,
+    )
+}
+
+/** The canvas roles for any theme: exact for the canvas themes, derived for the other sixteen. */
+fun getCanvasTokens(
+    mode: ThemeMode,
+    systemDark: Boolean,
+    scheme: androidx.compose.material3.ColorScheme,
+    hero: HeroPalette,
+): CanvasTokens = when (mode) {
+    ThemeMode.SYSTEM -> if (systemDark) CanvasDark.tokens else CanvasLight.tokens
+    ThemeMode.DARK, ThemeMode.ANDIS_TERMINAL -> CanvasDark.tokens
+    ThemeMode.LIGHT -> CanvasLight.tokens
+    else -> {
+        val dark = mode.isDark
+        val edge = if (dark) Color.White else Color.Black
+        CanvasTokens(
+            isDark = dark,
+            ground = scheme.background,
+            card = scheme.surfaceContainer,
+            cardBorder = edge.copy(alpha = if (dark) 0.07f else 0.06f),
+            ink = scheme.onBackground,
+            inkSecondary = scheme.onSurface.copy(alpha = 0.78f),
+            muted = scheme.onSurfaceVariant,
+            accent = hero.gold,
+            accentText = scheme.primary,
+            accentWell = scheme.primaryContainer,
+            gain = hero.mint,
+            gainWell = hero.mint.copy(alpha = 0.12f),
+            loss = scheme.error,
+            track = scheme.surfaceContainerHighest,
+            navFill = scheme.surfaceContainerHigh.copy(alpha = if (dark) 0.86f else 0.92f),
+            navBorder = edge.copy(alpha = if (dark) 0.09f else 0.08f),
+            navShadow = !dark,
+            inverse = scheme.onBackground,
+            onInverse = scheme.background,
+            primaryAction = scheme.primary,
+            onPrimaryAction = scheme.onPrimary,
+            actionFill = scheme.surfaceContainerHigh,
+            actionBorder = edge.copy(alpha = if (dark) 0.08f else 0.07f),
+            outlineFill = if (dark) edge.copy(alpha = 0.04f) else scheme.surface,
+            outlineBorder = edge.copy(alpha = if (dark) 0.12f else 0.08f),
+            chipText = scheme.onSurface.copy(alpha = 0.82f),
+            glow = hero.gold,
+            glowCore = if (dark) 0.22f else 0.26f,
+            glowMid = if (dark) 0.07f else 0.08f,
+        )
+    }
+}
+
+val LocalCanvasTokens = staticCompositionLocalOf { CanvasDark.tokens }
+
+/** `CanvasTheme.tokens.card`, the way `MaterialTheme.colorScheme.surface` reads. */
+object CanvasTheme {
+    val tokens: CanvasTokens
+        @Composable
+        get() = LocalCanvasTokens.current
+
+    /** Big cards. */
+    val cardRadius = 26.dp
+    /** Page gutter. */
+    val gutter = 20.dp
+}
+
+/**
  * Every role is set on purpose. Leaving the container roles unset is what makes an app look
  * unfinished: Material's default baseline is violet, so dialogs, sheets and text fields come
  * out mauve no matter how carefully `primary` was chosen.
+ *
+ * The two schemes below are the approved redesign canvas (docs/design/canvas): Main.dc.html for
+ * the night, HomeLight.dc.html for the day. Their exact values live in [CanvasDark] and
+ * [CanvasLight]; these schemes only map them onto Material roles.
  */
 private val LightColors = lightColorScheme(
-    // Revolut's day palette: one confident blue, near-black ink, and a cool grey page that lets
-    // white cards float without needing a single border or shadow to separate them.
-    primary = Rev.blue,
+    // Saffron as text is the dark ochre; the bright saffron is a fill only (see CanvasLight).
+    primary = CanvasLight.accentText,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFE6EFFE),
-    onPrimaryContainer = Color(0xFF0A3E8F),
+    primaryContainer = CanvasLight.accentWell,
+    onPrimaryContainer = CanvasLight.accentText,
 
-    secondary = Rev.ink,
+    secondary = CanvasLight.ink,
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFEDEEF2),
-    onSecondaryContainer = Rev.ink,
+    secondaryContainer = Color(0xFFEDEDEF),
+    onSecondaryContainer = CanvasLight.ink,
 
     // Gain, and only gain.
-    tertiary = Color(0xFF007A5B),
+    tertiary = CanvasLight.gain,
     onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFD7F5EC),
-    onTertiaryContainer = Color(0xFF00513D),
+    tertiaryContainer = CanvasLight.gainWell,
+    onTertiaryContainer = CanvasLight.gain,
 
-    background = Rev.paper,
-    onBackground = Rev.ink,
+    background = CanvasLight.ground,
+    onBackground = CanvasLight.ink,
 
-    surface = Color.White,
-    onSurface = Rev.ink,
-    surfaceVariant = Color(0xFFEFF0F4),
-    onSurfaceVariant = Color(0xFF6A6D7A),
+    surface = CanvasLight.card,
+    onSurface = CanvasLight.ink,
+    surfaceVariant = Color(0xFFEFEFF1),
+    onSurfaceVariant = CanvasLight.muted,
 
     surfaceContainerLowest = Color.White,
-    surfaceContainerLow = Color(0xFFF7F7FA),
-    surfaceContainer = Color.White,
+    surfaceContainerLow = Color(0xFFFAFAFB),
+    surfaceContainer = CanvasLight.card,
     surfaceContainerHigh = Color.White,     // dialogs and sheets
-    surfaceContainerHighest = Color(0xFFE9EAEF),
+    surfaceContainerHighest = CanvasLight.track,
 
-    outline = Color(0xFFDCDDE3),
-    outlineVariant = Color(0xFFE9EAEF),
+    // rgba(0,0,0,.08) and .06 on the ground, flattened so they can also be filled.
+    outline = Color(0xFFE2E2E3),
+    outlineVariant = Color(0xFFE8E8E9),
 
-    error = Color(0xFFC8262C),
+    error = CanvasLight.loss,
     onError = Color.White,
     errorContainer = Color(0xFFFDECEC),
     onErrorContainer = Color(0xFF7A1418),
@@ -637,6 +838,49 @@ private val LightColors = lightColorScheme(
 )
 
 private val DarkColors = darkColorScheme(
+    // True-black ground, near-black cards, and one light: saffron.
+    primary = CanvasDark.accent,
+    onPrimary = Color.Black,
+    primaryContainer = CanvasDark.accentWell,
+    onPrimaryContainer = CanvasDark.accent,
+
+    secondary = CanvasDark.inkSecondary,
+    onSecondary = Color.Black,
+    secondaryContainer = Color(0xFF1C1C1E),
+    onSecondaryContainer = CanvasDark.ink,
+
+    tertiary = CanvasDark.gain,
+    onTertiary = Color.Black,
+    tertiaryContainer = Color(0xFF0C2419),
+    onTertiaryContainer = CanvasDark.gain,
+
+    background = CanvasDark.ground,
+    onBackground = CanvasDark.ink,
+
+    surface = CanvasDark.card,
+    onSurface = CanvasDark.ink,
+    surfaceVariant = Color(0xFF161618),
+    onSurfaceVariant = CanvasDark.muted,
+
+    surfaceContainerLowest = Color.Black,
+    surfaceContainerLow = Color(0xFF0A0A0B),
+    surfaceContainer = CanvasDark.card,
+    surfaceContainerHigh = Color(0xFF1C1C1E),
+    surfaceContainerHighest = CanvasDark.track,
+
+    // rgba(255,255,255,.12) and .07 over a card, flattened.
+    outline = Color(0xFF2C2C2E),
+    outlineVariant = Color(0xFF202022),
+
+    error = CanvasDark.loss,
+    onError = Color.Black,
+    errorContainer = Color(0xFF3A1714),
+    onErrorContainer = Color(0xFFFFC2B8),
+    scrim = Color(0xFF000000),
+)
+
+/** The pre-canvas night palette, kept for رولوت ابسیدین which is its own theme. */
+private val RevolutDarkColors = darkColorScheme(
     // Revolut's night palette: true-black page, graphite cards a step above it, and the blue
     // lifted just enough to hold 4.5:1 on graphite.
     primary = Rev.blueNight,
@@ -1266,7 +1510,7 @@ fun isLightPage(): Boolean = MaterialTheme.colorScheme.background.luminance() > 
 
 /** Income/positive money: deep green on paper, mint on ink. */
 @Composable
-fun incomeColor(): Color = if (isLightPage()) Color(0xFF00875F) else Color(0xFF2FD3A3)
+fun incomeColor(): Color = LocalCanvasTokens.current.gain
 
 /** Amber warning (a cap approaching its limit): dark ochre on paper, warm amber on ink. */
 @Composable
@@ -1284,7 +1528,7 @@ fun getColorScheme(mode: ThemeMode, systemDark: Boolean = false): androidx.compo
     ThemeMode.AMOLED -> AmoledDarkColors
     ThemeMode.APPLE_TITANIUM -> AppleTitaniumColors
     ThemeMode.APPLE_SILVER -> AppleSilverColors
-    ThemeMode.REVOLUT_OBSIDIAN -> DarkColors
+    ThemeMode.REVOLUT_OBSIDIAN -> RevolutDarkColors
     ThemeMode.NORDIC_FROST -> NordicFrostColors
     ThemeMode.CHAMPAGNE_GOLD -> ChampagneGoldColors
     ThemeMode.PERSIAN_MINT -> PersianMintColors
@@ -1346,35 +1590,10 @@ fun getAndisColors(colorScheme: androidx.compose.material3.ColorScheme, isDark: 
     }
 
 fun getHeroPalette(mode: ThemeMode, systemDark: Boolean = false): HeroPalette = when (mode) {
-    ThemeMode.SYSTEM -> if (systemDark) {
-        HeroPalette(
-        top = Rev.night,
-        bottom = Rev.night,
-        gold = Rev.blueNight,
-        muted = Color(0xFF9A9BA5),
-        strong = Color(0xFFFFFFFF),
-        mint = Color(0xFF2FD3A3),
-        warn = Color(0xFFFF6B6F),
-        well = Color(0xFF1E1E24),
-        hairline = Color(0x1AFFFFFF),
-        glow = Rev.violet,
-    )
-    } else {
-        HeroPalette(
-        top = Rev.paper,
-        bottom = Rev.paper,
-        gold = Rev.blue,
-        muted = Color(0xFF6A6D7A),
-        strong = Rev.ink,
-        mint = Color(0xFF007A5B),
-        warn = Color(0xFFC8262C),
-        well = Color.White,
-        hairline = Color(0x1416171C),
-        glow = Rev.violet,
-    )
-    }
+    ThemeMode.SYSTEM -> if (systemDark) CanvasDark.hero() else CanvasLight.hero()
     ThemeMode.ANDIS_TERMINAL,
-    ThemeMode.DARK,
+    ThemeMode.DARK -> CanvasDark.hero()
+    ThemeMode.LIGHT -> CanvasLight.hero()
     ThemeMode.REVOLUT_OBSIDIAN -> HeroPalette(
         top = Rev.night,
         bottom = Rev.night,
@@ -1385,18 +1604,6 @@ fun getHeroPalette(mode: ThemeMode, systemDark: Boolean = false): HeroPalette = 
         warn = Color(0xFFFF6B6F),
         well = Color(0xFF1E1E24),
         hairline = Color(0x1AFFFFFF),
-        glow = Rev.violet,
-    )
-    ThemeMode.LIGHT -> HeroPalette(
-        top = Rev.paper,
-        bottom = Rev.paper,
-        gold = Rev.blue,
-        muted = Color(0xFF6A6D7A),
-        strong = Rev.ink,
-        mint = Color(0xFF007A5B),
-        warn = Color(0xFFC8262C),
-        well = Color.White,
-        hairline = Color(0x1416171C),
         glow = Rev.violet,
     )
     ThemeMode.APPLE_SILVER -> HeroPalette(
@@ -1584,6 +1791,7 @@ fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -
     val heroPalette = getHeroPalette(mode, systemDark)
     val isDark = mode.isDark || (mode == ThemeMode.SYSTEM && systemDark)
     val andisColors = getAndisColors(colorScheme, isDark, heroPalette)
+    val canvasTokens = getCanvasTokens(mode, systemDark, colorScheme, heroPalette)
 
     val rikkaColors = RikkaColors(
         background = colorScheme.background,
@@ -1610,6 +1818,7 @@ fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -
     CompositionLocalProvider(
         LocalHeroPalette provides heroPalette,
         LocalAndisColors provides andisColors,
+        LocalCanvasTokens provides canvasTokens,
         LocalRikkaColors provides rikkaColors,
         LocalContentColor provides colorScheme.onSurface,
     ) {
