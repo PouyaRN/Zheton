@@ -36,6 +36,12 @@ class DailySnapshotWorker(context: Context, params: WorkerParameters) :
         // portfolio holding shares against rates that have none, snapshotHistory refuses the
         // whole day, and the chart quietly stops for anyone who owns a single نماد.
         stocks?.onSuccess { store.cachedStocks = it }
+        runCatching {
+            com.doxigo.muchtoman.features.pricealerts.PriceAlerts.check(
+                applicationContext,
+                effectiveRates(store.cachedRates, store.overrides, store.cachedStocks),
+            )
+        }
         // A failed fetch still falls through: cached rates younger than a day are good enough,
         // and snapshotHistory is the one that decides.
         snapshotHistory(
