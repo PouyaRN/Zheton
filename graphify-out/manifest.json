@@ -1529,156 +1529,6 @@
     "ast_hash": "c5ba1cb3a1177984bb48e6c9a85fb4cc",
     "semantic_hash": ""
   },
-  "agent/skills/brandkit/SKILL.md": {
-    "mtime": 1792928056.3749733,
-    "seen": 1792928061.3743246,
-    "ast_hash": "4f37becf42c027ddabbc4d5e9ec2e894",
-    "semantic_hash": "4f37becf42c027ddabbc4d5e9ec2e894"
-  },
-  "agent/skills/design-taste-frontend-v1/SKILL.md": {
-    "mtime": 1792928056.3749733,
-    "seen": 1792928061.3743253,
-    "ast_hash": "a29296fd92dcc4f922ae402025fa9483",
-    "semantic_hash": "a29296fd92dcc4f922ae402025fa9483"
-  },
-  "agent/skills/design-taste-frontend/SKILL.md": {
-    "mtime": 1792928056.3749733,
-    "seen": 1792928061.374326,
-    "ast_hash": "1d2168aa4498ab763421bb4b02b367a8",
-    "semantic_hash": "1d2168aa4498ab763421bb4b02b367a8"
-  },
-  "agent/skills/full-output-enforcement/SKILL.md": {
-    "mtime": 1792928056.3749733,
-    "seen": 1792928061.3743267,
-    "ast_hash": "e42b595a0ea0e1487558246d7ac03f0e",
-    "semantic_hash": "e42b595a0ea0e1487558246d7ac03f0e"
-  },
-  "agent/skills/gpt-taste/SKILL.md": {
-    "mtime": 1792928056.3749733,
-    "seen": 1792928061.374328,
-    "ast_hash": "a8a52033d3018cfbd1e4e92228350865",
-    "semantic_hash": "a8a52033d3018cfbd1e4e92228350865"
-  },
-  "agent/skills/high-end-visual-design/SKILL.md": {
-    "mtime": 1792928056.3749733,
-    "seen": 1792928061.3743286,
-    "ast_hash": "a217339e3e74743706475cb2ac87b6e3",
-    "semantic_hash": "a217339e3e74743706475cb2ac87b6e3"
-  },
-  "agent/skills/image-to-code/SKILL.md": {
-    "mtime": 1792928056.3749733,
-    "seen": 1792928061.374329,
-    "ast_hash": "ac966208b00d32b97da867b0e9726952",
-    "semantic_hash": "ac966208b00d32b97da867b0e9726952"
-  },
-  "agent/skills/imagegen-frontend-mobile/SKILL.md": {
-    "mtime": 1792928056.3749733,
-    "seen": 1792928061.3743298,
-    "ast_hash": "bfb3636af13a6d0fbf826e7e9550cfbb",
-    "semantic_hash": "bfb3636af13a6d0fbf826e7e9550cfbb"
-  },
-  "agent/skills/imagegen-frontend-web/SKILL.md": {
-    "mtime": 1792928056.3749733,
-    "seen": 1792928061.3743305,
-    "ast_hash": "aa9e75b1f83240f75e3f9e51e408ee81",
-    "semantic_hash": "aa9e75b1f83240f75e3f9e51e408ee81"
-  },
-  "agent/skills/industrial-brutalist-ui/SKILL.md": {
-    "mtime": 1792928056.3749733,
-    "seen": 1792928061.3743315,
-    "ast_hash": "10f050bf4bb75e869022696dad762c5a",
-    "semantic_hash": "10f050bf4bb75e869022696dad762c5a"
-  },
-  "agent/skills/minimalist-ui/SKILL.md": {
-    "mtime": 1792928056.3751678,
-    "seen": 1792928061.3743322,
-    "ast_hash": "313694faa92e37fc228562f81e071b0f",
-    "semantic_hash": "313694faa92e37fc228562f81e071b0f"
-  },
-  "agent/skills/redesign-existing-projects/SKILL.md": {
-    "mtime": 1792928056.3751678,
-    "seen": 1792928061.374333,
-    "ast_hash": "815bbed3b25bfb0cbd3c051efbd2a368",
-    "semantic_hash": "815bbed3b25bfb0cbd3c051efbd2a368"
-  },
-  "agent/skills/stitch-design-taste/DESIGN.md": {
-    "mtime": 1792928056.3751678,
-    "seen": 1792928061.3743336,
-    "ast_hash": "ee7cc02dcc99eda38299a5a6f6727563",
-    "semantic_hash": "ee7cc02dcc99eda38299a5a6f6727563"
-  },
-  "agent/skills/stitch-design-taste/SKILL.md": {
-    "mtime": 1792928056.3758967,
-    "seen": 1792928061.3743346,
-    "ast_hash": "b43d0c9f8677a49a0f5bc7a6468737e1",
-    "semantic_hash": "b43d0c9f8677a49a0f5bc7a6468737e1"
-  },
-  "docs/FEATURES_RESEARCH.md": {
-    "mtime": 1792928056.3829536,
-    "seen": 1792928061.3743353,
-    "ast_hash": "c8165097b877516ba778e39d862edb25",
-    "semantic_hash": "c8165097b877516ba778e39d862edb25"
-  },
-  "docs/REALTIME_MARKET_INTELLIGENCE_AND_PURCHASING_STRATEGY.md": {
-    "mtime": 1792928056.3829536,
-    "seen": 1792928061.374336,
-    "ast_hash": "967d84f17edd79529b88d365dc7c8911",
-    "semantic_hash": "967d84f17edd79529b88d365dc7c8911"
-  },
-  "docs/RESEARCH_APP_RADICAL_SIMPLIFICATION_AND_WORLD_CLASS_UIUX.md": {
-    "mtime": 1792928056.3829536,
-    "seen": 1792928061.3743367,
-    "ast_hash": "57594c421732e094d29f6b806d671260",
-    "semantic_hash": "57594c421732e094d29f6b806d671260"
-  },
-  "docs/RESEARCH_DOT_MATRIX_COMPOSE.md": {
-    "mtime": 1792928056.3829536,
-    "seen": 1792928061.3743374,
-    "ast_hash": "137a29b40b691185fcb499687ee66120",
-    "semantic_hash": "137a29b40b691185fcb499687ee66120"
-  },
-  "docs/RESEARCH_NEOBANK_FINTECH_UI.md": {
-    "mtime": 1792928056.3829536,
-    "seen": 1792928061.3743384,
-    "ast_hash": "a69fe240946392a13bcfd8976043b113",
-    "semantic_hash": "a69fe240946392a13bcfd8976043b113"
-  },
-  "docs/RESEARCH_PERSIAN_ODOMETER_AND_HAPTICS.md": {
-    "mtime": 1792928056.3829536,
-    "seen": 1792928061.374339,
-    "ast_hash": "4b509f8a9a560e62b30be0ef21738efa",
-    "semantic_hash": "4b509f8a9a560e62b30be0ef21738efa"
-  },
-  "docs/RESEARCH_TAB_BY_TAB_UIUX_WORLD_CLASS.md": {
-    "mtime": 1792928056.3829536,
-    "seen": 1792928061.3743398,
-    "ast_hash": "41da438bcf22e6c97deb54a772b76133",
-    "semantic_hash": "41da438bcf22e6c97deb54a772b76133"
-  },
-  "docs/RESEARCH_UI_UX_IMPROVEMENTS_AND_ANIMATIONS.md": {
-    "mtime": 1792928056.3829536,
-    "seen": 1792928061.3743405,
-    "ast_hash": "ec2e5e6e684f44c98e57e868d5120bec",
-    "semantic_hash": "ec2e5e6e684f44c98e57e868d5120bec"
-  },
-  "docs/RESEARCH_UPDATE_CHANNEL_HOSTING.md": {
-    "mtime": 1792928056.383168,
-    "seen": 1792928061.3743415,
-    "ast_hash": "a48f731af86a9d1434d6e44f68587e38",
-    "semantic_hash": "a48f731af86a9d1434d6e44f68587e38"
-  },
-  "docs/UI_INSPIRATION_MASTER_REPORT.md": {
-    "mtime": 1792928056.383168,
-    "seen": 1792928061.3743422,
-    "ast_hash": "848833a003904888ff34e36a9f00a266",
-    "semantic_hash": "848833a003904888ff34e36a9f00a266"
-  },
-  "docs/WIDGETS_AND_CARDS_UIUX_RESEARCH.md": {
-    "mtime": 1792928056.383168,
-    "seen": 1792928061.3743436,
-    "ast_hash": "15b8b6928d6dbd3bd754cffca82147d9",
-    "semantic_hash": "15b8b6928d6dbd3bd754cffca82147d9"
-  },
   "docs/adr/0001-dashboard-hierarchy-and-declutter.md": {
     "mtime": 1792928056.383168,
     "seen": 1792928061.3743443,
@@ -1839,12 +1689,6 @@
     "mtime": 1792928056.3842845,
     "seen": 1792928061.374354,
     "ast_hash": "fbb5381173191622bfa892532e27209d",
-    "semantic_hash": ""
-  },
-  "pwa/pnpm-workspace.yaml": {
-    "mtime": 1792924774.9533808,
-    "seen": 1792928061.3743591,
-    "ast_hash": "7bb23c19c0343fac40d375bacca550d0",
     "semantic_hash": ""
   },
   "app/src/main/res/drawable/ic_launcher_exact.png": {
@@ -2703,6 +2547,72 @@
     "mtime": 1792934584.1511292,
     "seen": 1792934727.8122442,
     "ast_hash": "cf2ed4b0de72562b2cd6fa3b6e1393d4",
+    "semantic_hash": ""
+  },
+  "docs/research/FEATURES_RESEARCH.md": {
+    "mtime": 1792928056.3829536,
+    "seen": 1793131294.1874676,
+    "ast_hash": "c8165097b877516ba778e39d862edb25",
+    "semantic_hash": ""
+  },
+  "docs/research/REALTIME_MARKET_INTELLIGENCE_AND_PURCHASING_STRATEGY.md": {
+    "mtime": 1792928056.3829536,
+    "seen": 1793131294.1874692,
+    "ast_hash": "967d84f17edd79529b88d365dc7c8911",
+    "semantic_hash": ""
+  },
+  "docs/research/RESEARCH_APP_RADICAL_SIMPLIFICATION_AND_WORLD_CLASS_UIUX.md": {
+    "mtime": 1793131213.6769247,
+    "seen": 1793131294.1874704,
+    "ast_hash": "07450caf3563ba47ca24d54799447c14",
+    "semantic_hash": ""
+  },
+  "docs/research/RESEARCH_DOT_MATRIX_COMPOSE.md": {
+    "mtime": 1793131213.6772478,
+    "seen": 1793131294.1874712,
+    "ast_hash": "137a29b40b691185fcb499687ee66120",
+    "semantic_hash": ""
+  },
+  "docs/research/RESEARCH_NEOBANK_FINTECH_UI.md": {
+    "mtime": 1793131213.67769,
+    "seen": 1793131294.187472,
+    "ast_hash": "bd522f0b03b114c64dc68b915d8ae8eb",
+    "semantic_hash": ""
+  },
+  "docs/research/RESEARCH_PERSIAN_ODOMETER_AND_HAPTICS.md": {
+    "mtime": 1793131213.6780894,
+    "seen": 1793131294.1874728,
+    "ast_hash": "4b509f8a9a560e62b30be0ef21738efa",
+    "semantic_hash": ""
+  },
+  "docs/research/RESEARCH_TAB_BY_TAB_UIUX_WORLD_CLASS.md": {
+    "mtime": 1793131213.6786397,
+    "seen": 1793131294.1874733,
+    "ast_hash": "a0f789523157ee0659084723245e2fe5",
+    "semantic_hash": ""
+  },
+  "docs/research/RESEARCH_UI_UX_IMPROVEMENTS_AND_ANIMATIONS.md": {
+    "mtime": 1793131213.6789756,
+    "seen": 1793131294.187474,
+    "ast_hash": "1c97694e4a98f83cf9498a80fd9cf80b",
+    "semantic_hash": ""
+  },
+  "docs/research/RESEARCH_UPDATE_CHANNEL_HOSTING.md": {
+    "mtime": 1793131213.679428,
+    "seen": 1793131294.1874745,
+    "ast_hash": "a48f731af86a9d1434d6e44f68587e38",
+    "semantic_hash": ""
+  },
+  "docs/research/UI_INSPIRATION_MASTER_REPORT.md": {
+    "mtime": 1792928056.383168,
+    "seen": 1793131294.1874754,
+    "ast_hash": "848833a003904888ff34e36a9f00a266",
+    "semantic_hash": ""
+  },
+  "docs/research/WIDGETS_AND_CARDS_UIUX_RESEARCH.md": {
+    "mtime": 1792928056.383168,
+    "seen": 1793131294.187476,
+    "ast_hash": "15b8b6928d6dbd3bd754cffca82147d9",
     "semantic_hash": ""
   }
 }
