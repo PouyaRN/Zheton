@@ -3,7 +3,7 @@
 **Document ID:** `RES-CHANDTOMAN-SIMPLIFICATION-2026-V1`  
 **Status:** Approved Architectural Audit & Actionable Blueprint  
 **Target Codebase:** Android 14+ / Jetpack Compose / Material 3 (`com.doxigo.muchtoman`)  
-**Target Output File:** `docs/RESEARCH_APP_RADICAL_SIMPLIFICATION_AND_WORLD_CLASS_UIUX.md`  
+**Target Output File:** `docs/research/RESEARCH_APP_RADICAL_SIMPLIFICATION_AND_WORLD_CLASS_UIUX.md`  
 **Benchmarked Global Leaders:** Revolut 10, Apple Card / Apple Wallet, Monzo Trends, Linear, Robinhood  
 
 ---

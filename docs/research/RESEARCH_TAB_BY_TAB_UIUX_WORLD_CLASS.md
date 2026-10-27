@@ -3,7 +3,7 @@
 **Author:** Principal Mobile Fintech Product Designer & Staff Android/Compose Systems Architect  
 **Document ID:** `RES-CHANDTOMAN-TABS-2026-V1`  
 **Status:** Canonical Design & Architecture Reference  
-**Target Artifact:** `docs/RESEARCH_TAB_BY_TAB_UIUX_WORLD_CLASS.md`  
+**Target Artifact:** `docs/research/RESEARCH_TAB_BY_TAB_UIUX_WORLD_CLASS.md`  
 **Target Codebase:** Android 14+ / Jetpack Compose / Material 3 (`com.doxigo.muchtoman`)  
 **Global Benchmarks Analyzed:** Revolut 10, Apple Card & Apple Wallet, Monzo Trends, Robinhood, Copilot Money, Monarch Money, N26
 

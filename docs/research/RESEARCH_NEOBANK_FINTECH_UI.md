@@ -3,7 +3,7 @@
 **Author:** Principal Fintech Product Designer & Design Systems Researcher  
 **Document ID:** `RES-FINTECH-UI-2026-V1`  
 **Status:** Canonical Reference Architecture  
-**Target Artifact:** `docs/RESEARCH_NEOBANK_FINTECH_UI.md`  
+**Target Artifact:** `docs/research/RESEARCH_NEOBANK_FINTECH_UI.md`  
 **Git Branch:** `research/neobank-fintech-ui`
 
 ---

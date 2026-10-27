@@ -2,7 +2,7 @@
 
 **Author:** Principal Product Designer, UX Researcher & Senior Android Jetpack Compose Engineer  
 **Document ID:** `RES-UIUX-ANIMATIONS-2026-V1`  
-**Target File:** `docs/RESEARCH_UI_UX_IMPROVEMENTS_AND_ANIMATIONS.md`  
+**Target File:** `docs/research/RESEARCH_UI_UX_IMPROVEMENTS_AND_ANIMATIONS.md`  
 **Git Branch:** `research/ui-ux-improvements`  
 **Application Target:** `com.doxigo.muchtoman` (چقدر تومن / ChandToman)  
 **Status:** Canonical Reference Architecture & Implementation Guide  
