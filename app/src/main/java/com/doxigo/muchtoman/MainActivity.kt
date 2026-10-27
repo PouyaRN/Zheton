@@ -90,6 +90,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             hourlyWageToman = store.hourlyWageToman,
             cycleMode = store.cycleMode,
             cycleAnchorDay = store.cycleAnchorDay,
+            monthlyBudgetToman = store.monthlyBudgetToman,
             widgetSlots = store.widgetSlots,
         )
     )
@@ -496,6 +497,13 @@ class AppVm(app: Application) : AndroidViewModel(app) {
     fun setHourlyWageToman(wage: Long) {
         store.hourlyWageToman = wage
         _state.update { it.copy(hourlyWageToman = wage) }
+    }
+
+    /** Monthly budget in Toman; 0 clears it. */
+    fun setMonthlyBudgetToman(toman: Long) {
+        val v = toman.coerceAtLeast(0L)
+        store.monthlyBudgetToman = v
+        _state.update { it.copy(monthlyBudgetToman = v) }
     }
 
     /** The window one financial month spans: calendar month or a payday-anchored cycle. */
@@ -2127,6 +2135,8 @@ data class UiState(
     val hourlyWageToman: Long = 0L,
     val cycleMode: CycleMode = CycleMode.JALALI_MONTH,
     val cycleAnchorDay: Int = 1,
+    /** User-set monthly budget in Toman; 0 = unset. */
+    val monthlyBudgetToman: Long = 0L,
     val widgetSlots: List<com.doxigo.muchtoman.widget.engine.WidgetSlot> = com.doxigo.muchtoman.widget.engine.WidgetEngineDefaults.defaultSlots,
 ) {
     val coins: List<Coin> get() = rates.coins
@@ -2141,6 +2151,16 @@ data class UiState(
         buildStory(ledger.entries, Math.round(bankToman * 10.0), tehranDay(System.currentTimeMillis()), CycleSpec(cycleMode, cycleAnchorDay))
     }
     val stocks: List<Stock> get() = tse.stocks
+
+    /** Budget, spent, plan-to-date and today's share for the current cycle; see [monthlyBudget]. */
+    val budget: MonthlyBudget by lazy {
+        monthlyBudget(
+            ledger.allEntries.ifEmpty { ledger.entries },
+            monthlyBudgetToman,
+            tehranDay(System.currentTimeMillis()),
+            CycleSpec(cycleMode, cycleAnchorDay),
+        )
+    }
 
     /**
      * Update check permanently disabled for this fork.
