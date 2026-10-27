@@ -885,6 +885,10 @@ class MarketRateHistoryStore(
         }
     }
 
+    /** Every asset's observations, for the one-time import into [DailyRateFiles]. */
+    @Synchronized
+    fun allHistory(): Map<String, List<RateObservation>> = memoryStore.mapValues { it.value.toList() }
+
     private fun loadFromPrefs() {
         val p = prefs ?: return
         runCatching {
