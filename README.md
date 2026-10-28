@@ -1,147 +1,134 @@
 # اندیس — Andis
 
-An Android app that answers one question: *how much is all my money, in Toman?*
+An offline-first Android app for Persian-speaking households: a ledger built from bank SMS,
+and the value of everything you own at Tehran free-market rates, in Toman.
 
-Andis (اندیس) is offline-first: the ledger, the bank-SMS parser, the reminders and the
-encrypted backup all run on the phone, with no account and no telemetry. The PWA and the
-Cloudflare Worker in this repo are companion surfaces, not the source of truth.
+[![check](https://github.com/securityvisions/Andis/actions/workflows/check.yml/badge.svg)](https://github.com/securityvisions/Andis/actions/workflows/check.yml)
+[![release](https://github.com/securityvisions/Andis/actions/workflows/release.yml/badge.svg)](https://github.com/securityvisions/Andis/actions/workflows/release.yml)
+[![latest release](https://img.shields.io/github/v/release/securityvisions/Andis?sort=semver)](https://github.com/securityvisions/Andis/releases/latest)
+![minSdk 24](https://img.shields.io/badge/Android-7.0%2B%20(API%2024)-3DDC84)
+[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-Persian UI, RTL, Persian digits, big type, and large amounts spoken the way people actually
-say them ("۴٫۷ میلیارد تومان", not "۴٬۶۶۶٬۲۵۱٬۱۳۶"). Built for a Persian-speaking parent, so
-legibility beats density everywhere.
+<p>
+  <img src="docs/screenshots/home-dark.webp" width="160" alt="Home (dark)">
+  <img src="docs/screenshots/ledger-dark.webp" width="160" alt="Ledger">
+  <img src="docs/screenshots/assets-dark.webp" width="160" alt="Assets">
+  <img src="docs/screenshots/accounts-dark.webp" width="160" alt="Accounts">
+  <img src="docs/screenshots/report-dark.webp" width="160" alt="Report">
+  <img src="docs/screenshots/home-light.webp" width="160" alt="Home (light)">
+</p>
 
-## Where things live
+<sub>Demo data. Home, Ledger, Assets, Accounts and Report in dark mode, then Home in light mode.</sub>
 
-| Path | What it is |
-| --- | --- |
-| `app/` | The Android app (Kotlin, Compose, Room). Everything the phone does offline lives here. |
-| `pwa/` | The companion web app (Vite + TypeScript): family ledger and the Persian finance calculators. |
-| `sync/` | Cloudflare Worker for end-to-end-encrypted family sync and the optional encrypted backup vault. |
-| `worker/` | Cloudflare Worker for rates, release info and the APK update channel. |
-| `docs/` | Design notes, research, release specs and the wayfinder map mirrors. |
+The interface is Persian and right-to-left, with Persian digits and large type. Large amounts
+are written the way people say them ("۴٫۷ میلیارد تومان"), and displayed figures truncate rather
+than round, so the number shown is never larger than the real one.
 
-The historical repository `securityvisions/Dakh-o-kharj` is **superseded by this one**; issues
-still live there until they are migrated, and this repo is the source of truth for code.
+## Features
 
-Holds plain Toman, fiat (USD, EUR, GBP, NOK, TRY, AED, CAD), **any of the top 250
-cryptocurrencies**, 18k gold by the gram or the مثقال, silver by the gram at ۹۹۹ and ۹۲۵,
-Iranian coins (Emami, Bahar Azadi, Nim, Rob, Gerami), and سکه پارسیان in all fifteen sizes
-from ۱۰۰ to ۱۵۰۰ سوت. Everything is valued at **free-market** rates — the official ~42,000
-IRR peg is not used anywhere.
+- **SMS ledger.** Bank SMS are read from the phone's inbox and parsed on the device into a
+  transaction ledger with balances per account. Corrections, categories and notes are kept and
+  replayed when the parser improves. Manual entries cover cash and anything without an SMS.
+- **Assets at live Tehran rates.** Toman, foreign currencies, 18k gold, Iranian coins,
+  سکه پارسیان, silver, Tehran Stock Exchange symbols and the top 250 cryptocurrencies, valued at
+  free-market rates (the official peg is never used). Public wallet addresses can be tracked
+  read-only. Holdings can record purchase lots for cost basis and profit/loss.
+- **Budget and daily share.** Set a monthly budget and the Home tab shows how much is safe to
+  spend today for the rest of the month, with month-to-date progress.
+- **Price alerts.** Per-asset alerts checked in the background, delivered as local notifications.
+- **Reports.** Month-over-month spending against income, category shares, and PDF/Excel export.
+- **Backup.** Android backup for the durable data, plus an optional encrypted backup vault keyed
+  by a 12-word recovery code.
+- **Extras.** Home-screen widgets, a quick-add tile, optional app lock (fingerprint or device
+  PIN), privacy mode that masks amounts, optional end-to-end encrypted family sync, light and
+  dark themes following the system.
 
-سکه پارسیان is quoted per size rather than weighed as gold: the اجرت is close to fixed per
-coin, so a ۱۰۰ سوت piece goes for about a quarter more than the gold in it.
+### Supported banks
 
-## Screenshots
+بلو بانک، سامان، رفاه، پاسارگاد، اقتصاد نوین، خاورمیانه، صادرات، رسالت، پارسیان، ملت، ملی،
+مسکن، سپه، تجارت. A message is read only if it comes from one of the bank's known senders
+(`Bank` in [`Sms.kt`](app/src/main/java/com/doxigo/muchtoman/Sms.kt)); a new sender shows up as
+a suggestion you confirm. Bank-app push notifications are not read, only SMS.
 
-Sample data, live rates.
+### Editions
 
-| | | |
+| APK | Package | Contents |
 | --- | --- | --- |
-| ![](docs/screenshots/home.png) | ![](docs/screenshots/assets.png) | ![](docs/screenshots/report.png) |
-| ![](docs/screenshots/home-dark.png) | ![](docs/screenshots/assets-dark.png) | ![](docs/screenshots/report-dark.png) |
+| `muchtoman-vX.Y.Z.apk` | `com.doxigo.muchtoman` | Full app: ledger, budget, reports, assets |
+| `muchtoman-lite-vX.Y.Z.apk` | `com.doxigo.muchtoman.lite` | Assets only: what you own and what it is worth |
 
-## What it does
-
-- **One total, three ways.** Scannable ("۱۰٫۸ میلیون تومان"), spelled out in Persian words,
-  and exact digits. Displayed figures truncate rather than round, so the number shown is never
-  larger than the real one.
-- **Bank balances from SMS.** Read and parsed locally from the phone's inbox, with no bank API.
-  SMS sharing is off by default.
-- **Optional family ledger.** Two or more people can join by one-time QR code. Each person chooses
-  whether their parsed SMS transactions are shared. Every shared item names its owner, and any
-  family member can categorize it.
-- **Public-wallet tracking, or manual entry.** Save a public address and the app refreshes BTC,
-  ETH/ERC-20, SOL, TRX/TRC-20, and supported EVM-token balances on BSC, Arbitrum, Polygon,
-  Optimism, and Avalanche. Anything else can be entered by hand.
-- **Your own names.** Any holding can carry a label of your own — "تتر شخصی" beside "تتر
-  مشترک". The asset keeps its real name underneath, so the rate still applies.
-- **A year of history.** The total is remembered once a day, with 1/3/6/12-month change.
-- **Offline-tolerant.** The last good rates are cached on the phone.
-- **Missing rates are never zero.** An asset with no price is left out of the total and named
-  in a note, and any rate can be overridden by hand.
-- **Optional app lock** (fingerprint or device PIN), off by default.
-- Light and dark, following the system by default.
-
-## Banks it reads
-
-A message is read only if it came from one of these senders — identity is the sending number
-or header, never words in the body.
-
-| Bank | Sends from |
-| --- | --- |
-| بلو بانک | `0999 998 7641`, `90000258`, `+9890000258`, `98300087641` |
-| بانک سامان | `0999 992 0000`, `+989820000`, `9820000`, `6219` |
-| بانک رفاه | `100031`, `100032`, `Refah Bank`, `RefahBank` |
-| بانک پاسارگاد | `B.Pasargad` |
-| بانک اقتصاد نوین | `ENBank` |
-| بانک خاورمیانه | `20004861`, `+9820004861`, `+989820004860` |
-| بانک صادرات | `+98 9870 0719`, `98700719`, `+98 983 000 9419`, `BankSaderat` |
-| بانک رسالت | `ResalatBank` |
-| بانک پارسیان | `PARSIANBANK` |
-| بانک ملت | `Bank Mellat`, `6104` |
-| بانک ملی ایران | `6037` |
-| بانک مسکن | `Bank Maskan`, `MaskanBank`, `Maskan Bank` |
-| بانک سپه | `6715000` |
-| بانک تجارت | `TejaratBank` |
-
-**Deliberately not read:** بانک آینده. Its messages are shaped like balance updates but are not.
-
-**SMS only, not push notifications.** Some banks (Blu among them) let you take transaction
-alerts as notifications from their own app instead of as SMS. There is no message to read in
-that case, so the balance quietly stops at the last real SMS rather than reporting anything
-wrong. Turn SMS alerts back on in that bank's own settings.
-
-<img src="docs/screenshots/banks.png" width="280">
-
-A bank that starts sending from a new shortcode becomes a suggestion card in the app; your tap
-is what adds it, on that phone only.
+Both are built from the same source and can be installed side by side.
 
 ## Install
 
-Grab the APK from [Releases](https://github.com/doxigo/muchToman/releases). Each covers every
-device, Android 7.0 (API 24) and newer.
+Download the APK from [GitHub Releases](https://github.com/securityvisions/Andis/releases).
+Requires Android 7.0 (API 24) or newer. A newer full APK installs over an older one and keeps
+its data.
 
-Two of them are published side by side:
+## Build from source
 
-| File | What it is |
-| --- | --- |
-| `muchtoman-vX.Y.Z.apk` | everything below — the household ledger, goals, the companion phone |
-| `muchtoman-lite-vX.Y.Z.apk` | دارایی only: what you own and what it is worth today |
+Requirements: JDK 21 and the Android SDK.
 
-Take the lite one if you want a portfolio and not a budget. It installs under its own name, so
-you can have both on one phone and try the full app without giving up the simple one. Both read
-the same bank پیامک and get the same detection fixes — they are one codebase, built twice.
+```bash
+./gradlew assembleFullDebug              # app/build/outputs/apk/full/debug/app-full-debug.apk
+./gradlew testFullDebugUnitTest          # JVM unit tests
+```
 
-If you are already running an earlier version, the plain `muchtoman-` file is your update: it
-keeps its package, so the balances you typed in and every category you confirmed carry over.
+Release builds are signed when a `keystore.properties` file (gitignored) exists in the repo
+root:
 
-New releases show up as a line under your total the next time you open the app. To be notified
-without opening it, add `https://github.com/doxigo/muchToman` to
-[Obtainium](https://github.com/ImranR98/Obtainium).
+```properties
+storeFile=muchtoman-release.jks
+storePassword=...
+keyAlias=muchtoman
+keyPassword=...
+```
 
-## Where the prices come from
+Without it, `assembleRelease` produces unsigned APKs. See [DEVELOPMENT.md](DEVELOPMENT.md) for
+build types, local Workers, the rates sources and adding banks or currencies.
 
-Free-market rates only — bonbast/tgju for fiat, gold and coins, and Iranian exchanges
-(bitpin, tetherland) for crypto so the Tehran premium is real rather than a USD conversion.
+## Release process
+
+Push an annotated `vX.Y.Z` tag (message in Persian; it becomes the in-app update note). The
+[release workflow](.github/workflows/release.yml) runs the unit tests and lint, installs and
+launches both release APKs on an emulator, then builds them with the release key and publishes a
+GitHub Release with both APKs and their R8 mapping files.
+
+Required repository secrets: `KEYSTORE_B64` (base64 of the keystore), `KEYSTORE_STORE_PASSWORD`,
+`KEYSTORE_KEY_ALIAS`, `KEYSTORE_KEY_PASSWORD`.
+
+`versionName` comes from the tag. `versionCode` is `2_000_001_000 + git rev-list --count HEAD`,
+so each build installs over the previous one.
+
+## Project structure
+
+```
+app/      Android app (Kotlin, Jetpack Compose, Room): everything that runs on the phone
+pwa/      Browser companion (Vite + TypeScript): family ledger view and Persian finance calculators
+sync/     Cloudflare Worker + Durable Objects: end-to-end encrypted family sync and backup vault
+worker/   Cloudflare Worker: rates, public-wallet balances, release info and APK download
+docs/     ADRs, design canvas, SMS intake notes, agent docs, screenshots
+tools/    Font preparation script
+```
+
+Design system: [DESIGN.md](DESIGN.md). Domain glossary: [CONTEXT.md](CONTEXT.md).
+Changes: [CHANGELOG.md](CHANGELOG.md).
 
 ## Privacy
 
-No account, no login, no analytics. Holdings, saved wallet links, and raw bank SMS live in the
-app's own storage on the phone and are excluded from Android backup and device transfer.
+- No account, no login, no analytics.
+- SMS are read only after you enable bank messages (`READ_SMS`; there is no SMS receiver). Only
+  messages from known bank senders are parsed, on the device. Raw SMS text is never uploaded.
+- The ledger, holdings and settings stay on the phone. Android's own backup includes the durable
+  database and preferences, following your device's backup settings.
+- Network use: rates and coin icons from the project's Worker; stock prices directly from TSETMC
+  only when you hold a stock or open the stock picker; wallet balances only for addresses you
+  add (the public address goes to the Worker and a public blockchain API).
+- Family sync and the backup vault are optional and encrypted on the device; the servers store
+  ciphertext and routing metadata only. Family SMS sharing starts off and shares parsed fields
+  (amount, direction, time, bank, merchant, category), not message text.
 
-Family sync is optional and end-to-end encrypted. SMS sharing starts off. When a person enables
-it, their phone shares only the parsed amount, direction, time, bank, merchant, and category. It
-never uploads the raw SMS text. Manual family-ledger items are shared. The sync service can see
-opaque household/member ids, record types, timestamps, and ciphertext, but not the transaction
-contents or member names. Turning SMS sharing off sends deletion markers for that person's
-previously shared SMS items. It cannot erase anything another member already saw or copied.
+## License
 
-Wallet tracking is opt-in: when enabled, the public address is sent through the configured
-Worker to a public blockchain RPC or indexer. The app never asks for a recovery phrase or private
-key. Rates and coin logos come through the configured Worker. The only direct price-source
-request is TSETMC, and only when the stock picker is opened or a stock is already held.
-
-## Building it yourself
-
-See [DEVELOPMENT.md](DEVELOPMENT.md).
+[MIT](LICENSE). The Modam font in `app/src/main/res/font/` is a commercial font from
+fontiran.com and is not covered by the MIT license.
