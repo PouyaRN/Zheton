@@ -701,7 +701,7 @@ val snackbarHostState = remember { SnackbarHostState() }
         return@Scaffold
       }
       if (tab == Tab.REPORTS) {
-        ReportTabScreen(
+        CanvasReportScreen(
             state = state,
             bottomInset = pad.calculateBottomPadding(),
             privacyMode = privacyMode,
