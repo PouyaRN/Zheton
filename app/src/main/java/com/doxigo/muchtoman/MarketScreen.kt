@@ -113,16 +113,19 @@ private fun kindLabel(kind: Kind, ids: Set<String>): String = when {
 internal fun portfolioDayChangePercent(rows: List<Triple<AssetType, Double?, DayChange?>>): Double? {
     var today = 0.0
     var yesterday = 0.0
+    var moving = false
     for ((type, value, change) in rows) {
         val v = value?.takeIf { it > 0.0 && it.isFinite() } ?: continue
         today += v
         yesterday += when {
             type.kind == Kind.CASH -> v
             change == null -> return null
-            else -> v / (1.0 + change.percent / 100.0)
+            else -> { moving = true; v / (1.0 + change.percent / 100.0) }
         }
     }
-    if (yesterday <= 0.0) return null
+    // Only cash priced (say, just the bank row): there is nothing whose day could be compared,
+    // and a «۰٫۰٪ نسبت به دیروز» would be a made-up figure.
+    if (!moving || yesterday <= 0.0) return null
     return (today - yesterday) / yesterday * 100.0
 }
 

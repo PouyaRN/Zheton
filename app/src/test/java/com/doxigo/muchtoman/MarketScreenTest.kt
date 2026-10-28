@@ -37,6 +37,11 @@ class MarketScreenTest {
     }
 
     @Test
+    fun `day change is hidden when only cash is priced`() {
+        assertNull(portfolioDayChangePercent(listOf(Triple(cash, 100.0, null), Triple(gold, null, null))))
+    }
+
+    @Test
     fun `ring figure truncates to one decimal and names its unit`() {
         assertEquals("۵۱٫۹" to "میلیون تومان", ringFigure(51_990_000.0))
         assertEquals("۱٫۲" to "میلیارد تومان", ringFigure(1_299_000_000.0))
