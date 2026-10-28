@@ -683,7 +683,9 @@ internal fun BankAccountRow(
                 }
             }
 
-            Row(Modifier.padding(top = Space.xs)) {
+            // Wraps rather than squeezing «حذف حساب» into a column of single letters.
+            @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+            androidx.compose.foundation.layout.FlowRow(Modifier.padding(top = Space.xs)) {
                 if (account.sender.isNotBlank()) {
                     TextButton(onClick = onOpenSms) {
                         Text("دیدن پیامک‌ها", fontSize = 13.sp)
@@ -700,7 +702,6 @@ internal fun BankAccountRow(
                 } else {
                     TextButton(onClick = onFix) { Text("اصلاح موجودی", fontSize = 13.sp) }
                 }
-                Spacer(Modifier.weight(1f))
                 TextButton(
                     onClick = onForget,
                     colors = ButtonDefaults.textButtonColors(

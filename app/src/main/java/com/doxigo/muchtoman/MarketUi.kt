@@ -1363,12 +1363,14 @@ internal fun MarketArbitrageRadar(
     val emamiIntrinsic = calculateCoinIntrinsicToman(GoldCoinType.EMAMI, gold18Toman)
     val emamiBubble = if (emamiCoinToman > emamiIntrinsic) ((emamiCoinToman - emamiIntrinsic) / emamiCoinToman) * 100.0 else 0.0
 
+    val t = CanvasTheme.tokens
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Space.m, vertical = Space.s),
         shape = RoundedCornerShape(Radius.card),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+        colors = CardDefaults.cardColors(containerColor = t.card, contentColor = t.ink),
+        border = androidx.compose.foundation.BorderStroke(1.dp, t.cardBorder),
     ) {
         Column(modifier = Modifier.padding(Space.m)) {
             Row(
@@ -1381,7 +1383,7 @@ internal fun MarketArbitrageRadar(
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                 )
-                Text("به‌روزرسانی همگام", fontSize = 11.sp, color = Hero.muted)
+                Text("به‌روزرسانی همگام", fontSize = 11.sp, color = t.muted)
             }
 
             Spacer(Modifier.height(Space.s))
@@ -1414,24 +1416,25 @@ private fun ArbitrageRow(
     hint: String,
     isWarning: Boolean,
 ) {
+    val t = CanvasTheme.tokens
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f))
+            .background(t.ground.copy(alpha = 0.6f))
             .padding(horizontal = Space.m, vertical = Space.s),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-            Text(hint, fontSize = 10.sp, color = if (isWarning) Color(0xFFD93025) else MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(title, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = t.ink)
+            Text(hint, fontSize = 10.sp, color = if (isWarning) t.loss else t.muted)
         }
         Text(
             detail,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
-            color = if (isWarning) Color(0xFFD93025) else Hero.top,
+            color = if (isWarning) t.loss else t.ink,
         )
     }
 }
