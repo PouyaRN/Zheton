@@ -344,7 +344,8 @@ val snackbarHostState = remember { SnackbarHostState() }
     val paperUnderStatusBar = !state.locked && (
         settings || transactionRef != null ||
             tab == Tab.LEDGER || tab == Tab.REPORTS || tab == Tab.ASSETS ||
-            !heroUnderStatusBar
+            // The canvas Home starts at the ground too, not on a hero field.
+            tab == Tab.HOME || !heroUnderStatusBar
         )
     val lightScheme = MaterialTheme.colorScheme.background.luminance() > 0.5f
     // The hero is not always dark: in the light palettes the field behind the status bar is cream,
@@ -766,288 +767,24 @@ val snackbarHostState = remember { SnackbarHostState() }
         return@Scaffold
       }
 
-      Box(Modifier.fillMaxSize()) {
-        // Pulling the list down refetches, exactly like the به‌روزرسانی button — the button
-        // stays, because a labelled control is still the one she can be told about by phone.
-        // The pull indicator belongs to the pull alone: init and refreshIfStale() also set
-        // loading, and ungated they dropped an uninvited spinner over the header on every
-        // cold open. The card's own labelled spinner is the receipt for those fetches.
-        var pulled by remember { mutableStateOf(false) }
-        LaunchedEffect(state.refreshing) { if (!state.refreshing) pulled = false }
-        val pullState = rememberPullToRefreshState()
-        PullToRefreshBox(
-            isRefreshing = state.refreshing && pulled,
-            onRefresh = { pulled = true; vm.refreshAll() },
-            state = pullState,
-            // The default indicator is a light chip, and it lands on the dark green field.
-            // Dressed in the field's own colours instead, and pushed clear of the status bar.
-            indicator = {
-                PullToRefreshDefaults.Indicator(
-                    state = pullState,
-                    isRefreshing = state.refreshing && pulled,
-                    containerColor = Hero.top,
-                    color = Hero.gold,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .statusBarsPadding(),
-                )
-            },
-            // No padding(pad): the list runs under the floating nav and fades into its scrim;
-            // the list's own end padding keeps the last row clear of the pill.
-            modifier = Modifier.fillMaxSize(),
-        ) {
-        // No horizontal contentPadding and no vertical arrangement: the hero field is
-        // full-bleed and the rows in a band have to sit flush against each other, so every
-        // item owns its own inset. `edge` is the one place that number lives.
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = pad.calculateBottomPadding() + 100.dp),
-        ) {
-            item(key = "hero") {
-                HeroField(
-                    state = state,
-                    usdRate = effective["usd"],
-                    onRefresh = vm::refreshAll,
-                    onReport = { tab = Tab.REPORTS },
-                    onSettings = { settings = true },
-                    onAdd = { adding = true; vm.refreshStocksForPicker() },
-                    portfolio = portfolio,
-                    currencyLens = currencyLens,
-                    onCurrencyLensChange = { currencyLens = it },
-                    privacyMode = privacyMode,
-                    onTogglePrivacy = { privacyMode = !privacyMode },
-                    onQuickAdd = { showQuickAdd = true },
-                )
-            }
-
-            // Tier 1: Modern 4-Tile Bento Grid Cockpit (Revolut 10 / Apple Card inspired)
-            item(key = "home_bento_cockpit") {
-                val activeCommitments = state.commitments.filter { !it.isSettled }
-                val activeObligations = state.obligations.filter { !it.archived }
-                val commitmentsCount = activeCommitments.size + activeObligations.size
-                val upcomingDueDays: Int? = activeCommitments.map { it.nextDueDays }.minOrNull()
-
-                HomeBentoCockpit(
-                    bankToman = state.bankToman,
-                    gold18Toman = effective["gold18"] ?: 0.0,
-                    commitmentsCount = commitmentsCount,
-                    upcomingDueDays = upcomingDueDays,
-                    monthlySpentToman = state.story.month.spentRial / 10.0,
-                    privacyMode = privacyMode,
-                    onNavigateCards = { tab = Tab.CARDS },
-                    onNavigateAssets = { tab = Tab.ASSETS },
-                    onNavigateCommitments = { tab = Tab.CARDS },
-                    onNavigateReports = { tab = Tab.REPORTS },
-                )
-            }
-
-            // Zone 2: Smart Spending Dial (Daily Safe Spend & Buffer Pacing)
-            item(key = "left_to_spend_dial") {
-                Box(modifier = Modifier.padding(edge).padding(top = Space.s)) {
-                    LeftToSpendDial(
-                        story = state.story,
-                        today = tehranDay(System.currentTimeMillis()),
-                        cycleSpec = CycleSpec(state.cycleMode, state.cycleAnchorDay),
-                        liquidToman = state.bankToman,
-                        privacyMode = privacyMode,
-                        onClick = { tab = Tab.LEDGER },
-                    )
-                }
-            }
-
-            // Zone 3: Stream of latest transactions (up to 5 recent entries) with merchant avatars
-            val recentEntries = state.ledger.entries.take(5)
-            if (recentEntries.isNotEmpty()) {
-                item(key = "home_recent_transactions") {
-                    Box(modifier = Modifier.padding(edge).padding(top = Space.l)) {
-                        com.doxigo.muchtoman.ui.rikka.components.card.Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            variant = com.doxigo.muchtoman.ui.rikka.components.card.CardVariant.Elevated,
-                            animation = com.doxigo.muchtoman.ui.rikka.components.card.CardAnimation.None,
-                        ) {
-                            Column(modifier = Modifier.padding(Space.m)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Text(
-                                        text = "آخرین تراکنش‌ها",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold,
-                                    )
-                                    Text(
-                                        text = "مشاهده دفتر ↗",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = Hero.gold,
-                                        modifier = Modifier.clickable { tab = Tab.LEDGER },
-                                    )
-                                }
-
-                                Spacer(Modifier.height(Space.s))
-
-                                recentEntries.forEachIndexed { idx, entry ->
-                                    if (idx > 0) {
-                                        com.doxigo.muchtoman.ui.rikka.components.separator.Separator(
-                                            modifier = Modifier.padding(vertical = Space.xs)
-                                        )
-                                    }
-                                    val isExpense = entry.txn.direction != "in"
-                                    val toman = (entry.txn.amountRial ?: 0L) / 10L
-                                    val merchantName = entry.txn.merchant.ifBlank {
-                                        entry.txn.merchantNorm
-                                    }.ifBlank { if (isExpense) "خرید کارت‌خوان" else "واریز به حساب" }
-                                    val categoryName = entry.categoryFa.ifBlank { "عمومی" }
-                                    val bankFa = bankNameOf(entry.txn.bank)
-                                    val timeFormatted = if (entry.txn.printedAt.isNotBlank()) entry.txn.printedAt else faDay(entry.txn.day)
-
-                                    com.doxigo.muchtoman.widget.primitives.TransactionFeedItem(
-                                        merchant = merchantName,
-                                        category = categoryName,
-                                        amountFormatted = if (privacyMode) "••••••••" else "${faNumber(toman.toDouble())} ت",
-                                        timeFormatted = timeFormatted,
-                                        isExpense = isExpense,
-                                        bankName = bankFa,
-                                        onClick = { tab = Tab.LEDGER },
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (!portfolio) {
-                // The story, and then it stops. One meaningful change, the month's flow, the
-                // runway, and at most one thing asking for her — the inventory is behind the
-                // row at the bottom, because what she opened the app for is how things are
-                // going, not a list of what she owns.
-                val story = state.story
-                // The month itself is on the field now. What is left down here is the one case
-                // the field cannot carry: nothing recorded yet, which is not a status but a
-                // thing to do — switch the messages on — and a task does not belong on the hero.
-                if (story.month.transactions == 0) {
-                    item(key = "flow") {
-                        Box(Modifier.padding(edge).padding(top = Space.l)) {
-                            QuietStart(state.smsEnabled)
-                        }
-                    }
-                }
-                // Side by side, and each without its «why»: this is the glance surface, and the
-                // sentence behind the sentence is on the report where there is room to read it.
-                // A lone card of the two still takes the whole row.
-                if (story.headline != null || story.attention != null) {
-                    item(key = "story") {
-                        Row(
-                            Modifier
-                                .padding(edge)
-                                .padding(top = Space.m)
-                                .height(IntrinsicSize.Min),
-                            horizontalArrangement = Arrangement.spacedBy(Space.m),
-                        ) {
-                            story.headline?.let {
-                                InsightCard(it, Modifier.weight(1f).fillMaxHeight())
-                            }
-                            story.attention?.let {
-                                // This one leaves the screen, so it says where it goes.
-                                InsightCard(
-                                    it,
-                                    Modifier.weight(1f).fillMaxHeight(),
-                                    action = "دفتر رو باز کن",
-                                    onAction = { tab = Tab.LEDGER },
-                                )
-                            }
-                        }
-                    }
-                }
-                if (state.totals.missing.isNotEmpty()) {
-                    item(key = "missing") {
-                        MissingNote(state.totals.missing, state.coins, state.stocks)
-                    }
-                }
-            } else if (state.listHoldings.isEmpty()) {
-                item { EmptyHint() }
-            } else {
-                // Dollars, gold, coins and crypto used to arrive as one undifferentiated stack
-                // of cards. Banding them by kind separates them without moving anything: the
-                // sections come out in the order the holdings are already stored in.
-                val sections = holdingSections
-                sections.forEach { (kind, held) ->
-                    // A single section is not a separation, and its subtotal would only be the
-                    // hero total said twice.
-                    if (sections.size > 1) {
-                        item(key = "kind_${kind.name}") {
-                            // The same function the hero total uses, so the sections always add
-                            // up to it: set-aside and unpriced holdings fall out of both alike,
-                            // and no section can show money the total above it does not have.
-                            val sum = computeTotals(held, effective)
-                            // …which is also why the figure counts contributors and not rows.
-                            // A sum of one is not a sum, it is the card below it said twice —
-                            // and one live row beside a set-aside one is still a sum of one.
-                            val counted = held.count { !it.excluded } - sum.missing.size
-                            SectionHead(
-                                title = kind.fa,
-                                subtotal = sum.toman.takeIf { counted > 1 },
-                                modifier = Modifier.animateItem(),
-                            )
-                        }
-                    } else {
-                        item(key = "band_top") { Spacer(Modifier.height(Space.xl)) }
-                    }
-                    itemsIndexed(held, key = { _, h -> h.key }) { i, h ->
-                        val type = resolveType(h.typeId, dynamicTypes)
-                        HoldingRow(
-                            type = type,
-                            name = h.nameOr(type.fa),
-                            amount = h.amount,
-                            rate = effective[h.typeId],
-                            excluded = h.excluded,
-                            // The bank row is not hers to edit — its amount comes from the
-                            // messages — so it opens the accounts behind it instead.
-                            onClick = {
-                                if (h.typeId == BANK_ID) banks = true
-                                else editing = Editing(h.typeId, h.key)
-                            },
-                            note = if (h.typeId == BANK_ID) bankNote(state) else null,
-                            wallet = h.wallet,
-                            walletRefreshing = h.key in state.refreshingWallets,
-                            walletError = state.walletErrors[h.key],
-                            // A band is one object with rows inside it, not a stack of cards:
-                            // only its outer corners are round, and the rows are divided by a
-                            // hairline that starts where the text does.
-                            shape = bandShape(i, held.size),
-                            divided = i < held.size - 1,
-                            modifier = Modifier.animateItem(),
-                        )
-                    }
-                }
-            }
-
-            if (portfolio && state.totals.missing.isNotEmpty()) {
-                item { MissingNote(state.totals.missing, state.coins, state.stocks) }
-            }
-        }
-        }
-
-        // Once the field has scrolled off, it is paper up there and the list's own headings
-        // were sliding under the clock. A strip in the background colour, arriving exactly
-        // when the status-bar icons flip, gives them something to sit on. It cannot simply
-        // always be there: while the field is up top, this would be a pale band across it.
-        val strip by animateFloatAsState(
-            if (paperUnderStatusBar) 1f else 0f,
-            animationSpec = tween(Motion.fast),
-            label = "statusStrip",
-        )
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .windowInsetsTopHeight(WindowInsets.statusBars)
-                .alpha(strip)
-                .background(MaterialTheme.colorScheme.background),
-        )
-      }
+      // The Today tab, per the canvas (HomeScreen.kt).
+      HomeScreen(
+          state = state,
+          listState = listState,
+          bottomInset = pad.calculateBottomPadding(),
+          privacyMode = privacyMode,
+          onTogglePrivacy = { privacyMode = !privacyMode },
+          onRefresh = vm::refreshAll,
+          onSettings = { settings = true },
+          onSearch = { timelineSearchQuery = null; tab = Tab.LEDGER },
+          onQuickAdd = { showQuickAdd = true },
+          onAssets = { tab = Tab.ASSETS },
+          onReport = { tab = Tab.REPORTS },
+          onLedger = { timelineCategoryId = null; timelineSearchQuery = null; tab = Tab.LEDGER },
+          onOpenTransaction = { transactionRef = it },
+          onManageAccounts = { banks = true },
+          onSetBudget = vm::setMonthlyBudgetToman,
+      )
     }
 
     if (banks) {
