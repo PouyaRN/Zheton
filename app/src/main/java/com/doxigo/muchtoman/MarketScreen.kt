@@ -224,7 +224,9 @@ fun MarketTabScreen(
     val types = remember(state.coins, state.stocks) { catalog(state.coins, state.stocks).associateBy { it.id } }
     fun typeOf(id: String) = resolveType(id, types)
 
-    val active = remember(state.holdings) { state.holdings.filterNot { it.archived } }
+    // listHoldings, as Home's net worth reads it: her holdings plus the bank row (the messages'
+    // balances), so the ring adds up to the same total and the bank row can open the accounts.
+    val active = state.listHoldings
     val archived = remember(state.holdings) { state.holdings.filter { it.archived } }
 
     val counted = active.filterNot { it.excluded }.map { h ->
@@ -782,7 +784,8 @@ private fun HoldingRow(
             modifier = Modifier.combinedClickable(
                 role = Role.Button,
                 onClick = onOpen,
-                onLongClick = { menu = true },
+                // The bank row's amount comes from the messages: nothing to archive or delete.
+                onLongClick = if (holding.typeId == BANK_ID) null else ({ menu = true }),
             ),
         )
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
