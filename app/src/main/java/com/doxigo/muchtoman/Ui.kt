@@ -270,6 +270,8 @@ private data class Editing(val typeId: String, val key: String)
 fun AppRoot(vm: AppVm, state: UiState, activity: FragmentActivity) {
     var adding by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<Editing?>(null) }
+    // The asset screen (AssetDetail.kt) open over the Assets tab: "typeId\u0000key", or null.
+    var assetDetail by rememberSaveable { mutableStateOf<String?>(null) }
     var settings by remember { mutableStateOf(false) }
     var banks by remember { mutableStateOf(false) }
     // The card whose editor is open: set by long-pressing a 3D card, or from the account's
@@ -668,7 +670,7 @@ val snackbarHostState = remember { SnackbarHostState() }
             // Content runs under the pill: screens pad their lists by the Scaffold's bottom pad.
             if (tabs.size > 1) {
                 androidx.compose.animation.AnimatedVisibility(
-                    visible = !isTimelineSelecting,
+                    visible = !isTimelineSelecting && !(tab == Tab.ASSETS && assetDetail != null),
                     enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { it },
                     exit = androidx.compose.animation.fadeOut() + androidx.compose.animation.slideOutVertically { it },
                 ) {
@@ -714,13 +716,25 @@ val snackbarHostState = remember { SnackbarHostState() }
         )
         return@Scaffold
       }
+      if (tab == Tab.ASSETS && assetDetail != null) {
+        val (detailType, detailKey) = assetDetail!!.split('\u0000', limit = 2).let { it[0] to it.getOrNull(1) }
+        AssetDetailScreen(
+            state = state,
+            vm = vm,
+            typeId = detailType,
+            key = detailKey,
+            onBack = { assetDetail = null },
+            onEdit = { k -> editing = Editing(detailType, k) },
+        )
+        return@Scaffold
+      }
       if (tab == Tab.ASSETS) {
         MarketAndAssetsScreen(
             state = state,
             effective = effective,
             onRefresh = { vm.refreshAll() },
             onAddHolding = { adding = true; vm.refreshStocksForPicker() },
-            onEditHolding = { h -> editing = Editing(h.typeId, h.key) },
+            onEditHolding = { h -> assetDetail = h.typeId + '\u0000' + h.key },
             onDeleteHolding = { key -> vm.deleteHolding(key) },
             onArchiveHolding = { key, archived -> vm.setArchived(key, archived) },
             bottomInset = pad.calculateBottomPadding(),
