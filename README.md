@@ -19,7 +19,6 @@ legibility beats density everywhere.
 | `sync/` | Cloudflare Worker for end-to-end-encrypted family sync and the optional encrypted backup vault. |
 | `worker/` | Cloudflare Worker for rates, release info and the APK update channel. |
 | `docs/` | Design notes, research, release specs and the wayfinder map mirrors. |
-| `graphify-out/` | Generated code graph (index only; caches and dated snapshots are not committed). |
 
 The historical repository `securityvisions/Dakh-o-kharj` is **superseded by this one**; issues
 still live there until they are migrated, and this repo is the source of truth for code.
