@@ -1352,7 +1352,7 @@ private fun HoldingMarketRow(
 }
 
 @Composable
-private fun MarketArbitrageRadar(
+internal fun MarketArbitrageRadar(
     usdtToman: Double,
     usdCashToman: Double,
     emamiCoinToman: Double,

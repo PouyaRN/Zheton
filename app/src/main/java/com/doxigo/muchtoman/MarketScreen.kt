@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,6 +21,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.DropdownMenu
@@ -44,6 +47,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -51,6 +55,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.doxigo.muchtoman.ui.components.CanvasGlyph
 import com.doxigo.muchtoman.ui.components.OutlineIconButton
+import com.doxigo.muchtoman.ui.components.PillChip
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 import kotlin.math.truncate
@@ -201,6 +207,9 @@ fun MarketTabScreen(
 ) {
     val t = CanvasTheme.tokens
     var mode by rememberSaveable { mutableStateOf(MarketMode.MINE) }
+    var rateQuery by rememberSaveable { mutableStateOf("") }
+    var rateCategory by rememberSaveable { mutableStateOf(RateCategory.ALL) }
+    var openTool by rememberSaveable { mutableStateOf<String?>(null) }
 
     // The caption says how long ago the rates were fetched; keep "N دقیقه پیش" honest as time passes.
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
@@ -294,18 +303,53 @@ fun MarketTabScreen(
                     }
                 }
             } else {
+                // Every live rate she can look up: the fixed catalogue and main coins first, then
+                // (only while searching) the rest of the catalogue, بورس included.
                 val ids = buildList {
                     STATIC_CATALOG.forEach { if (it.id != TOMAN_ID && effective[it.id] != null) add(it.id) }
                     RATE_LIST_CRYPTO.forEach { if (effective[it] != null && it !in this) add(it) }
                     state.holdings.forEach { h ->
                         if (h.typeId != TOMAN_ID && h.typeId != BANK_ID && effective[h.typeId] != null && h.typeId !in this) add(h.typeId)
                     }
+                    if (rateQuery.isNotBlank()) {
+                        types.values.forEach { ty ->
+                            if (ty.id != TOMAN_ID && ty.id != BANK_ID && effective[ty.id] != null && ty.id !in this) add(ty.id)
+                        }
+                    }
                 }
-                item(key = "rates_gap") { Spacer(Modifier.height(8.dp)) }
-                if (ids.isEmpty()) {
+                val shown = ids.filter { id ->
+                    val ty = typeOf(id)
+                    rateCategory.matches(ty.kind) && (rateQuery.isBlank() || rateMatches(ty, rateQuery))
+                }
+                item(key = "rates_search") {
+                    RateSearchField(
+                        query = rateQuery,
+                        onQuery = { rateQuery = it },
+                        modifier = Modifier.padding(start = CanvasTheme.gutter, end = CanvasTheme.gutter, top = 18.dp),
+                    )
+                }
+                item(key = "rates_chips") {
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = CanvasTheme.gutter, vertical = 14.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RateCategory.entries.forEach { c ->
+                            PillChip(c.label, selected = rateCategory == c, onClick = { rateCategory = c })
+                        }
+                    }
+                }
+                if (shown.isEmpty()) {
                     item(key = "rates_empty") {
                         Text(
-                            if (state.loading) "در حال گرفتن نرخ‌ها…" else "هنوز نرخی دریافت نشده",
+                            when {
+                                state.loading && ids.isEmpty() -> "در حال گرفتن نرخ‌ها…"
+                                ids.isEmpty() -> "هنوز نرخی دریافت نشده"
+                                else -> "نرخی با این مشخصات پیدا نشد"
+                            },
                             fontFamily = Modam,
                             fontSize = 13.sp,
                             color = t.muted,
@@ -314,10 +358,135 @@ fun MarketTabScreen(
                         )
                     }
                 }
-                items(ids, key = { "r:$it" }) { id ->
+                items(shown, key = { "r:$it" }) { id ->
                     RateRow(typeOf(id), effective.getValue(id), state, now)
                 }
+                // The old rates page's two tools, kept one tap away: both need real rates.
+                item(key = "rates_tools") {
+                    Spacer(Modifier.height(18.dp))
+                    val gold18 = effective["gold18"]
+                    val emami = effective["coin_emami"]
+                    val nim = effective["coin_nim"]
+                    val rob = effective["coin_rob"]
+                    val usd = effective["usd"]
+                    val usdt = effective["usdt"]
+                    ToolRow(
+                        title = "حباب‌سنج سکه",
+                        sub = "قیمت بازار امامی، نیم و ربع در برابر ارزش طلای خودشان",
+                        ready = gold18 != null && emami != null && nim != null && rob != null,
+                        open = openTool == "bubble",
+                        onToggle = { openTool = if (openTool == "bubble") null else "bubble" },
+                    )
+                    if (openTool == "bubble" && gold18 != null && emami != null && nim != null && rob != null) {
+                        GoldCoinBubbleGauge(emamiPrice = emami, nimPrice = nim, robPrice = rob, gold18Price = gold18)
+                    }
+                    ToolRow(
+                        title = "رادار آربیتراژ",
+                        sub = "فاصلهٔ تتر با دلار اسکناس و حباب سکهٔ امامی",
+                        ready = gold18 != null && emami != null && rob != null && usd != null && usdt != null,
+                        open = openTool == "radar",
+                        onToggle = { openTool = if (openTool == "radar") null else "radar" },
+                    )
+                    if (openTool == "radar" && gold18 != null && emami != null && rob != null && usd != null && usdt != null) {
+                        MarketArbitrageRadar(
+                            usdtToman = usdt,
+                            usdCashToman = usd,
+                            emamiCoinToman = emami,
+                            robCoinToman = rob,
+                            gold18Toman = gold18,
+                        )
+                    }
+                }
             }
+        }
+    }
+}
+
+/** The rates list's category chips, as the old rates page had them. */
+private enum class RateCategory(val label: String, val kinds: Set<Kind>?) {
+    ALL("همه", null),
+    FIAT("ارز", setOf(Kind.FIAT)),
+    GOLD("طلا و سکه", setOf(Kind.GOLD, Kind.COIN, Kind.SILVER)),
+    CRYPTO("رمزارز", setOf(Kind.CRYPTO)),
+    STOCK("بورس", setOf(Kind.STOCK));
+
+    fun matches(kind: Kind) = kinds == null || kind in kinds
+}
+
+private fun rateMatches(type: AssetType, query: String): Boolean {
+    val q = query.trim()
+    return type.fa.contains(q, ignoreCase = true) ||
+        type.en.contains(q, ignoreCase = true) ||
+        type.id.contains(q, ignoreCase = true)
+}
+
+/** A pill search field in the card colour, as the ledger's. */
+@Composable
+private fun RateSearchField(query: String, onQuery: (String) -> Unit, modifier: Modifier = Modifier) {
+    val t = CanvasTheme.tokens
+    Row(
+        modifier
+            .fillMaxWidth()
+            .height(44.dp)
+            .clip(CircleShape)
+            .background(t.card)
+            .border(1.dp, t.cardBorder, CircleShape)
+            .padding(start = 14.dp, end = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        CanvasGlyph(listOf("M4 11a7 7 0 1 0 14 0a7 7 0 1 0 -14 0", "M20 20l-3.5-3.5"), t.muted, size = 18.dp)
+        Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+            if (query.isEmpty()) {
+                Text("جست‌وجوی ارز، سکه، رمزارز یا نماد", fontFamily = Modam, fontSize = 13.sp, color = t.muted, maxLines = 1)
+            }
+            BasicTextField(
+                value = query,
+                onValueChange = onQuery,
+                singleLine = true,
+                textStyle = TextStyle(fontFamily = Modam, fontSize = 14.sp, color = t.ink),
+                cursorBrush = SolidColor(t.accent),
+                modifier = Modifier.fillMaxWidth().semantics { contentDescription = "جست‌وجوی نرخ‌ها" },
+            )
+        }
+        if (query.isNotEmpty()) {
+            Box(
+                Modifier.size(32.dp).clip(CircleShape).clickable(role = Role.Button, onClickLabel = "پاک کردن") { onQuery("") },
+                contentAlignment = Alignment.Center,
+            ) {
+                CanvasGlyph(listOf("M6 6l12 12M18 6L6 18"), t.muted, size = 16.dp)
+            }
+        }
+    }
+}
+
+/** One of the rates page's tools as a row: opens in place, or says it is waiting on rates. */
+@Composable
+private fun ToolRow(title: String, sub: String, ready: Boolean, open: Boolean, onToggle: () -> Unit) {
+    val t = CanvasTheme.tokens
+    val divider = if (t.isDark) Color.White.copy(alpha = 0.06f) else Color.Black.copy(alpha = 0.06f)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .then(if (ready) Modifier.clickable(role = Role.Button, onClick = onToggle) else Modifier)
+            .padding(horizontal = CanvasTheme.gutter)
+            .drawBehind {
+                val h = 1.dp.toPx()
+                drawRect(divider, topLeft = Offset(0f, size.height - h), size = Size(size.width, h))
+            }
+            .padding(vertical = 13.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, fontFamily = Modam, fontSize = 15.sp, lineHeight = 21.sp, fontWeight = FontWeight.SemiBold, color = if (ready) t.ink else t.muted, maxLines = 1)
+            Text(
+                if (ready) sub else "منتظر نرخ‌های لازم",
+                fontFamily = Modam, fontSize = 12.sp, lineHeight = 17.sp, color = t.muted, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (ready) {
+            Text(if (open) "بستن" else "نمایش", fontFamily = Modam, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = t.accentText)
         }
     }
 }
@@ -464,7 +633,8 @@ private fun AllocationRing(
 ) {
     val t = CanvasTheme.tokens
     val track = if (t == CanvasDark.tokens) Color(0xFF141416) else t.track
-    val (figure, unit) = ringFigure(total)
+    // No holding priced yet: the value is unknown, not zero.
+    val (figure, unit) = if (slices.isEmpty()) "—" to "تومان" else ringFigure(total)
     Box(
         Modifier
             .fillMaxWidth()
