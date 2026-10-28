@@ -154,11 +154,11 @@ class BackupCodecTest {
     @Test
     fun `a future schema version is refused rather than guessed at`() {
         val text = String(codec.encode(sample()), Charsets.UTF_8)
-            .replaceFirst("\"schemaVersion\":1", "\"schemaVersion\":2")
+            .replaceFirst("\"schemaVersion\":$BACKUP_SCHEMA_VERSION", "\"schemaVersion\":${BACKUP_SCHEMA_VERSION + 1}")
         val error = assertThrows(UnsupportedBackupVersionException::class.java) {
             codec.decode(text.toByteArray(), now + 1_000)
         }
-        assertEquals(2, error.version)
+        assertEquals(BACKUP_SCHEMA_VERSION + 1, error.version)
     }
 
     @Test
@@ -167,7 +167,7 @@ class BackupCodecTest {
             codec.decode("""{"createdAt":0}""".toByteArray())
         }
         val negative = String(codec.encode(sample()), Charsets.UTF_8)
-            .replaceFirst("\"schemaVersion\":1", "\"schemaVersion\":-1")
+            .replaceFirst("\"schemaVersion\":$BACKUP_SCHEMA_VERSION", "\"schemaVersion\":-1")
         assertThrows(BackupFormatException::class.java) {
             codec.decode(negative.toByteArray())
         }
@@ -177,7 +177,7 @@ class BackupCodecTest {
     fun `an older schema climbs the registered migration chain`() {
         var migrated = false
         val migrating = BackupCodec(
-            migrations = mapOf(
+            extraMigrations = mapOf(
                 0 to { obj ->
                     migrated = true
                     JsonObject(obj.toMutableMap().apply { put("schemaVersion", JsonPrimitive(1)) })

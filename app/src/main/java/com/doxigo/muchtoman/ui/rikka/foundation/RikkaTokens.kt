@@ -9,10 +9,10 @@ import androidx.compose.ui.unit.dp
 
 @Immutable
 data class RikkaShapes(
-    val sm: Shape = RoundedCornerShape(8.dp),
-    val md: Shape = RoundedCornerShape(12.dp),
-    val lg: Shape = RoundedCornerShape(16.dp),
-    val xl: Shape = RoundedCornerShape(20.dp),
+    val sm: Shape = RoundedCornerShape(10.dp),
+    val md: Shape = RoundedCornerShape(14.dp),
+    val lg: Shape = RoundedCornerShape(22.dp),
+    val xl: Shape = RoundedCornerShape(28.dp),
     val full: Shape = CircleShape,
 )
 

@@ -53,7 +53,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.doxigo.muchtoman.ui.components.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -220,6 +220,8 @@ fun SettingsScreen(
     onHourlyWageChange: (Long) -> Unit = {},
     cycleMode: CycleMode = CycleMode.JALALI_MONTH,
     cycleAnchorDay: Int = 1,
+    monthlyBudgetToman: Long = 0L,
+    onMonthlyBudgetChange: (Long) -> Unit = {},
     onCycleModeChange: (CycleMode) -> Unit = {},
     onCycleAnchorChange: (Int) -> Unit = {},
     onForceRescanSms: (Int) -> Unit = {},
@@ -269,7 +271,7 @@ fun SettingsScreen(
                         .semantics { heading() },
                 )
                 TextButton(onClick = { onNameChange(draft); onBack() }) {
-                    Text("ذخیره", fontSize = 17.sp)
+                    Text("ذخیره", fontSize = 15.sp, fontWeight = FontWeight.Bold)
                 }
             }
 
@@ -568,6 +570,42 @@ fun SettingsScreen(
                 onModeChange = onCycleModeChange,
                 onAnchorChange = onCycleAnchorChange,
             )
+
+            SectionLabel("بودجهٔ ماهانه")
+            Text(
+                "چقدر می‌خوای این ماه خرج کنی؟ از روی این، سهم هر روزت از بودجه حساب می‌شه. خالی بذاری، همون خرج امن از موجودی نشون داده می‌شه.",
+                fontSize = 13.sp,
+                lineHeight = 20.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = Space.s, start = Space.xs, end = Space.xs),
+            )
+            var budgetDraft by remember(monthlyBudgetToman) {
+                mutableStateOf(if (monthlyBudgetToman > 0) monthlyBudgetToman.toString() else "")
+            }
+            OutlinedTextField(
+                value = budgetDraft,
+                onValueChange = { input ->
+                    val cleanDigits = toAsciiDigits(input).filter { it.isDigit() }.take(15)
+                    budgetDraft = cleanDigits
+                    onMonthlyBudgetChange(cleanDigits.toLongOrNull() ?: 0L)
+                },
+                singleLine = true,
+                placeholder = { Text("مثلاً ۲۰,۰۰۰,۰۰۰") },
+                suffix = { Text("تومان در ماه", fontSize = 13.sp) },
+                shape = RoundedCornerShape(Radius.field),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .semantics { contentDescription = "بودجهٔ ماهانه" },
+            )
+            budgetDraft.toLongOrNull()?.takeIf { it > 0L }?.let { parsed ->
+                Text(
+                    "${faCompact(parsed)} تومان",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = Space.xs, start = Space.xs),
+                )
+            }
 
             SectionLabel("داده و ابزارها")
             Text(

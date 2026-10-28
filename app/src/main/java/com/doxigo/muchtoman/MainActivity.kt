@@ -90,7 +90,9 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             hourlyWageToman = store.hourlyWageToman,
             cycleMode = store.cycleMode,
             cycleAnchorDay = store.cycleAnchorDay,
+            monthlyBudgetToman = store.monthlyBudgetToman,
             widgetSlots = store.widgetSlots,
+            holdingLots = store.holdingLots,
         )
     )
     val state: StateFlow<UiState> = _state.asStateFlow()
@@ -101,6 +103,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
     private val ledgerMutex = Mutex()
 
     init {
+        loadDailyRates()
         refresh()
         refreshStocksIfHeld()
         refreshWallets()
@@ -111,6 +114,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             requestFamilySync(silent = true)
         }
         scheduleDailySnapshot(app)
+        com.doxigo.muchtoman.features.pricealerts.PriceAlertWorker.sync(app)
 
         // Reminders are local WorkManager jobs: re-plan on every cold start, because a rebuild
         // after an app update, a restore or a reboot must not leave a due date unarmed. The
@@ -200,6 +204,8 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     timestampMs = if (fresh.updatedAt > 0L) fresh.updatedAt else System.currentTimeMillis(),
                 )
                 _state.update { it.copy(rates = fresh) }
+                checkPriceAlerts()
+                saveDailyRates(fetched.toman, fetched.updatedAt)
             }.onFailure { e ->
                 // Keep showing the cached rates; an old number beats a blank screen. The
                 // log line is the only place the real reason survives — the UI stays Persian
@@ -210,6 +216,19 @@ class AppVm(app: Application) : AndroidViewModel(app) {
 
             _state.update { it.copy(loading = false, error = failure) }
             recordSnapshot()
+        }
+    }
+
+    /** Price alerts are checked on every successful foreground rate refresh. */
+    private fun checkPriceAlerts() {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching {
+                com.doxigo.muchtoman.features.pricealerts.PriceAlerts.check(
+                    app,
+                    effectiveRates(store.cachedRates, store.overrides, store.cachedStocks),
+                )
+            }
         }
     }
 
@@ -231,6 +250,8 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 changed = true
                 store.cachedStocks = fresh
                 _state.update { it.copy(tse = fresh) }
+                checkPriceAlerts()
+                saveDailyRates(fresh.toman, fresh.updatedAt)
                 android.util.Log.i("muchtoman", "tse ok: ${fresh.stocks.size} instruments")
             }.onFailure { error ->
                 android.util.Log.w("muchtoman", "tse fetch failed: $error")
@@ -317,6 +338,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
 
     fun removeHolding(key: String) {
         persist(_state.value.holdings.filterNot { it.key == key })
+        if (key in _state.value.holdingLots) persistLots(_state.value.holdingLots - key)
         _state.update {
             it.copy(
                 refreshingWallets = it.refreshingWallets - key,
@@ -480,6 +502,13 @@ class AppVm(app: Application) : AndroidViewModel(app) {
     fun setHourlyWageToman(wage: Long) {
         store.hourlyWageToman = wage
         _state.update { it.copy(hourlyWageToman = wage) }
+    }
+
+    /** Monthly budget in Toman; 0 clears it. */
+    fun setMonthlyBudgetToman(toman: Long) {
+        val v = toman.coerceAtLeast(0L)
+        store.monthlyBudgetToman = v
+        _state.update { it.copy(monthlyBudgetToman = v) }
     }
 
     /** The window one financial month spans: calendar month or a payday-anchored cycle. */
@@ -1028,14 +1057,17 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         merchant: String,
         note: String,
         epochMillis: Long = System.currentTimeMillis(),
+        accountId: String = MANUAL_ACCOUNT_ID,
     ) {
         val app = getApplication<Application>()
         viewModelScope.launch(Dispatchers.Default) {
             runCatching {
-                recordManualTransaction(app, amountRial, isExpense, categoryId, merchant, note, epochMillis)
+                recordManualTransaction(app, amountRial, isExpense, categoryId, merchant, note, epochMillis, accountId)
                 val durable = DurableDb.get(app)
                 val derived = DerivedDb.get(app)
                 _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
+                // A row on one of her bank accounts moves that account's balance too.
+                if (accountId != MANUAL_ACCOUNT_ID) recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
             }.onFailure { android.util.Log.w("muchtoman", "add manual transaction failed: $it") }
         }
@@ -1688,6 +1720,32 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    // ──────────────────────── category suggestion ────────────────────────
+
+    /** Quick-add's pre-selected category, its row and reason line, from the ledger in memory. */
+    fun suggestCategory(
+        amountRial: Long?,
+        accountId: String?,
+        at: Long = System.currentTimeMillis(),
+        merchant: String? = null,
+        note: String? = null,
+        direction: String = "out",
+    ): CategorySuggestion {
+        val s = _state.value
+        return com.doxigo.muchtoman.suggestCategory(
+            entries = s.ledger.allEntries,
+            categories = s.ledger.categories,
+            amountRial = amountRial,
+            accountId = accountId,
+            at = at,
+            merchant = merchant,
+            note = note,
+            notes = s.ledger.notes,
+            direction = direction,
+            hidden = s.hiddenCategories,
+        )
+    }
+
     // ──────────────────────── CSV export ────────────────────────
 
     /** Export ledger entries to CSV and share via Android intent. */
@@ -2020,6 +2078,102 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         recordSnapshot()
     }
 
+    // ── Holding lots and daily rates (ticket #10; API in HoldingPnl.kt) ─────────────
+
+    /**
+     * ثبت خرید: [amount] units of [typeId] at [unitPriceToman] each, on [atMs]. Adds to the
+     * holding [key] (creating it if she has none) and records the lot its cost comes from.
+     * A wallet-tracked holding keeps the wallet's amount; only the lot is recorded.
+     * False when the numbers are not positive and finite.
+     */
+    fun recordBuy(
+        key: String,
+        typeId: String,
+        amount: Double,
+        unitPriceToman: Double,
+        atMs: Long = System.currentTimeMillis(),
+    ): Boolean {
+        if (!isValidLot(amount, unitPriceToman)) return false
+        val existing = _state.value.holdings.firstOrNull { it.key == key }
+        when {
+            existing == null -> saveHolding(key, typeId, amount, wallet = null)
+            existing.wallet == null -> saveHolding(key, existing.typeId, existing.amount + amount, wallet = null)
+        }
+        addLot(key, HoldingLot(newHoldingId(), LotSide.BUY, amount, unitPriceToman, atMs))
+        return true
+    }
+
+    /**
+     * ثبت فروش: [amount] units of the holding [key] sold at [unitPriceToman] each. Takes the
+     * units off the holding (never below zero; the row stays) and records the lot, which books
+     * realised profit at the average cost. False for an unknown holding, bad numbers, or a
+     * sale larger than what she holds.
+     */
+    fun recordSell(
+        key: String,
+        amount: Double,
+        unitPriceToman: Double,
+        atMs: Long = System.currentTimeMillis(),
+    ): Boolean {
+        if (!isValidLot(amount, unitPriceToman)) return false
+        val existing = _state.value.holdings.firstOrNull { it.key == key } ?: return false
+        if (amount > existing.amount * (1 + 1e-9) + 1e-12) return false
+        if (existing.wallet == null) {
+            saveHolding(key, existing.typeId, (existing.amount - amount).coerceAtLeast(0.0), wallet = null)
+        }
+        addLot(key, HoldingLot(newHoldingId(), LotSide.SELL, amount, unitPriceToman, atMs))
+        return true
+    }
+
+    /**
+     * Gives the units no lot accounts for — every holding from before lots existed — the price
+     * she paid, without changing the amount. Turns the dash into a real cost basis.
+     */
+    fun recordOpeningCost(key: String, unitPriceToman: Double, atMs: Long = System.currentTimeMillis()): Boolean {
+        val holding = _state.value.holdings.firstOrNull { it.key == key } ?: return false
+        val uncovered = positionOf(holding, _state.value.lotsOf(key), null).uncoveredAmount
+        if (!isValidLot(uncovered, unitPriceToman)) return false
+        addLot(key, HoldingLot(newHoldingId(), LotSide.BUY, uncovered, unitPriceToman, atMs))
+        return true
+    }
+
+    /** Removes one recorded lot (a mistyped entry). The holding's amount is left alone. */
+    fun deleteLot(key: String, lotId: String) {
+        val lots = _state.value.holdingLots[key] ?: return
+        val next = lots.filterNot { it.id == lotId }
+        persistLots(if (next.isEmpty()) _state.value.holdingLots - key else _state.value.holdingLots + (key to next))
+    }
+
+    private fun addLot(key: String, lot: HoldingLot) {
+        val all = _state.value.holdingLots
+        persistLots(all + (key to (all[key].orEmpty() + lot)))
+    }
+
+    private fun persistLots(lots: Map<String, List<HoldingLot>>) {
+        store.holdingLots = lots
+        _state.update { it.copy(holdingLots = lots) }
+    }
+
+    /** Reads the stored closes off the main thread, importing the old intraday store once. */
+    private fun loadDailyRates() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val loaded = runCatching {
+                store.dailyRates.seedOnce(store.rateHistoryStore.allHistory())
+                store.dailyRates.loadAll()
+            }.getOrDefault(emptyMap())
+            // Anything recorded while this ran is newer than the files read; it wins.
+            _state.update { it.copy(dailyRates = loaded + it.dailyRates) }
+        }
+    }
+
+    private suspend fun saveDailyRates(rates: Map<String, Double>, updatedAt: Long) {
+        val holdings = _state.value.holdings
+        val changed = withContext(Dispatchers.IO) {
+            persistDailyRates(store.dailyRates, rates, updatedAt, holdings)
+        }
+        if (changed.isNotEmpty()) _state.update { it.copy(dailyRates = it.dailyRates + changed) }
+    }
+
     private fun persist(list: List<Holding>) {
         store.holdings = list
         _state.update { it.copy(holdings = list) }
@@ -2085,7 +2239,13 @@ data class UiState(
     val hourlyWageToman: Long = 0L,
     val cycleMode: CycleMode = CycleMode.JALALI_MONTH,
     val cycleAnchorDay: Int = 1,
+    /** User-set monthly budget in Toman; 0 = unset. */
+    val monthlyBudgetToman: Long = 0L,
     val widgetSlots: List<com.doxigo.muchtoman.widget.engine.WidgetSlot> = com.doxigo.muchtoman.widget.engine.WidgetEngineDefaults.defaultSlots,
+    /** ثبت خرید / ثبت فروش per holding key; see HoldingPnl.kt for what is computed from it. */
+    val holdingLots: Map<String, List<HoldingLot>> = emptyMap(),
+    /** Stored daily closes per asset id, from rates the app actually fetched. */
+    val dailyRates: Map<String, DailyCloses> = emptyMap(),
 ) {
     val coins: List<Coin> get() = rates.coins
 
@@ -2099,6 +2259,16 @@ data class UiState(
         buildStory(ledger.entries, Math.round(bankToman * 10.0), tehranDay(System.currentTimeMillis()), CycleSpec(cycleMode, cycleAnchorDay))
     }
     val stocks: List<Stock> get() = tse.stocks
+
+    /** Budget, spent, plan-to-date and today's share for the current cycle; see [monthlyBudget]. */
+    val budget: MonthlyBudget by lazy {
+        monthlyBudget(
+            ledger.allEntries.ifEmpty { ledger.entries },
+            monthlyBudgetToman,
+            tehranDay(System.currentTimeMillis()),
+            CycleSpec(cycleMode, cycleAnchorDay),
+        )
+    }
 
     /**
      * Update check permanently disabled for this fork.
@@ -2117,6 +2287,23 @@ data class UiState(
 
     /** The tracked balances as one figure, minus the banks she switched off. */
     val bankToman: Double get() = bankTotal(bankAccounts, disabledBanks)
+
+    /** Per account, when its last bank SMS was read and "… پیش" for it (Accounts screen). */
+    fun smsFreshness(now: Long = System.currentTimeMillis()): List<SmsFreshness> =
+        com.doxigo.muchtoman.smsFreshness(bankAccounts, ledger.allEntries + ledger.hiddenEntries, now)
+
+    /** 30 days of deposits/withdrawals across every account she has not switched off. */
+    val accountsFlow: AccountFlow by lazy {
+        com.doxigo.muchtoman.accountFlow(
+            ledger.allEntries,
+            bankAccounts.filter { it.bank !in disabledBanks }.map { it.key }.toSet(),
+            tehranDay(System.currentTimeMillis()),
+        )
+    }
+
+    /** 30 days of deposits/withdrawals for one account, by [BankAccount.key]. */
+    fun accountFlow(accountKey: String): AccountFlow =
+        com.doxigo.muchtoman.accountFlow(ledger.allEntries, setOf(accountKey), tehranDay(System.currentTimeMillis()))
 
     /**
      * Committed money: the sum of unpaid installments across all active obligations,

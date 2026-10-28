@@ -27,7 +27,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FilterChip
+import com.doxigo.muchtoman.ui.components.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -263,14 +263,8 @@ fun ReportsTab(
     }
 
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding()) {
-            Text(
-                "گزارش‌ها",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onBackground,
-                modifier = Modifier.padding(horizontal = Space.xl, vertical = Space.m),
-            )
+        // The page title and the status-bar inset belong to the tab above this pager.
+        Column(Modifier.fillMaxSize()) {
 
             // Window selector
             WindowSelector(window) { window = it }
@@ -388,11 +382,7 @@ private fun WindowSelector(selected: ReportWindow, onSelect: (ReportWindow) -> U
             FilterChip(
                 selected = w == selected,
                 onClick = { onSelect(w) },
-                label = { Text(w.fa, fontSize = 12.sp) },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                    selectedLabelColor = MaterialTheme.colorScheme.primary,
-                ),
+                label = { Text(w.fa, fontSize = 12.sp, modifier = Modifier.fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
                 modifier = Modifier.weight(1f),
             )
         }
@@ -430,8 +420,7 @@ private fun ExecutiveCashFlowCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.group))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.group)),
+            .clip(RoundedCornerShape(Radius.group)),
         color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Column(Modifier.padding(Space.xl)) {
@@ -738,8 +727,7 @@ private fun Budget503020Card(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.group))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.group)),
+            .clip(RoundedCornerShape(Radius.group)),
         color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Column(Modifier.padding(Space.xl)) {
@@ -907,8 +895,7 @@ private fun AssetAllocationDonutCard(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.group))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.group)),
+            .clip(RoundedCornerShape(Radius.group)),
         color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Column(Modifier.padding(Space.xl)) {
@@ -1200,8 +1187,7 @@ private fun BankFeesCard(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.group))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.group)),
+            .clip(RoundedCornerShape(Radius.group)),
         color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Column(Modifier.padding(Space.xl)) {
@@ -1323,8 +1309,7 @@ private fun SpendingHeatmapCard(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.group))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.group)),
+            .clip(RoundedCornerShape(Radius.group)),
         color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Column(Modifier.padding(Space.xl)) {
@@ -1507,8 +1492,7 @@ private fun CategoryDonutCard(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.group))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.group)),
+            .clip(RoundedCornerShape(Radius.group)),
         color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Column(Modifier.padding(Space.xl)) {
@@ -1759,8 +1743,7 @@ fun FinancialDecisionEngineCard(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(Radius.group))
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.group)),
+            .clip(RoundedCornerShape(Radius.group)),
         color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Column(modifier = Modifier.padding(Space.xl)) {
@@ -1883,8 +1866,7 @@ fun FinancialDecisionEngineCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(Radius.card))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f))
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(Radius.card))
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
                     .padding(horizontal = Space.m, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,

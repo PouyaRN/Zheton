@@ -34,7 +34,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import com.doxigo.muchtoman.ui.components.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -714,7 +714,6 @@ internal fun GoldBubbleSheet(
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(Radius.card))
                     .background(MaterialTheme.colorScheme.surfaceContainer)
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), RoundedCornerShape(Radius.card))
                     .padding(Space.m),
             ) {
                 Column {
@@ -863,7 +862,6 @@ internal fun RecurringExpensesSheet(
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(Radius.card))
                                 .background(MaterialTheme.colorScheme.surfaceContainer)
-                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.card))
                                 .padding(Space.m),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
@@ -1093,7 +1091,6 @@ internal fun WishlistSheet(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(Radius.card))
                             .background(MaterialTheme.colorScheme.surfaceContainer)
-                            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.card))
                             .padding(Space.m),
                     ) {
                         Column {

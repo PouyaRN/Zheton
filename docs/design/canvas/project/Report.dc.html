@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>گزارش مهر · اندیس</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300..900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#F5B840;text-decoration:none}a:hover{color:#FFD27A}
+button{font-family:inherit}
+</style>
+</helmet>
+<div dir="rtl" style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #000000; color: #F5F5F4; font-family: 'Vazirmatn', system-ui, sans-serif">
+
+  <div aria-hidden="true" style="position: absolute; bottom: 120px; left: -200px; width: 640px; height: 520px; border-radius: 999px; background: radial-gradient(closest-side, rgba(245,184,64,0.14), rgba(0,0,0,0) 100%)"></div>
+
+  <div style="position: relative; padding: 58px 20px 0; display: flex; flex-direction: column; gap: 22px">
+
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <div role="tablist" aria-label="ماه" style="display: flex; gap: 6px">
+        <button role="tab" aria-selected="false" style="height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: transparent; color: #8E8E93; font-size: 12px">شهریور</button>
+        <button role="tab" aria-selected="true" style="height: 34px; padding: 0 14px; border: 0; border-radius: 999px; background: #F5F5F4; color: #000; font-size: 12px; font-weight: 800">مهر</button>
+        <button role="tab" aria-selected="false" style="height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: transparent; color: #8E8E93; font-size: 12px">آبان</button>
+      </div>
+      <button aria-label="اشتراک‌گذاری گزارش" style="width: 40px; height: 40px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: transparent; color: #F5F5F4; display: flex; align-items: center; justify-content: center; cursor: pointer">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M8 8l4-4 4 4"></path><path d="M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"></path></svg>
+      </button>
+    </div>
+
+    <!-- The month, read like liner notes: what matters lit, the rest receding -->
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 11px; color: #8E8E93">مهر ۱۴۰۵ در یک نگاه</span>
+      <p style="margin: 0; font-size: 29px; line-height: 1.45; font-weight: 800; letter-spacing: -0.3px; color: #6E6E73">
+        مهر رو با <span style="color: #F5F5F4">۴٫۴ میلیون پس‌انداز</span> بستی.
+        خرج <span style="color: #F5F5F4">رستوران ۳۱٪ کم</span> شد،
+        ولی <span style="color: #F5B840">خواربار داره بالا می‌ره.</span>
+      </p>
+    </div>
+
+    <!-- This month against last, as two running totals -->
+    <div style="background: #0F0F11; border: 1px solid rgba(255,255,255,0.07); border-radius: 26px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; justify-content: space-between; align-items: center">
+        <span style="font-size: 14px; font-weight: 700">خرج از اول ماه</span>
+        <div style="display: flex; gap: 12px; font-size: 11px; color: #B5B5B8">
+          <span style="display: flex; align-items: center; gap: 5px"><span style="width: 14px; height: 3px; border-radius: 2px; background: #F5B840"></span>مهر</span>
+          <span style="display: flex; align-items: center; gap: 5px"><span style="width: 14px; height: 0; border-top: 2px dashed #6E6E73"></span>شهریور</span>
+        </div>
+      </div>
+      <svg dir="ltr" width="326" height="132" viewBox="0 0 326 132" role="img" aria-label="خرج تجمعی مهر در همهٔ ماه پایین‌تر از شهریور ماند و با ۱۹٫۶ میلیون در برابر ۲۲٫۳ تمام شد">
+        <defs>
+          <linearGradient id="cumFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#F5B840" stop-opacity="0.32"></stop>
+            <stop offset="1" stop-color="#F5B840" stop-opacity="0"></stop>
+          </linearGradient>
+        </defs>
+        <line x1="0" y1="44" x2="326" y2="44" stroke="rgba(255,255,255,0.06)"></line>
+        <line x1="0" y1="84" x2="326" y2="84" stroke="rgba(255,255,255,0.06)"></line>
+        <line x1="0" y1="124" x2="326" y2="124" stroke="rgba(255,255,255,0.12)"></line>
+        <path d="{{lastLine}}" stroke="#6E6E73" stroke-width="1.8" stroke-dasharray="4 4" fill="none" stroke-linecap="round"></path>
+        <path d="{{thisFill}}" fill="url(#cumFill)"></path>
+        <path d="{{thisLine}}" stroke="#F5B840" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"></path>
+        <circle cx="326" cy="{{thisEnd}}" r="4.5" fill="#F5B840" stroke="#0F0F11" stroke-width="2"></circle>
+        <circle cx="326" cy="{{lastEnd}}" r="3.5" fill="#6E6E73"></circle>
+      </svg>
+      <div style="display: flex; justify-content: space-between; font-size: 11px; color: #8E8E93">
+        <span>کل مهر ۱۹٫۶ میلیون، شهریور ۲۲٫۳ میلیون</span>
+        <span>۱ مهر</span>
+      </div>
+    </div>
+
+    <!-- Where it went: one bar of the whole, then the parts -->
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; gap: 3px; height: 12px">
+        <div style="flex: 6.0; border-radius: 999px; background: #F5F5F4"></div>
+        <div style="flex: 5.2; border-radius: 999px; background: #F5B840"></div>
+        <div style="flex: 3.1; border-radius: 999px; background: #B8752A"></div>
+        <div style="flex: 2.4; border-radius: 999px; background: #7FB2FF"></div>
+        <div style="flex: 2.9; border-radius: 999px; background: #3A3A3F"></div>
+      </div>
+      <sc-for list="{{cats}}" as="c" hint-placeholder-count="3">
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 14px">
+          <span style="width: 10px; height: 10px; border-radius: 999px; background: {{c.color}}"></span>
+          <span style="flex: 1">{{c.name}}</span>
+          <span style="font-size: 12px; font-weight: 700; color: {{c.dc}}">{{c.delta}}</span>
+          <span style="width: 84px; text-align: left; font-weight: 700">{{c.amount}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div aria-hidden="true" style="position: absolute; right: 0; left: 0; bottom: 0; height: 150px; background: linear-gradient(to top, #000 45%, rgba(0,0,0,0))"></div>
+
+  <nav aria-label="ناوبری اصلی" style="position: absolute; right: 20px; left: 20px; bottom: 28px; height: 66px; border-radius: 999px; background: rgba(28,28,30,0.86); border: 1px solid rgba(255,255,255,0.09); display: flex; align-items: center; justify-content: space-between; padding: 0 7px">
+    <a href="Main.dc.html" aria-label="امروز" style="width: 52px; height: 52px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #8E8E93">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5L12 4l8 6.5V20H4z"></path></svg>
+    </a>
+    <a href="Ledger.dc.html" aria-label="دفتر" style="width: 52px; height: 52px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #8E8E93">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"></path><path d="M9 8h6M9 12h4"></path></svg>
+    </a>
+    <a href="Market.dc.html" aria-label="بازار" style="width: 52px; height: 52px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #8E8E93">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 18l5-6 4 3 7-8"></path></svg>
+    </a>
+    <a href="Accounts.dc.html" aria-label="حساب‌ها" style="width: 52px; height: 52px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #8E8E93">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="3"></rect><path d="M3 10h18"></path></svg>
+    </a>
+    <a href="Report.dc.html" aria-current="page" style="height: 52px; padding: 0 18px; border-radius: 999px; background: #F5F5F4; color: #000; display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 800">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 19V11M12 19V5M18 19v-6"></path></svg>
+      گزارش
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  smooth(points) {
+    let d = 'M' + points[0][0].toFixed(1) + ' ' + points[0][1].toFixed(1);
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i - 1] || points[i], p1 = points[i], p2 = points[i + 1], p3 = points[i + 2] || p2;
+      d += ' C' + (p1[0] + (p2[0] - p0[0]) / 6).toFixed(1) + ' ' + (p1[1] + (p2[1] - p0[1]) / 6).toFixed(1) +
+        ' ' + (p2[0] - (p3[0] - p1[0]) / 6).toFixed(1) + ' ' + (p2[1] - (p3[1] - p1[1]) / 6).toFixed(1) +
+        ' ' + p2[0].toFixed(1) + ' ' + p2[1].toFixed(1);
+    }
+    return d;
+  }
+
+  cumulative(daily, total) {
+    let run = 0;
+    const sum = daily.reduce((a, b) => a + b, 0);
+    return daily.map((v) => { run += v; return (run / sum) * total; });
+  }
+
+  renderVals() {
+    const mehr = [0.4, 0.3, 0.6, 0.2, 0.4, 1.0, 0.3, 0.4, 0.2, 0.4, 0.3, 0.3, 0.6, 0.2, 0.35, 0.45, 0.3, 0.25, 0.9, 0.35, 0.3, 0.4, 0.35, 0.25, 0.3, 0.5, 0.2, 0.4, 0.3, 0.3];
+    const shahrivar = [0.6, 0.5, 0.4, 0.7, 0.3, 0.5, 0.9, 0.4, 0.3, 0.6, 0.5, 0.4, 0.3, 0.7, 0.5, 0.4, 0.6, 0.3, 0.5, 0.4, 0.6, 0.3, 0.5, 0.4, 0.3, 0.5, 0.4, 0.6, 0.3, 0.4];
+    const W = 326, base = 124, maxV = 24, h = 112;
+    const toPts = (arr) => [[0, base]].concat(arr.map((v, i) => [((i + 1) / arr.length) * W, base - (v / maxV) * h]));
+    const a = toPts(this.cumulative(mehr, 19.6));
+    const b = toPts(this.cumulative(shahrivar, 22.3));
+    const thisLine = this.smooth(a);
+    return {
+      thisLine,
+      thisFill: thisLine + ' L' + W + ' ' + base + ' L0 ' + base + ' Z',
+      lastLine: this.smooth(b),
+      thisEnd: a[a.length - 1][1].toFixed(1),
+      lastEnd: b[b.length - 1][1].toFixed(1),
+      cats: [
+        { name: 'خانه و قبوض', color: '#F5F5F4', amount: '۶٫۰ میلیون', delta: '', dc: '#8E8E93' },
+        { name: 'خواربار', color: '#F5B840', amount: '۵٫۲ میلیون', delta: '+۱۴٪ از شهریور', dc: '#F5B840' },
+        { name: 'رستوران و کافه', color: '#B8752A', amount: '۳٫۱ میلیون', delta: '−۳۱٪ از شهریور', dc: '#3FD98B' },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

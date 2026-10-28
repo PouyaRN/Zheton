@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -25,6 +26,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -176,7 +180,8 @@ fun PersianCurrencyTicker(
             fontFamily = ModamFigures,
             fontWeight = FontWeight.ExtraBold,
             fontSize = fontSize,
-            fontFeatureSettings = "tnum",
+            // Proportional on purpose: the slots below animate to each digit's own width, so
+            // the roll stays steady without tabular figures padding every ۱ out to an ۸.
             color = textColor,
         )
     }
@@ -200,6 +205,14 @@ fun PersianCurrencyTicker(
     }
 
     val (digitWidth, digitHeight, sepWidth) = measuredDimensions
+    // Each digit's own advance. A balance set in fixed-width slots opens a gap beside every ۱ —
+    // the number reads as spaced-out type rather than one solid figure. The slot eases to the
+    // width of whatever digit it is settling on, so the roll still never jumps.
+    val digitWidths = remember(textStyle, density) {
+        PERSIAN_DIGITS.map { d ->
+            with(density) { textMeasurer.measure(d.toString(), textStyle).size.width.toDp() }
+        }
+    }
     val slots = remember(amount, decimals) { decomposeAmountToSlots(amount, decimals) }
 
     // Outer layout: Authentic Persian RTL flow
@@ -261,6 +274,11 @@ fun PersianCurrencyTicker(
                                 }
                             }
                             is TickerSlot.Digit -> {
+                                val slotWidth by androidx.compose.animation.core.animateDpAsState(
+                                    targetValue = digitWidths[slot.targetDigit],
+                                    animationSpec = spring(dampingRatio = 0.85f, stiffness = 380f),
+                                    label = "digitWidth",
+                                )
                                 AnimatedVisibility(
                                     visible = true,
                                     enter = expandHorizontally(
@@ -275,12 +293,12 @@ fun PersianCurrencyTicker(
                                             stiffness = 380f,
                                         ),
                                     ) + fadeOut(),
-                                    modifier = Modifier.width(digitWidth),
+                                    modifier = Modifier.width(slotWidth),
                                 ) {
                                     SingleDigitCylinder(
                                         targetDigit = slot.targetDigit,
                                         isIncreasing = isIncreasing,
-                                        digitWidth = digitWidth,
+                                        digitWidth = slotWidth,
                                         digitHeight = digitHeight,
                                         textStyle = textStyle,
                                         showVignette = showVignette,
@@ -295,10 +313,10 @@ fun PersianCurrencyTicker(
             // Currency Unit Suffix (renders on the left in RTL)
             if (unit.isNotBlank()) {
                 Box(
-                    modifier = Modifier.graphicsLayer { translationX = 0f },
+                    modifier = Modifier.padding(start = (fontSize.value * 0.18f).dp),
                 ) {
                     Text(
-                        text = " $unit",
+                        text = unit,
                         style = textStyle.copy(
                             fontSize = (fontSize.value * 0.44f).sp,
                             fontWeight = FontWeight.Bold,
@@ -370,7 +388,11 @@ private fun SingleDigitCylinder(
         modifier = Modifier
             .width(digitWidth)
             .height(digitHeight)
-            .clipToBounds(),
+            // Clip the roll top and bottom only: the slot is as narrow as the digit it settles
+            // on, so a wider glyph passing through must be free to overhang its sides.
+            .drawWithContent {
+                clipRect(left = -size.width, right = size.width * 2f) { this@drawWithContent.drawContent() }
+            },
         contentAlignment = Alignment.Center,
     ) {
         // Render 10 discrete digit layers positioned along the vertical cylinder barrel
@@ -380,6 +402,7 @@ private fun SingleDigitCylinder(
             Box(
                 modifier = Modifier
                     .width(digitWidth)
+                    .wrapContentWidth(unbounded = true)
                     .height(digitHeight)
                     .graphicsLayer {
                         val currentVal = animatedPosition.value

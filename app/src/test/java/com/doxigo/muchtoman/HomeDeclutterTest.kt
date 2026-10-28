@@ -8,20 +8,17 @@ import org.junit.Test
 class HomeDeclutterTest {
 
     @Test
-    fun `Tab entries has exactly four core tabs and excludes GOALS and standalone REPORTS`() {
-        assertEquals(4, Tab.entries.size)
-        val tabNames = Tab.entries.map { it.name }
-        assertTrue(tabNames.contains("HOME"))
-        assertTrue(tabNames.contains("ASSETS"))
-        assertTrue(tabNames.contains("CARDS"))
-        assertTrue(tabNames.contains("ACTIVITY_AND_TRENDS"))
-        assertFalse("GOALS must not be in Tab.entries", tabNames.contains("GOALS"))
-        assertFalse("REPORTS must not be a standalone root tab", tabNames.contains("REPORTS"))
+    fun `Tab entries are the canvas's five destinations and exclude GOALS`() {
+        assertEquals(
+            listOf("HOME", "LEDGER", "ASSETS", "CARDS", "REPORTS"),
+            Tab.entries.map { it.name },
+        )
+        assertFalse("GOALS must not be in Tab.entries", Tab.entries.any { it.name == "GOALS" })
     }
 
     @Test
-    fun `Tab labels in Persian match refined four-tab navigation`() {
-        val expected = listOf("فرمان", "بازار", "حساب‌ها", "دفتر و تحلیل")
+    fun `Tab labels in Persian match the canvas nav`() {
+        val expected = listOf("امروز", "دفتر", "دارایی", "حساب‌ها", "گزارش")
         assertEquals(expected, Tab.entries.map { it.fa })
     }
 

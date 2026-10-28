@@ -133,14 +133,10 @@ fun LeftToSpendDial(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(Radius.card))
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.75f),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.outline.copy(alpha = 0.25f),
-        ),
+        shape = RoundedCornerShape(Radius.card),
+        color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Column(
             modifier = Modifier
@@ -631,7 +627,7 @@ fun NetWorthFluctuationCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f))
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
                     .padding(Space.s),
                 horizontalArrangement = Arrangement.SpaceAround,
             ) {
@@ -789,7 +785,7 @@ fun ContextualPriorityCard(
                 val bannerBg = when {
                     isOverdue -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
                     isToday || isTomorrow -> Color(0xFFF59E0B).copy(alpha = 0.15f)
-                    else -> MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f)
+                    else -> MaterialTheme.colorScheme.surfaceContainer
                 }
 
                 val bannerBorder = when {
@@ -862,8 +858,7 @@ fun ContextualPriorityCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(14.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f))
-                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f), RoundedCornerShape(14.dp))
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
                         .padding(horizontal = Space.m, vertical = 10.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
@@ -914,10 +909,6 @@ fun ContextualPriorityCard(
                             .clickable(onClick = onOpenCommitments),
                         shape = RoundedCornerShape(Radius.pill),
                         color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.4f),
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
-                        ),
                     ) {
                         Text(
                             text = "اقساط (${fa(activeCommitments.size)})",
@@ -936,10 +927,6 @@ fun ContextualPriorityCard(
                             .clickable(onClick = onOpenObligations),
                         shape = RoundedCornerShape(Radius.pill),
                         color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.4f),
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
-                        ),
                     ) {
                         Text(
                             text = "تعهدات (${fa(activeObligations.size)})",
@@ -958,10 +945,6 @@ fun ContextualPriorityCard(
                             .clickable(onClick = onOpenReservations),
                         shape = RoundedCornerShape(Radius.pill),
                         color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.4f),
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
-                        ),
                     ) {
                         Text(
                             text = "رزروها (${fa(activeReservations.size)})",
@@ -1080,14 +1063,10 @@ private fun BentoTile(
 ) {
     Surface(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(Radius.card))
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
-        ),
+        shape = RoundedCornerShape(Radius.card),
+        color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Column(
             modifier = Modifier

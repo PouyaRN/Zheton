@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>ثبت خرج · اندیس</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300..900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#F5B840;text-decoration:none}a:hover{color:#FFD27A}
+button{font-family:inherit}
+</style>
+</helmet>
+<div dir="rtl" style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #000000; color: #F5F5F4; font-family: 'Vazirmatn', system-ui, sans-serif">
+
+  <div aria-hidden="true" style="position: absolute; top: 120px; left: -160px; width: 560px; height: 560px; border-radius: 999px; background: radial-gradient(closest-side, rgba(245,184,64,0.16), rgba(0,0,0,0) 100%)"></div>
+
+  <div style="position: relative; height: 100%; box-sizing: border-box; padding: 54px 20px 30px; display: flex; flex-direction: column">
+
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <a href="Main.dc.html" aria-label="بستن" style="width: 44px; height: 44px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); color: #F5F5F4; display: flex; align-items: center; justify-content: center">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </a>
+      <div role="tablist" aria-label="نوع تراکنش" style="display: flex; padding: 3px; border-radius: 999px; background: #121214; border: 1px solid rgba(255,255,255,0.07)">
+        <button role="tab" aria-selected="true" style="height: 36px; padding: 0 16px; border: 0; border-radius: 999px; background: #F5F5F4; color: #000; font-size: 13px; font-weight: 800; cursor: pointer">خرج</button>
+        <button role="tab" aria-selected="false" style="height: 36px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; color: #8E8E93; font-size: 13px; font-weight: 600; cursor: pointer">درآمد</button>
+        <button role="tab" aria-selected="false" style="height: 36px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; color: #8E8E93; font-size: 13px; font-weight: 600; cursor: pointer">انتقال</button>
+      </div>
+    </div>
+
+    <!-- Amount: the whole stage -->
+    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px">
+      <span style="font-size: 12px; color: #8E8E93">مبلغ</span>
+      <div style="display: flex; align-items: center; gap: 4px">
+        <span style="font-size: 80px; font-weight: 800; line-height: 1; letter-spacing: -2px">۱۸۵٬۰۰۰</span>
+        <span style="width: 3px; height: 64px; border-radius: 2px; background: #F5B840"></span>
+      </div>
+      <span style="font-size: 14px; color: #B5B5B8">صد و هشتاد و پنج هزار تومان</span>
+      <div style="margin-top: 14px; display: flex; gap: 8px">
+        <button style="height: 40px; padding: 0 6px 0 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: #F5F5F4; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; cursor: pointer">
+          <span style="width: 28px; height: 28px; border-radius: 999px; background: #B4242C; color: #fff; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center">م</span>
+          ملت ۶۴۶۰
+        </button>
+        <button style="height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.04); color: #F5F5F4; font-size: 13px; font-weight: 600; cursor: pointer">امروز · ۱۰:۴۲</button>
+      </div>
+    </div>
+
+    <!-- Category: guessed first, from time and place -->
+    <div style="display: flex; flex-direction: column; gap: 10px; padding-bottom: 14px">
+      <span style="font-size: 12px; color: #8E8E93">به‌نظر کافه‌ست؛ معمولاً این ساعت همین‌جا خرج می‌کنی</span>
+      <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px">
+        <button aria-pressed="true" style="border: 0; background: transparent; color: #F5F5F4; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; cursor: pointer">
+          <span style="width: 54px; height: 54px; border-radius: 999px; background: #F5B840; color: #000; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"></path><path d="M16 10h2a2 2 0 0 1 0 4h-2"></path></svg></span>
+          کافه
+        </button>
+        <button aria-pressed="false" style="border: 0; background: transparent; color: #B5B5B8; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; cursor: pointer">
+          <span style="width: 54px; height: 54px; border-radius: 999px; background: #161618; color: #F5F5F4; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3v8M5 3v4a2 2 0 0 0 4 0V3M7 11v10M17 3c-2 2-2 6 0 8v10"></path></svg></span>
+          رستوران
+        </button>
+        <button aria-pressed="false" style="border: 0; background: transparent; color: #B5B5B8; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; cursor: pointer">
+          <span style="width: 54px; height: 54px; border-radius: 999px; background: #161618; color: #F5F5F4; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h2l2 9h9l2-6H7"></path><circle cx="9" cy="19.5" r="1"></circle><circle cx="16" cy="19.5" r="1"></circle></svg></span>
+          خواربار
+        </button>
+        <button aria-pressed="false" style="border: 0; background: transparent; color: #B5B5B8; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; cursor: pointer">
+          <span style="width: 54px; height: 54px; border-radius: 999px; background: #161618; color: #F5F5F4; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17h14M6 17l1.5-5.5A2 2 0 0 1 9.4 10h5.2a2 2 0 0 1 1.9 1.5L18 17"></path><circle cx="8" cy="18.5" r="1.5"></circle><circle cx="16" cy="18.5" r="1.5"></circle></svg></span>
+          حمل‌ونقل
+        </button>
+        <button aria-label="دسته‌های بیشتر" style="border: 0; background: transparent; color: #B5B5B8; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; cursor: pointer">
+          <span style="width: 54px; height: 54px; border-radius: 999px; border: 1px dashed rgba(255,255,255,0.22); color: #F5F5F4; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></span>
+          بیشتر
+        </button>
+      </div>
+    </div>
+
+    <!-- Keypad -->
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px">
+      <button style="height: 56px; border: 0; background: transparent; color: #F5F5F4; font-size: 26px; font-weight: 500; cursor: pointer">۱</button>
+      <button style="height: 56px; border: 0; background: transparent; color: #F5F5F4; font-size: 26px; font-weight: 500; cursor: pointer">۲</button>
+      <button style="height: 56px; border: 0; background: transparent; color: #F5F5F4; font-size: 26px; font-weight: 500; cursor: pointer">۳</button>
+      <button style="height: 56px; border: 0; background: transparent; color: #F5F5F4; font-size: 26px; font-weight: 500; cursor: pointer">۴</button>
+      <button style="height: 56px; border: 0; background: transparent; color: #F5F5F4; font-size: 26px; font-weight: 500; cursor: pointer">۵</button>
+      <button style="height: 56px; border: 0; background: transparent; color: #F5F5F4; font-size: 26px; font-weight: 500; cursor: pointer">۶</button>
+      <button style="height: 56px; border: 0; background: transparent; color: #F5F5F4; font-size: 26px; font-weight: 500; cursor: pointer">۷</button>
+      <button style="height: 56px; border: 0; background: transparent; color: #F5F5F4; font-size: 26px; font-weight: 500; cursor: pointer">۸</button>
+      <button style="height: 56px; border: 0; background: transparent; color: #F5F5F4; font-size: 26px; font-weight: 500; cursor: pointer">۹</button>
+      <button style="height: 56px; border: 0; background: transparent; color: #B5B5B8; font-size: 18px; font-weight: 700; cursor: pointer">۰۰۰</button>
+      <button style="height: 56px; border: 0; background: transparent; color: #F5F5F4; font-size: 26px; font-weight: 500; cursor: pointer">۰</button>
+      <button aria-label="پاک کردن آخرین رقم" style="height: 56px; border: 0; background: transparent; color: #F5F5F4; cursor: pointer; display: flex; align-items: center; justify-content: center">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6H9l-6 6 6 6h11z"></path><path d="M16 10l-4 4M12 10l4 4"></path></svg>
+      </button>
+    </div>
+
+    <button style="margin-top: 10px; height: 60px; border: 0; border-radius: 999px; background: #F5F5F4; color: #000; font-size: 16px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px">
+      ثبت خرج
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"></path></svg>
+    </button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

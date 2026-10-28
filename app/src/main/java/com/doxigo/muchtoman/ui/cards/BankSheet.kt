@@ -91,14 +91,14 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
+import com.doxigo.muchtoman.ui.components.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import com.doxigo.muchtoman.ui.components.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -683,7 +683,9 @@ internal fun BankAccountRow(
                 }
             }
 
-            Row(Modifier.padding(top = Space.xs)) {
+            // Wraps rather than squeezing «حذف حساب» into a column of single letters.
+            @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+            androidx.compose.foundation.layout.FlowRow(Modifier.padding(top = Space.xs)) {
                 if (account.sender.isNotBlank()) {
                     TextButton(onClick = onOpenSms) {
                         Text("دیدن پیامک‌ها", fontSize = 13.sp)
@@ -700,7 +702,6 @@ internal fun BankAccountRow(
                 } else {
                     TextButton(onClick = onFix) { Text("اصلاح موجودی", fontSize = 13.sp) }
                 }
-                Spacer(Modifier.weight(1f))
                 TextButton(
                     onClick = onForget,
                     colors = ButtonDefaults.textButtonColors(

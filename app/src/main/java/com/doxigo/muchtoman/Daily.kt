@@ -31,11 +31,21 @@ class DailySnapshotWorker(context: Context, params: WorkerParameters) :
         }
         rates.onSuccess {
             store.cachedRates = mergeRates(it, store.cachedRates)
+            persistDailyRates(store.dailyRates, it.toman, it.updatedAt, holdings)
         }
         // بورس has to be fetched here too. Without it the unattended snapshot values a
         // portfolio holding shares against rates that have none, snapshotHistory refuses the
         // whole day, and the chart quietly stops for anyone who owns a single نماد.
-        stocks?.onSuccess { store.cachedStocks = it }
+        stocks?.onSuccess {
+            store.cachedStocks = it
+            persistDailyRates(store.dailyRates, it.toman, it.updatedAt, holdings)
+        }
+        runCatching {
+            com.doxigo.muchtoman.features.pricealerts.PriceAlerts.check(
+                applicationContext,
+                effectiveRates(store.cachedRates, store.overrides, store.cachedStocks),
+            )
+        }
         // A failed fetch still falls through: cached rates younger than a day are good enough,
         // and snapshotHistory is the one that decides.
         snapshotHistory(

@@ -26,14 +26,15 @@ class CharacterizationUiContractTest {
     }
 
     @Test
-    fun `Tab enumeration covers all 4 primary application screens under Quad-Tab architecture`() {
+    fun `Tab enumeration covers the 5 canvas destinations`() {
         val tabs = Tab.entries
         val names = tabs.map { it.name }
         assertTrue("Contains HOME", names.contains("HOME"))
         assertTrue("Contains ASSETS / Portfolio", names.contains("ASSETS"))
         assertTrue("Contains CARDS", names.contains("CARDS"))
-        assertTrue("Contains ACTIVITY_AND_TRENDS", names.contains("ACTIVITY_AND_TRENDS"))
-        assertEquals(4, tabs.size)
+        assertTrue("Contains LEDGER", names.contains("LEDGER"))
+        assertTrue("Contains REPORTS", names.contains("REPORTS"))
+        assertEquals(5, tabs.size)
     }
 
     @Test

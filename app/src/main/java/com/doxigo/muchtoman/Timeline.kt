@@ -55,7 +55,7 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.doxigo.muchtoman.ui.components.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -67,7 +67,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.FilterChip
+import com.doxigo.muchtoman.ui.components.FilterChip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.ModalBottomSheet
@@ -231,18 +231,12 @@ fun TimelineScreen(
     LaunchedEffect(filterTokens) { onFilterWide(filterTokens.isNotEmpty()) }
 
     if (showAddManual) {
-        ManualTxnSheet(
-            categories = ledger.categories,
-            onDismiss = { showAddManual = false },
-            onSave = { amountRial, isExpense, catId, merchant, note, at ->
-                onAddManual(amountRial, isExpense, catId, merchant, note, at)
-                showAddManual = false
-            },
-        )
+        QuickAddOverlay(onDismiss = { showAddManual = false })
     }
 
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().statusBarsPadding()) {
+        // The status-bar inset is taken by the tab's own header above this pager.
+        Column(Modifier.fillMaxSize()) {
             if (selecting) {
                 // The batch bar replaces the header while selecting.
                 Row(
@@ -280,29 +274,11 @@ TextButton(onClick = {
                 }
             } else {
                 Row(
-                    Modifier.fillMaxWidth().padding(horizontal = Space.xl, vertical = Space.m),
+                    Modifier.fillMaxWidth().padding(start = Space.xl, end = Space.l, top = Space.s, bottom = Space.s),
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Space.s),
                 ) {
-                    Text(
-                        "دفتر",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.semantics { heading() },
-                    )
-                    Spacer(Modifier.weight(1f))
-                    TextButton(onClick = {
-                        selecting = true
-                        selected = emptySet()
-                    }) {
-                        Text("انتخاب", fontSize = 14.sp)
-                    }
-                    IconButton(onClick = { showAddManual = true }) {
-                        Icon(Icons.Rounded.Add, contentDescription = "تراکنش جدید")
-                    }
-                    IconButton(onClick = onExport) {
-                        Icon(Icons.Rounded.Share, contentDescription = "خروجی CSV")
-                    }
+                    // The page title is on the tab above; this row is only the ledger's tools.
                     if (state.ledger.hiddenCount > 0 && !selecting) {
                         FilterChip(
                             selected = state.showHidden,
@@ -314,6 +290,21 @@ TextButton(onClick = {
                                 )
                             },
                         )
+                    }
+                    Spacer(Modifier.weight(1f))
+                    FilterChip(
+                        selected = false,
+                        onClick = {
+                            selecting = true
+                            selected = emptySet()
+                        },
+                        label = { Text("انتخاب", fontSize = 13.sp) },
+                    )
+                    com.doxigo.muchtoman.ui.components.RoundIconButton("تراکنش جدید", { showAddManual = true }) { tint ->
+                        Icon(Icons.Rounded.Add, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
+                    }
+                    com.doxigo.muchtoman.ui.components.RoundIconButton("خروجی CSV", onExport) { tint ->
+                        Icon(Icons.Rounded.Share, contentDescription = null, tint = tint, modifier = Modifier.size(18.dp))
                     }
                 }
             }
@@ -328,7 +319,13 @@ TextButton(onClick = {
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("جستجو...") },
+                    shape = RoundedCornerShape(Radius.pill),
+                    colors = com.doxigo.muchtoman.ui.components.revFieldColors().copy(
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        unfocusedIndicatorColor = Color.Transparent,
+                    ),
+                    placeholder = { Text("جستجو در تراکنش‌ها") },
                     leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
                     trailingIcon = {
                         if (searchQuery.isNotBlank()) {
@@ -339,18 +336,24 @@ TextButton(onClick = {
                     },
                     singleLine = true,
                 )
-                TextButton(onClick = {
-                    showFilter = !showFilter
-                    if (showFilter) {
-                        selecting = false
-                        selected = emptySet()
-                    }
-                }) {
-                    Text(
-                        if (filterTokens.isEmpty()) "فیلتر" else "فیلتر (${filterTokens.size})",
-                        fontSize = 13.sp,
-                    )
-                }
+                Spacer(Modifier.width(Space.s))
+                FilterChip(
+                    selected = filterTokens.isNotEmpty(),
+                    onClick = {
+                        showFilter = !showFilter
+                        if (showFilter) {
+                            selecting = false
+                            selected = emptySet()
+                        }
+                    },
+                    label = {
+                        Text(
+                            if (filterTokens.isEmpty()) "فیلتر" else "فیلتر (${fa(filterTokens.size)})",
+                            fontSize = 13.sp,
+                        )
+                    },
+                    modifier = Modifier.height(48.dp),
+                )
             }
 
             if (showFilter) {
@@ -413,7 +416,6 @@ TextButton(onClick = {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = Space.xl, vertical = Space.xs)
-                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.field)),
                 ) {
                     Row(
                         modifier = Modifier
@@ -470,12 +472,8 @@ TextButton(onClick = {
                     ) {
                         Surface(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = Space.s),
-                            shape = RoundedCornerShape(20.dp),
+                            shape = RoundedCornerShape(Radius.card),
                             color = MaterialTheme.colorScheme.surfaceContainerLow,
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                            ),
                         ) {
                             Column(
                                 modifier = Modifier.fillMaxWidth().padding(24.dp),
@@ -639,7 +637,7 @@ TextButton(onClick = {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FilterSheet(
+internal fun FilterSheet(
     tokens: List<FilterToken>,
     categories: List<Category>,
     onApply: (List<FilterToken>) -> Unit,
@@ -789,7 +787,7 @@ private fun placeholderFor(field: FilterField): String = when (field) {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun BatchActionBar(
+internal fun BatchActionBar(
     selectedRefs: Set<String>,
     /** How many rows the current filter matches — the batch bar shows it under the selection. */
     matchCount: Int,
@@ -1212,7 +1210,6 @@ private fun DayBand(
             .fillMaxWidth()
             .clip(RoundedCornerShape(Radius.group))
             .background(MaterialTheme.colorScheme.surfaceContainer)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f), RoundedCornerShape(Radius.group)),
     ) {
         rows.forEach { entry ->
             TimelineRow(

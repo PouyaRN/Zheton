@@ -38,7 +38,7 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import com.doxigo.muchtoman.ui.components.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -100,14 +100,15 @@ import java.util.TimeZone
 object BackupWiring {
     @Volatile
     var sourceFactory: (Context) -> BackupSource = { context ->
-        DeviceBackupSource(Store(context), DurableDb.get(context))
+        val store = Store(context)
+        DeviceBackupSource(store, DurableDb.get(context), DeviceMapStores(context, store))
     }
 
     @Volatile
     var targetFactory: (Context) -> BackupTarget = { context ->
         val store = Store(context)
         val durable = DurableDb.get(context)
-        DeviceBackupTarget(store, durable) {
+        DeviceBackupTarget(store, durable, DeviceMapStores(context, store)) {
             // The derived ledger is not in the backup — it is rebuilt from the durable rows.
             derive(durable, DerivedDb.get(context), extraLookup(store.extraBankNumbers))
             updateTotalWidget(context)
@@ -866,7 +867,9 @@ private fun RestoreConfirmCard(
                     "پیامک: ${faNumber(summary.messages)} • دستی: ${faNumber(summary.manualTransactions)} • " +
                     "تصمیم: ${faNumber(summary.decisions)} • قانون: ${faNumber(summary.rules)} • " +
                     "دسته: ${faNumber(summary.categories)} • دارایی: ${faNumber(summary.holdings)} • " +
-                    "حساب: ${faNumber(summary.bankAccounts)}",
+                    "حساب: ${faNumber(summary.bankAccounts)}" +
+                    (if (summary.holdingLots > 0) " • خرید: ${faNumber(summary.holdingLots)}" else "") +
+                    (if (summary.priceAlerts > 0) " • هشدار قیمت: ${faNumber(summary.priceAlerts)}" else ""),
                 fontSize = 13.sp,
                 lineHeight = 22.sp,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
@@ -874,7 +877,7 @@ private fun RestoreConfirmCard(
             Spacer(Modifier.height(Space.s))
             SettingRow(
                 title = "تنظیم‌ها هم برگردند",
-                subtitle = "اسم، تم، دستمزد ساعتی، چرخهٔ ماه و چیدمان ویجت‌ها.",
+                subtitle = "اسم، تم، دستمزد ساعتی، چرخهٔ ماه، بودجهٔ ماهانه، خریدها، هشدارهای قیمت و چیدمان ویجت‌ها.",
                 checked = restorePreferences,
                 onChange = onPreferences,
             )

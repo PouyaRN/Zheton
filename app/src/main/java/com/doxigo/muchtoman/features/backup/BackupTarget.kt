@@ -46,11 +46,13 @@ data class BackupRestoreReport(
     val merchantAliases: Int = 0,
     val linkDecisions: Int = 0,
     val preferencesRestored: Boolean = false,
+    /** The version-2 stores; see [restoreMapStores]. */
+    val mapStores: MapStoresRestore = MapStoresRestore(),
 ) {
     val totalRows: Int
         get() = messages + manualTransactions + decisions + rules + categories + anchors +
             goals + obligations + payments + reservations + familyMembers + familyTxns +
-            merchantAliases + linkDecisions
+            merchantAliases + linkDecisions + (mapStores.holdingLots ?: 0) + (mapStores.priceAlerts ?: 0)
 }
 
 /**
@@ -80,6 +82,8 @@ data class BackupRestoreReport(
 class DeviceBackupTarget(
     private val store: Store,
     private val db: DurableDb,
+    /** The version-2 stores. Null skips them (the restore then behaves as version 1 did). */
+    private val mapStores: MapStores? = null,
     private val afterRestore: suspend () -> Unit = {},
 ) : BackupTarget {
 
@@ -145,6 +149,8 @@ class DeviceBackupTarget(
         }
 
         if (options.restorePreferences) restoreStore(payload.ledger, payload.prefs)
+        // After the store, so the alert re-check sees the restored rate overrides.
+        mapStores?.let { report = report.copy(mapStores = restoreMapStores(payload, options, it)) }
 
         afterRestore()
         report

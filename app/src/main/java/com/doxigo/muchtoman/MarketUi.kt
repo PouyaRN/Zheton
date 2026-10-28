@@ -45,12 +45,12 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
+import com.doxigo.muchtoman.ui.components.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.doxigo.muchtoman.ui.components.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -330,63 +330,17 @@ fun MarketAndAssetsScreen(
                 )
             }
 
-            // Segmented Control Pill: [ ● سبد دارایی من (Portfolio) ] [ ○ دیده‌بان بازار (Live) ]
             item(key = "market_mode_segmented_pill") {
-                Row(
+                com.doxigo.muchtoman.ui.components.SegmentedPill(
+                    options = listOf("دارایی‌های من", "نرخ‌های بازار"),
+                    selected = if (marketTabMode == MarketTabMode.PORTFOLIO) 0 else 1,
+                    onSelect = {
+                        marketTabMode = if (it == 0) MarketTabMode.PORTFOLIO else MarketTabMode.LIVE_MARKET
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = Space.m, vertical = Space.s)
-                        .clip(RoundedCornerShape(Radius.pill))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-                        .padding(4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    val fintechHaptics = LocalFintechHaptics.current
-                    val onGold = if ((Hero.gold.red * 0.299f + Hero.gold.green * 0.587f + Hero.gold.blue * 0.114f) > 0.55f) Color(0xFF050607) else Color.White
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(Radius.pill))
-                            .background(if (marketTabMode == MarketTabMode.PORTFOLIO) Hero.gold else Color.Transparent)
-                            .clickable {
-                                if (marketTabMode != MarketTabMode.PORTFOLIO) {
-                                    fintechHaptics.click()
-                                    marketTabMode = MarketTabMode.PORTFOLIO
-                                }
-                            }
-                            .padding(vertical = 8.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = "● سبد دارایی من (Portfolio)",
-                            fontSize = 12.sp,
-                            fontWeight = if (marketTabMode == MarketTabMode.PORTFOLIO) FontWeight.Black else FontWeight.Medium,
-                            color = if (marketTabMode == MarketTabMode.PORTFOLIO) onGold else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(Radius.pill))
-                            .background(if (marketTabMode == MarketTabMode.LIVE_MARKET) Hero.gold else Color.Transparent)
-                            .clickable {
-                                if (marketTabMode != MarketTabMode.LIVE_MARKET) {
-                                    fintechHaptics.click()
-                                    marketTabMode = MarketTabMode.LIVE_MARKET
-                                }
-                            }
-                            .padding(vertical = 8.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = "○ دیده‌بان بازار (Live)",
-                            fontSize = 12.sp,
-                            fontWeight = if (marketTabMode == MarketTabMode.LIVE_MARKET) FontWeight.Black else FontWeight.Medium,
-                            color = if (marketTabMode == MarketTabMode.LIVE_MARKET) onGold else MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
+                        .padding(horizontal = Space.xl, vertical = Space.s),
+                )
             }
 
             if (marketTabMode == MarketTabMode.PORTFOLIO) {
@@ -420,7 +374,7 @@ fun MarketAndAssetsScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(Space.xl)
-                                .clip(RoundedCornerShape(16.dp))
+                                .clip(RoundedCornerShape(Radius.card))
                                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                                 .padding(Space.xl),
                             contentAlignment = Alignment.Center,
@@ -546,11 +500,6 @@ fun MarketAndAssetsScreen(
                                         fontSize = 13.sp,
                                     )
                                 },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = Hero.top,
-                                    selectedLabelColor = Hero.gold,
-                                ),
-                                shape = RoundedCornerShape(12.dp),
                             )
                         }
                     }
@@ -659,49 +608,18 @@ private fun MarketScreenHeader(
     refreshing: Boolean,
     onToggleSearch: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .statusBarsPadding()
-            .padding(horizontal = Space.m, vertical = Space.m),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
+    com.doxigo.muchtoman.ui.components.PageHeader(
+        title = "بازار",
+        subtitle = "طلا، سکه، ارز، تتر و صندوق‌های بورسی",
     ) {
-        Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    "بازار و نرخ‌های لحظه‌ای",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Black,
-                )
-                Spacer(Modifier.width(Space.s))
-                // Live pulse pill
-                Box(
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(Hero.mint.copy(alpha = 0.2f))
-                        .padding(horizontal = 8.dp, vertical = 2.dp),
-                ) {
-                    Text("زنده", color = Hero.mint, fontWeight = FontWeight.Bold, fontSize = 10.sp)
-                }
-            }
-            Text(
-                "رصد نوسانات طلا، سکه، تتر، ارز و صندوق‌های بورس",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        com.doxigo.muchtoman.ui.components.RoundIconButton("جستجو", onToggleSearch) { tint ->
+            Icon(Icons.Default.Search, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
         }
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onToggleSearch) {
-                Icon(Icons.Default.Search, contentDescription = "جستجو")
-            }
-            IconButton(onClick = onRefresh) {
-                if (refreshing) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                } else {
-                    Icon(Icons.Default.Refresh, contentDescription = "به‌روزرسانی")
-                }
+        com.doxigo.muchtoman.ui.components.RoundIconButton("به‌روزرسانی", onRefresh) { tint ->
+            if (refreshing) {
+                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = tint)
+            } else {
+                Icon(Icons.Default.Refresh, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
             }
         }
     }
@@ -917,7 +835,7 @@ fun MarketFluctuationCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f))
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
                     .padding(Space.s),
                 horizontalArrangement = Arrangement.SpaceAround,
             ) {
@@ -1434,7 +1352,7 @@ private fun HoldingMarketRow(
 }
 
 @Composable
-private fun MarketArbitrageRadar(
+internal fun MarketArbitrageRadar(
     usdtToman: Double,
     usdCashToman: Double,
     emamiCoinToman: Double,
@@ -1445,12 +1363,14 @@ private fun MarketArbitrageRadar(
     val emamiIntrinsic = calculateCoinIntrinsicToman(GoldCoinType.EMAMI, gold18Toman)
     val emamiBubble = if (emamiCoinToman > emamiIntrinsic) ((emamiCoinToman - emamiIntrinsic) / emamiCoinToman) * 100.0 else 0.0
 
+    val t = CanvasTheme.tokens
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = Space.m, vertical = Space.s),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
+        shape = RoundedCornerShape(Radius.card),
+        colors = CardDefaults.cardColors(containerColor = t.card, contentColor = t.ink),
+        border = androidx.compose.foundation.BorderStroke(1.dp, t.cardBorder),
     ) {
         Column(modifier = Modifier.padding(Space.m)) {
             Row(
@@ -1463,7 +1383,7 @@ private fun MarketArbitrageRadar(
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                 )
-                Text("به‌روزرسانی همگام", fontSize = 11.sp, color = Hero.muted)
+                Text("به‌روزرسانی همگام", fontSize = 11.sp, color = t.muted)
             }
 
             Spacer(Modifier.height(Space.s))
@@ -1496,24 +1416,25 @@ private fun ArbitrageRow(
     hint: String,
     isWarning: Boolean,
 ) {
+    val t = CanvasTheme.tokens
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f))
+            .background(t.ground.copy(alpha = 0.6f))
             .padding(horizontal = Space.m, vertical = Space.s),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-            Text(hint, fontSize = 10.sp, color = if (isWarning) Color(0xFFD93025) else MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(title, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = t.ink)
+            Text(hint, fontSize = 10.sp, color = if (isWarning) t.loss else t.muted)
         }
         Text(
             detail,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
-            color = if (isWarning) Color(0xFFD93025) else Hero.top,
+            color = if (isWarning) t.loss else t.ink,
         )
     }
 }
@@ -1547,12 +1468,11 @@ fun GoldCoinBubbleGauge(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = Space.m, vertical = Space.s),
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+            .padding(horizontal = Space.xl, vertical = Space.s),
+        shape = RoundedCornerShape(Radius.card),
+        color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
-        Column(modifier = Modifier.padding(Space.m)) {
+        Column(modifier = Modifier.padding(Space.l)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1672,12 +1592,11 @@ fun PortfolioOverviewCard(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = Space.m, vertical = Space.s),
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
+            .padding(horizontal = Space.xl, vertical = Space.s),
+        shape = RoundedCornerShape(Radius.card),
+        color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
-        Column(modifier = Modifier.padding(Space.m)) {
+        Column(modifier = Modifier.padding(Space.l)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1692,10 +1611,10 @@ fun PortfolioOverviewCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             "${faCompact(holdingsToman)} تومان",
-                            fontSize = 20.sp,
+                            fontSize = 24.sp,
                             fontFamily = ModamFigures,
-                            fontWeight = FontWeight.Black,
-                            color = Hero.gold,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                         if (usdEquivalent != null) {
                             Spacer(Modifier.width(Space.s))
@@ -1710,10 +1629,10 @@ fun PortfolioOverviewCard(
                     }
                 }
 
-                val onAddGold = if ((Hero.gold.red * 0.299f + Hero.gold.green * 0.587f + Hero.gold.blue * 0.114f) > 0.55f) Color(0xFF050607) else Color.White
+                val onAddGold = MaterialTheme.colorScheme.surface
                 Button(
                     onClick = onAddHolding,
-                    colors = ButtonDefaults.buttonColors(containerColor = Hero.gold, contentColor = onAddGold),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onSurface, contentColor = onAddGold),
                     contentPadding = PaddingValues(horizontal = Space.m, vertical = Space.xs),
                     shape = RoundedCornerShape(Radius.pill),
                 ) {
@@ -1731,7 +1650,7 @@ fun PortfolioOverviewCard(
                         .fillMaxWidth()
                         .height(8.dp)
                         .clip(RoundedCornerShape(4.dp))
-                        .background(MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f)),
+                        .background(MaterialTheme.colorScheme.surfaceContainer),
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     composition.forEach { (kind, amount) ->
