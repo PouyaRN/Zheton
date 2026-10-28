@@ -30,9 +30,11 @@ android {
         applicationId = "com.doxigo.muchtoman"
         minSdk = 24
         targetSdk = 37
-        // Monotonic versionCode strictly above 2_000_000_500 to guarantee safe in-place upgrades
+        // Monotonic versionCode, above every build already handed out (the 1.1 APKs shipped as
+        // 2_000_001_000), so each new build installs in place over any earlier one. The release
+        // workflow relies on this too: it checks out full history and passes no versionCode.
         versionCode = providers.gradleProperty("muchtoman.versionCode").orNull?.toInt()
-            ?: (2_000_000_500 + gitRevCount.getOrElse(0))
+            ?: (2_000_001_000 + gitRevCount.getOrElse(0))
         versionName = providers.gradleProperty("muchtoman.versionName").orNull ?: "1.0.5"
         buildConfigField("boolean", "LITE", "false")
     }
