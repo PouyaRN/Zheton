@@ -21,3 +21,8 @@ graphify-out/
 keystore.properties
 *.jks
 *.keystore
+
+# Local agent tooling: skill copies and worktrees stay on disk, out of the repo.
+.claude/
+.agents/
+skills-lock.json
