@@ -1,115 +1,68 @@
-# Chandtoman (چندتومان) Design System (DESIGN.md)
+# Design system
 
-## Overview
+Andis uses one design language, the **canvas**: a black (or near-white) ground, one saffron
+light behind the top of each page, large Persian figures, 26dp cards with a 1px edge, and a
+floating pill nav. The approved artboards are in [`docs/design/canvas/project`](docs/design/canvas/project)
+(`Main.dc.html` for night, `HomeLight.dc.html` for day, one file per screen). Code that
+implements a screen cites its artboard.
 
-Chandtoman is a high-clarity, editorial financial design system built for live tracking of currencies, gold, coins, and crypto. It merges the tactile paper warmth of Davvvat with the modular bento logic of Dastyar, optimized for ultra-fast visual scanning of numbers and market trends. It is cross-platform ready (Jetpack Compose / Kotlin, Flutter, Web).
+## Colour tokens
 
----
+Defined in [`Theme.kt`](app/src/main/java/com/doxigo/muchtoman/Theme.kt) as `CanvasTokens`,
+read through `CanvasTheme.tokens`. Material's `ColorScheme` is mapped from these values, but
+canvas components read the tokens directly, because Material has no role for "card edge",
+"nav glass" or "saffron as a fill but ochre as text".
 
-## Colors
+| Role | Dark (`CanvasDark`) | Light (`CanvasLight`) | Use |
+| --- | --- | --- | --- |
+| `ground` | `#000000` | `#F6F6F7` | Page background |
+| `card` | `#0F0F11` | `#FFFFFF` | Cards |
+| `cardBorder` | white 7% | black 6% | 1px card edge |
+| `ink` | `#F5F5F4` | `#0B0B0C` | Primary text and figures |
+| `inkSecondary` | `#B5B5B8` | `#3E3E44` | Captions |
+| `muted` | `#8E8E93` | `#5E5E66` | Dates, units, idle nav icons |
+| `accent` | `#F5B840` | `#E9A425` | Saffron fill: progress, today's dot, glow |
+| `accentText` | `#F5B840` | `#8A5A00` | Saffron as text: links, section actions |
+| `accentWell` | `#1C1608` | `#FBEFD6` | Tinted well behind a saffron glyph |
+| `gain` / `gainWell` | `#3FD98B` / 12% | `#0A6B42` / `#E2F5EB` | Income, positive change |
+| `loss` | `#FF7B6B` | `#C0392B` | Spending, negative change |
+| `track` | `#1C1C1F` | `#E4E4E7` | Empty part of a bar |
+| `navFill` / `navBorder` | `#1C1C1E` 86% / white 9% | white 92% / black 8% | Floating nav glass |
+| `primaryAction` | saffron | ink | The one filled round action (ثبت خرج) |
 
-### Light Palette (Day Market)
-- **Primary Accent** (`0xFFF26430` / `#F26430`): Primary actions, active market filters
-- **Gold Accent** (`0xFFE5A93C` / `#E5A93C`): Gold, coin, and bullion highlights
-- **Canvas Base** (`0xFFF6F1E9` / `#F6F1E9`): Warm cream background reducing eye fatigue
-- **Surface Pure** (`0xFFFFFFFF` / `#FFFFFF`): Price cards, bento blocks, bottom sheets
-- **Surface Muted** (`0xFFEDE7DC` / `#EDE7DC`): Search bars, toggle containers, inactive pills
-- **Text Primary** (`0xFF18130E` / `#18130E`): Big price figures, primary headers
-- **Text Secondary** (`0xFF4E4A43` / `#4E4A43`): Currency symbols, subtitle labels
-- **Text Muted** (`0xFF9E9B93` / `#9E9B93`): Last updated timestamps, source names
-- **Border Subtle** (`0x1418130E` / `#18130E14`): 1dp hairline separators
+`ThemeMode.SYSTEM` follows the phone between the two. `DARK` and `ANDIS_TERMINAL` use the dark
+tokens, `LIGHT` the light ones. The other legacy themes in `ThemeMode` get the same roles
+derived from their own colour scheme (`getCanvasTokens`), so every layout works under every
+theme.
 
-### Dark Palette (Night Trading)
-- **Canvas Dark** (`0xFF121624` / `#121624`): Deep midnight blue canvas
-- **Surface Dark** (`0xFF1A2035` / `#1A2035`): Elevated price cards
-- **Surface Dark Variant** (`0xFF232B45` / `#232B45`): Input containers, search fields
-- **Text Light** (`0xFFE2E5F0` / `#E2E5F0`): Primary price figures
-- **Text Light Muted** (`0xFF8892B0` / `#8892B0`): Secondary market labels
-- **Border Dark Subtle** (`0x1A94A3FF` / `#94A3FF1A`): 1dp dark card borders
+Layout constants: `CanvasTheme.gutter` = 20dp page gutter, `CanvasTheme.cardRadius` = 26dp.
 
-### Market Indicators (Strict Semantics)
-- **Market Up** (`0xFF0CBC8D` / `#0CBC8D`): Positive profit delta, green sparkline
-- **Market Up Tint** (`0x1A0CBC8D` / `#0CBC8D1A`): 10% opacity pill background for profit
-- **Market Down** (`0xFFDC2626` / `#DC2626`): Negative loss delta, red sparkline
-- **Market Down Tint** (`0x1ADC2626` / `#DC26261A`): 10% opacity pill background for loss
-- **Market Stable** (`0xFF6B7280` / `#6B7280`): Zero change neutral badge
+## Shared components
 
----
+[`ui/components/CanvasKit.kt`](app/src/main/java/com/doxigo/muchtoman/ui/components/CanvasKit.kt):
 
-## Typography
+- `CanvasPage`: the ground plus `SaffronGlow`, the radial light behind the top of a page.
+- `CanvasPageHeader`: 11sp caption over a 40sp ExtraBold title, round controls on the end edge.
+- `CanvasCard`: card fill, 1px edge, 26dp corners, 16dp padding; optionally clickable.
+- `RoundAction`: 56dp round action with a label (Home's row of four). One is primary.
+- `OutlineIconButton`: 40/44dp outlined round control for page headers.
+- `PillChip`, `TonePill`: filter chips and small tinted badges.
+- `CanvasGlyph`: stroked icons drawn from 24-unit SVG path data.
+- `CanvasNavBar`: the floating nav.
 
-- **Primary Iranian Font**: `Estedad` (with baked-in Persian digits `FaNum`)
-- **Number Fallback / Western**: Space Mono or Roboto Mono
+## Navigation
 
-- **Price Hero**: Estedad 32sp, Weight: 800 (Extrabold), LineHeight: 38sp
-- **Price Card Value**: Estedad 22sp, Weight: 800 (Extrabold), LineHeight: 28sp
-- **Section Heading**: Estedad 18sp, Weight: 700 (Bold), LineHeight: 24sp
-- **Body Label**: Estedad 14sp, Weight: 500 (Medium), LineHeight: 20sp
-- **Delta & Timestamp**: Estedad 12sp, Weight: 700 (Bold), LineHeight: 16sp
+Five tabs (`Tab` in [`TabBar.kt`](app/src/main/java/com/doxigo/muchtoman/TabBar.kt)): امروز
+(Home), دفتر (Ledger), دارایی (Assets), حساب‌ها (Accounts), گزارش (Report). The nav is a 66dp
+pill inset 20dp from both edges, floating 10dp above the system inset, with a ground-coloured
+scrim so content fades under it. The selected tab is an inverted pill with icon and label; the
+others are icon-only. The lite edition has only دارایی and draws no nav.
 
----
+## Type
 
-## Spacing
-
-Base unit: 4dp
-- **sp-1**: 4dp
-- **sp-2**: 8dp
-- **sp-3**: 12dp
-- **sp-4**: 16dp
-- **sp-5**: 24dp
-- **sp-6**: 32dp
-
----
-
-## Border Radius
-
-- **radius-pill** (999dp): Delta pills (`+۲.۴٪`), search capsule, category chips
-- **radius-sm** (12dp): Action buttons, calculator inputs
-- **radius-md** (18dp): Standard asset price cards (dollar, coin, tether)
-- **radius-lg** (28dp): Hero featured asset (e.g. Gold ounce / Dollar banner)
-- **radius-xl** (36dp): Bento summary containers, bottom drawer sheets
-
----
-
-## Elevation & Shadows
-
-- **shadow-flat**: 0dp elevation, relying exclusively on 1dp `BorderSubtle`.
-- **shadow-card**: `0dp 2dp 8dp rgba(24, 19, 14, 0.06)` — light mode cards.
-- **shadow-floating**: `0dp 4dp 16dp rgba(242, 100, 48, 0.18)` — converter floating button.
-
----
-
-## Components
-
-### 1. Price Bento Card (Core Unit)
-- **Background**: `#FFFFFF` (Dark: `#1A2035`), Shape: `RoundedCornerShape(18.dp)`.
-- **Border**: 1dp `BorderSubtle`.
-- **Top Row**: Asset icon (36dp rounded squircle), Asset Title (16sp Bold), Market Code (12sp Muted).
-- **Middle**: Sparkline mini-trend chart (height 32dp, stroke 2dp, no axes).
-- **Bottom Row**: Large formatted price (22sp Extrabold) aligned with Delta Pill (`+۱.۸٪` in 999dp pill with matching 10% tinted background).
-
-### 2. Market Delta Pill
-- **Shape**: `RoundedCornerShape(999.dp)`.
-- **Padding**: 3dp vertical, 8dp horizontal.
-- **Positive**: Text `#0CBC8D`, Fill `0x1A0CBC8D`, arrow-up icon (10dp).
-- **Negative**: Text `#DC2626`, Fill `0x1ADC2626`, arrow-down icon (10dp).
-
-### 3. Category Filter Tabs
-- **Height**: 40dp capsule row.
-- **Active Tab**: Background `#F26430`, Text `#FFFFFF`, shape 999dp.
-- **Inactive Tab**: Background transparent or `#EDE7DC`, Text `#4E4A43`.
-
-### 4. Fast Currency Calculator Input
-- **Background**: `#EDE7DC` (Dark: `#232B45`), Shape: 14dp radius.
-- **Input Text**: 20sp Bold, right-to-left numeral entry.
-- **Suffix Badge**: 999dp pill showing selected source currency (e.g. USD / IRT).
-
----
-
-## Do's and Don'ts
-
-1. **Do** use Persian numerals exclusively (`۱۲۳,۴۵۰`) via `FaNum` font variants.
-2. **Don't** use sterile pure white (`#FFFFFF`) for screen canvases; always use `#F6F1E9`.
-3. **Do** tint delta pills with 10% opacity rather than solid loud fills to keep numbers readable.
-4. **Don't** use sharp 0dp edges anywhere; financial tools must feel approachable and calm.
-5. **Do** keep timestamps visible on every card (e.g. `۵ دقیقه پیش`) in `TextMuted` 12sp.
+The app is set in **Modam** (variable font, `app/src/main/res/font/modam.ttf`, axes `wght`
+200–900 and `wdth` 70–100). Text uses the `Modam` family. Figures use `ModamFigures`: the same
+font at 90% width with proportional digits (`pnum`), so long Toman totals fit without negative
+tracking, which would break Persian joins. All digits are Persian, the layout is RTL, and
+displayed amounts truncate rather than round. See [DEVELOPMENT.md](DEVELOPMENT.md#typography)
+for how the font file is prepared and the licensing note.
