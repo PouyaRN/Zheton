@@ -254,6 +254,18 @@ fun recordClose(closes: DailyCloses, day: Long, price: Double): DailyCloses {
     return if (next.keys.any { it < floor }) next.filterKeys { it >= floor } else next
 }
 
+/**
+ * Closes from elsewhere (a restored backup) folded into [existing]. A day this phone already has
+ * keeps its own close: both are real fetched rates, and the local one is the one the charts have
+ * been drawing. Invalid prices are dropped and the result is pruned to [DAILY_RATE_KEEP_DAYS].
+ */
+fun mergeDailyCloses(existing: DailyCloses, incoming: DailyCloses): DailyCloses {
+    val merged = incoming.filterValues { it.isFinite() && it > 0.0 } + existing
+    if (merged.isEmpty()) return merged
+    val floor = merged.keys.max() - DAILY_RATE_KEEP_DAYS
+    return if (merged.keys.any { it < floor }) merged.filterKeys { it >= floor } else merged
+}
+
 /** Collapses timestamped observations to one close per Tehran day — the last one. */
 fun closesFromObservations(observations: List<RateObservation>): DailyCloses =
     observations.filter { it.priceToman.isFinite() && it.priceToman > 0.0 }
@@ -338,6 +350,24 @@ class DailyRateFiles(private val dir: File) {
             if (merged != old) write(id, merged.filterKeys { it >= (merged.keys.max() - DAILY_RATE_KEEP_DAYS) })
         }
         runCatching { marker.writeText("1") }
+    }
+
+    /**
+     * Folds [closes] into the stored history per asset (see [mergeDailyCloses]; days already on
+     * this phone win). Returns the full closes of the assets that changed.
+     */
+    @Synchronized
+    fun merge(closes: Map<String, DailyCloses>): Map<String, DailyCloses> {
+        val changed = mutableMapOf<String, DailyCloses>()
+        for ((id, incoming) in closes) {
+            if (id == TOMAN_ID || id == BANK_ID || incoming.isEmpty()) continue
+            val old = load(id)
+            val next = mergeDailyCloses(old, incoming)
+            if (next == old) continue
+            write(id, next)
+            changed[id] = next
+        }
+        return changed
     }
 
     private fun write(assetId: String, closes: DailyCloses) {

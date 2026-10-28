@@ -102,11 +102,11 @@ class BackupControllerTest {
 
     @Test
     fun `a future schema version is refused with a readable reason`() {
-        val futureJson = """{"schemaVersion":2,"createdAt":0}""".toByteArray()
+        val futureJson = """{"schemaVersion":${BACKUP_SCHEMA_VERSION + 1},"createdAt":0}""".toByteArray()
         val envelope = BackupFile.create(futureJson, passphrase, iterations = 100)
         val inspect = controller.inspect(envelope, passphrase)
         assertTrue(inspect is BackupInspect.Invalid)
-        assertTrue((inspect as BackupInspect.Invalid).reason.contains("2"))
+        assertTrue((inspect as BackupInspect.Invalid).reason.contains("${BACKUP_SCHEMA_VERSION + 1}"))
     }
 
     @Test

@@ -71,6 +71,8 @@ interface BackupSource {
 class DeviceBackupSource(
     private val store: Store,
     private val db: DurableDb,
+    /** The version-2 stores (lots, budget, alerts, daily rates). Null leaves them out. */
+    private val mapStores: MapStores? = null,
     private val appVersion: String = BuildConfig.VERSION_NAME,
 ) : BackupSource {
 
@@ -129,7 +131,7 @@ class DeviceBackupSource(
             seenSms = store.seenSms,
         )
 
-        BackupPayload(
+        val payload = BackupPayload(
             schemaVersion = BACKUP_SCHEMA_VERSION,
             createdAt = now,
             appVersion = appVersion,
@@ -138,5 +140,6 @@ class DeviceBackupSource(
             ledger = ledger,
             tables = tables,
         )
+        mapStores?.snapshotInto(payload) ?: payload
     }
 }

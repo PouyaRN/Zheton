@@ -27,9 +27,9 @@ class UnsupportedBackupVersionException(val version: Int) : BackupFormatExceptio
  * applying half a future format is how a restore quietly corrupts a ledger.
  *
  * Older versions climb a chain of **forward-migration hooks**: `migrations[v]` receives the
- * object at version `v` and returns the object at `v + 1`. Today the map is empty because
- * version 1 is the first format; the hook exists so the codec is testable as a migration
- * machine now, rather than the day a migration is first needed.
+ * object at version `v` and returns the object at `v + 1`. The built-in chain is
+ * [BACKUP_MIGRATIONS]; 1 → 2 is the identity because version 2 only adds nullable fields that a
+ * version-1 file decodes as null ("not carried"), see [BACKUP_SCHEMA_VERSION].
  *
  * ## Validation is a security boundary
  *
@@ -40,9 +40,12 @@ class UnsupportedBackupVersionException(val version: Int) : BackupFormatExceptio
  * `sync_key`/`sync_token` and hand a stranger the household key.
  */
 class BackupCodec(
-    private val migrations: Map<Int, (JsonObject) -> JsonObject> = emptyMap(),
+    extraMigrations: Map<Int, (JsonObject) -> JsonObject> = emptyMap(),
     private val maxPayloadBytes: Int = MAX_PAYLOAD_BYTES,
 ) {
+
+    /** The built-in chain ([BACKUP_MIGRATIONS]) plus any a test registers below it. */
+    private val migrations: Map<Int, (JsonObject) -> JsonObject> = BACKUP_MIGRATIONS + extraMigrations
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -129,6 +132,9 @@ class BackupCodec(
             if (prefs.cycleAnchorDay !in 1..31) fail("prefs.cycleAnchorDay is out of range")
             if (prefs.hourlyWageToman < 0 || prefs.hourlyWageToman > MAX_RIAL) fail("prefs.hourlyWageToman is out of range")
             stamp("prefs.smsScannedTo", prefs.smsScannedTo)
+            prefs.monthlyBudgetToman?.let {
+                if (it < 0 || it > MAX_RIAL) fail("prefs.monthlyBudgetToman is out of range")
+            }
             rows("prefs.seenSms", prefs.seenSms.size, MAX_SEEN_SMS)
             prefs.seenSms.forEach { if (it.length > MAX_ID_CHARS) fail("prefs.seenSms has an overlong key") }
         }
@@ -197,11 +203,52 @@ class BackupCodec(
                 text("strange snippet", it.snippet, MAX_NOTE_CHARS)
                 stamp("strange at", it.at)
             }
+            ledger.holdingLots?.let { lots ->
+                rows("holdingLots", lots.size, MAX_LEDGER_ROWS)
+                rows("holdingLots total", lots.values.sumOf { it.size }, MAX_LOT_ROWS)
+                lots.forEach { (key, list) ->
+                    id("holdingLots key", key)
+                    list.forEach {
+                        id("lot.id", it.id)
+                        text("lot.side", it.side, MAX_THEME_CHARS, allowBlank = false)
+                        if (!it.amount.isFinite() || it.amount <= 0.0 || it.amount > MAX_AMOUNT) fail("lot.amount is not plausible")
+                        if (!it.unitPriceToman.isFinite() || it.unitPriceToman <= 0.0 || it.unitPriceToman > MAX_AMOUNT) {
+                            fail("lot.unitPriceToman is not plausible")
+                        }
+                        stamp("lot.atMs", it.atMs)
+                    }
+                }
+            }
+            ledger.priceAlerts?.let { alerts ->
+                rows("priceAlerts", alerts.size, MAX_ALERT_ROWS)
+                alerts.forEach {
+                    id("alert.id", it.id)
+                    id("alert.assetId", it.assetId)
+                    text("alert.assetName", it.assetName, MAX_NAME_CHARS)
+                    if (!it.target.isFinite() || it.target <= 0.0 || it.target > MAX_AMOUNT) fail("alert.target is not plausible")
+                    text("alert.direction", it.direction, MAX_THEME_CHARS, allowBlank = false)
+                    stamp("alert.createdAt", it.createdAt)
+                    stamp("alert.firedAt", it.firedAt)
+                }
+            }
             rows("widgetSlots", ledger.widgetSlots.size, MAX_WIDGET_SLOTS)
             ledger.widgetSlots.forEach {
                 text("slot.id", it.id, MAX_THEME_CHARS, allowBlank = false)
                 text("slot.density", it.density, MAX_THEME_CHARS, allowBlank = false)
                 if (it.order !in 0..MAX_WIDGET_SLOTS) fail("slot.order is out of range")
+            }
+        }
+
+        payload.dailyRates?.let { rates ->
+            rows("dailyRates", rates.size, MAX_RATE_ROWS)
+            rows("dailyRates total", rates.values.sumOf { it.size }, MAX_DAILY_RATE_ROWS)
+            rates.forEach { (asset, closes) ->
+                id("dailyRates asset", asset)
+                rows("dailyRates closes", closes.size, MAX_CLOSES_PER_ASSET)
+                closes.forEach { (day, price) ->
+                    if (day < 0 || day > now / DAY_MS + 2) fail("dailyRates day is out of range")
+                    if (!price.isFinite() || price <= 0.0 || price > MAX_AMOUNT) fail("dailyRates price is not plausible")
+                }
             }
         }
 
@@ -435,3 +482,8 @@ private const val MAX_SEEN_SMS: Int = 10_000
 private const val MAX_PAYMENT_ROWS: Int = 200_000
 private const val MAX_WIDGET_SLOTS: Int = 100
 private const val MAX_NUMBERS_PER_BANK: Int = 100
+private const val MAX_LOT_ROWS: Int = 200_000
+private const val MAX_ALERT_ROWS: Int = 10_000
+// Five years of one close a day is ~1,860; double it for margin.
+private const val MAX_CLOSES_PER_ASSET: Int = 4_000
+private const val MAX_DAILY_RATE_ROWS: Int = 2_000_000

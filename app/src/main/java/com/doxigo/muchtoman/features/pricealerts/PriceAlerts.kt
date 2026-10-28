@@ -67,6 +67,16 @@ object PriceAlerts {
     }
 
     /**
+     * Replaces every alert with [alerts] (a restored backup) and resyncs the worker. The caller
+     * decides which are armed; see `restoreMapStores` in the backup feature.
+     */
+    fun replaceAll(context: Context, alerts: List<PriceAlert>) {
+        val app = context.applicationContext
+        synchronized(lock) { write(app, alerts) }
+        PriceAlertWorker.sync(app)
+    }
+
+    /**
      * Check every armed alert against [rates] (Toman per unit, as `effectiveRates` returns).
      * Each crossed alert posts one notification and is disarmed. An alert whose notification
      * could not be posted (permission off, channel muted) stays armed, and is checked again on

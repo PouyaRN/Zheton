@@ -9,6 +9,8 @@ import com.doxigo.muchtoman.FamilyMember
 import com.doxigo.muchtoman.FamilyTxn
 import com.doxigo.muchtoman.Goal
 import com.doxigo.muchtoman.Holding
+import com.doxigo.muchtoman.HoldingLot
+import com.doxigo.muchtoman.LotSide
 import com.doxigo.muchtoman.InstallmentObligation
 import com.doxigo.muchtoman.InstallmentPayment
 import com.doxigo.muchtoman.LinkDecision
@@ -20,6 +22,8 @@ import com.doxigo.muchtoman.SmsSource
 import com.doxigo.muchtoman.StrangeSender
 import com.doxigo.muchtoman.SyncPublication
 import com.doxigo.muchtoman.TxnDecision
+import com.doxigo.muchtoman.features.pricealerts.AlertDirection
+import com.doxigo.muchtoman.features.pricealerts.PriceAlert
 import com.doxigo.muchtoman.widget.primitives.WidgetDensity
 import com.doxigo.muchtoman.widget.engine.WidgetId
 import com.doxigo.muchtoman.widget.engine.WidgetSlot
@@ -45,8 +49,25 @@ import kotlinx.serialization.Serializable
  * [includesMessages] is recorded rather than implied: a backup without raw SMS bodies is a
  * legitimate export ("the numbers, not the messages"), and the restore path must not read an
  * empty message list as "delete every message".
+ *
+ * ## Version history
+ *
+ * - **1**: preferences, the store's lists, the durable tables.
+ * - **2**: adds the stores the redesign brought in: holding purchase lots
+ *   ([BackupLedger.holdingLots]), the monthly budget ([BackupPrefs.monthlyBudgetToman]), price
+ *   alerts ([BackupLedger.priceAlerts]) and the daily rate history ([BackupPayload.dailyRates]).
+ *   Each is **nullable, and null means "this file does not carry it"**: a version-1 file decodes
+ *   with all four null and its restore leaves those stores exactly as they are. A present value,
+ *   even an empty one, is a snapshot and is applied (see `restoreMapStores`).
  */
-const val BACKUP_SCHEMA_VERSION: Int = 1
+const val BACKUP_SCHEMA_VERSION: Int = 2
+
+/**
+ * The built-in forward migrations, `version → version + 1`. 1 → 2 only adds nullable fields, so
+ * it is the identity: the missing keys decode as null, which is what "not in this file" means.
+ */
+val BACKUP_MIGRATIONS: Map<Int, (kotlinx.serialization.json.JsonObject) -> kotlinx.serialization.json.JsonObject> =
+    mapOf(1 to { obj -> obj })
 
 /**
  * The durable-meta keys a restore is allowed to write. Everything else — every `sync_*`
@@ -76,6 +97,11 @@ data class BackupPayload(
     val prefs: BackupPrefs = BackupPrefs(),
     val ledger: BackupLedger = BackupLedger(),
     val tables: BackupTables = BackupTables(),
+    /**
+     * Since version 2. One close per Tehran day per asset (`filesDir/daily_rates`). Merged on
+     * restore, never replacing a day the phone already has. Null: not in this file.
+     */
+    val dailyRates: Map<String, Map<Long, Double>>? = null,
 )
 
 /**
@@ -99,6 +125,8 @@ data class BackupPrefs(
     val smsScannedTo: Long = 0L,
     /** Legacy dedupe cache, kept so an old phone's corrections are not re-counted. */
     val seenSms: Set<String> = emptySet(),
+    /** Since version 2. `Store.monthlyBudgetToman`, 0 = unset. Null: not in this file. */
+    val monthlyBudgetToman: Long? = null,
 )
 
 /**
@@ -118,6 +146,33 @@ data class BackupLedger(
     val dismissedSenders: Set<String> = emptySet(),
     val strangeSenders: List<StrangeSender> = emptyList(),
     val widgetSlots: List<BackupWidgetSlot> = emptyList(),
+    /** Since version 2. `Store.holdingLots`, holding key → lots. Null: not in this file. */
+    val holdingLots: Map<String, List<BackupHoldingLot>>? = null,
+    /** Since version 2. The `price_alerts` preferences file. Null: not in this file. */
+    val priceAlerts: List<BackupPriceAlert>? = null,
+)
+
+/** Mirror of [HoldingLot]; the side is a name, read leniently like the other enums here. */
+@Serializable
+data class BackupHoldingLot(
+    val id: String,
+    val side: String,
+    val amount: Double,
+    val unitPriceToman: Double,
+    val atMs: Long,
+)
+
+/** Mirror of [PriceAlert]; the direction is a name, read leniently. */
+@Serializable
+data class BackupPriceAlert(
+    val id: String,
+    val assetId: String,
+    val assetName: String = "",
+    val target: Double,
+    val direction: String,
+    val armed: Boolean = true,
+    val createdAt: Long = 0L,
+    val firedAt: Long = 0L,
 )
 
 /**
@@ -594,6 +649,29 @@ fun BackupWidgetSlot.toEntityOrNull(): WidgetSlot? = runCatching {
     )
 }.getOrNull()
 
+fun HoldingLot.toBackup(): BackupHoldingLot = BackupHoldingLot(
+    id = id, side = side.name, amount = amount, unitPriceToman = unitPriceToman, atMs = atMs,
+)
+
+/** Null when this build does not know the side; the restore skips that lot. */
+fun BackupHoldingLot.toEntityOrNull(): HoldingLot? = runCatching {
+    HoldingLot(id = id, side = LotSide.valueOf(side), amount = amount, unitPriceToman = unitPriceToman, atMs = atMs)
+}.getOrNull()
+
+fun PriceAlert.toBackup(): BackupPriceAlert = BackupPriceAlert(
+    id = id, assetId = assetId, assetName = assetName, target = target,
+    direction = direction.name, armed = armed, createdAt = createdAt, firedAt = firedAt,
+)
+
+/** Null when this build does not know the direction; the restore skips that alert. */
+fun BackupPriceAlert.toEntityOrNull(): PriceAlert? = runCatching {
+    PriceAlert(
+        id = id, assetId = assetId, assetName = assetName, target = target,
+        direction = AlertDirection.valueOf(direction), armed = armed,
+        createdAt = createdAt, firedAt = firedAt,
+    )
+}.getOrNull()
+
 // ──────────────────────────── what the screens show ────────────────────────────
 
 /** Counts for the confirmation sheet, so nobody restores a file blind. */
@@ -614,6 +692,10 @@ data class BackupSummary(
     val goals: Int,
     val obligations: Int,
     val reservations: Int,
+    /** Since version 2; 0 when the file does not carry them. */
+    val holdingLots: Int = 0,
+    val priceAlerts: Int = 0,
+    val dailyRateAssets: Int = 0,
 ) {
     val totalRows: Int
         get() = messages + manualTransactions + decisions + rules + categories +
@@ -637,4 +719,7 @@ fun BackupPayload.summary(bytes: Long = 0L): BackupSummary = BackupSummary(
     goals = tables.goals.size,
     obligations = tables.obligations.size,
     reservations = tables.reservations.size,
+    holdingLots = ledger.holdingLots?.values?.sumOf { it.size } ?: 0,
+    priceAlerts = ledger.priceAlerts?.size ?: 0,
+    dailyRateAssets = dailyRates?.size ?: 0,
 )
