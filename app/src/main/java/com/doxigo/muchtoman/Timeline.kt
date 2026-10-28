@@ -231,14 +231,7 @@ fun TimelineScreen(
     LaunchedEffect(filterTokens) { onFilterWide(filterTokens.isNotEmpty()) }
 
     if (showAddManual) {
-        ManualTxnSheet(
-            categories = ledger.categories,
-            onDismiss = { showAddManual = false },
-            onSave = { amountRial, isExpense, catId, merchant, note, at ->
-                onAddManual(amountRial, isExpense, catId, merchant, note, at)
-                showAddManual = false
-            },
-        )
+        QuickAddOverlay(onDismiss = { showAddManual = false })
     }
 
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {

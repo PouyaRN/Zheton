@@ -1057,14 +1057,17 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         merchant: String,
         note: String,
         epochMillis: Long = System.currentTimeMillis(),
+        accountId: String = MANUAL_ACCOUNT_ID,
     ) {
         val app = getApplication<Application>()
         viewModelScope.launch(Dispatchers.Default) {
             runCatching {
-                recordManualTransaction(app, amountRial, isExpense, categoryId, merchant, note, epochMillis)
+                recordManualTransaction(app, amountRial, isExpense, categoryId, merchant, note, epochMillis, accountId)
                 val durable = DurableDb.get(app)
                 val derived = DerivedDb.get(app)
                 _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
+                // A row on one of her bank accounts moves that account's balance too.
+                if (accountId != MANUAL_ACCOUNT_ID) recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
             }.onFailure { android.util.Log.w("muchtoman", "add manual transaction failed: $it") }
         }

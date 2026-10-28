@@ -573,14 +573,7 @@ val snackbarHostState = remember { SnackbarHostState() }
     }
 
     if (showQuickAdd) {
-        ManualTxnSheet(
-            categories = state.ledger.categories,
-            onDismiss = { showQuickAdd = false },
-            onSave = { amountRial, isExpense, catId, merchant, note, at ->
-                vm.addManualTransaction(amountRial, isExpense, catId, merchant, note, at)
-                showQuickAdd = false
-            },
-        )
+        QuickAddOverlay(onDismiss = { showQuickAdd = false }, vm = vm)
     }
 
     if (showCommitmentsHubSheet) {
