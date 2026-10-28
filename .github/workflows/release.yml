@@ -69,10 +69,21 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      # The runner ships with tens of GB of toolchains this job never touches, and the emulator
+      # needs room for its userdata partition: v1.1.0's first run died with "Not enough space to
+      # create userdata partition" and then polled adb for twenty minutes.
+      - name: Free disk space for the emulator
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          df -h /
+
       - name: The release APK must actually open
+        # A boot that never comes fails here instead of polling until the job's own limit.
+        timeout-minutes: 15
         uses: reactivecircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808 # v2
         with:
           api-level: 30
+          disk-size: 4096M
           # AOSP, not google_apis: this asks "does the app start", and the lighter image
           # boots quicker. Nothing here touches a Google API — prices come over plain HTTPS.
           target: default
