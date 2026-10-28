@@ -92,6 +92,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             cycleAnchorDay = store.cycleAnchorDay,
             monthlyBudgetToman = store.monthlyBudgetToman,
             widgetSlots = store.widgetSlots,
+            holdingLots = store.holdingLots,
         )
     )
     val state: StateFlow<UiState> = _state.asStateFlow()
@@ -102,6 +103,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
     private val ledgerMutex = Mutex()
 
     init {
+        loadDailyRates()
         refresh()
         refreshStocksIfHeld()
         refreshWallets()
@@ -203,6 +205,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 )
                 _state.update { it.copy(rates = fresh) }
                 checkPriceAlerts()
+                saveDailyRates(fetched.toman, fetched.updatedAt)
             }.onFailure { e ->
                 // Keep showing the cached rates; an old number beats a blank screen. The
                 // log line is the only place the real reason survives — the UI stays Persian
@@ -248,6 +251,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 store.cachedStocks = fresh
                 _state.update { it.copy(tse = fresh) }
                 checkPriceAlerts()
+                saveDailyRates(fresh.toman, fresh.updatedAt)
                 android.util.Log.i("muchtoman", "tse ok: ${fresh.stocks.size} instruments")
             }.onFailure { error ->
                 android.util.Log.w("muchtoman", "tse fetch failed: $error")
@@ -334,6 +338,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
 
     fun removeHolding(key: String) {
         persist(_state.value.holdings.filterNot { it.key == key })
+        if (key in _state.value.holdingLots) persistLots(_state.value.holdingLots - key)
         _state.update {
             it.copy(
                 refreshingWallets = it.refreshingWallets - key,
@@ -2070,6 +2075,102 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         recordSnapshot()
     }
 
+    // ── Holding lots and daily rates (ticket #10; API in HoldingPnl.kt) ─────────────
+
+    /**
+     * ثبت خرید: [amount] units of [typeId] at [unitPriceToman] each, on [atMs]. Adds to the
+     * holding [key] (creating it if she has none) and records the lot its cost comes from.
+     * A wallet-tracked holding keeps the wallet's amount; only the lot is recorded.
+     * False when the numbers are not positive and finite.
+     */
+    fun recordBuy(
+        key: String,
+        typeId: String,
+        amount: Double,
+        unitPriceToman: Double,
+        atMs: Long = System.currentTimeMillis(),
+    ): Boolean {
+        if (!isValidLot(amount, unitPriceToman)) return false
+        val existing = _state.value.holdings.firstOrNull { it.key == key }
+        when {
+            existing == null -> saveHolding(key, typeId, amount, wallet = null)
+            existing.wallet == null -> saveHolding(key, existing.typeId, existing.amount + amount, wallet = null)
+        }
+        addLot(key, HoldingLot(newHoldingId(), LotSide.BUY, amount, unitPriceToman, atMs))
+        return true
+    }
+
+    /**
+     * ثبت فروش: [amount] units of the holding [key] sold at [unitPriceToman] each. Takes the
+     * units off the holding (never below zero; the row stays) and records the lot, which books
+     * realised profit at the average cost. False for an unknown holding, bad numbers, or a
+     * sale larger than what she holds.
+     */
+    fun recordSell(
+        key: String,
+        amount: Double,
+        unitPriceToman: Double,
+        atMs: Long = System.currentTimeMillis(),
+    ): Boolean {
+        if (!isValidLot(amount, unitPriceToman)) return false
+        val existing = _state.value.holdings.firstOrNull { it.key == key } ?: return false
+        if (amount > existing.amount * (1 + 1e-9) + 1e-12) return false
+        if (existing.wallet == null) {
+            saveHolding(key, existing.typeId, (existing.amount - amount).coerceAtLeast(0.0), wallet = null)
+        }
+        addLot(key, HoldingLot(newHoldingId(), LotSide.SELL, amount, unitPriceToman, atMs))
+        return true
+    }
+
+    /**
+     * Gives the units no lot accounts for — every holding from before lots existed — the price
+     * she paid, without changing the amount. Turns the dash into a real cost basis.
+     */
+    fun recordOpeningCost(key: String, unitPriceToman: Double, atMs: Long = System.currentTimeMillis()): Boolean {
+        val holding = _state.value.holdings.firstOrNull { it.key == key } ?: return false
+        val uncovered = positionOf(holding, _state.value.lotsOf(key), null).uncoveredAmount
+        if (!isValidLot(uncovered, unitPriceToman)) return false
+        addLot(key, HoldingLot(newHoldingId(), LotSide.BUY, uncovered, unitPriceToman, atMs))
+        return true
+    }
+
+    /** Removes one recorded lot (a mistyped entry). The holding's amount is left alone. */
+    fun deleteLot(key: String, lotId: String) {
+        val lots = _state.value.holdingLots[key] ?: return
+        val next = lots.filterNot { it.id == lotId }
+        persistLots(if (next.isEmpty()) _state.value.holdingLots - key else _state.value.holdingLots + (key to next))
+    }
+
+    private fun addLot(key: String, lot: HoldingLot) {
+        val all = _state.value.holdingLots
+        persistLots(all + (key to (all[key].orEmpty() + lot)))
+    }
+
+    private fun persistLots(lots: Map<String, List<HoldingLot>>) {
+        store.holdingLots = lots
+        _state.update { it.copy(holdingLots = lots) }
+    }
+
+    /** Reads the stored closes off the main thread, importing the old intraday store once. */
+    private fun loadDailyRates() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val loaded = runCatching {
+                store.dailyRates.seedOnce(store.rateHistoryStore.allHistory())
+                store.dailyRates.loadAll()
+            }.getOrDefault(emptyMap())
+            // Anything recorded while this ran is newer than the files read; it wins.
+            _state.update { it.copy(dailyRates = loaded + it.dailyRates) }
+        }
+    }
+
+    private suspend fun saveDailyRates(rates: Map<String, Double>, updatedAt: Long) {
+        val holdings = _state.value.holdings
+        val changed = withContext(Dispatchers.IO) {
+            persistDailyRates(store.dailyRates, rates, updatedAt, holdings)
+        }
+        if (changed.isNotEmpty()) _state.update { it.copy(dailyRates = it.dailyRates + changed) }
+    }
+
     private fun persist(list: List<Holding>) {
         store.holdings = list
         _state.update { it.copy(holdings = list) }
@@ -2138,6 +2239,10 @@ data class UiState(
     /** User-set monthly budget in Toman; 0 = unset. */
     val monthlyBudgetToman: Long = 0L,
     val widgetSlots: List<com.doxigo.muchtoman.widget.engine.WidgetSlot> = com.doxigo.muchtoman.widget.engine.WidgetEngineDefaults.defaultSlots,
+    /** ثبت خرید / ثبت فروش per holding key; see HoldingPnl.kt for what is computed from it. */
+    val holdingLots: Map<String, List<HoldingLot>> = emptyMap(),
+    /** Stored daily closes per asset id, from rates the app actually fetched. */
+    val dailyRates: Map<String, DailyCloses> = emptyMap(),
 ) {
     val coins: List<Coin> get() = rates.coins
 

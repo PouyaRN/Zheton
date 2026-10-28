@@ -540,6 +540,14 @@ class Store(context: Context) {
     /** Historical observation store for polled rates. */
     val rateHistoryStore = MarketRateHistoryStore(prefs)
 
+    /** One close per day per asset, five years deep; see [DailyRateFiles]. */
+    val dailyRates = DailyRateFiles(java.io.File(context.filesDir, "daily_rates"))
+
+    /** ثبت خرید / ثبت فروش per holding key. Absent key = no lots = cost unknown. */
+    var holdingLots: Map<String, List<HoldingLot>>
+        get() = read("holdingLots", emptyMap())
+        set(v) = write("holdingLots", v)
+
     /**
      * Last successful TSETMC snapshot. Kept apart from [cachedRates] because that is the
      * Worker's payload and this is the one thing the phone fetches for itself — and because
