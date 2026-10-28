@@ -66,7 +66,7 @@ class AssetDetailTest {
     @Test
     fun markUsesTheFigureInTheName() {
         val gold = STATIC_CATALOG.first { it.id == "gold18" }
-        assertEquals("۱۸", assetMark(gold))
+        assertEquals("۱۸", assetDetailMark(gold))
         assertEquals("هر گرم · بازار آزاد", assetUnitLine(gold))
         assertEquals("طلای تو", holdingLabel(gold))
     }

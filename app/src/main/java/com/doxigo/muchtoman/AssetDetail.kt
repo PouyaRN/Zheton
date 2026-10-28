@@ -158,7 +158,7 @@ fun AssetDetailScreen(
                         contentAlignment = Alignment.Center,
                     ) {
                         Text(
-                            assetMark(type),
+                            assetDetailMark(type),
                             fontFamily = Modam,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.ExtraBold,
@@ -865,7 +865,7 @@ internal fun scrubDate(day: Long, period: RatePeriod, today: Long): String {
 private fun faDigitsOnly(n: Int): String = n.toString().map { if (it in '0'..'9') '۰' + (it - '0') else it }.joinToString("")
 
 /** The round mark beside the name: the figure in it («۱۸» for طلای ۱۸ عیار), else its first letter. */
-internal fun assetMark(type: AssetType): String {
+internal fun assetDetailMark(type: AssetType): String {
     val digits = Regex("[۰-۹]+").find(type.fa)?.value
     if (digits != null && digits.length <= 3) return digits
     return type.fa.trim().firstOrNull()?.toString() ?: "?"
