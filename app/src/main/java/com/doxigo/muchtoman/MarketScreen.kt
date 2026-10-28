@@ -609,7 +609,6 @@ private fun HoldingRow(
             value = value?.let { maskFinancialAmount(faCompact(it, 1, pad = true), privacyMode) } ?: "—",
             change = if (type.kind == Kind.CASH) null else state.dayChangeOf(holding.typeId, now)?.percent,
             dimmed = dimmed,
-            // TODO(#13): open the asset detail screen once it exists; the edit sheet stands in.
             modifier = Modifier.combinedClickable(
                 role = Role.Button,
                 onClick = onOpen,
