@@ -715,15 +715,16 @@ val snackbarHostState = remember { SnackbarHostState() }
         return@Scaffold
       }
       if (tab == Tab.ASSETS) {
-        MarketAndAssetsScreen(
+        MarketTabScreen(
             state = state,
-            effective = effective,
             onRefresh = { vm.refreshAll() },
             onAddHolding = { adding = true; vm.refreshStocksForPicker() },
-            onEditHolding = { h -> editing = Editing(h.typeId, h.key) },
+            // TODO(#13): route to the asset detail screen; the edit sheet stands in until then.
+            onOpenHolding = { h -> editing = Editing(h.typeId, h.key) },
             onDeleteHolding = { key -> vm.deleteHolding(key) },
             onArchiveHolding = { key, archived -> vm.setArchived(key, archived) },
             bottomInset = pad.calculateBottomPadding(),
+            privacyMode = privacyMode,
         )
         return@Scaffold
       }
