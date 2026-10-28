@@ -688,7 +688,7 @@ val snackbarHostState = remember { SnackbarHostState() }
       // The tabs that are their own screens. They sit inside the Scaffold rather than
       // returning early, so the bar stays under them and there is always a way out.
       if (tab == Tab.LEDGER) {
-        LedgerTabScreen(
+        LedgerScreen(
             state = state,
             vm = vm,
             bottomInset = pad.calculateBottomPadding(),

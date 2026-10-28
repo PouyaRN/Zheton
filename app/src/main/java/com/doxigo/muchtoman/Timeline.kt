@@ -644,7 +644,7 @@ TextButton(onClick = {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FilterSheet(
+internal fun FilterSheet(
     tokens: List<FilterToken>,
     categories: List<Category>,
     onApply: (List<FilterToken>) -> Unit,
@@ -794,7 +794,7 @@ private fun placeholderFor(field: FilterField): String = when (field) {
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun BatchActionBar(
+internal fun BatchActionBar(
     selectedRefs: Set<String>,
     /** How many rows the current filter matches — the batch bar shows it under the selection. */
     matchCount: Int,
