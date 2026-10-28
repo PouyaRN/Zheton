@@ -729,107 +729,24 @@ val snackbarHostState = remember { SnackbarHostState() }
       }
 
       if (tab == Tab.CARDS) {
-        val context = androidx.compose.ui.platform.LocalContext.current
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
-            contentPadding = PaddingValues(top = 0.dp, bottom = pad.calculateBottomPadding() + 96.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item {
-                com.doxigo.muchtoman.ui.components.PageHeader(
-                    title = "حساب‌ها",
-                    subtitle = if (state.bankAccounts.isEmpty()) "کارت‌های بانکی و موجودی لحظه‌ای"
-                    else "${fa(state.bankAccounts.size)} کارت · موجودی لحظه‌ای و شبا",
-                ) {
-                    com.doxigo.muchtoman.ui.components.RoundIconButton("مدیریت حساب‌ها", { banks = true }) { tint ->
-                        Icon(Icons.Rounded.Settings, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
-                    }
-                }
-            }
-
-            item {
-              Box(Modifier.padding(horizontal = Space.l)) {
-                if (state.bankAccounts.isEmpty()) {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = Space.m),
-                        shape = RoundedCornerShape(Radius.card),
-                        color = MaterialTheme.colorScheme.surfaceContainerLow,
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(56.dp)
-                                    .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Settings,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(28.dp),
-                                )
-                            }
-                            Text(
-                                text = "هنوز کارت بانکی اضافه نشده",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            Text(
-                                text = "با فعال‌کردن خواندن پیامک‌ها، کارت‌ها و موجودی شما به صورت خودکار اضافه می‌شوند. همچنین می‌توانید حساب‌ها را به صورت دستی مدیریت کنید.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                lineHeight = 20.sp,
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            androidx.compose.material3.Button(
-                                onClick = { banks = true },
-                                shape = RoundedCornerShape(Radius.pill),
-                                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                                ),
-                            ) {
-                                Text(
-                                    text = "مدیریت و فعال‌سازی حساب‌ها",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 13.sp,
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    com.doxigo.muchtoman.ui.cards.AppleWalletAccordionDeck(
-                        accounts = state.bankAccounts,
-                        cardHolderName = state.name,
-                        privacyMode = privacyMode,
-                        onCardClick = { banks = true },
-                        onCardLongPress = { cardEditorKey = it.key },
-                        onFilterLedger = {
-                            tab = Tab.LEDGER
-                        },
-                    )
-                }
-              }
-            }
-
+        val activeCommitments = state.commitments.filter { !it.isSettled }
+        val activeObligations = state.obligations.filter { !it.archived }
+        val activeReservations = state.reservations.filter { !it.released }
+        AccountsScreen(
+            state = state,
+            privacyMode = privacyMode,
+            bottomInset = pad.calculateBottomPadding(),
+            onManageAccounts = { banks = true },
+            onEditCard = { cardEditorKey = it.key },
+            // گردش حساب: the ledger, searched down to this account's bank (accounts are keyed by bank).
+            onOpenLedger = { account ->
+                timelineCategoryId = null
+                timelineSearchQuery = account.bankFa
+                tab = Tab.LEDGER
+            },
             // Smart Commitments, BNPL & Sayad Checks Summary
-            val activeCommitments = state.commitments.filter { !it.isSettled }
-            val activeObligations = state.obligations.filter { !it.archived }
-            val activeReservations = state.reservations.filter { !it.released }
-            if (activeCommitments.isNotEmpty() || activeObligations.isNotEmpty() || activeReservations.isNotEmpty()) {
-                item {
-                  Box(Modifier.padding(horizontal = Space.l)) {
+            commitments = if (activeCommitments.isEmpty() && activeObligations.isEmpty() && activeReservations.isEmpty()) null else {
+                {
                     ContextualPriorityCard(
                         commitments = state.commitments,
                         obligations = state.obligations,
@@ -849,10 +766,9 @@ val snackbarHostState = remember { SnackbarHostState() }
                         },
                         privacyMode = privacyMode,
                     )
-                  }
                 }
-            }
-        }
+            },
+        )
         return@Scaffold
       }
 
