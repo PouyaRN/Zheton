@@ -22,6 +22,11 @@ const TOOL_PAGES = [
 
 export default defineConfig({
   plugins: [react()],
+  server: {
+    host: '0.0.0.0',
+    port: 3000,
+    allowedHosts: true,
+  },
   build: {
     target: 'es2022',
     rollupOptions: {

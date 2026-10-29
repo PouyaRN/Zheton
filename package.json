@@ -1,0 +1,14 @@
+{
+  "name": "zheton-workspace",
+  "private": true,
+  "workspaces": [
+    "pwa"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace=pwa",
+    "build": "npm run build --workspace=pwa",
+    "lint": "npm run lint --workspace=pwa",
+    "typecheck": "npm run typecheck --workspace=pwa",
+    "test": "npm run test --workspace=pwa"
+  }
+}
