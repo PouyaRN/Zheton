@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "MuchToman"
+rootProject.name = "Zheton"
 include(":app")

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Andis</string>
+    <string name="app_name">Zheton</string>
     <string name="widget_label_description">دارایی من</string>
     <string name="widget_chart_description">نمودار یک ماه گذشته</string>
     <!-- Shown under the widget's name in the picker (API 31+). -->

@@ -1,7 +1,6 @@
-# اندیس — Andis
+# ژتون — Zheton
 
-An offline-first Android app for Persian-speaking households: a ledger built from bank SMS,
-and the value of everything you own at Tehran free-market rates, in Toman.
+دستیار مالی شخصی، دیده‌بان قدرت خرید بلادرنگ و جعبه‌ابزار محاسبات اقتصادی برای کاربران ایرانی: دفتر کل هوشمند مبتنی بر پیامک‌های بانکی، رصد سبد دارایی‌ها به نرخ آزاد تهران و بودجه‌بندی هوشمند به تومان.
 
 [![check](https://github.com/securityvisions/Andis/actions/workflows/check.yml/badge.svg)](https://github.com/securityvisions/Andis/actions/workflows/check.yml)
 [![release](https://github.com/securityvisions/Andis/actions/workflows/release.yml/badge.svg)](https://github.com/securityvisions/Andis/actions/workflows/release.yml)
@@ -9,126 +8,113 @@ and the value of everything you own at Tehran free-market rates, in Toman.
 ![minSdk 24](https://img.shields.io/badge/Android-7.0%2B%20(API%2024)-3DDC84)
 [![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-<p>
+<p align="center">
+  <img src="docs/screenshots/home-light.webp" width="160" alt="Home (light)">
   <img src="docs/screenshots/home-dark.webp" width="160" alt="Home (dark)">
   <img src="docs/screenshots/ledger-dark.webp" width="160" alt="Ledger">
   <img src="docs/screenshots/assets-dark.webp" width="160" alt="Assets">
   <img src="docs/screenshots/accounts-dark.webp" width="160" alt="Accounts">
   <img src="docs/screenshots/report-dark.webp" width="160" alt="Report">
-  <img src="docs/screenshots/home-light.webp" width="160" alt="Home (light)">
 </p>
 
-<sub>Demo data. Home, Ledger, Assets, Accounts and Report in dark mode, then Home in light mode.</sub>
+رابط کاربری کاملاً فارسی و راست‌به‌چپ (RTL)، همراه با ارقام استاندارد فارسی، اعداد با عرض ثابت (`tabular`) و تایپوگرافی خوانا طراحی شده است. مبالغ بزرگ همان‌طور که در مکالمات روزمره بیان می‌شوند نمایش می‌یابند («۴٫۷ میلیارد تومان») و تمامی اعداد به جای گرد شدن، کوتاه می‌شوند تا هیچ‌گاه رقمی فراتر از واقعیت نمایش داده نشود.
 
-The interface is Persian and right-to-left, with Persian digits and large type. Large amounts
-are written the way people say them ("۴٫۷ میلیارد تومان"), and displayed figures truncate rather
-than round, so the number shown is never larger than the real one.
+---
 
-## Features
+## قابلیت‌های کلیدی
 
-- **SMS ledger.** Bank SMS are read from the phone's inbox and parsed on the device into a
-  transaction ledger with balances per account. Corrections, categories and notes are kept and
-  replayed when the parser improves. Manual entries cover cash and anything without an SMS.
-- **Assets at live Tehran rates.** Toman, foreign currencies, 18k gold, Iranian coins,
-  سکه پارسیان, silver, Tehran Stock Exchange symbols and the top 250 cryptocurrencies, valued at
-  free-market rates (the official peg is never used). Public wallet addresses can be tracked
-  read-only. Holdings can record purchase lots for cost basis and profit/loss.
-- **Budget and daily share.** Set a monthly budget and the Home tab shows how much is safe to
-  spend today for the rest of the month, with month-to-date progress.
-- **Price alerts.** Per-asset alerts checked in the background, delivered as local notifications.
-- **Reports.** Month-over-month spending against income, category shares, and PDF/Excel export.
-- **Backup.** Android backup for the durable data, plus an optional encrypted backup vault keyed
-  by a 12-word recovery code.
-- **Extras.** Home-screen widgets, a quick-add tile, optional app lock (fingerprint or device
-  PIN), privacy mode that masks amounts, optional end-to-end encrypted family sync, light and
-  dark themes following the system.
+### ۱. دفتر کل هوشمند پیامکی (SMS Ledger)
+* **استخراج خودکار و آفلاین:** پیامک‌های بانکی به صورت مستقیم در دستگاه خوانده و پارس می‌شوند تا تراز لحظه‌ای هر حساب مشخص گردد.
+* **حافظه اصلاحات و دسته‌بندی:** اصلاحات کاربر، یادداشت‌ها و برچسب‌ها ثبت شده و با به‌روزرسانی الگوهای پارسر پیامک، بازنشانی و همگام می‌شوند.
+* **ثبت دستی سریع:** امکان ورود مبالغ نقدی، خریدهای بدون پیامک و انتقال‌های درون‌بانکی با میانبرهای ثبت سریع.
 
-### Supported banks
+### ۲. دیده‌بان دارایی و بازار آزاد (Market & Portfolio)
+* **نرخ‌های زنده بازار تهران:** طلای ۱۸ عیار، مثقال، نقره، سکه بهار آزادی، امامی، نیم‌سکه، ربع‌سکه، سکه پارسیان، دلار، یورو، درهم، تتر و رمزارزهای برتر بر اساس معاملات واقعی بازار آزاد (بدون ارجاع به نرخ‌های دستوری).
+* **صندوق‌های طلای بورس:** رصد نمادهای بورسی (مانند عیار و کهربا) و سهام بازار سرمایه از سامانه مدیریت فناوری بورس (TSETMC).
+* **رادار حباب‌سنج سکه:** محاسبه لحظه‌ای ارزش ذاتی طلای انواع سکه و تعیین درصد حباب اسمی.
+* **محاسبه سود و زیان (P&L):** تفکیک دارایی‌ها به تفکیک دسته‌های خرید با ثبت قیمت تمام‌شده (Cost Basis).
 
-بلو بانک، سامان، رفاه، پاسارگاد، اقتصاد نوین، خاورمیانه، صادرات، رسالت، پارسیان، ملت، ملی،
-مسکن، سپه، تجارت. A message is read only if it comes from one of the bank's known senders
-(`Bank` in [`Sms.kt`](app/src/main/java/com/doxigo/muchtoman/Sms.kt)); a new sender shows up as
-a suggestion you confirm. Bank-app push notifications are not read, only SMS.
+### ۳. موتور بودجه‌بندی و خرج امن روزانه (Safe Spend Engine)
+* **خرج مجاز امروز:** محاسبه هوشمند بودجه با اعمال ضرایب نوسان روزهای هفته (پنج‌شنبه و جمعه‌های پرخرج)، کسر تعهدات آتی و پایش سرعت مصرف بودجه.
+* **سپر ضد تورم نقدینگی:** محاسبه افت روزانه ارزش پول نقد راکد در حساب‌ها در برابر تورم و ارائه پیشنهادهای تبدیل بهینه.
 
-### Editions
+### ۴. دسته کارت‌های بانکی و تعهدات (Accounts & Commitments)
+* **دسته کارت‌های تعاملی شتاب:** تطبیق خودکار پیش‌شماره (BIN) بانک‌های ایرانی، اعتبارسنجی الگوریتم Luhn و شماره شبا (ISO-7064)، و کپی سریع اطلاعات.
+* **اشتراک سریع با QR Code:** تولید بارکد دوبعدی شماره کارت یا شبا برای تسهیل انتقال وجه.
+* **مدیریت اقساط، BNPL و چک صیادی:** ردگیری اقساط اسنپ‌پی، دیجی‌پی، تارا، وام‌های بانکی و چک‌های صیادی به همراه محاسبه «ارزش فعلی تعدیل‌شده با تورم».
 
-| APK | Package | Contents |
-| --- | --- | --- |
-| `muchtoman-vX.Y.Z.apk` | `com.doxigo.muchtoman` | Full app: ledger, budget, reports, assets |
-| `muchtoman-lite-vX.Y.Z.apk` | `com.doxigo.muchtoman.lite` | Assets only: what you own and what it is worth |
+### ۵. تحلیل ۵۰/۳۰/۲۰ و گزارش‌های مالی
+* **طبقه‌بندی استاندارد هزینه‌ها:** نیازهای اساسی (۵۰٪)، خواسته‌ها و تفریحات (۳۰٪) و پس‌انداز/سرمایه‌گذاری (۲۰٪).
+* **خروجی داده‌ها:** تولید گزارش‌های مقایسه‌ای ماهانه، فایل‌های اکسل/CSV سازگار با فارسی (UTF-8 BOM) و فایل PDF فارسی با جدول‌بندی ساختاریافته.
 
-Both are built from the same source and can be installed side by side.
+### ۶. هفت ماشین‌حساب تخصصی مالی
+۱. **حباب‌سنج سکه:** محاسبه ارزش طلای خالص و درصد حباب مسکوکات بانکی.  
+۲. **اقساط وام:** محاسبه قسط ماهانه (فرمول PMT)، سود کل و مجموع بازپرداخت.  
+۳. **تورم و قدرت خرید:** محاسبه افت ارزش ریال بر اساس شاخص رسمی بهای کالاها (CPI) از سال ۱۳۸۰ تا ۱۴۰۵.  
+۴. **ارزش روز مهریه:** محاسبه تبدیل ریالی و طلایی مهریه بر اساس آیین‌نامه‌های جاری.  
+۵. **خسارت تأخیر تادیه:** محاسبه جریمه دیرکرد مطالبات طبق ماده ۵۲۲ قانون آیین دادرسی مدنی.  
+۶. **سنجش قدرت خرید حقوق:** ارزیابی کاهش یا افزایش ارزش واقعی دریافتی کارمندان در طول سال‌ها.  
+۷. **هزینه سالانه عادت‌ها:** سنجش اثر مرکب مخارج تکرارشونده کوچک (قهوه، سیگار، میان‌وعده) همراه با نرخ تورم.
 
-## Install
+### ۷. امنیت، محرمانگی و پشتیبان‌گیری
+* **کاملاً آفلاین و محلی:** بدون ایجاد حساب کاربری، بدون ثبت‌نام، و بدون هرگونه ارسال آمار یا تلهمتری (`Zero Telemetry`).
+* **حالت روح (Ghost Mode):** امکان تار و ماسک کردن آنی تمامی مبالغ و شماره کارت‌ها در مکان‌های عمومی.
+* **گاوصندوق نسخه پشتیبان:** فایل رمزنگاری‌شده `.mtbackup` با رمزنگاری پیشرفته `PBKDF2-HMAC-SHA256` و کلید ۱۲ کلمه‌ای بازیابی.
+* **همگام‌سازی خانواده (اختیاری):** همگام‌سازی پایان‌به‌پایان (End-to-End Encrypted) میان دستگاه‌های اعضای خانواده بدون افشای متن پیامک‌ها.
 
-Download the APK from [GitHub Releases](https://github.com/securityvisions/Andis/releases).
-Requires Android 7.0 (API 24) or newer. A newer full APK installs over an older one and keeps
-its data.
+---
 
-## Build from source
+## بانک‌های پشتیبانی‌شده
 
-Requirements: JDK 21 and the Android SDK.
+بلو بانک، سامان، رفاه، پاسارگاد، اقتصاد نوین، خاورمیانه، صادرات، رسالت، پارسیان، ملت، ملی، مسکن، سپه و تجارت. پیامک‌ها تنها از سرشماره‌های رسمی و تاییدشده بانکی پردازش می‌شوند.
+
+---
+
+## پلتفرم‌ها و ساختار پروژه
+
+```
+app/      اپلیکیشن اصلی اندروید (Kotlin, Jetpack Compose, Room, Glance Widgets)
+pwa/      نسخه وب و PWA همراه (React 18, TypeScript, Tailwind CSS, Material Design 3)
+sync/     ورکر Cloudflare با Durable Objects: همگام‌سازی رمزنگاری‌شده خانواده و گاوصندوق
+worker/   سرویس دریافت نرخ‌های زنده بازار آزاد، بالانس ولت‌ها و توزیع به‌روزرسانی
+docs/     مستندات معماری (ADR)، کانسپت بوم، دستورالعمل‌های ورودی پیامک و گزارش‌ها
+tools/    اسکریپت‌های آماده‌سازی و بهینه‌سازی فونت مدام
+```
+
+---
+
+## نحوه اجرا و ساخت از سورس
+
+### ۱. اپلیکیشن اندروید
+
+نیازمندی‌ها: JDK 21 و Android SDK (حداقل API 24).
 
 ```bash
-./gradlew assembleFullDebug              # app/build/outputs/apk/full/debug/app-full-debug.apk
-./gradlew testFullDebugUnitTest          # JVM unit tests
+./gradlew assembleFullDebug              # تولید app-full-debug.apk
+./gradlew testFullDebugUnitTest          # اجرای تست‌های واحد JVM
 ```
 
-Release builds are signed when a `keystore.properties` file (gitignored) exists in the repo
-root:
+### ۲. نسخه وب و PWA
 
-```properties
-storeFile=muchtoman-release.jks
-storePassword=...
-keyAlias=muchtoman
-keyPassword=...
+نیازمندی‌ها: Node.js (نسخه 20 به بالا) و npm.
+
+```bash
+cd pwa
+npm install
+npm run dev                              # اجرای سرور توسعه محلی
+npm run check                            # بررسی تایپ‌ها، تست‌های vitest و ساخت نهایی
 ```
 
-Without it, `assembleRelease` produces unsigned APKs. See [DEVELOPMENT.md](DEVELOPMENT.md) for
-build types, local Workers, the rates sources and adding banks or currencies.
+---
 
-## Release process
+## حریم خصوصی و امنیت داده‌ها
 
-Push an annotated `vX.Y.Z` tag (message in Persian; it becomes the in-app update note). The
-[release workflow](.github/workflows/release.yml) runs the unit tests and lint, installs and
-launches both release APKs on an emulator, then builds them with the release key and publishes a
-GitHub Release with both APKs and their R8 mapping files.
+* عدم نیاز به شماره موبایل، لاگین یا سرورهای خارجی برای ثبت اطلاعات مالی.
+* پیامک‌های بانکی منحصراً روی تراشه گوشی پردازش می‌شوند و متن خام آن‌ها هرگز به اینترنت ارسال نمی‌شود.
+* ارتباطات قیمتی تنها برای استعلام نرخ ارز و طلا بوده و هویت کاربر کاملاً ناشناس باقی می‌ماند.
 
-Required repository secrets: `KEYSTORE_B64` (base64 of the keystore), `KEYSTORE_STORE_PASSWORD`,
-`KEYSTORE_KEY_ALIAS`, `KEYSTORE_KEY_PASSWORD`.
+---
 
-`versionName` comes from the tag. `versionCode` is `2_000_001_000 + git rev-list --count HEAD`,
-so each build installs over the previous one.
+## پروانه استفاده (License)
 
-## Project structure
-
-```
-app/      Android app (Kotlin, Jetpack Compose, Room): everything that runs on the phone
-pwa/      Browser companion (Vite + TypeScript): family ledger view and Persian finance calculators
-sync/     Cloudflare Worker + Durable Objects: end-to-end encrypted family sync and backup vault
-worker/   Cloudflare Worker: rates, public-wallet balances, release info and APK download
-docs/     ADRs, design canvas, SMS intake notes, agent docs, screenshots
-tools/    Font preparation script
-```
-
-Design system: [DESIGN.md](DESIGN.md). Domain glossary: [CONTEXT.md](CONTEXT.md).
-Changes: [CHANGELOG.md](CHANGELOG.md).
-
-## Privacy
-
-- No account, no login, no analytics.
-- SMS are read only after you enable bank messages (`READ_SMS`; there is no SMS receiver). Only
-  messages from known bank senders are parsed, on the device. Raw SMS text is never uploaded.
-- The ledger, holdings and settings stay on the phone. Android's own backup includes the durable
-  database and preferences, following your device's backup settings.
-- Network use: rates and coin icons from the project's Worker; stock prices directly from TSETMC
-  only when you hold a stock or open the stock picker; wallet balances only for addresses you
-  add (the public address goes to the Worker and a public blockchain API).
-- Family sync and the backup vault are optional and encrypted on the device; the servers store
-  ciphertext and routing metadata only. Family SMS sharing starts off and shares parsed fields
-  (amount, direction, time, bank, merchant, category), not message text.
-
-## License
-
-[MIT](LICENSE). The Modam font in `app/src/main/res/font/` is a commercial font from
-fontiran.com and is not covered by the MIT license.
+این پروژه تحت پروانه [MIT](LICENSE) منتشر شده است. فونت استفاده‌شده «مدام» دارای کپی‌رایت سازنده بوده و شامل پروانه متن‌باز نمی‌گردد.

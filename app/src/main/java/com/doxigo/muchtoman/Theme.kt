@@ -658,9 +658,9 @@ object CanvasDark {
     val muted = Color(0xFF8E8E93)
     val accent = Color(0xFFF5B840)
     val accentWell = Color(0xFF1C1608)
-    val gain = Color(0xFF3FD98B)
-    val gainWell = Color(0x1F3FD98B)          // rgba(63,217,139,.12)
-    val loss = Color(0xFFFF7B6B)
+    val gain = Color(0xFF10B981)
+    val gainWell = Color(0x1F10B981)          // rgba(16,185,129,.12)
+    val loss = Color(0xFFF43F5E)
     val track = Color(0xFF1C1C1F)
     val navFill = Color(0xDB1C1C1E)           // rgba(28,28,30,.86)
     val navBorder = Color(0x17FFFFFF)         // rgba(255,255,255,.09)
@@ -689,21 +689,20 @@ object CanvasDark {
 
 /** Canvas day: HomeLight.dc.html. */
 object CanvasLight {
-    val ground = Color(0xFFF6F6F7)
+    val ground = Color(0xFFF8F9FC)
     val card = Color(0xFFFFFFFF)
-    val cardBorder = Color(0x0F000000)        // rgba(0,0,0,.06)
-    val ink = Color(0xFF0B0B0C)
-    val inkSecondary = Color(0xFF3E3E44)
-    val muted = Color(0xFF5E5E66)
-    val accent = Color(0xFFE9A425)
-    val accentText = Color(0xFF8A5A00)
-    val accentWell = Color(0xFFFBEFD6)
-    val gain = Color(0xFF0A6B42)
-    val gainWell = Color(0xFFE2F5EB)
-    /** Not drawn on the light artboard; the darkest loss that still reads as the night coral. */
-    val loss = Color(0xFFC0392B)
-    val track = Color(0xFFE4E4E7)
-    val navFill = Color(0xEBFFFFFF)           // rgba(255,255,255,.92)
+    val cardBorder = Color(0x12000000)        // rgba(0,0,0,.07) hairline
+    val ink = Color(0xFF191C1E)
+    val inkSecondary = Color(0xFF45474B)
+    val muted = Color(0xFF76777C)
+    val accent = Color(0xFF090D15)            // Primary deep onyx
+    val accentText = Color(0xFF0058BE)        // Action blue
+    val accentWell = Color(0xFFD8E2FF)        // Secondary fixed container
+    val gain = Color(0xFF10B981)              // Emerald accent
+    val gainWell = Color(0xFFECFDF5)          // Emerald soft
+    val loss = Color(0xFFF43F5E)              // Rose accent
+    val track = Color(0xFFE1E2E5)             // Surface variant / track
+    val navFill = Color(0xF2FFFFFF)           // rgba(255,255,255,.95)
     val navBorder = Color(0x14000000)         // rgba(0,0,0,.08)
     val actionBorder = Color(0x12000000)      // .07
 
@@ -712,15 +711,15 @@ object CanvasLight {
         inkSecondary = inkSecondary, muted = muted, accent = accent, accentText = accentText,
         accentWell = accentWell, gain = gain, gainWell = gainWell, loss = loss, track = track,
         navFill = navFill, navBorder = navBorder, navShadow = true, inverse = ink,
-        onInverse = Color.White, primaryAction = ink, onPrimaryAction = Color.White,
+        onInverse = Color.White, primaryAction = accent, onPrimaryAction = Color.White,
         actionFill = card, actionBorder = actionBorder, outlineFill = card,
-        outlineBorder = navBorder, chipText = inkSecondary, glow = accent,
-        glowCore = 0.26f, glowMid = 0.08f,
+        outlineBorder = navBorder, chipText = inkSecondary, glow = Color(0xFFF59E0B),
+        glowCore = 0.22f, glowMid = 0.07f,
     )
 
     fun hero() = HeroPalette(
-        top = ground, bottom = ground, gold = accentText, muted = muted, strong = ink,
-        mint = gain, warn = loss, well = card, hairline = cardBorder, glow = accent,
+        top = ground, bottom = Color(0xFFF2F3F6), gold = Color(0xFFF59E0B), muted = muted, strong = ink,
+        mint = gain, warn = loss, well = card, hairline = cardBorder, glow = Color(0xFFF59E0B),
     )
 }
 
@@ -795,45 +794,44 @@ object CanvasTheme {
  * [CanvasLight]; these schemes only map them onto Material roles.
  */
 private val LightColors = lightColorScheme(
-    // Saffron as text is the dark ochre; the bright saffron is a fill only (see CanvasLight).
-    primary = CanvasLight.accentText,
+    // Material 3 light system aligned with mali
+    primary = CanvasLight.accent,
     onPrimary = Color.White,
-    primaryContainer = CanvasLight.accentWell,
-    onPrimaryContainer = CanvasLight.accentText,
+    primaryContainer = Color(0xFF1F232B),
+    onPrimaryContainer = Color(0xFF868A94),
 
-    secondary = CanvasLight.ink,
+    secondary = CanvasLight.accentText,
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFEDEDEF),
-    onSecondaryContainer = CanvasLight.ink,
+    secondaryContainer = Color(0xFF2170E4),
+    onSecondaryContainer = Color(0xFFFEFCFF),
 
-    // Gain, and only gain.
+    // Gain, aligned to emerald-accent (#10B981)
     tertiary = CanvasLight.gain,
     onTertiary = Color.White,
     tertiaryContainer = CanvasLight.gainWell,
-    onTertiaryContainer = CanvasLight.gain,
+    onTertiaryContainer = Color(0xFF047857),
 
     background = CanvasLight.ground,
     onBackground = CanvasLight.ink,
 
     surface = CanvasLight.card,
     onSurface = CanvasLight.ink,
-    surfaceVariant = Color(0xFFEFEFF1),
-    onSurfaceVariant = CanvasLight.muted,
+    surfaceVariant = Color(0xFFE1E2E5),
+    onSurfaceVariant = CanvasLight.inkSecondary,
 
     surfaceContainerLowest = Color.White,
-    surfaceContainerLow = Color(0xFFFAFAFB),
-    surfaceContainer = CanvasLight.card,
-    surfaceContainerHigh = Color.White,     // dialogs and sheets
+    surfaceContainerLow = Color(0xFFF2F3F6),
+    surfaceContainer = Color(0xFFEDEEF1),
+    surfaceContainerHigh = Color(0xFFE7E8EB),
     surfaceContainerHighest = CanvasLight.track,
 
-    // rgba(0,0,0,.08) and .06 on the ground, flattened so they can also be filled.
-    outline = Color(0xFFE2E2E3),
-    outlineVariant = Color(0xFFE8E8E9),
+    outline = Color(0xFF76777C),
+    outlineVariant = Color(0xFFC6C6CB),
 
     error = CanvasLight.loss,
     onError = Color.White,
-    errorContainer = Color(0xFFFDECEC),
-    onErrorContainer = Color(0xFF7A1418),
+    errorContainer = Color(0xFFFFF1F2),
+    onErrorContainer = Color(0xFFBA1A1A),
     scrim = Color(0xFF000000),
 )
 
@@ -1570,16 +1568,16 @@ fun getAndisColors(colorScheme: androidx.compose.material3.ColorScheme, isDark: 
             background = colorScheme.background,
             backgroundSecondary = colorScheme.surfaceContainerLow,
             surfacePrimary = colorScheme.surface,
-            surfaceElevated = colorScheme.surfaceVariant,
+            surfaceElevated = colorScheme.surfaceContainer,
             surfaceSecondary = colorScheme.surfaceContainerHigh,
             border = colorScheme.outlineVariant,
             borderStrong = colorScheme.outline,
-            borderActive = colorScheme.primary,
+            borderActive = colorScheme.secondary,
             textPrimary = colorScheme.onSurface,
             textSecondary = colorScheme.onSurfaceVariant,
             textMuted = colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
             disabled = colorScheme.onSurface.copy(alpha = 0.38f),
-            accentCyan = heroPalette.gold,
+            accentCyan = Color(0xFF0058BE),
             accentLime = heroPalette.gold,
             emerald = colorScheme.tertiary,
             danger = colorScheme.error,

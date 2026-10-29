@@ -32,18 +32,18 @@
 
   /* Money coming in, fixed in both themes as in `MonthFlow` — in the dark scheme the
      theme's own green is the one the hero speaks in. */
-  --gain: #2e9e5b;
+  --gain: #10b981;
 
-  --bg: #f4f1e9;                  /* warm paper, not clinical white */
-  --on-bg: #101a18;
+  --bg: #f8f9fc;                  /* Material 3 clean light ground */
+  --on-bg: #191c1e;
   --surface: #ffffff;
-  --on-surface: #101a18;
-  --surface-variant: #e4eae6;
-  --on-surface-variant: #4a5c57;
-  --primary: #0a423b;
+  --on-surface: #191c1e;
+  --surface-variant: #edeef1;
+  --on-surface-variant: #45474b;
+  --primary: #090d15;
   --on-primary: #ffffff;
-  --outline-variant: #d5dcd8;
-  --error: #b3261e;
+  --outline-variant: #c6c6cb;
+  --error: #f43f5e;
 
   --r-field: 18px;
   --r-card: 24px;
