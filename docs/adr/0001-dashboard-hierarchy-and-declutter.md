@@ -1,7 +1,7 @@
 # ADR 0001: Separation of Analytical Jargon from Core Dashboard & Visual Layout Hierarchy
 
 ## Status
-Superseded by the canvas redesign (1.1.0): five-tab floating nav and the layouts in docs/design/canvas. Kept as a record. (Was: Accepted.)
+Accepted
 
 ## Context
 User feedback highlighted cognitive overload on the Home and Reports screens. When opening the personal finance app, the primary cognitive desire in the first 2 seconds is knowing "How much do I have?" and "How much did I spend today?". Multiple advanced analytical widgets (Inflation Immunity, Arbitrage Radar, Tether Spread, Daily Bleed) packed onto the home screen dilute visual hierarchy and create financial anxiety. Furthermore, the bottom navigation bar previously had the potential to overlap content on scrollable screens without sufficient bottom padding.

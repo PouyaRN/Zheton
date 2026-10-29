@@ -4,7 +4,7 @@ Date: 2025-09-11
 
 ## Status
 
-Superseded by the canvas redesign (1.1.0): five-tab floating nav and the layouts in docs/design/canvas. Kept as a record. (Was: Accepted.)
+Accepted
 
 ## Context
 

@@ -1,7 +1,7 @@
 # ADR 0006: Revolut Bento Cockpit Architecture & Apple Wallet Card Deck Separation
 
 ## Status
-Superseded by the canvas redesign (1.1.0): five-tab floating nav and the layouts in docs/design/canvas. Kept as a record. (Was: Accepted (Amends and supersedes Section 1 of ADR 0001).)
+Accepted (Amends and supersedes Section 1 of ADR 0001)
 
 ## Context
 ADR 0001 originally restricted the Home screen exclusively to Liquid Balance, Today's Net Spend, the 3D Bank Card Deck, and Daily Alerts, banning all gold, market, and monthly analytical metrics from the primary fold to prevent clutter.

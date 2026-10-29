@@ -106,13 +106,21 @@ This document defines the canonical terms and bounded context concepts for Chand
 ### **Transaction Stream Ergonomics (ارگونومی جریان تراکنش‌ها)**
 - High-contrast, clean chronological stream with circular merchant/bank avatars, bilingual categorization, clear green/white amounts, and instant 1-tap detail drill-down.
 
+### **Bento Cockpit (کابین بنتو / داشبورد فشرده)**
+- High-density 2-second glance grid on the primary Home fold displaying real-time 18K gold benchmark anchor, monthly burn-rate pacing, and daily liquidity alerts, balancing immediacy with zero cognitive exhaustion.
+
+### **Apple Wallet Accordion Deck (دک آکاردئونی کارت‌های بانکی)**
+- Dedicated vertical stacking presentation of bank cards in Tab 3, where cards overlap dynamically and expand smoothly with spring physics upon interaction, providing instant 1-tap PAN/SHEBA copying and metallic 3D styling without cluttering the Home dashboard.
+
 ---
 
 ## 7. Unified Navigation & Screen Boundaries
 
-### **Five-Tab Navigation (ناوبری پنج‌تبی)**
-- A floating pill nav (`CanvasNavBar`, `TabBar.kt`) with five places: **امروز** (Home: today's safe spend, monthly budget progress, quick actions, net worth, today's transactions), **دفتر** (Ledger: the transaction timeline, weekly spend chart, filters), **دارایی** (Assets: holdings valued at live rates, and the rate list), **حساب‌ها** (Accounts: bank accounts and cards, balances from SMS), **گزارش** (Report: the month's spend against income, category shares).
-- The lite edition shows only **دارایی** and draws no nav.
+### **Quad-Tab Architecture (معماری ۴ تب پایدار)**
+- **Tab 1: CommandCenter (فرمان)**: Operational liquidity cockpit, daily safe spend, quick bank card triggers, and the 5 most recent activities. Primary focal number is **Liquid Cash** with Net Worth as a dignified secondary subtitle.
+- **Tab 2: Market & Portfolio (بازار و دارایی)**: Comprehensive gold, currency, and fund pricing alongside asset allocation breakdown.
+- **Tab 3: Bank Instruments (حساب‌ها و تعهدات)**: The single source of truth for bank cards (Apple Wallet accordion), SHEBA/PAN clipboard export, and scheduled commitments (BNPL & installments) positioned as a smart summary tile below the deck.
+- **Tab 4: Activity & Trends (دفتر و تحلیل)**: Consolidated chronological ledger and executive analytical trends (Payday burn curve, 50/30/20 balance) toggled via a frictionless horizontal pager and top segmented pill (`ریزتراکنش‌ها` | `دیده‌بان و بودجه`).
 
 ### **Discretion & Privacy Mode (حالت حریم خصوصی و استتار مبالغ)**
 - Instant masking of all financial figures (`••••••`) triggered via an eye icon next to the primary hero or a subtle device shake gesture, ensuring privacy in public transit and shared environments.

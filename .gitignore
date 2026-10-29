@@ -17,14 +17,8 @@ pwa/node_modules/
 # Build output: sync/ serves this, and CI builds it before deploying.
 pwa/dist/
 dist/
-graphify-out/
+graphify-out/cache/
+graphify-out/202*
 keystore.properties
 *.jks
 *.keystore
-
-# Local agent tooling: skill copies and worktrees stay on disk, out of the repo.
-.claude/
-.agents/
-skills-lock.json
-.vscode/
-*.p12
