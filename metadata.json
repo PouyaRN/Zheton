@@ -1,8 +1,0 @@
-{
-  "name": "ChandToman - چندتومان",
-  "description": "دستیار مالی و قدرت خرید بلادرنگ؛ رصد زنده طلا و ارز، مدیریت حساب‌ها و کارت‌های بانکی، دفتر خرج و تحلیل، و ماشین‌حساب‌های اقتصادی",
-  "capabilities": [
-    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
-  ],
-  "permissions": []
-}

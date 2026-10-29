@@ -11,8 +11,11 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
+      # Full history: versionCode is derived from the commit count (see app/build.gradle.kts), and a
+      # shallow clone would count one commit and publish a "downgrade" no phone will install.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
+          fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4
         with:
@@ -39,8 +42,7 @@ jobs:
       # the lite flavour is configured as anything other than a second copy of the full app.
       - run: |
           ./gradlew testFullDebugUnitTest testLiteDebugUnitTest lint assembleRelease \
-            -Pmuchtoman.versionName=${GITHUB_REF_NAME#v} \
-            -Pmuchtoman.versionCode=${{ github.run_number }}
+            -Pmuchtoman.versionName=${GITHUB_REF_NAME#v}
 
       # 1.0.2 shipped an APK that could not start. R8 shrank away the no-argument constructor
       # Room reflects on, so WorkManager's startup provider threw before the first frame — on
@@ -67,10 +69,21 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      # The runner ships with tens of GB of toolchains this job never touches, and the emulator
+      # needs room for its userdata partition: v1.1.0's first run died with "Not enough space to
+      # create userdata partition" and then polled adb for twenty minutes.
+      - name: Free disk space for the emulator
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          df -h /
+
       - name: The release APK must actually open
+        # A boot that never comes fails here instead of polling until the job's own limit.
+        timeout-minutes: 15
         uses: reactivecircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808 # v2
         with:
           api-level: 30
+          disk-size: 4096M
           # AOSP, not google_apis: this asks "does the app start", and the lighter image
           # boots quicker. Nothing here touches a Google API — prices come over plain HTTPS.
           target: default
@@ -144,8 +157,7 @@ jobs:
       - name: Build signed release
         run: |
           ./gradlew assembleRelease \
-            -Pmuchtoman.versionName=${GITHUB_REF_NAME#v} \
-            -Pmuchtoman.versionCode=${{ github.run_number }}
+            -Pmuchtoman.versionName=${GITHUB_REF_NAME#v}
 
       - name: Remove signing material
         if: always()

@@ -1,0 +1,205 @@
+{
+ "version": 1,
+ "cases": [
+  {
+   "id": "tejarat-debit-purchase",
+   "sender": "TejaratBank",
+   "at": 1,
+   "body": [
+    "بانک تجارت",
+    "کارت: 1393585983",
+    "نوع تراکنش: خريد شتابي",
+    "مبلغ: 5,459,000 ريال",
+    "مانده: 2,126,743 ريال",
+    "1405/04/25 - 17:02"
+   ],
+   "why": "Real Tejarat debit purchase. خريد شتابي → debit.",
+   "expect": {
+    "bank": "TEJARAT",
+    "direction": "out",
+    "amountRial": 5459000,
+    "balanceRial": 2126743,
+    "unitPrinted": "rial"
+   }
+  },
+  {
+   "id": "tejarat-otp-purchase",
+   "sender": "TejaratBank",
+   "at": 1,
+   "body": [
+    "خرید",
+    "اسنپ اکسپرس",
+    "مبلغ 5,459,000",
+    "رمز 89289629",
+    "تاریخ 1405/04/25 17:02:38"
+   ],
+   "why": "Real Tejarat OTP confirmation — has رمز, no مانده. Must be ignored.",
+   "expect": null
+  },
+  {
+   "id": "tejarat-debit-transfer",
+   "sender": "TejaratBank",
+   "at": 1,
+   "body": [
+    "بانک تجارت",
+    "کارت: 1393585983",
+    "نوع تراکنش: انتقال به شتابي",
+    "مبلغ: 3,000,000 ريال",
+    "مانده: 7,585,743 ريال",
+    "1405/04/21 - 15:13"
+   ],
+   "why": "Real Tejarat card-to-card transfer. انتقال به شتابي → debit.",
+   "expect": {
+    "bank": "TEJARAT",
+    "direction": "out",
+    "amountRial": 3000000,
+    "balanceRial": 7585743,
+    "unitPrinted": "rial"
+   }
+  },
+  {
+   "id": "tejarat-otp-transfer-1",
+   "sender": "TejaratBank",
+   "at": 1,
+   "body": [
+    "انتقال به",
+    "5892109660",
+    "مبلغ 3,000,000",
+    "رمز 08561925",
+    "تاریخ 1405/04/20 20:47:27"
+   ],
+   "why": "Real Tejarat OTP for transfer — has رمز, no مانده. Must be ignored.",
+   "expect": null
+  },
+  {
+   "id": "tejarat-otp-transfer-2",
+   "sender": "TejaratBank",
+   "at": 1,
+   "body": [
+    "انتقال به",
+    "5892102130",
+    "مبلغ 4,000,000",
+    "رمز 78085631",
+    "تاریخ 1405/04/20 19:21:23"
+   ],
+   "why": "Real Tejarat OTP for transfer — has رمز, no مانده. Must be ignored.",
+   "expect": null
+  },
+  {
+   "id": "tejarat-otp-transfer-3",
+   "sender": "TejaratBank",
+   "at": 1,
+   "body": [
+    "انتقال به",
+    "5892102130",
+    "مبلغ 4,000,000",
+    "رمز 95669935",
+    "تاریخ 1405/04/20 19:16:18"
+   ],
+   "why": "Real Tejarat OTP for transfer — has رمز, no مانده. Must be ignored.",
+   "expect": null
+  },
+  {
+   "id": "tejarat-credit-repayment",
+   "sender": "TejaratBank",
+   "at": 1,
+   "body": [
+    "بانک تجارت",
+    "کارت: 1393585983",
+    "نوع تراکنش: بازپرداخت/واريز (0_KHMI1405042040001_E016611)",
+    "مبلغ: 960,000 ريال",
+    "مانده: 4,585,743 ريال",
+    "1405/04/20 - 14:56"
+   ],
+   "why": "Real Tejarat repayment received. بازپرداخت/واريز → credit. Generic keyword matching would misclassify this.",
+   "expect": {
+    "bank": "TEJARAT",
+    "direction": "in",
+    "amountRial": 960000,
+    "balanceRial": 4585743,
+    "unitPrinted": "rial"
+   }
+  },
+  {
+   "id": "tejarat-debit-withdrawal",
+   "sender": "TejaratBank",
+   "at": 1,
+   "body": [
+    "بانک تجارت",
+    "کارت: 1393***585983*",
+    "نوع تراکنش: برداشت",
+    "مبلغ: 400,000,000 ريال",
+    "مانده: 3,625,743 ريال",
+    "1405/04/20 - 11:35"
+   ],
+   "why": "Real Tejarat large withdrawal with masked card. برداشت → debit.",
+   "expect": {
+    "bank": "TEJARAT",
+    "direction": "out",
+    "amountRial": 400000000,
+    "balanceRial": 3625743,
+    "mask": "1393***585983",
+    "instrument": "card",
+    "unitPrinted": "rial"
+   }
+  },
+  {
+   "id": "tejarat-fused-header-beats-otp-tail",
+   "sender": "TejaratBank",
+   "at": 1,
+   "body": [
+    "*بانک تجارت*",
+    "حساب: 0138229364064",
+    "برداشت: 10,009,000 ریال",
+    "از طريق: شتاب",
+    "مانده: 182,421,390 ریال",
+    "1405/05/11",
+    "09:57",
+    "انتقال به",
+    "621986*3759",
+    "مبلغ 10,000,000",
+    "رمز 71142630",
+    "تاریخ 1405/05/11 09:57:13"
+   ],
+   "why": "Real Tejarat fused body: the assignment SMS carries both its own header (برداشت 10,009,000 رِيال — the booked debit, fee included) and the transfer's OTP tail (مبلغ 10,000,000 رمز). The header figure recorded, not the OTP tail; otherwise the debit understates the movement by 9,000 Rнal.",
+   "expect": {
+    "bank": "TEJARAT",
+    "direction": "out",
+    "amountRial": 10009000,
+    "balanceRial": 182421390,
+    "mask": "0138229364064",
+    "instrument": "account",
+    "refNo": "",
+    "printedAt": "1405/05/11",
+    "channel": "transfer",
+    "unitPrinted": "rial",
+    "feeRial": null,
+    "merchant": "",
+    "inferred": false
+   }
+  },
+  {
+   "id": "tejarat-fused-pos-tail",
+   "sender": "TejaratBank",
+   "at": 1,
+   "body": [
+    "*بانک تجارت*",
+    "حساب: 0138229364064",
+    "برداشت: 690,000 ریال",
+    "از طريق: پایانه فروش",
+    "مانده: 193,330,390 ریال",
+    "1405/05/06",
+    "13:59"
+   ],
+   "why": "Real Tejarat POS debit without an OTP tail; header figure must be read even though no رمز is present (guard passes; مبلغ absent, so the header is the only figure).",
+   "expect": {
+    "bank": "TEJARAT",
+    "direction": "out",
+    "amountRial": 690000,
+    "balanceRial": 193330390,
+    "channel": "pos",
+    "unitPrinted": "rial"
+   }
+  }
+ ]
+}

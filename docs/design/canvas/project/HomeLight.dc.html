@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>امروز، روشن · اندیس</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300..900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#8A5A00;text-decoration:none}a:hover{color:#6B4500}
+button{font-family:inherit}
+</style>
+</helmet>
+<div dir="rtl" style="width: 390px; height: 844px; box-sizing: border-box; position: relative; overflow: hidden; background: #F6F6F7; color: #0B0B0C; font-family: 'Vazirmatn', system-ui, sans-serif">
+
+  <div aria-hidden="true" style="position: absolute; top: -180px; right: -140px; width: 520px; height: 520px; border-radius: 999px; background: radial-gradient(closest-side, rgba(233,164,37,0.26), rgba(233,164,37,0.08) 55%, rgba(246,246,247,0) 100%)"></div>
+
+  <div style="position: relative; padding: 58px 20px 0; display: flex; flex-direction: column">
+
+    <div style="display: flex; align-items: center; gap: 10px">
+      <button aria-label="پروفایل و تنظیمات" style="width: 40px; height: 40px; border-radius: 999px; border: 0; background: #0B0B0C; color: #fff; font-size: 15px; font-weight: 800; cursor: pointer">س</button>
+      <div style="flex: 1; display: flex; flex-direction: column; line-height: 1.35">
+        <span style="font-size: 15px; font-weight: 700">سارا</span>
+        <span style="font-size: 11px; color: #5E5E66">سه‌شنبه ۶ آبان</span>
+      </div>
+      <button aria-label="جست‌وجو" style="width: 40px; height: 40px; border-radius: 999px; border: 1px solid rgba(0,0,0,0.08); background: #FFFFFF; color: #0B0B0C; display: flex; align-items: center; justify-content: center; cursor: pointer">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+      </button>
+      <button aria-label="اعلان‌ها" style="position: relative; width: 40px; height: 40px; border-radius: 999px; border: 1px solid rgba(0,0,0,0.08); background: #FFFFFF; color: #0B0B0C; display: flex; align-items: center; justify-content: center; cursor: pointer">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15z"></path><path d="M10 20.5a2 2 0 0 0 4 0"></path></svg>
+        <span style="position: absolute; top: 9px; left: 10px; width: 7px; height: 7px; border-radius: 999px; background: #E9A425"></span>
+      </button>
+    </div>
+
+    <div style="display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: 34px; gap: 6px">
+      <span style="font-size: 13px; color: #3E3E44">سهم امروزت از بودجه</span>
+      <span style="font-size: 74px; line-height: 1; font-weight: 800; letter-spacing: -2px">۴۸۰٬۰۰۰</span>
+      <span style="font-size: 14px; font-weight: 600; color: #5E5E66">تومان</span>
+    </div>
+
+    <div style="margin-top: 26px; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <span style="font-size: 14px; font-weight: 700">۶٫۴۸ <span style="font-size: 12px; font-weight: 500; color: #5E5E66">از بودجهٔ ۱۸ میلیونی آبان</span></span>
+        <span style="font-size: 12px; color: #5E5E66">۱۱٫۵۲ میلیون مونده</span>
+      </div>
+      <div role="img" aria-label="۳۶٪ بودجهٔ آبان خرج شده، در حالی که برنامهٔ امروز ۲۰٪ است" style="position: relative; height: 12px; border-radius: 999px; background: #E4E4E7">
+        <div style="position: absolute; top: 0; bottom: 0; right: 0; width: 36%; border-radius: 999px; background: #E9A425"></div>
+        <div style="position: absolute; top: -5px; right: 20%; width: 2px; height: 22px; border-radius: 2px; background: #0B0B0C"></div>
+      </div>
+      <div role="img" aria-label="روز ۶ از ۳۰ آبان" style="display: flex; gap: 3px">
+        <sc-for list="{{days}}" as="d" hint-placeholder-count="30">
+          <span style="flex: 1; height: 4px; border-radius: 999px; background: {{d.c}}"></span>
+        </sc-for>
+      </div>
+      <span style="font-size: 12px; color: #3E3E44">روز ۶ از ۳۰ آبان. ۵ میلیونش اجاره بوده و بقیه طبق برنامه‌ست.</span>
+    </div>
+
+    <div style="margin-top: 22px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px">
+      <a href="QuickAdd.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 8px; color: #0B0B0C; font-size: 12px; font-weight: 600">
+        <span style="width: 56px; height: 56px; border-radius: 999px; background: #0B0B0C; color: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></span>
+        ثبت خرج
+      </a>
+      <a href="Market.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 8px; color: #0B0B0C; font-size: 12px; font-weight: 600">
+        <span style="width: 56px; height: 56px; border-radius: 999px; background: #FFFFFF; border: 1px solid rgba(0,0,0,0.07); display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="15" cy="9" r="5"></circle><circle cx="9" cy="15" r="5"></circle></svg></span>
+        دارایی
+      </a>
+      <a href="Report.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 8px; color: #0B0B0C; font-size: 12px; font-weight: 600">
+        <span style="width: 56px; height: 56px; border-radius: 999px; background: #FFFFFF; border: 1px solid rgba(0,0,0,0.07); display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M6 19V11M12 19V5M18 19v-6"></path></svg></span>
+        گزارش
+      </a>
+      <a href="Accounts.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 8px; color: #0B0B0C; font-size: 12px; font-weight: 600">
+        <span style="width: 56px; height: 56px; border-radius: 999px; background: #FFFFFF; border: 1px solid rgba(0,0,0,0.07); display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2.5"></rect><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"></path></svg></span>
+        کپی شبا
+      </a>
+    </div>
+
+    <a href="Market.dc.html" style="margin-top: 22px; background: #FFFFFF; border: 1px solid rgba(0,0,0,0.06); border-radius: 26px; padding: 16px 16px 12px; display: flex; flex-direction: column; gap: 4px; color: #0B0B0C">
+      <div style="display: flex; justify-content: space-between; align-items: center">
+        <span style="font-size: 12px; color: #5E5E66">دارایی خالص</span>
+        <span style="font-size: 11px; font-weight: 700; color: #0A6B42; background: #E2F5EB; padding: 3px 9px; border-radius: 999px">+۲٫۱٪ از اول ماه</span>
+      </div>
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 8px">
+        <span style="font-size: 30px; font-weight: 800; line-height: 1.15">۶۶٫۴ <span style="font-size: 13px; font-weight: 600; color: #5E5E66">میلیون</span></span>
+        <svg width="150" height="44" viewBox="0 0 150 44" aria-hidden="true">
+          <defs><linearGradient id="nwFillL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#12A15F" stop-opacity="0.28"></stop><stop offset="1" stop-color="#12A15F" stop-opacity="0"></stop></linearGradient></defs>
+          <path d="M0 34 C12 33 18 30 28 31 C40 32 46 24 58 25 C70 26 74 20 86 19 C98 18 104 22 114 15 C124 9 134 11 150 6 L150 44 L0 44 Z" fill="url(#nwFillL)"></path>
+          <path d="M0 34 C12 33 18 30 28 31 C40 32 46 24 58 25 C70 26 74 20 86 19 C98 18 104 22 114 15 C124 9 134 11 150 6" stroke="#12A15F" stroke-width="2" fill="none" stroke-linecap="round"></path>
+          <circle cx="150" cy="6" r="3" fill="#12A15F"></circle>
+        </svg>
+      </div>
+    </a>
+
+    <div style="margin-top: 22px; display: flex; flex-direction: column; gap: 4px">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 0 2px 6px">
+        <span style="font-size: 17px; font-weight: 800">امروز</span>
+        <a href="Ledger.dc.html" style="font-size: 13px; font-weight: 700">همهٔ تراکنش‌ها</a>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; padding: 10px 0">
+        <span style="width: 44px; height: 44px; border-radius: 999px; background: #FBEFD6; color: #8A5A00; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5z"></path><path d="M16 10h2a2 2 0 0 1 0 4h-2"></path></svg></span>
+        <div style="flex: 1; display: flex; flex-direction: column; line-height: 1.4"><span style="font-size: 15px; font-weight: 600">کافه لمیز</span><span style="font-size: 12px; color: #5E5E66">ملت · ۱۰:۴۲</span></div>
+        <span style="font-size: 15px; font-weight: 700">−۱۸۵٬۰۰۰</span>
+      </div>
+    </div>
+  </div>
+
+  <div aria-hidden="true" style="position: absolute; right: 0; left: 0; bottom: 0; height: 150px; background: linear-gradient(to top, #F6F6F7 45%, rgba(246,246,247,0))"></div>
+
+  <nav aria-label="ناوبری اصلی" style="position: absolute; right: 20px; left: 20px; bottom: 28px; height: 66px; border-radius: 999px; background: rgba(255,255,255,0.92); border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 12px 32px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: space-between; padding: 0 7px">
+    <a href="HomeLight.dc.html" aria-current="page" style="height: 52px; padding: 0 18px; border-radius: 999px; background: #0B0B0C; color: #FFFFFF; display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 800">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5L12 4l8 6.5V20H4z"></path></svg>
+      امروز
+    </a>
+    <a href="Ledger.dc.html" aria-label="دفتر" style="width: 52px; height: 52px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #5E5E66">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"></path><path d="M9 8h6M9 12h4"></path></svg>
+    </a>
+    <a href="Market.dc.html" aria-label="دارایی" style="width: 52px; height: 52px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #5E5E66">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 18l5-6 4 3 7-8"></path></svg>
+    </a>
+    <a href="Accounts.dc.html" aria-label="حساب‌ها" style="width: 52px; height: 52px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #5E5E66">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="3"></rect><path d="M3 10h18"></path></svg>
+    </a>
+    <a href="Report.dc.html" aria-label="گزارش" style="width: 52px; height: 52px; border-radius: 999px; display: flex; align-items: center; justify-content: center; color: #5E5E66">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M6 19V11M12 19V5M18 19v-6"></path></svg>
+    </a>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const today = 6;
+    const days = Array.from({ length: 30 }, (_, i) => ({ c: i + 1 < today ? '#A3A3AA' : (i + 1 === today ? '#E9A425' : '#E4E4E7') }));
+    return { days };
+  }
+}
+</script>
+</body>
+</html>

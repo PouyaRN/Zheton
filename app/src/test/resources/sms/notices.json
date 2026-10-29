@@ -1,0 +1,83 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "shape-repayment-reminder-is-not-a-transaction-synthetic",
+      "sender": "0999 992 0000",
+      "at": 1,
+      "body": [
+        "بانک سامان",
+        "یادآوری بازپرداخت تسهیلات",
+        "مبلغ 4,000,000 ریال",
+        "مانده 12,000,000 ریال"
+      ],
+      "why": "SYNTHETIC — no real reminder SMS captured yet. Shape derived from the #107 research (docs/BANK_COVERAGE.md §7.2): a registered sender's repayment reminder moved money today, because «پرداخت» sits inside «بازپرداخت» and matched OUT_WORDS, so the «مبلغ» line became a 4,000,000 ریال withdrawal, and the «مانده» line anchored the account. It is a notice about a loan, not a payment from the account.",
+      "expect": null
+    },
+    {
+      "id": "shape-welcome-message-is-not-a-balance-synthetic",
+      "sender": "0999 998 7641",
+      "at": 1,
+      "body": [
+        "بلو بانک",
+        "خوش آمدید",
+        "موجودی: 5,000,000 ریال"
+      ],
+      "why": "SYNTHETIC — no real welcome SMS captured yet. A registration greeting that restates the opening balance is not the bank saying what the account holds now; read today it anchored the balance on the strength of a message nobody meant as a statement.",
+      "expect": null
+    },
+    {
+      "id": "shape-dynamic-password-not-a-transaction-synthetic",
+      "sender": "6104",
+      "at": 1,
+      "body": [
+        "بانک ملت",
+        "رمز پویا: 123456",
+        "مبلغ 2,000,000 ریال",
+        "مانده 9,000,000 ریال"
+      ],
+      "why": "SYNTHETIC — the second-factor shape, not a captured message. The one-time-password rule only declines a «رمز» message when it states no «مانده», so a dynamic-password prompt carrying both a مبلغ and a مانده was read as a transaction at low confidence and anchored the balance. The code is not a movement.",
+      "expect": null
+    },
+    {
+      "id": "shape-credit-expiry-notice-is-not-a-movement-synthetic",
+      "sender": "0999 992 0000",
+      "at": 1,
+      "body": [
+        "بانک سامان",
+        "اعتبار تا 1405/12/29",
+        "مبلغ 5,000,000 ریال",
+        "مانده 20,000,000 ریال"
+      ],
+      "why": "SYNTHETIC — a credit-line expiry notice, not a captured message. «اعتبار تا» announces how long a credit lasts; the مبلغ beside it is not money leaving the account, but today it read as a figure on the movement path and the مانده anchored.",
+      "expect": null
+    },
+    {
+      "id": "shape-tracking-code-still-parses-as-a-withdrawal-synthetic",
+      "sender": "0999 992 0000",
+      "at": 1,
+      "body": [
+        "بانک سامان",
+        "برداشت: 5,000,000 ریال",
+        "کد پیگیری: 123456",
+        "مانده: 12,000,000 ریال"
+      ],
+      "why": "SYNTHETIC — the other side of the guard. A real receipt prints a «کد پیگیری», and the competitor's blanket «کد » rule would decline every one of them. The guard is deliberately narrow: only «کد تایید» is a notice, and this genuine withdrawal must still be read, with its tracking number kept as the reference.",
+      "expect": {
+        "bank": "SAMAN",
+        "direction": "out",
+        "amountRial": 5000000,
+        "balanceRial": 12000000,
+        "refNo": "123456",
+        "feeRial": null,
+        "mask": "",
+        "instrument": "unknown",
+        "merchant": "",
+        "printedAt": "",
+        "channel": "unknown",
+        "unitPrinted": "rial",
+        "inferred": false
+      }
+    }
+  ]
+}

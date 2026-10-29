@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Matches VanguardTokens.Canvas / DarkColors.background so the launch window does not
+         flash cream before Compose draws (the old light-only windowBackground did exactly that
+         in every dark palette). -->
+    <color name="window_background">#070A0F</color>
+</resources>
