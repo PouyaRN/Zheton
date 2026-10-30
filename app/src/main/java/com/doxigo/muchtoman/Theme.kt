@@ -648,82 +648,79 @@ data class CanvasTokens(
     val glowMid: Float,
 )
 
-/** Lithe Vitality Night: Stitch dark counterpart (#0F1218 canvas, #181C24 elevated ceramic card). */
+/** Canvas night: Main.dc.html and every dark artboard. */
 object CanvasDark {
-    val ground = Color(0xFF0F1218)
-    val card = Color(0xFF181C24)
-    val cardBorder = Color(0x14FFFFFF)        // rgba(255,255,255,.08)
-    val ink = Color(0xFFF8FAFC)
-    val inkSecondary = Color(0xFF94A3B8)
-    val muted = Color(0xFF64748B)
-    val accent = Color(0xFF3B82F6)            // Lithe Secondary Blue in dark mode
-    val accentWell = Color(0xFF1E293B)
-    val gold = Color(0xFFF59E0B)              // Amber / gold accent
-    val lime = Color(0xFF10B981)              // Emerald active indicator
-    val gain = Color(0xFF10B981)              // MarketUp: Emerald
-    val gainWell = Color(0x1F10B981)          // 12% tint
-    val loss = Color(0xFFF43F5E)              // MarketDown: Rose
-    val track = Color(0xFF222834)
-    val navFill = Color(0xEB181C24)
-    val navBorder = Color(0x1FFFFFFF)
-    val actionFill = Color(0xFF222834)
-    val actionBorder = Color(0x14FFFFFF)
-    val outlineFill = Color(0x0AFFFFFF)
-    val outlineBorder = Color(0x14FFFFFF)
-    val chipText = Color(0xFFE2E8F0)
+    val ground = Color(0xFF000000)
+    val card = Color(0xFF0F0F11)
+    val cardBorder = Color(0x12FFFFFF)        // rgba(255,255,255,.07)
+    val ink = Color(0xFFF5F5F4)
+    val inkSecondary = Color(0xFFB5B5B8)
+    val muted = Color(0xFF8E8E93)
+    val accent = Color(0xFFF5B840)
+    val accentWell = Color(0xFF1C1608)
+    val gain = Color(0xFF3FD98B)
+    val gainWell = Color(0x1F3FD98B)          // rgba(63,217,139,.12)
+    val loss = Color(0xFFFF7B6B)
+    val track = Color(0xFF1C1C1F)
+    val navFill = Color(0xDB1C1C1E)           // rgba(28,28,30,.86)
+    val navBorder = Color(0x17FFFFFF)         // rgba(255,255,255,.09)
+    val actionFill = Color(0xFF161618)
+    val actionBorder = Color(0x14FFFFFF)      // .08
+    val outlineFill = Color(0x0AFFFFFF)       // .04
+    val outlineBorder = Color(0x1FFFFFFF)     // .12
+    val chipText = Color(0xFFD4D4D6)
 
     val tokens = CanvasTokens(
         isDark = true, ground = ground, card = card, cardBorder = cardBorder, ink = ink,
         inkSecondary = inkSecondary, muted = muted, accent = accent, accentText = accent,
         accentWell = accentWell, gain = gain, gainWell = gainWell, loss = loss, track = track,
         navFill = navFill, navBorder = navBorder, navShadow = false, inverse = ink,
-        onInverse = Color(0xFF0F1218), primaryAction = Color(0xFF2563EB), onPrimaryAction = Color.White,
+        onInverse = Color.Black, primaryAction = accent, onPrimaryAction = Color.Black,
         actionFill = actionFill, actionBorder = actionBorder, outlineFill = outlineFill,
         outlineBorder = outlineBorder, chipText = chipText, glow = accent,
-        glowCore = 0.20f, glowMid = 0.06f,
+        glowCore = 0.22f, glowMid = 0.07f,
     )
 
     fun hero() = HeroPalette(
-        top = ground, bottom = ground, gold = gold, muted = muted, strong = ink,
+        top = ground, bottom = ground, gold = accent, muted = muted, strong = ink,
         mint = gain, warn = loss, well = actionFill, hairline = cardBorder, glow = accent,
     )
 }
 
-/** Lithe Vitality Day: Stitch / Lithe Vitality Design System (#F4F6F9 canvas, #FFFFFF card, #1F232B charcoal pill). */
+/** Canvas day: HomeLight.dc.html. */
 object CanvasLight {
-    val ground = Color(0xFFF4F6F9)
+    val ground = Color(0xFFF6F6F7)
     val card = Color(0xFFFFFFFF)
-    val cardBorder = Color(0x0F0F172A)        // subtle slate hairline
-    val ink = Color(0xFF111418)
-    val inkSecondary = Color(0xFF475569)
-    val muted = Color(0xFF64748B)
-    val accent = Color(0xFF1F232B)            // Lithe Primary: Deep charcoal pill
-    val accentText = Color(0xFF2563EB)        // Lithe Secondary: Electric blue text
-    val accentWell = Color(0xFFEFF6FF)        // Soft blue well
-    val gold = Color(0xFFF59E0B)              // Amber / gold accent
-    val lime = Color(0xFF10B981)              // Emerald active indicator
-    val gain = Color(0xFF10B981)              // MarketUp: Emerald
-    val gainWell = Color(0x1F10B981)          // 12% tint
-    val loss = Color(0xFFF43F5E)              // MarketDown: Rose
-    val track = Color(0xFFEEF1F6)
-    val navFill = Color(0xE6FFFFFF)           // Glass dock fill (90% white)
-    val navBorder = Color(0x140F172A)
-    val actionBorder = Color(0x120F172A)
+    val cardBorder = Color(0x0F000000)        // rgba(0,0,0,.06)
+    val ink = Color(0xFF0B0B0C)
+    val inkSecondary = Color(0xFF3E3E44)
+    val muted = Color(0xFF5E5E66)
+    val accent = Color(0xFFE9A425)
+    val accentText = Color(0xFF8A5A00)
+    val accentWell = Color(0xFFFBEFD6)
+    val gain = Color(0xFF0A6B42)
+    val gainWell = Color(0xFFE2F5EB)
+    /** Not drawn on the light artboard; the darkest loss that still reads as the night coral. */
+    val loss = Color(0xFFC0392B)
+    val track = Color(0xFFE4E4E7)
+    val navFill = Color(0xEBFFFFFF)           // rgba(255,255,255,.92)
+    val navBorder = Color(0x14000000)         // rgba(0,0,0,.08)
+    val actionBorder = Color(0x12000000)      // .07
 
     val tokens = CanvasTokens(
         isDark = false, ground = ground, card = card, cardBorder = cardBorder, ink = ink,
         inkSecondary = inkSecondary, muted = muted, accent = accent, accentText = accentText,
         accentWell = accentWell, gain = gain, gainWell = gainWell, loss = loss, track = track,
-        navFill = navFill, navBorder = navBorder, navShadow = true, inverse = Color(0xFF1F232B),
-        onInverse = Color.White, primaryAction = Color(0xFF1F232B), onPrimaryAction = Color.White,
-        actionFill = Color(0xFFF8FAFC), actionBorder = actionBorder, outlineFill = card,
-        outlineBorder = navBorder, chipText = inkSecondary, glow = Color(0xFF2563EB),
-        glowCore = 0.16f, glowMid = 0.05f,
+        navFill = navFill, navBorder = navBorder, navShadow = true, inverse = ink,
+        onInverse = Color.White, primaryAction = ink, onPrimaryAction = Color.White,
+        actionFill = card, actionBorder = actionBorder, outlineFill = card,
+        outlineBorder = navBorder, chipText = inkSecondary, glow = accent,
+        glowCore = 0.26f, glowMid = 0.08f,
     )
 
     fun hero() = HeroPalette(
-        top = ground, bottom = ground, gold = gold, muted = muted, strong = ink,
-        mint = gain, warn = loss, well = card, hairline = cardBorder, glow = Color(0xFF2563EB),
+        top = ground, bottom = ground, gold = accentText, muted = muted, strong = ink,
+        mint = gain, warn = loss, well = card, hairline = cardBorder, glow = accent,
     )
 }
 
@@ -774,7 +771,7 @@ fun getCanvasTokens(
     }
 }
 
-val LocalCanvasTokens = staticCompositionLocalOf { CanvasLight.tokens }
+val LocalCanvasTokens = staticCompositionLocalOf { CanvasDark.tokens }
 
 /** `CanvasTheme.tokens.card`, the way `MaterialTheme.colorScheme.surface` reads. */
 object CanvasTheme {
@@ -782,89 +779,103 @@ object CanvasTheme {
         @Composable
         get() = LocalCanvasTokens.current
 
-    /** Big cards (Lithe Vitality 28dp / 3xl). */
-    val cardRadius = 28.dp
+    /** Big cards. */
+    val cardRadius = 26.dp
     /** Page gutter. */
     val gutter = 20.dp
 }
 
+/**
+ * Every role is set on purpose. Leaving the container roles unset is what makes an app look
+ * unfinished: Material's default baseline is violet, so dialogs, sheets and text fields come
+ * out mauve no matter how carefully `primary` was chosen.
+ *
+ * The two schemes below are the approved redesign canvas (docs/design/canvas): Main.dc.html for
+ * the night, HomeLight.dc.html for the day. Their exact values live in [CanvasDark] and
+ * [CanvasLight]; these schemes only map them onto Material roles.
+ */
 private val LightColors = lightColorScheme(
-    primary = Color(0xFF1F232B),
+    // Saffron as text is the dark ochre; the bright saffron is a fill only (see CanvasLight).
+    primary = CanvasLight.accentText,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFEFF6FF),
-    onPrimaryContainer = Color(0xFF2563EB),
+    primaryContainer = CanvasLight.accentWell,
+    onPrimaryContainer = CanvasLight.accentText,
 
-    secondary = Color(0xFF2563EB),
+    secondary = CanvasLight.ink,
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFDBEAFE),
-    onSecondaryContainer = Color(0xFF1E40AF),
+    secondaryContainer = Color(0xFFEDEDEF),
+    onSecondaryContainer = CanvasLight.ink,
 
-    tertiary = Color(0xFF10B981),
+    // Gain, and only gain.
+    tertiary = CanvasLight.gain,
     onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFD1FAE5),
-    onTertiaryContainer = Color(0xFF047857),
+    tertiaryContainer = CanvasLight.gainWell,
+    onTertiaryContainer = CanvasLight.gain,
 
     background = CanvasLight.ground,
     onBackground = CanvasLight.ink,
 
     surface = CanvasLight.card,
     onSurface = CanvasLight.ink,
-    surfaceVariant = Color(0xFFF1F5F9),
+    surfaceVariant = Color(0xFFEFEFF1),
     onSurfaceVariant = CanvasLight.muted,
 
     surfaceContainerLowest = Color.White,
-    surfaceContainerLow = Color(0xFFF8FAFC),
+    surfaceContainerLow = Color(0xFFFAFAFB),
     surfaceContainer = CanvasLight.card,
-    surfaceContainerHigh = Color.White,
+    surfaceContainerHigh = Color.White,     // dialogs and sheets
     surfaceContainerHighest = CanvasLight.track,
 
-    outline = Color(0xFFE2E8F0),
-    outlineVariant = Color(0xFFF1F5F9),
+    // rgba(0,0,0,.08) and .06 on the ground, flattened so they can also be filled.
+    outline = Color(0xFFE2E2E3),
+    outlineVariant = Color(0xFFE8E8E9),
 
     error = CanvasLight.loss,
     onError = Color.White,
-    errorContainer = Color(0xFFFFE4E6),
-    onErrorContainer = Color(0xFF9F1239),
-    scrim = Color(0xFF090D15),
+    errorContainer = Color(0xFFFDECEC),
+    onErrorContainer = Color(0xFF7A1418),
+    scrim = Color(0xFF000000),
 )
 
 private val DarkColors = darkColorScheme(
-    primary = Color(0xFF3B82F6),
-    onPrimary = Color.White,
-    primaryContainer = Color(0xFF1E293B),
-    onPrimaryContainer = Color(0xFF60A5FA),
+    // True-black ground, near-black cards, and one light: saffron.
+    primary = CanvasDark.accent,
+    onPrimary = Color.Black,
+    primaryContainer = CanvasDark.accentWell,
+    onPrimaryContainer = CanvasDark.accent,
 
-    secondary = Color(0xFF60A5FA),
-    onSecondary = Color(0xFF0F172A),
-    secondaryContainer = Color(0xFF1E293B),
-    onSecondaryContainer = Color(0xFFE2E8F0),
+    secondary = CanvasDark.inkSecondary,
+    onSecondary = Color.Black,
+    secondaryContainer = Color(0xFF1C1C1E),
+    onSecondaryContainer = CanvasDark.ink,
 
     tertiary = CanvasDark.gain,
-    onTertiary = Color.White,
-    tertiaryContainer = Color(0xFF064E3B),
-    onTertiaryContainer = Color(0xFF34D399),
+    onTertiary = Color.Black,
+    tertiaryContainer = Color(0xFF0C2419),
+    onTertiaryContainer = CanvasDark.gain,
 
     background = CanvasDark.ground,
     onBackground = CanvasDark.ink,
 
     surface = CanvasDark.card,
     onSurface = CanvasDark.ink,
-    surfaceVariant = Color(0xFF222834),
+    surfaceVariant = Color(0xFF161618),
     onSurfaceVariant = CanvasDark.muted,
 
-    surfaceContainerLowest = Color(0xFF0B0E14),
-    surfaceContainerLow = Color(0xFF131720),
+    surfaceContainerLowest = Color.Black,
+    surfaceContainerLow = Color(0xFF0A0A0B),
     surfaceContainer = CanvasDark.card,
-    surfaceContainerHigh = Color(0xFF222834),
+    surfaceContainerHigh = Color(0xFF1C1C1E),
     surfaceContainerHighest = CanvasDark.track,
 
-    outline = Color(0xFF2E3646),
-    outlineVariant = Color(0xFF1E2430),
+    // rgba(255,255,255,.12) and .07 over a card, flattened.
+    outline = Color(0xFF2C2C2E),
+    outlineVariant = Color(0xFF202022),
 
     error = CanvasDark.loss,
-    onError = Color.White,
-    errorContainer = Color(0xFF4C0519),
-    onErrorContainer = Color(0xFFFDA4AF),
+    onError = Color.Black,
+    errorContainer = Color(0xFF3A1714),
+    onErrorContainer = Color(0xFFFFC2B8),
     scrim = Color(0xFF000000),
 )
 
