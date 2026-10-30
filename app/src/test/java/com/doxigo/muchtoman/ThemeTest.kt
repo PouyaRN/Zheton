@@ -11,7 +11,7 @@ class ThemeTest {
         assertEquals(
             listOf(
                 "SYSTEM",
-                "ANDIS_TERMINAL",
+                "ZHETON_TERMINAL",
                 "LIGHT",
                 "DARK",
                 "AMOLED",
@@ -38,7 +38,7 @@ class ThemeTest {
         assertEquals("شامپاین", ThemeMode.CHAMPAGNE_GOLD.fa)
         assertEquals("فیروزه روشن", ThemeMode.PERSIAN_MINT.fa)
         assertEquals("رز کوارتز", ThemeMode.ROSE_QUARTZ.fa)
-        assertEquals("اندیس", ThemeMode.ANDIS_TERMINAL.fa)
+        assertEquals("ژتون", ThemeMode.ZHETON_TERMINAL.fa)
         assertEquals("آمولد", ThemeMode.AMOLED.fa)
         assertEquals("اپل تیتانیوم", ThemeMode.APPLE_TITANIUM.fa)
         assertEquals("رولوت ابسیدین", ThemeMode.REVOLUT_OBSIDIAN.fa)
@@ -117,17 +117,17 @@ class ThemeTest {
     }
 
     @Test
-    fun `AndisColors for light themes must provide dark readable text and light surfaces`() {
+    fun `ZhetonColors for light themes must provide dark readable text and light surfaces`() {
         val lightModes = ThemeMode.entries.filter { !it.isDark && it != ThemeMode.SYSTEM }
         for (mode in lightModes) {
             val scheme = getColorScheme(mode, false)
             val palette = getHeroPalette(mode, false)
-            val andis = getAndisColors(scheme, isDark = false, heroPalette = palette)
+            val zheton = getZhetonColors(scheme, isDark = false, heroPalette = palette)
 
-            val textLum = andis.textPrimary.red * 0.299f + andis.textPrimary.green * 0.587f + andis.textPrimary.blue * 0.114f
+            val textLum = zheton.textPrimary.red * 0.299f + zheton.textPrimary.green * 0.587f + zheton.textPrimary.blue * 0.114f
             org.junit.Assert.assertTrue("Mode ${mode.name} textPrimary must be dark (lum=$textLum)", textLum < 0.35f)
 
-            val surfLum = andis.surfacePrimary.red * 0.299f + andis.surfacePrimary.green * 0.587f + andis.surfacePrimary.blue * 0.114f
+            val surfLum = zheton.surfacePrimary.red * 0.299f + zheton.surfacePrimary.green * 0.587f + zheton.surfacePrimary.blue * 0.114f
             org.junit.Assert.assertTrue("Mode ${mode.name} surfacePrimary must be light (lum=$surfLum)", surfLum > 0.7f)
         }
     }
