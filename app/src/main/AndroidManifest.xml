@@ -60,6 +60,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:colorMode="default"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density|fontScale|layoutDirection"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -86,6 +87,7 @@
         <activity
             android:name=".QuickAddActivity"
             android:exported="true"
+            android:colorMode="default"
             android:theme="@style/Theme.MuchToman.Translucent">
             <intent-filter>
                 <action android:name="com.doxigo.muchtoman.action.QUICK_ADD" />

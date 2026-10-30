@@ -62,15 +62,12 @@ class DailySnapshotWorker(context: Context, params: WorkerParameters) :
     }
 }
 
-/** Idempotent; KEEP means calling this on every app start never resets the schedule. */
+/** Idempotent; UPDATE ensures any legacy network-constrained job is replaced cleanly. */
 fun scheduleDailySnapshot(context: Context) {
     WorkManager.getInstance(context).enqueueUniquePeriodicWork(
         "daily-snapshot",
-        ExistingPeriodicWorkPolicy.KEEP,
+        ExistingPeriodicWorkPolicy.UPDATE,
         PeriodicWorkRequestBuilder<DailySnapshotWorker>(24, TimeUnit.HOURS)
-            .setConstraints(
-                Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build(),
-            )
             .build(),
     )
 }

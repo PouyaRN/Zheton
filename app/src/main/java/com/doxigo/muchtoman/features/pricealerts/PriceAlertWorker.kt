@@ -62,11 +62,8 @@ class PriceAlertWorker(context: Context, params: WorkerParameters) : CoroutineWo
             if (PriceAlerts.hasArmed(app)) {
                 manager.enqueueUniquePeriodicWork(
                     WORK_NAME,
-                    ExistingPeriodicWorkPolicy.KEEP,
+                    ExistingPeriodicWorkPolicy.UPDATE,
                     PeriodicWorkRequestBuilder<PriceAlertWorker>(INTERVAL_MINUTES, TimeUnit.MINUTES)
-                        .setConstraints(
-                            Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build(),
-                        )
                         .build(),
                 )
             } else {

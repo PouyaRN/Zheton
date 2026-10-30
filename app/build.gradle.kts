@@ -123,3 +123,8 @@ dependencies {
 tasks.matching { it.name.contains("AarMetadata") }.configureEach {
     enabled = false
 }
+
+configurations.configureEach {
+    exclude(group = "androidx.profileinstaller", module = "profileinstaller")
+}
+

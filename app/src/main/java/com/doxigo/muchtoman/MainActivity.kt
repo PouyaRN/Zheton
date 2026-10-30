@@ -113,6 +113,12 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             ledgerJob?.join()
             requestFamilySync(silent = true)
         }
+        runCatching {
+            val jobScheduler = app.getSystemService(android.app.job.JobScheduler::class.java)
+            jobScheduler?.allPendingJobs
+                ?.filter { it.networkType != android.app.job.JobInfo.NETWORK_TYPE_NONE }
+                ?.forEach { jobScheduler.cancel(it.id) }
+        }
         scheduleDailySnapshot(app)
         com.doxigo.muchtoman.features.pricealerts.PriceAlertWorker.sync(app)
 
@@ -2377,6 +2383,10 @@ class MainActivity : FragmentActivity() {
     private lateinit var appVm: AppVm
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        window.setFormat(android.graphics.PixelFormat.RGBA_8888)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            window.colorMode = android.content.pm.ActivityInfo.COLOR_MODE_DEFAULT
+        }
         super.onCreate(savedInstanceState)
         appVm = ViewModelProvider(this)[AppVm::class.java]
         appVm.acceptPairing(intent?.dataString)
