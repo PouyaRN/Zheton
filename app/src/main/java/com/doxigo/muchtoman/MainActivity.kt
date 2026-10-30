@@ -2388,6 +2388,9 @@ class MainActivity : FragmentActivity() {
             window.colorMode = android.content.pm.ActivityInfo.COLOR_MODE_DEFAULT
         }
         super.onCreate(savedInstanceState)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            splashScreen.setOnExitAnimationListener { splashView -> splashView.remove() }
+        }
         appVm = ViewModelProvider(this)[AppVm::class.java]
         appVm.acceptPairing(intent?.dataString)
         enableEdgeToEdge()
