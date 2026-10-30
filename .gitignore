@@ -9,6 +9,7 @@ captures/
 .externalNativeBuild
 .cxx
 *.apk
+debug_apk/
 worker/node_modules/
 worker/.wrangler/
 sync/node_modules/
