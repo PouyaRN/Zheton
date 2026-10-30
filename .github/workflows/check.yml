@@ -64,7 +64,7 @@ jobs:
           node-version: "22"
       - name: PWA
         working-directory: pwa
-        run: npm ci && npm run check
+        run: npm install && npm run check
 
   sync:
     needs: pwa
@@ -78,7 +78,7 @@ jobs:
           node-version: "22"
       - name: Build the PWA it serves
         working-directory: pwa
-        run: npm ci && npm run build
+        run: npm install && npm run build
       - name: Sync Worker
         working-directory: sync
         run: npm ci && npm run check
