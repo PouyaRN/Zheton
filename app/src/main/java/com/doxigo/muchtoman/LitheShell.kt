@@ -193,6 +193,13 @@ fun LitheShell(
     var smsReminder3Days by rememberSaveable { mutableStateOf(true) }
     var voiceAlarmDueDay by rememberSaveable { mutableStateOf(false) }
 
+    val urgentCommitment = remember(state.commitments) {
+        val now = System.currentTimeMillis()
+        val sevenDays = 7L * 24L * 3600L * 1000L
+        state.commitments.filter { !it.isSettled && it.nextDueTimestamp > 0 && it.nextDueTimestamp - now in 0..sevenDays }
+            .minByOrNull { it.nextDueTimestamp }
+    }
+
     // Tab 4 Goals local state
     var goalFilter by rememberSaveable { mutableStateOf("all") }
     var roundUpEnabled by rememberSaveable { mutableStateOf(true) }
@@ -378,13 +385,6 @@ fun LitheShell(
                 }
 
                 LitheTab.COMMITMENTS -> {
-                    val urgentCommitment = remember(state.commitments) {
-                        val now = System.currentTimeMillis()
-                        val sevenDays = 7L * 24L * 3600L * 1000L
-                        state.commitments.filter { !it.isSettled && it.nextDueTimestamp > 0 && it.nextDueTimestamp - now in 0..sevenDays }
-                            .minByOrNull { it.nextDueTimestamp }
-                    }
-
                     urgentCommitment?.let { comm ->
                         item(key = "comm_urgent_banner") {
                             CommitmentsUrgentBanner(
@@ -1950,17 +1950,26 @@ private fun AnalyticsMajorTransactionsCard(
 
             Spacer(Modifier.height(12.dp))
 
-            val filtered = entries.filter {
-                searchQuery.isBlank() || it.merchant.contains(searchQuery, ignoreCase = true) || it.category.fa.contains(searchQuery, ignoreCase = true) || it.note.contains(searchQuery, ignoreCase = true)
+            val filtered = entries.filter { entry ->
+                searchQuery.isBlank() ||
+                    entry.txn.merchant.contains(searchQuery, ignoreCase = true) ||
+                    entry.txn.merchantNorm.contains(searchQuery, ignoreCase = true) ||
+                    entry.categoryFa.contains(searchQuery, ignoreCase = true)
             }
 
             if (filtered.isNotEmpty()) {
                 filtered.take(10).forEachIndexed { idx, entry ->
+                    val txn = entry.txn
+                    val isIncome = txn.direction == "in"
+                    val merchant = txn.merchant.ifBlank { txn.merchantNorm }
+                        .ifBlank { entry.categoryFa }
+                        .ifBlank { if (isIncome) "واریز" else "تراکنش بانکی" }
+                    val dateStr = if (txn.printedAt.isNotBlank()) txn.printedAt else faDay(txn.day)
                     LitheTransactionRowItem(
-                        title = entry.merchant.ifBlank { "تراکنش بانکی" },
-                        subtitle = "${entry.category.fa} • ${formatDate(entry.timestamp)}",
-                        amountToman = entry.amountRial / 10L,
-                        isIncome = !entry.isExpense,
+                        title = merchant,
+                        subtitle = "${entry.categoryFa} • $dateStr",
+                        amountToman = (txn.amountRial ?: 0L) / 10L,
+                        isIncome = isIncome,
                         privacyMode = privacyMode,
                     )
                     if (idx < filtered.take(10).lastIndex) {
@@ -2051,7 +2060,7 @@ private fun CommitmentsHeroSummaryCard(
     val t = CanvasTheme.tokens
     val activeList = userCommitments.filter { !it.isSettled }
     val totalRemaining = activeList.sumOf { it.remainingAmountToman }
-    val totalOriginal = activeList.sumOf { it.originalAmountToman }
+    val totalOriginal = activeList.sumOf { it.totalAmountToman }
     val settledCount = userCommitments.count { it.isSettled }
     val activeCount = activeList.size
     val progressRatio = if (totalOriginal > 0L) {
@@ -2118,7 +2127,7 @@ private fun CommitmentsHeroSummaryCard(
             ) {
                 Text("تسویه شده", style = MaterialTheme.typography.labelSmall, color = t.muted)
                 Text(
-                    text = if (totalOriginal > 0) "${faNumber(totalOriginal - totalRemaining)} از ${faNumber(totalOriginal)} تومان (${(progressRatio * 100).toInt()}٪)" else "بدون تعهد فعال",
+                    text = if (totalOriginal > 0L) "${faNumber(totalOriginal - totalRemaining)} از ${faNumber(totalOriginal)} تومان (${(progressRatio * 100).toInt()}٪)" else "بدون تعهد فعال",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = t.ink,
@@ -2226,7 +2235,7 @@ private fun CommitmentsStreamList(
         val filteredCommitments = remember(filter, userCommitments) {
             when (filter) {
                 "loans" -> userCommitments.filter { it.kind == CommitmentKind.LOAN }
-                "cheques" -> userCommitments.filter { it.kind == CommitmentKind.CHEQUE }
+                "cheques" -> userCommitments.filter { it.kind == CommitmentKind.CHECK }
                 "cards" -> emptyList()
                 else -> userCommitments
             }
@@ -2393,6 +2402,154 @@ private fun CommitmentsStreamList(
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun CommitmentPodCard(
+    title: String,
+    subtitle: String,
+    badgeFa: String,
+    badgeColor: Color,
+    monthlyAmountFa: String,
+    progress: Float,
+    actionLabel: String,
+    onAction: () -> Unit,
+) {
+    val t = CanvasTheme.tokens
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        color = t.card,
+        shadowElevation = 2.dp,
+    ) {
+        Column(modifier = Modifier.padding(18.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.ExtraBold, color = t.ink)
+                    Text(subtitle, style = MaterialTheme.typography.labelSmall, color = t.muted)
+                }
+                Surface(
+                    shape = RoundedCornerShape(999.dp),
+                    color = badgeColor.copy(alpha = 0.12f),
+                ) {
+                    Text(
+                        text = badgeFa,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = badgeColor,
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(999.dp))
+                    .background(t.track),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(progress.coerceIn(0.05f, 1f))
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(999.dp))
+                        .background(badgeColor),
+                )
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(monthlyAmountFa, style = figureStyle(t.ink, FontWeight.Black).copy(fontSize = 16.sp))
+                Surface(
+                    onClick = onAction,
+                    shape = RoundedCornerShape(999.dp),
+                    color = t.primaryAction,
+                ) {
+                    Text(
+                        text = actionLabel,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = t.onPrimaryAction,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CommitmentsReminderSettingsPod(
+    smsReminder: Boolean,
+    onSmsReminderChange: (Boolean) -> Unit,
+    voiceAlarm: Boolean,
+    onVoiceAlarmChange: (Boolean) -> Unit,
+    onAddCommitment: () -> Unit,
+) {
+    val t = CanvasTheme.tokens
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            color = t.card,
+            shadowElevation = 2.dp,
+        ) {
+            Column(modifier = Modifier.padding(18.dp)) {
+                Text(
+                    text = "تنظیمات یادآور هوشمند سررسید",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = t.ink,
+                )
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("یادآوری ۳ روز قبل از سررسید قسط", style = MaterialTheme.typography.bodySmall, color = t.inkSecondary)
+                    Switch(checked = smsReminder, onCheckedChange = onSmsReminderChange)
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("هشدار روز سررسید چک صیادی", style = MaterialTheme.typography.bodySmall, color = t.inkSecondary)
+                    Switch(checked = voiceAlarm, onCheckedChange = onVoiceAlarmChange)
+                }
+            }
+        }
+
+        Button(
+            onClick = onAddCommitment,
+            shape = RoundedCornerShape(999.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = t.primaryAction),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(54.dp)
+                .testTag("add_new_commitment_cta"),
+        ) {
+            Text(
+                text = "+ ثبت قسط یا چک صیادی جدید",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.ExtraBold,
+                color = t.onPrimaryAction,
+            )
         }
     }
 }

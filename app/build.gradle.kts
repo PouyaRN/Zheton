@@ -32,12 +32,20 @@ android {
         buildConfigField("boolean", "LITE", "false")
     }
 
+    val keystoreProps = rootProject.file("keystore.properties").takeIf { it.exists() }?.let {
+        Properties().apply { it.inputStream().use(::load) }
+    }
+
     signingConfigs {
-        create("debugConfig") {
-            storeFile = file("${rootDir}/debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
+        if (keystoreProps != null) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+                enableV1Signing = true
+                enableV2Signing = true
+            }
         }
     }
 
@@ -49,14 +57,14 @@ android {
 
     buildTypes {
         debug {
-            signingConfig = signingConfigs.getByName("debugConfig")
+            if (keystoreProps != null) signingConfig = signingConfigs.getByName("release")
             buildConfigField("String", "RATES_URL", "\"$ratesUrl\"")
             buildConfigField("String", "SYNC_URL", "\"$syncUrl\"")
         }
         release {
-            signingConfig = signingConfigs.getByName("debugConfig")
             buildConfigField("String", "RATES_URL", "\"$ratesUrl\"")
             buildConfigField("String", "SYNC_URL", "\"$syncUrl\"")
+            if (keystoreProps != null) signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
             isShrinkResources = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
