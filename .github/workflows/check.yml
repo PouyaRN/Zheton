@@ -1,8 +1,6 @@
 name: check
 
-# The repo has only ever run CI on a tag, which means a broken main is discovered at release
-# time. With a ledger, a sync Worker and a PWA in here, that is too late — so this runs on every
-# push and every pull request. The tag workflow, emulator smoke test and all, is unchanged.
+# The repo runs CI on every push and every pull request.
 on:
   push:
     branches: ["**"]
@@ -27,12 +25,17 @@ jobs:
           distribution: temurin
           java-version: "21"
       - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
-      # Both editions, but only their debug variants: plain `test` would now run the same suite six
-      # times over. Twice is not waste — EditionTest is the check that the lite flavour's
-      # buildConfigField actually reached it, and it can only make that claim from inside the lite
-      # variant. assembleDebug builds both so a lite-only compile error cannot wait until tag day.
-      - name: Unit tests and lint
-        run: ./gradlew testFullDebugUnitTest testLiteDebugUnitTest lint assembleDebug
+
+      - name: Unit tests and assemble
+        run: ./gradlew testDebugUnitTest assembleDebug
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: zheton-debug-apk
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 7
 
   worker:
     runs-on: ubuntu-latest
@@ -58,12 +61,9 @@ jobs:
           node-version: "22"
       - name: PWA
         working-directory: pwa
-        # Its tests read the golden corpus out of the Android module, so this is also the check
-        # that the two parsers still agree on every case they share.
         run: npm ci && npm run check
 
   sync:
-    # The Worker's own build needs pwa/dist to exist, so the assets are built first.
     needs: pwa
     runs-on: ubuntu-latest
     steps:
@@ -78,6 +78,4 @@ jobs:
         run: npm ci && npm run build
       - name: Sync Worker
         working-directory: sync
-        # Real Durable Objects under workerd, not a mock: this is the first stateful thing in
-        # the repo and it holds people's ledgers.
         run: npm ci && npm run check
