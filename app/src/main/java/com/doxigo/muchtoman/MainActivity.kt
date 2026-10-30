@@ -93,9 +93,15 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             monthlyBudgetToman = store.monthlyBudgetToman,
             widgetSlots = store.widgetSlots,
             holdingLots = store.holdingLots,
+            onboardingCompleted = store.onboardingCompleted,
         )
     )
     val state: StateFlow<UiState> = _state.asStateFlow()
+
+    fun completeOnboarding() {
+        store.onboardingCompleted = true
+        _state.update { it.copy(onboardingCompleted = true) }
+    }
 
     private var ledgerJob: Job? = null
     private var familySyncJob: Job? = null
@@ -2208,6 +2214,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
 }
 
 data class UiState(
+    val onboardingCompleted: Boolean = false,
     val holdings: List<Holding> = emptyList(),
     val rates: Rates = Rates(),
     val overrides: Map<String, Double> = emptyMap(),

@@ -523,6 +523,10 @@ class Store(context: Context) {
         }
     }
 
+    var onboardingCompleted: Boolean
+        get() = prefs.getBoolean("onboarding_completed", false)
+        set(v) = prefs.edit().putBoolean("onboarding_completed", v).apply()
+
     var holdings: List<Holding>
         get() = read("holdings", emptyList())
         set(v) = write("holdings", v)

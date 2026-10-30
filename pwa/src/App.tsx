@@ -32,10 +32,12 @@ import {
 } from './utils/smsParser';
 import { DEFAULT_MARKET_QUOTES, simulateMarketTick } from './services/marketService';
 import {
+  getDemoState,
   loadPersistedState,
   savePersistedState,
 } from './services/storageService';
 import { CalculatorsModal } from './components/CalculatorsModal';
+import { OnboardingModal } from './components/OnboardingModal';
 
 type TabKey = 'DASHBOARD' | 'ANALYTICS' | 'COMMITMENTS' | 'GOALS';
 
@@ -49,36 +51,7 @@ interface SavingsGoal {
   imageUrl?: string;
 }
 
-const INITIAL_SAVINGS_GOALS: SavingsGoal[] = [
-  {
-    id: 'goal_emergency',
-    title: 'صندوق اضطراری ۶ ماهه',
-    currentMillion: 45,
-    targetMillion: 60,
-    category: 'emergency',
-    etaLabel: '۱ ماه تا تکمیل',
-  },
-  {
-    id: 'goal_car',
-    title: 'تعویض و ارتقای خودرو',
-    currentMillion: 110,
-    targetMillion: 250,
-    category: 'long',
-    etaLabel: 'تخمین هوشمند: ۶ ماه آینده',
-    imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDsQdECCruuKhzwltAIncXZT0hcFrry9-nCM5UDxP5kZsA3mmFLajr-oqLU2coxy-_Qhvl6M8PUP67xH_l5hXWiHTgfeTB1u87G_MOb2HSc8WFJVizr1u-wTEgfzxkidj01INeLTYmLnV_UDChOmY4On2WarpbYRlvVWTqdGtOHiujvjXx7DANuSrpqmQEW9Myf3j_SspKPR_7pLjqWcVvCCoV6EGY2NBBVmDhOrRrv',
-  },
-  {
-    id: 'goal_trip',
-    title: 'سفر تفریحی تابستان',
-    currentMillion: 22,
-    targetMillion: 30,
-    category: 'short',
-    etaLabel: '۲ ماه تا تکمیل',
-    imageUrl:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuCEHzeawcog-bqQIkXp2DbBHniYPUs9DIlBiUgpSm80uopPU-zIYhIAq3kRApbBCIwfDUiio8b3SWS_-pYnxpzqYEaFv_UJ1Hq_mZSX3tnI3cp2Y5kLRp7tcrFu4s7FPjxgYPZL0iwESee0BNJQhP7jvmDedPf0QT4B-8OjklPrKcAdPbcwolk19ctOHJNogDGX0DZLKJng-sSltWLu2YdjjXbE_hLLERo4HVJBmoKh',
-  },
-];
+const INITIAL_SAVINGS_GOALS: SavingsGoal[] = [];
 
 export default function App() {
   const [state, setState] = useState(() => loadPersistedState());
@@ -97,7 +70,48 @@ export default function App() {
   const [commitmentFilter, setCommitmentFilter] = useState<'all' | 'bank' | 'cheque' | 'cards'>('all');
   const [smsReminder3Days, setSmsReminder3Days] = useState(true);
   const [voiceAlarmDueDay, setVoiceAlarmDueDay] = useState(false);
-  const [urgentLoanPaid, setUrgentLoanPaid] = useState(false);
+  const urgentCommitment = useMemo(() => {
+    const now = Date.now();
+    const sevenDays = 7 * 24 * 3600 * 1000;
+    return (
+      state.commitments
+        .filter(
+          (c) =>
+            !c.isSettled &&
+            c.nextDueTimestamp > 0 &&
+            c.nextDueTimestamp - now >= 0 &&
+            c.nextDueTimestamp - now <= sevenDays
+        )
+        .sort((a, b) => a.nextDueTimestamp - b.nextDueTimestamp)[0] ?? null
+    );
+  }, [state.commitments]);
+
+  const totalCommitmentsToman = useMemo(
+    () => state.commitments.reduce((sum, c) => sum + c.totalAmountToman, 0),
+    [state.commitments]
+  );
+  const remainingCommitmentsToman = useMemo(
+    () =>
+      state.commitments
+        .filter((c) => !c.isSettled)
+        .reduce((sum, c) => sum + c.remainingAmountToman, 0),
+    [state.commitments]
+  );
+  const paidCommitmentsToman = Math.max(0, totalCommitmentsToman - remainingCommitmentsToman);
+  const commitmentsProgressPct =
+    totalCommitmentsToman > 0
+      ? Math.round((paidCommitmentsToman / totalCommitmentsToman) * 100)
+      : 0;
+
+  const monthlyCashflowToman = useMemo(() => {
+    const credits = state.transactions
+      .filter((t) => t.direction === 'CREDIT')
+      .reduce((s, t) => s + t.amountToman, 0);
+    const debits = state.transactions
+      .filter((t) => t.direction === 'DEBIT')
+      .reduce((s, t) => s + t.amountToman, 0);
+    return credits - debits;
+  }, [state.transactions]);
   const [selectedChequeModal, setSelectedChequeModal] = useState<Commitment | null>(null);
 
   // Tab 4: Goals & Savings sub-states
@@ -598,7 +612,7 @@ export default function App() {
                     <span className="text-[34px] font-black text-gray-950 tracking-tight leading-none num-tabular">
                       {state.privacyMode
                         ? '••••••••'
-                        : formatToman(totalCombinedBalanceToman > 0 ? totalCombinedBalanceToman : 128450000)}
+                        : formatToman(totalCombinedBalanceToman)}
                     </span>
                     <span className="text-[14px] font-bold text-gray-500">تومان</span>
                   </div>
@@ -624,7 +638,9 @@ export default function App() {
                   </div>
                   <div className="flex items-center gap-1">
                     <span className="text-[13px] font-extrabold text-emerald-600 num-tabular">
-                      {state.privacyMode ? '••••••' : '۹٬۸۴۰٬۰۰۰'}
+                      {state.privacyMode
+                        ? '••••••'
+                        : `${monthlyCashflowToman >= 0 ? '+' : ''}${formatToman(monthlyCashflowToman)}`}
                     </span>
                     <span className="text-[11px] font-semibold text-gray-500">تومان</span>
                   </div>
@@ -734,10 +750,10 @@ export default function App() {
                 </div>
                 <div className="my-1">
                   <div className="text-[18px] font-black text-gray-900 leading-tight num-tabular">
-                    {state.privacyMode ? '••••••' : '۴٬۸۰۰٬۰۰۰'}
+                    {state.privacyMode ? '••••••' : formatToman(remainingCommitmentsToman)}
                   </div>
                   <div className="text-[11px] text-gray-400 font-medium">
-                    {toFaDigits(state.commitments.filter((c) => !c.isSettled).length)} قسط فعال پیش‌رو
+                    {toFaDigits(state.commitments.filter((c) => !c.isSettled).length)} تعهد فعال پیش‌رو
                   </div>
                 </div>
                 <div className="mt-2 pt-2 border-t border-gray-50">
@@ -745,7 +761,11 @@ export default function App() {
                     <span className="material-symbols-outlined text-[12px] text-amber-600">
                       alarm
                     </span>
-                    <span>سررسید: ۴ روز دیگر</span>
+                    <span>
+                      {urgentCommitment
+                        ? `سررسید: ${urgentCommitment.title}`
+                        : 'بدون سررسید فوری'}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -891,8 +911,14 @@ export default function App() {
               </div>
 
               <div className="rounded-3xl bg-white border border-gray-100 p-2 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex flex-col divide-y divide-gray-50">
-                {/* Default 4 rich items + user added items */}
-                {state.transactions.slice(0, 6).map((tx, idx) => {
+                {state.transactions.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center p-6 text-center text-gray-400 gap-2">
+                    <span className="material-symbols-outlined text-[32px] text-gray-300">receipt_long</span>
+                    <span className="text-[13px] font-bold text-gray-700">هنوز تراکنشی ثبت نشده است</span>
+                    <span className="text-[11px] text-gray-400">با دریافت پیامک‌های بانکی یا دکمه «واریز» / «ثبت تراکنش» تراکنش جدید ثبت کنید.</span>
+                  </div>
+                ) : (
+                  state.transactions.slice(0, 6).map((tx, idx) => {
                   const isCredit = tx.direction === 'CREDIT';
                   const isGold = tx.categoryFa.includes('سرمایه') || tx.merchant.includes('طلا');
                   const isCafe = tx.categoryFa.includes('کافه');
@@ -943,7 +969,8 @@ export default function App() {
                       </div>
                     </div>
                   );
-                })}
+                })
+                )}
               </div>
             </section>
           </div>
@@ -1017,9 +1044,9 @@ export default function App() {
                       <span className="text-[26px] leading-tight text-on-surface font-extrabold tracking-tight num-tabular">
                         {state.privacyMode
                           ? '•••••'
-                          : formatToman(Math.round(18320 * periodFactor))}
+                          : formatToman(state.transactions.filter((t) => t.direction === 'DEBIT').reduce((s, t) => s + t.amountToman, 0))}
                       </span>
-                      <span className="text-label-sm text-on-surface-variant">هزار ت</span>
+                      <span className="text-label-sm text-on-surface-variant">تومان</span>
                     </div>
                     <div className="inline-flex items-center gap-1 mt-1 text-on-tertiary-container text-label-sm">
                       <span className="material-symbols-outlined text-[14px]">trending_down</span>
@@ -1041,9 +1068,9 @@ export default function App() {
                       <span className="text-[26px] leading-tight text-on-surface font-extrabold tracking-tight num-tabular">
                         {state.privacyMode
                           ? '•••••'
-                          : formatToman(Math.round(42850 * periodFactor))}
+                          : formatToman(state.transactions.filter((t) => t.direction === 'CREDIT').reduce((s, t) => s + t.amountToman, 0))}
                       </span>
-                      <span className="text-label-sm text-on-surface-variant">هزار ت</span>
+                      <span className="text-label-sm text-on-surface-variant">تومان</span>
                     </div>
                     <div className="inline-flex items-center gap-1 mt-1 text-secondary text-label-sm">
                       <span className="material-symbols-outlined text-[14px]">verified</span>
@@ -1449,8 +1476,8 @@ export default function App() {
            =================================================================== */}
         {activeTab === 'COMMITMENTS' && (
           <div className="flex flex-col w-full gap-5 pb-10">
-            {/* Reminder Capsule Banner */}
-            {!urgentLoanPaid && (
+            {/* Dynamic Reminder Capsule Banner */}
+            {urgentCommitment && (
               <aside
                 aria-label="هشدار سررسید نزدیک"
                 className="relative overflow-hidden flex items-center justify-between gap-3 p-3.5 bg-error-container/70 rounded-lg shadow-[0_4px_20px_-2px_rgba(186,26,26,0.06)] transition-transform"
@@ -1464,26 +1491,28 @@ export default function App() {
                   <div className="flex flex-col min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-label-md text-on-error-container">
-                        سررسید نزدیک: وام ازدواج
-                      </span>
-                      <span className="px-2 py-0.5 rounded-full bg-surface-container-lowest/80 text-error text-label-sm">
-                        ۴ روز مانده
+                        سررسید نزدیک: {urgentCommitment.title}
                       </span>
                     </div>
                     <p className="text-body-sm text-on-error-container/80 truncate">
-                      بانک ملت • ۲,۵۰۰,۰۰۰ تومان
+                      {urgentCommitment.provider} • {formatToman(urgentCommitment.remainingAmountToman)} تومان
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => {
-                    setUrgentLoanPaid(true);
-                    showToast('قسط وام ازدواج بانک ملت پرداخت شد');
+                    setState((prev) => ({
+                      ...prev,
+                      commitments: prev.commitments.map((c) =>
+                        c.id === urgentCommitment.id ? { ...c, isSettled: true } : c
+                      ),
+                    }));
+                    showToast(`پرداخت ${urgentCommitment.title} با موفقیت ثبت شد`);
                   }}
                   className="shrink-0 px-3.5 py-1.5 rounded-full bg-primary text-on-primary text-label-sm shadow-[0_4px_12px_rgba(9,13,21,0.18)] active:scale-95 transition-transform"
                   type="button"
                 >
-                  پرداخت
+                  ثبت تسویه
                 </button>
               </aside>
             )}
@@ -1497,7 +1526,7 @@ export default function App() {
                   </span>
                   <div className="flex items-baseline gap-1.5 mt-1">
                     <span className="text-display-hero-mobile text-on-surface tracking-tight num-tabular">
-                      {state.privacyMode ? '••••••••' : '۱۳۸,۲۰۰,۰۰۰'}
+                      {state.privacyMode ? '••••••••' : formatToman(remainingCommitmentsToman)}
                     </span>
                     <span className="text-label-md text-outline">تومان</span>
                   </div>
@@ -1512,35 +1541,43 @@ export default function App() {
               {/* Monthly Progress Track */}
               <div className="p-3.5 bg-surface-container-low rounded-[1.25rem] flex flex-col gap-2">
                 <div className="flex items-center justify-between text-label-md">
-                  <span className="text-on-surface">تسویه تعهدات ماه جاری</span>
+                  <span className="text-on-surface">وضعیت تسویه کل تعهدات</span>
                   <span className="text-secondary font-bold">
-                    {urgentLoanPaid ? '۶۴٪ (۷ از ۱۱ قسط)' : '۴۵٪ (۵ از ۱۱ قسط)'}
+                    {totalCommitmentsToman > 0
+                      ? `${toFaDigits(commitmentsProgressPct)}٪ تسویه شده`
+                      : 'بدون تعهد فعال'}
                   </span>
                 </div>
                 <div className="w-full h-3 rounded-full bg-surface-container-highest overflow-hidden p-0.5 flex">
                   <div
                     className="h-full rounded-full bg-secondary-container transition-all duration-500"
-                    style={{ width: urgentLoanPaid ? '64%' : '45%' }}
+                    style={{ width: `${Math.max(2, commitmentsProgressPct)}%` }}
                   />
                 </div>
                 <div className="flex items-center justify-between text-label-sm text-outline pt-0.5">
-                  <span>پرداخت‌شده: {urgentLoanPaid ? '۷,۲۰۰,۰۰۰' : '۴,۷۰۰,۰۰۰'} ت</span>
-                  <span>باقی‌مانده: {urgentLoanPaid ? '۳,۳۰۰,۰۰۰' : '۵,۸۰۰,۰۰۰'} ت</span>
+                  <span>پرداخت‌شده: {formatToman(paidCommitmentsToman)} ت</span>
+                  <span>باقی‌مانده: {formatToman(remainingCommitmentsToman)} ت</span>
                 </div>
               </div>
 
               {/* Micro Stats Pods */}
               <div className="grid grid-cols-3 gap-2">
                 <div className="flex flex-col items-center justify-center p-2.5 rounded-DEFAULT bg-surface-container-low/70">
-                  <span className="text-headline-sm text-on-surface">۴۲</span>
-                  <span className="text-label-sm text-on-surface-variant">قسط باقیمانده</span>
+                  <span className="text-headline-sm text-on-surface">
+                    {toFaDigits(state.commitments.filter((c) => !c.isSettled).length)}
+                  </span>
+                  <span className="text-label-sm text-on-surface-variant">تعهد فعال</span>
                 </div>
                 <div className="flex flex-col items-center justify-center p-2.5 rounded-DEFAULT bg-surface-container-low/70">
-                  <span className="text-headline-sm text-on-surface">۳</span>
+                  <span className="text-headline-sm text-on-surface">
+                    {toFaDigits(state.commitments.filter((c) => !c.isSettled && c.kind === 'CHECK').length)}
+                  </span>
                   <span className="text-label-sm text-on-surface-variant">فقره چک صیاد</span>
                 </div>
                 <div className="flex flex-col items-center justify-center p-2.5 rounded-DEFAULT bg-surface-container-low/70">
-                  <span className="text-headline-sm text-secondary">۸.۲</span>
+                  <span className="text-headline-sm text-secondary">
+                    {state.commitments.length === 0 ? 'A+' : 'A'}
+                  </span>
                   <span className="text-label-sm text-on-surface-variant">امتیاز خوش‌حسابی</span>
                 </div>
               </div>
@@ -1552,9 +1589,9 @@ export default function App() {
               className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5"
             >
               {[
-                { id: 'all', label: 'همه تعهدات (۸)' },
-                { id: 'bank', label: 'اقساط بانکی (۵)' },
-                { id: 'cheque', label: 'چک‌های صیادی (۳)' },
+                { id: 'all', label: `همه تعهدات (${toFaDigits(state.commitments.length)})` },
+                { id: 'bank', label: `اقساط بانکی (${toFaDigits(state.commitments.filter((c) => c.kind === 'LOAN' || c.kind === 'INSTALLMENT').length)})` },
+                { id: 'cheque', label: `چک‌های صیادی (${toFaDigits(state.commitments.filter((c) => c.kind === 'CHECK').length)})` },
                 { id: 'cards', label: `کارت‌های بانکی (${toFaDigits(state.accounts.length)})` },
               ].map((f) => {
                 const active = commitmentFilter === f.id;
@@ -1580,258 +1617,113 @@ export default function App() {
             {/* Commitments Stream */}
             {commitmentFilter !== 'cards' ? (
               <section className="flex flex-col gap-3">
-                {/* Card 1: Housing Loan */}
-                {(commitmentFilter === 'all' || commitmentFilter === 'bank') && (
-                  <article className="bg-surface-container-lowest p-4 rounded-lg shadow-[0_4px_20px_-2px_rgba(31,35,43,0.04)] flex flex-col gap-3 transition-all">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-primary shrink-0">
-                          <span className="material-symbols-outlined text-[22px]">
-                            real_estate_agent
-                          </span>
-                        </div>
-                        <div className="flex flex-col">
-                          <h2 className="text-body-lg text-on-surface">وام مسکن ملی</h2>
-                          <span className="text-body-sm text-outline">
-                            بانک مسکن • شناسه: ۹۸۲۳۴
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-left flex flex-col items-end">
-                        <span className="text-headline-sm text-on-surface num-tabular">
-                          {state.privacyMode ? '••••••' : '۳,۴۰۰,۰۰۰'}
-                        </span>
-                        <span className="text-label-sm text-outline">تومان / ماهانه</span>
-                      </div>
-                    </div>
+                {(() => {
+                  const filtered = state.commitments.filter((c) => {
+                    if (commitmentFilter === 'bank') return c.kind === 'LOAN' || c.kind === 'INSTALLMENT';
+                    if (commitmentFilter === 'cheque') return c.kind === 'CHECK';
+                    return true;
+                  });
 
-                    <div className="p-3 bg-surface-container-low/60 rounded-DEFAULT flex flex-col gap-2">
-                      <div className="flex items-center justify-between text-label-sm text-on-surface-variant">
-                        <span>قسط ۱۴ از ۴۸ (۲۹٪ پرداخت شده)</span>
-                        <span className="text-secondary font-semibold">سررسید: ۱۸ خرداد</span>
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="flex flex-col items-center justify-center p-8 bg-surface-container-lowest rounded-lg text-center gap-3">
+                        <span className="material-symbols-outlined text-[36px] text-outline">description</span>
+                        <h3 className="text-body-lg text-on-surface font-bold">هیچ تعهد یا قسطی یافت نشد</h3>
+                        <p className="text-body-sm text-outline max-w-xs">
+                          تعهدات و اقساط بانکی شما پس از دریافت پیامک‌های بانکی یا با ثبت دستی در این قسمت نمایش می‌یابند.
+                        </p>
+                        <button
+                          onClick={() => openQuickAdd('COMMITMENT')}
+                          className="px-4 py-2 rounded-full bg-primary text-on-primary text-label-md font-semibold"
+                          type="button"
+                        >
+                          + ثبت تعهد جدید
+                        </button>
                       </div>
-                      <div className="w-full h-2 rounded-full bg-surface-container-highest overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-secondary-container"
-                          style={{ width: '29%' }}
-                        />
-                      </div>
-                    </div>
+                    );
+                  }
 
-                    <div className="flex items-center justify-between gap-2 pt-1">
-                      <button
-                        onClick={() => showToast('رسید فاکتور وام مسکن ذخیره شد')}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low text-on-surface text-label-md active:scale-95 transition-transform"
-                        type="button"
-                      >
-                        <span className="material-symbols-outlined text-[16px] text-outline">
-                          receipt
-                        </span>
-                        <span>ثبت فاکتور</span>
-                      </button>
-                      <button
-                        onClick={() => showToast('قسط ۱۴ وام مسکن ملی با موفقیت پرداخت شد')}
-                        className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary text-on-primary text-label-md shadow-sm active:scale-95 transition-transform"
-                        type="button"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">credit_card</span>
-                        <span>پرداخت مستقیم</span>
-                      </button>
-                    </div>
-                  </article>
-                )}
-
-                {/* Card 2: Car Leasing DigiPay */}
-                {(commitmentFilter === 'all' || commitmentFilter === 'bank') && (
-                  <article className="bg-surface-container-lowest p-4 rounded-lg shadow-[0_4px_20px_-2px_rgba(31,35,43,0.04)] flex flex-col gap-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-secondary-fixed/40 flex items-center justify-center text-secondary shrink-0">
-                          <span className="material-symbols-outlined text-[22px]">
-                            directions_car
-                          </span>
-                        </div>
-                        <div className="flex flex-col">
-                          <div className="flex items-center gap-1.5">
-                            <h2 className="text-body-lg text-on-surface">خرید خودرو (دیجی‌پی)</h2>
-                            <span className="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant text-label-sm">
-                              برداشت خودکار
-                            </span>
-                          </div>
-                          <span className="text-body-sm text-outline">
-                            قسط ۵ از ۱۲ • سررسید: ۲۵ خرداد
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-left flex flex-col items-end">
-                        <span className="text-headline-sm text-on-surface num-tabular">
-                          {state.privacyMode ? '••••••' : '۲,۱۰۰,۰۰۰'}
-                        </span>
-                        <span className="text-label-sm text-outline">تومان</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between p-2.5 bg-surface-container-low/60 rounded-DEFAULT text-label-sm">
-                      <div className="flex items-center gap-1.5 text-on-surface-variant">
-                        <span className="material-symbols-outlined text-[16px] text-secondary">
-                          autorenew
-                        </span>
-                        <span>برداشت از حساب ملت در تاریخ موعد</span>
-                      </div>
-                      <span className="text-outline">بدون نیاز به اقدام</span>
-                    </div>
-                  </article>
-                )}
-
-                {/* Card 3: Sayad Cheque */}
-                {(commitmentFilter === 'all' || commitmentFilter === 'cheque') && (
-                  <article className="bg-surface-container-lowest p-4 rounded-lg shadow-[0_4px_20px_-2px_rgba(31,35,43,0.04)] flex flex-col gap-3">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface shrink-0">
-                          <span className="material-symbols-outlined text-[22px]">
-                            verified_user
-                          </span>
-                        </div>
-                        <div className="flex flex-col">
-                          <div className="flex items-center gap-1.5">
-                            <h2 className="text-body-lg text-on-surface">
-                              چک صیادی تجهیزات کارگاه
-                            </h2>
-                            <span className="flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-surface-container-low text-secondary text-label-sm">
-                              <span className="material-symbols-outlined material-symbols-filled text-[13px]">
-                                check_circle
-                              </span>
-                              پیچک
-                            </span>
-                          </div>
-                          <span className="text-body-sm text-outline">
-                            در وجه: شرکت پیشگامان فناور
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-left flex flex-col items-end">
-                        <span className="text-headline-sm text-on-surface num-tabular">
-                          {state.privacyMode ? '••••••' : '۱۵,۰۰۰,۰۰۰'}
-                        </span>
-                        <span className="text-label-sm text-outline">تومان</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between pt-1">
-                      <div className="flex items-center gap-1 text-label-sm text-on-surface-variant">
-                        <span className="material-symbols-outlined text-[16px] text-outline">
-                          event
-                        </span>
-                        <span>سررسید: ۱۰ تیر ۱۴۰۳</span>
-                      </div>
-                      <button
-                        onClick={() =>
-                          setSelectedChequeModal({
-                            id: 'sayad_1',
-                            title: 'چک صیادی تجهیزات کارگاه',
-                            provider: 'سامانه صیاد / پیچک بانک مرکزی',
-                            kind: 'CHECK',
-                            totalAmountToman: 15000000,
-                            remainingAmountToman: 15000000,
-                            installmentCount: 1,
-                            paidInstallmentCount: 0,
-                            nextDueTimestamp: Date.now() + 14 * 24 * 3600 * 1000,
-                            note: 'شناسه ۱۶ رقمی صیاد: ۴۰۲۹۸۱۱۷۴۵۰۹۲۲۱۸ • وضعیت: ثبت و تایید شده (بنفش)',
-                          })
-                        }
-                        className="px-3 py-1 rounded-full bg-surface-container-low text-on-surface text-label-sm active:scale-95 transition-transform"
-                        type="button"
-                      >
-                        مشاهده برگه چک
-                      </button>
-                    </div>
-                  </article>
-                )}
-
-                {/* Dynamic User-Added Commitments */}
-                {state.commitments.map((cm) => {
-                  const pct =
-                    cm.installmentCount > 0
-                      ? Math.round((cm.paidInstallmentCount / cm.installmentCount) * 100)
+                  return filtered.map((c) => {
+                    const progress = c.totalAmountToman > 0
+                      ? Math.min(100, Math.round(((c.totalAmountToman - c.remainingAmountToman) / c.totalAmountToman) * 100))
                       : 0;
-                  return (
-                    <article
-                      key={cm.id}
-                      className="bg-surface-container-lowest p-4 rounded-lg shadow-[0_4px_20px_-2px_rgba(31,35,43,0.04)] flex flex-col gap-3"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-primary shrink-0">
-                            <span className="material-symbols-outlined text-[22px]">
-                              receipt_long
-                            </span>
+                    return (
+                      <article
+                        key={c.id}
+                        className="bg-surface-container-lowest p-4 rounded-lg shadow-[0_4px_20px_-2px_rgba(31,35,43,0.04)] flex flex-col gap-3"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-primary shrink-0">
+                              <span className="material-symbols-outlined text-[22px]">
+                                {c.kind === 'CHECK' ? 'check_circle' : 'real_estate_agent'}
+                              </span>
+                            </div>
+                            <div className="flex flex-col">
+                              <h2 className="text-body-lg text-on-surface">{c.title}</h2>
+                              <span className="text-body-sm text-outline">{c.provider}</span>
+                            </div>
                           </div>
-                          <div className="flex flex-col">
-                            <h2 className="text-body-lg text-on-surface">{cm.title}</h2>
-                            <span className="text-body-sm text-outline">
-                              {cm.provider} • قسط {toFaDigits(cm.paidInstallmentCount)} از{' '}
-                              {toFaDigits(cm.installmentCount)}
+                          <div className="text-left flex flex-col items-end">
+                            <span className="text-headline-sm text-on-surface num-tabular">
+                              {state.privacyMode ? '••••••' : formatToman(c.remainingAmountToman)}
                             </span>
+                            <span className="text-label-sm text-outline">تومان باقیمانده</span>
                           </div>
                         </div>
-                        <div className="text-left flex flex-col items-end">
-                          <span className="text-headline-sm text-on-surface num-tabular">
-                            {formatToman(cm.remainingAmountToman, state.privacyMode)}
-                          </span>
-                          <span className="text-label-sm text-outline">تومان مانده</span>
+
+                        <div className="p-3 bg-surface-container-low/60 rounded-DEFAULT flex flex-col gap-2">
+                          <div className="flex items-center justify-between text-label-sm text-on-surface-variant">
+                            <span>
+                              {c.isSettled ? 'تسویه شده' : `پیشرفت تسویه (${toFaDigits(progress)}٪)`}
+                            </span>
+                            <span className="text-secondary font-semibold">
+                              {c.isSettled ? 'تکمیل شد' : 'در جریان'}
+                            </span>
+                          </div>
+                          <div className="w-full h-2 rounded-full bg-surface-container-highest overflow-hidden">
+                            <div
+                              className="h-full rounded-full bg-secondary-container"
+                              style={{ width: `${Math.max(2, progress)}%` }}
+                            />
+                          </div>
                         </div>
-                      </div>
-                      <div className="w-full h-2 rounded-full bg-surface-container-highest overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-secondary-container transition-all"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                      {!cm.isSettled && (
-                        <div className="flex justify-end">
+
+                        <div className="flex items-center justify-between gap-2 pt-1">
                           <button
-                            onClick={() => handlePayInstallment(cm.id)}
-                            className="px-4 py-1.5 rounded-full bg-primary text-on-primary text-label-sm active:scale-95 transition"
+                            onClick={() => {
+                              setState((prev) => ({
+                                ...prev,
+                                commitments: prev.commitments.map((item) =>
+                                  item.id === c.id ? { ...item, isSettled: !item.isSettled } : item
+                                ),
+                              }));
+                              showToast(c.isSettled ? 'به حالت در جریان برگشت' : 'به عنوان تسویه‌شده علامت‌گذاری شد');
+                            }}
+                            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary text-on-primary text-label-md shadow-sm active:scale-95 transition-transform"
                             type="button"
                           >
-                            ثبت پرداخت قسط
+                            <span>{c.isSettled ? 'بازگردانی به فعال' : 'ثبت تسویه'}</span>
                           </button>
                         </div>
-                      )}
-                    </article>
-                  );
-                })}
-
-                {/* Card 4: Settled Insurance */}
-                <article className="bg-surface-container-lowest/70 p-4 rounded-lg shadow-sm flex items-center justify-between gap-3 opacity-80">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-outline shrink-0">
-                      <span className="material-symbols-outlined text-[22px]">
-                        health_and_safety
-                      </span>
-                    </div>
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-1.5">
-                        <h2 className="text-body-md text-on-surface">
-                          بیمه عمر و آتیه پاسارگاد
-                        </h2>
-                        <span className="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant text-label-sm">
-                          تسویه شد
-                        </span>
-                      </div>
-                      <span className="text-body-sm text-outline">
-                        قسط دوره اردیبهشت پرداخت شد
-                      </span>
-                    </div>
-                  </div>
-                  <span className="material-symbols-outlined text-[22px] text-outline">
-                    check_circle
-                  </span>
-                </article>
+                      </article>
+                    );
+                  });
+                })()}
               </section>
             ) : (
               /* Bank Cards & SHEBA List inside Tab 3 when 'cards' filter is active */
               <section className="flex flex-col gap-3">
-                {state.accounts.map((acc) => (
+                {state.accounts.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center p-8 bg-surface-container-lowest rounded-lg text-center gap-3">
+                    <span className="material-symbols-outlined text-[36px] text-outline">credit_card</span>
+                    <h3 className="text-body-lg text-on-surface font-bold">هیچ کارت بانکی ثبت نشده است</h3>
+                    <p className="text-body-sm text-outline max-w-xs">
+                      کارت‌های بانکی به صورت خودکار از پیامک‌های واریز/برداشت استخراج شده یا می‌توانید به صورت دستی کارت خود را اضافه کنید.
+                    </p>
+                  </div>
+                ) : (
+                  state.accounts.map((acc) => (
                   <article
                     key={acc.id}
                     className="bg-surface-container-lowest p-4 rounded-lg shadow-[0_4px_20px_-2px_rgba(31,35,43,0.04)] flex flex-col gap-3"
@@ -1882,7 +1774,8 @@ export default function App() {
                       </div>
                     )}
                   </article>
-                ))}
+                ))
+                )}
                 <button
                   onClick={() => openQuickAdd('CARD')}
                   className="w-full py-3 rounded-full bg-surface-container-lowest border border-gray-200 text-on-surface font-bold text-xs"
@@ -2163,9 +2056,25 @@ export default function App() {
                   </button>
                 </div>
 
-                {savingsGoals
-                  .filter((g) => (goalFilter === 'all' ? true : g.category === goalFilter))
-                  .map((goal) => {
+                {savingsGoals.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center p-8 bg-surface-container-lowest rounded-lg text-center gap-3">
+                    <span className="material-symbols-outlined text-[36px] text-outline">flag</span>
+                    <h3 className="text-body-lg text-on-surface font-bold">هنوز هدف پس‌اندازی تعریف نشده است</h3>
+                    <p className="text-body-sm text-outline max-w-xs">
+                      برای پس‌انداز خرید خودرو، مسکن، سفر یا صندوق اضطراری، هدف مالی خود را مشخص کنید تا مسیر پیشرفت آن تحلیل شود.
+                    </p>
+                    <button
+                      onClick={() => openQuickAdd('GOAL')}
+                      className="px-4 py-2 rounded-full bg-primary text-on-primary text-label-md font-semibold"
+                      type="button"
+                    >
+                      + تعریف اولین هدف پس‌انداز
+                    </button>
+                  </div>
+                ) : (
+                  savingsGoals
+                    .filter((g) => (goalFilter === 'all' ? true : g.category === goalFilter))
+                    .map((goal) => {
                     const pct = Math.min(
                       100,
                       Math.round((goal.currentMillion / Math.max(1, goal.targetMillion)) * 100)
@@ -2284,7 +2193,8 @@ export default function App() {
                         </div>
                       </div>
                     );
-                  })}
+                  })
+                )}
               </section>
             ) : (
               /* Portfolio Asset Holdings View inside Tab 4 */
@@ -2299,7 +2209,23 @@ export default function App() {
                     + دارایی جدید
                   </button>
                 </div>
-                {state.holdings.map((h) => {
+                {state.holdings.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center p-8 bg-surface-container-lowest rounded-lg text-center gap-3">
+                    <span className="material-symbols-outlined text-[36px] text-outline">diamond</span>
+                    <h3 className="text-body-lg text-on-surface font-bold">سبد دارایی خالی است</h3>
+                    <p className="text-body-sm text-outline max-w-xs">
+                      می‌توانید دارایی‌های طلا، سکه، تتر یا صندوق‌های سهامی خود را اضافه کنید تا ارزش روز آن‌ها به صورت زنده محاسبه شود.
+                    </p>
+                    <button
+                      onClick={() => openQuickAdd('HOLDING')}
+                      className="px-4 py-2 rounded-full bg-primary text-on-primary text-label-md font-semibold"
+                      type="button"
+                    >
+                      + افزودن دارایی به سبد
+                    </button>
+                  </div>
+                ) : (
+                  state.holdings.map((h) => {
                   const q = quotes.find((item) => item.id === h.typeId);
                   const valToman = q ? Math.round(h.amount * q.priceToman) : 0;
                   return (
@@ -2333,7 +2259,8 @@ export default function App() {
                       </div>
                     </div>
                   );
-                })}
+                })
+                )}
               </section>
             )}
 
@@ -3218,6 +3145,26 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* =====================================================================
+          ONBOARDING STARTER MODAL
+         ===================================================================== */}
+      <OnboardingModal
+        isOpen={!state.hasSeenOnboarding}
+        onComplete={() => {
+          setState((prev) => {
+            const next = { ...prev, hasSeenOnboarding: true };
+            savePersistedState(next);
+            return next;
+          });
+        }}
+        onLoadDemo={() => {
+          const demo = getDemoState();
+          setState(demo);
+          savePersistedState(demo);
+          showToast('اطلاعات نمونه نمایشی بارگذاری شد');
+        }}
+      />
 
       {/* =====================================================================
           7 ANDIS FINANCIAL CALCULATORS MODAL

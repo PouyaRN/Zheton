@@ -181,11 +181,15 @@ fun LitheShell(
     var showTxnSearch by rememberSaveable { mutableStateOf(false) }
     var smartCapEnabled by rememberSaveable { mutableStateOf(false) }
 
+    // Onboarding dialog on first launch
+    if (!state.onboardingCompleted) {
+        OnboardingDialog(
+            onDismiss = vm::completeOnboarding,
+        )
+    }
+
     // Tab 3 Commitments local state
     var commitmentFilter by rememberSaveable { mutableStateOf("all") }
-    var marriageLoanPaid by rememberSaveable { mutableStateOf(false) }
-    var housingLoanPaidCount by rememberSaveable { mutableIntStateOf(16) }
-    var digiPayPaidCount by rememberSaveable { mutableIntStateOf(3) }
     var smsReminder3Days by rememberSaveable { mutableStateOf(true) }
     var voiceAlarmDueDay by rememberSaveable { mutableStateOf(false) }
 
@@ -196,38 +200,7 @@ fun LitheShell(
     var simMonthlyMillion by rememberSaveable { mutableFloatStateOf(4.5f) }
 
     val customGoals = remember {
-        mutableStateListOf(
-            LitheGoalItem(
-                id = "g_emergency",
-                title = "صندوق ذخیره اضطراری (۶ ماه)",
-                subtitle = "حساب سپرده ویژه • اولویت بالا",
-                category = "emergency",
-                currentToman = 90_000_000L,
-                targetToman = 120_000_000L,
-                badgeFa = "ضریب امنیت بالا",
-                accentHex = 0xFF10B981,
-            ),
-            LitheGoalItem(
-                id = "g_car",
-                title = "ارتقای خودرو (پژو ۲۰۰۸)",
-                subtitle = "ترکیب صندوق طلا و درآمد ثابت",
-                category = "long",
-                currentToman = 193_500_000L,
-                targetToman = 450_000_000L,
-                badgeFa = "۴۳٪ تکمیل شده",
-                accentHex = 0xFF2563EB,
-            ),
-            LitheGoalItem(
-                id = "g_trip",
-                title = "سفر تابستانی (شیراز و کیش)",
-                subtitle = "پس‌انداز کوتاه‌مدت سفر",
-                category = "short",
-                currentToman = 20_400_000L,
-                targetToman = 24_000_000L,
-                badgeFa = "۸۵٪ • رو به اتمام",
-                accentHex = 0xFFF59E0B,
-            ),
-        )
+        mutableStateListOf<LitheGoalItem>()
     }
 
     // Live market rates merged with Stitch defaults
@@ -311,10 +284,13 @@ fun LitheShell(
 
                     item(key = "dash_split_bento") {
                         val activeBudget = state.budget as? MonthlyBudget.Active
+                        val firstActive = state.commitments.firstOrNull { !it.isSettled }
+                        val subText = if (firstActive != null) "${firstActive.title} • ${faNumber(firstActive.remainingAmountToman)} ت" else "بدون قسط معوق"
                         DashboardSplitBentoRow(
-                            budgetPercent = activeBudget?.spentPercent?.coerceIn(0, 100) ?: 65,
-                            remainingBudgetToman = activeBudget?.let { (it.remainingRial / 10L).coerceAtLeast(0L) } ?: 14_200_000L,
-                            activeCommitmentsCount = state.commitments.count { !it.isSettled } + 3,
+                            budgetPercent = activeBudget?.spentPercent?.coerceIn(0, 100) ?: 0,
+                            remainingBudgetToman = activeBudget?.let { (it.remainingRial / 10L).coerceAtLeast(0L) } ?: 0L,
+                            activeCommitmentsCount = state.commitments.count { !it.isSettled },
+                            commitmentSubtitle = subText,
                             onOpenBudget = { activeTab = LitheTab.ANALYTICS },
                             onOpenCommitments = { activeTab = LitheTab.COMMITMENTS },
                         )
@@ -402,19 +378,27 @@ fun LitheShell(
                 }
 
                 LitheTab.COMMITMENTS -> {
-                    if (!marriageLoanPaid) {
+                    val urgentCommitment = remember(state.commitments) {
+                        val now = System.currentTimeMillis()
+                        val sevenDays = 7L * 24L * 3600L * 1000L
+                        state.commitments.filter { !it.isSettled && it.nextDueTimestamp > 0 && it.nextDueTimestamp - now in 0..sevenDays }
+                            .minByOrNull { it.nextDueTimestamp }
+                    }
+
+                    urgentCommitment?.let { comm ->
                         item(key = "comm_urgent_banner") {
                             CommitmentsUrgentBanner(
+                                commitment = comm,
                                 onPayNow = {
-                                    marriageLoanPaid = true
                                     vm.addManualTransaction(
-                                        amountRial = 35_000_000L,
+                                        amountRial = comm.remainingAmountToman * 10L,
                                         isExpense = true,
                                         categoryId = null,
-                                        merchant = "قسط وام ازدواج - بانک ملت",
-                                        note = "پرداخت قسط ماهانه",
+                                        merchant = comm.title,
+                                        note = "پرداخت قسط",
                                     )
-                                    Toast.makeText(context, "پرداخت قسط ۳٬۵۰۰٬۰۰۰ تومانی ثبت شد", Toast.LENGTH_SHORT).show()
+                                    vm.toggleCommitmentSettled(comm.id)
+                                    Toast.makeText(context, "پرداخت ${comm.title} ثبت شد", Toast.LENGTH_SHORT).show()
                                 },
                             )
                         }
@@ -423,8 +407,6 @@ fun LitheShell(
                     item(key = "comm_hero") {
                         CommitmentsHeroSummaryCard(
                             userCommitments = state.commitments,
-                            housingPaid = housingLoanPaidCount,
-                            digiPayPaid = digiPayPaidCount,
                             privacyMode = privacyMode,
                         )
                     }
@@ -441,20 +423,6 @@ fun LitheShell(
                             filter = commitmentFilter,
                             userCommitments = state.commitments,
                             bankAccounts = state.bankAccounts,
-                            housingPaidCount = housingLoanPaidCount,
-                            digiPayPaidCount = digiPayPaidCount,
-                            onPayHousing = {
-                                if (housingLoanPaidCount < 48) {
-                                    housingLoanPaidCount++
-                                    Toast.makeText(context, "قسط شماره ${faDigits(housingLoanPaidCount.toString())} وام مسکن ثبت شد", Toast.LENGTH_SHORT).show()
-                                }
-                            },
-                            onPayDigiPay = {
-                                if (digiPayPaidCount < 12) {
-                                    digiPayPaidCount++
-                                    Toast.makeText(context, "قسط شماره ${faDigits(digiPayPaidCount.toString())} دیجی‌پی ثبت شد", Toast.LENGTH_SHORT).show()
-                                }
-                            },
                             onOpenChequeModal = { showChequeModal = true },
                             onToggleUserCommitment = { vm.toggleCommitmentSettled(it) },
                             onCopyText = { label, text ->
@@ -463,6 +431,10 @@ fun LitheShell(
                             },
                             onOpenNativeCards = onOpenNativeCards,
                             onOpenBankSheet = onOpenBankSheet,
+                            onAddNewCommitment = {
+                                quickAddMode = QuickAddSheetMode.COMMITMENT
+                                showQuickAddSheet = true
+                            },
                         )
                     }
 
@@ -1014,6 +986,7 @@ private fun DashboardSplitBentoRow(
     budgetPercent: Int,
     remainingBudgetToman: Long,
     activeCommitmentsCount: Int,
+    commitmentSubtitle: String = "بدون قسط معوق",
     onOpenBudget: () -> Unit,
     onOpenCommitments: () -> Unit,
 ) {
@@ -1116,7 +1089,7 @@ private fun DashboardSplitBentoRow(
                     color = t.ink,
                 )
                 Text(
-                    text = "قسط وام مسکن • ۴.۵ میلیون",
+                    text = commitmentSubtitle,
                     style = MaterialTheme.typography.labelSmall,
                     color = t.muted,
                     fontSize = 10.sp,
@@ -1365,27 +1338,26 @@ private fun DashboardRecentTransactionsCard(
                     }
                 }
             } else {
-                // Stitch Lithe Vitality reference transactions
-                val sampleRows = listOf(
-                    Triple("هایپراستار باکری", "امروز، ۱۴:۲۰ • خرید روزانه", -2_450_000L),
-                    Triple("واریز سود صندوق طلا", "دیروز، ۰۹:۰۰ • سرمایه‌گذاری", 4_120_000L),
-                    Triple("اسنپ فود (رستوران نایب)", "۲۳ اردیبهشت • کافه و رستوران", -890_000L),
-                    Triple("قبض اینترنت فیبر نوری", "۲۱ اردیبهشت • قبوض و خدمات", -340_000L),
-                )
-                sampleRows.forEachIndexed { idx, (title, sub, signedAmt) ->
-                    LitheTransactionRowItem(
-                        title = title,
-                        subtitle = sub,
-                        amountToman = kotlin.math.abs(signedAmt),
-                        isIncome = signedAmt > 0,
-                        privacyMode = privacyMode,
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text("🧾", fontSize = 24.sp)
+                    Text(
+                        text = "هنوز تراکنشی ثبت نشده است",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = t.ink,
                     )
-                    if (idx < sampleRows.lastIndex) {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 10.dp),
-                            color = t.track,
-                        )
-                    }
+                    Text(
+                        text = "با دریافت پیامک‌های بانکی یا افزودن دستی، تراکنش‌ها در اینجا نمایش می‌یابند.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = t.muted,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    )
                 }
             }
         }
@@ -1978,27 +1950,38 @@ private fun AnalyticsMajorTransactionsCard(
 
             Spacer(Modifier.height(12.dp))
 
-            val sampleList = listOf(
-                Triple("اجاره آپارتمان (انتقال پایا)", "مسکن و اجاره • ۱ اردیبهشت", -9_500_000L),
-                Triple("واریز حقوق اردیبهشت", "درآمد و حقوق • ۲ اردیبهشت", 41_000_000L),
-                Triple("فروشگاه زنجیره‌ای شهروند", "خوراک و سوپرمارکت • ۱۸ اردیبهشت", -3_180_000L),
-                Triple("سرویس اسنپ و تپسی ماهانه", "حمل‌ونقل شهری • ۲۴ اردیبهشت", -1_420_000L),
-            )
-
-            val filtered = sampleList.filter { (title, sub, _) ->
-                searchQuery.isBlank() || title.contains(searchQuery) || sub.contains(searchQuery)
+            val filtered = entries.filter {
+                searchQuery.isBlank() || it.merchant.contains(searchQuery, ignoreCase = true) || it.category.fa.contains(searchQuery, ignoreCase = true) || it.note.contains(searchQuery, ignoreCase = true)
             }
 
-            filtered.forEachIndexed { idx, (title, sub, amt) ->
-                LitheTransactionRowItem(
-                    title = title,
-                    subtitle = sub,
-                    amountToman = kotlin.math.abs(amt),
-                    isIncome = amt > 0,
-                    privacyMode = privacyMode,
-                )
-                if (idx < filtered.lastIndex) {
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = t.track)
+            if (filtered.isNotEmpty()) {
+                filtered.take(10).forEachIndexed { idx, entry ->
+                    LitheTransactionRowItem(
+                        title = entry.merchant.ifBlank { "تراکنش بانکی" },
+                        subtitle = "${entry.category.fa} • ${formatDate(entry.timestamp)}",
+                        amountToman = entry.amountRial / 10L,
+                        isIncome = !entry.isExpense,
+                        privacyMode = privacyMode,
+                    )
+                    if (idx < filtered.take(10).lastIndex) {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = t.track)
+                    }
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text("🔍", fontSize = 24.sp)
+                    Text(
+                        text = "تراکنشی در این دوره یافت نشد",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = t.ink,
+                    )
                 }
             }
         }
@@ -2010,7 +1993,10 @@ private fun AnalyticsMajorTransactionsCard(
 // ═══════════════════════════════════════════════════════════════════════════════════════════════
 
 @Composable
-private fun CommitmentsUrgentBanner(onPayNow: () -> Unit) {
+private fun CommitmentsUrgentBanner(
+    commitment: Commitment,
+    onPayNow: () -> Unit,
+) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(999.dp),
@@ -2033,7 +2019,7 @@ private fun CommitmentsUrgentBanner(onPayNow: () -> Unit) {
                         .background(Color(0xFFEA5C3C)),
                 )
                 Text(
-                    text = "سررسید نزدیک: وام ازدواج (۲ روز دیگر)",
+                    text = "سررسید نزدیک: ${commitment.title} (${faNumber(commitment.remainingAmountToman)} تومان)",
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFEA5C3C),
@@ -2046,7 +2032,7 @@ private fun CommitmentsUrgentBanner(onPayNow: () -> Unit) {
                 color = Color(0xFFEA5C3C),
             ) {
                 Text(
-                    text = "پرداخت",
+                    text = "ثبت تسویه",
                     modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp),
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
@@ -2060,13 +2046,17 @@ private fun CommitmentsUrgentBanner(onPayNow: () -> Unit) {
 @Composable
 private fun CommitmentsHeroSummaryCard(
     userCommitments: List<Commitment>,
-    housingPaid: Int,
-    digiPayPaid: Int,
     privacyMode: Boolean,
 ) {
     val t = CanvasTheme.tokens
-    val extraRemaining = userCommitments.filter { !it.isSettled }.sumOf { it.remainingAmountToman }
-    val totalRemaining = 148_500_000L + extraRemaining
+    val activeList = userCommitments.filter { !it.isSettled }
+    val totalRemaining = activeList.sumOf { it.remainingAmountToman }
+    val totalOriginal = activeList.sumOf { it.originalAmountToman }
+    val settledCount = userCommitments.count { it.isSettled }
+    val activeCount = activeList.size
+    val progressRatio = if (totalOriginal > 0L) {
+        ((totalOriginal - totalRemaining).toFloat() / totalOriginal.toFloat()).coerceIn(0f, 1f)
+    } else 0f
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -2091,7 +2081,7 @@ private fun CommitmentsHeroSummaryCard(
                     color = Color(0xFF2563EB).copy(alpha = 0.12f),
                 ) {
                     Text(
-                        text = "۴ پرونده فعال",
+                        text = "${faDigits(activeCount.toString())} پرونده فعال",
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
@@ -2126,8 +2116,13 @@ private fun CommitmentsHeroSummaryCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text("تسویه شده این ماه", style = MaterialTheme.typography.labelSmall, color = t.muted)
-                Text("۱۲٬۵۰۰٬۰۰۰ از ۲۱٬۰۰۰٬۰۰۰ تومان (۶۰٪)", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = t.ink)
+                Text("تسویه شده", style = MaterialTheme.typography.labelSmall, color = t.muted)
+                Text(
+                    text = if (totalOriginal > 0) "${faNumber(totalOriginal - totalRemaining)} از ${faNumber(totalOriginal)} تومان (${(progressRatio * 100).toInt()}٪)" else "بدون تعهد فعال",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = t.ink,
+                )
             }
             Spacer(Modifier.height(6.dp))
             Box(
@@ -2139,7 +2134,7 @@ private fun CommitmentsHeroSummaryCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(0.60f)
+                        .fillMaxWidth(progressRatio.coerceAtLeast(0.02f))
                         .height(10.dp)
                         .clip(RoundedCornerShape(999.dp))
                         .background(Color(0xFF2563EB)),
@@ -2154,9 +2149,9 @@ private fun CommitmentsHeroSummaryCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 val stats = listOf(
-                    Triple(faDigits(((48 - housingPaid) + (12 - digiPayPaid)).toString()), "قسط باقیمانده", Color(0xFF2563EB)),
-                    Triple("۲", "فقره چک صیاد", Color(0xFFF59E0B)),
-                    Triple("A+", "امتیاز خوش‌حسابی", Color(0xFF10B981)),
+                    Triple(faDigits(activeCount.toString()), "قسط فعال", Color(0xFF2563EB)),
+                    Triple(faDigits(settledCount.toString()), "تسویه شده", Color(0xFF10B981)),
+                    Triple(if (activeCount == 0) "A+" else "A", "امتیاز خوش‌حسابی", Color(0xFFF59E0B)),
                 )
                 stats.forEach { (valText, label, col) ->
                     Column(
@@ -2219,128 +2214,73 @@ private fun CommitmentsStreamList(
     filter: String,
     userCommitments: List<Commitment>,
     bankAccounts: List<BankAccount>,
-    housingPaidCount: Int,
-    digiPayPaidCount: Int,
-    onPayHousing: () -> Unit,
-    onPayDigiPay: () -> Unit,
     onOpenChequeModal: () -> Unit,
     onToggleUserCommitment: (String) -> Unit,
     onCopyText: (String, String) -> Unit,
     onOpenNativeCards: () -> Unit,
     onOpenBankSheet: () -> Unit,
+    onAddNewCommitment: () -> Unit,
 ) {
     val t = CanvasTheme.tokens
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        if (filter == "all" || filter == "loans") {
-            // Card 1: Housing Loan
-            CommitmentPodCard(
-                title = "وام خرید مسکن - بانک مسکن",
-                subtitle = "قسط ${faDigits(housingPaidCount.toString())} از ۴۸ • یکم هر ماه",
-                badgeFa = "قسط بانکی",
-                badgeColor = Color(0xFF2563EB),
-                monthlyAmountFa = "۶٬۵۰۰٬۰۰۰ تومان",
-                progress = housingPaidCount / 48f,
-                actionLabel = "ثبت پرداخت قسط بعدی",
-                onAction = onPayHousing,
-            )
-
-            // Card 2: DigiPay BNPL
-            CommitmentPodCard(
-                title = "خرید اقساطی آیفون ۱۵ - دیجی‌پی",
-                subtitle = "قسط ${faDigits(digiPayPaidCount.toString())} از ۱۲ • پانزدهم هر ماه",
-                badgeFa = "اعتبار BNPL",
-                badgeColor = Color(0xFF10B981),
-                monthlyAmountFa = "۴٬۲۰۰٬۰۰۰ تومان",
-                progress = digiPayPaidCount / 12f,
-                actionLabel = "ثبت پرداخت قسط دیجی‌پی",
-                onAction = onPayDigiPay,
-            )
-        }
-
-        if (filter == "all" || filter == "cheques") {
-            // Card 3: Sayad Cheque with Modal Trigger
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                color = t.card,
-                shadowElevation = 2.dp,
-            ) {
-                Column(modifier = Modifier.padding(18.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column {
-                            Text(
-                                text = "چک صیادی - اجاره واحد مسکونی",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.ExtraBold,
-                                color = t.ink,
-                            )
-                            Text(
-                                text = "شناسه صیاد: ۲۱۰۴۹۹۸۲۰۰۱۴۸۳۹۱ • بانک سامان",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = t.muted,
-                            )
-                        }
-                        Surface(
-                            shape = RoundedCornerShape(999.dp),
-                            color = Color(0xFFF59E0B).copy(alpha = 0.14f),
-                        ) {
-                            Text(
-                                text = "در انتظار پاس",
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFD97706),
-                            )
-                        }
-                    }
-
-                    Spacer(Modifier.height(12.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column {
-                            Text("مبلغ چک", style = MaterialTheme.typography.labelSmall, color = t.muted)
-                            Text("۲۵٬۰۰۰٬۰۰۰ تومان", style = figureStyle(t.ink, FontWeight.Black).copy(fontSize = 18.sp))
-                        }
-                        Surface(
-                            onClick = onOpenChequeModal,
-                            shape = RoundedCornerShape(999.dp),
-                            color = t.track,
-                            modifier = Modifier.testTag("open_sayad_cheque_button"),
-                        ) {
-                            Text(
-                                text = "مشاهده برگه چک ←",
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF2563EB),
-                            )
-                        }
-                    }
-                }
+        val filteredCommitments = remember(filter, userCommitments) {
+            when (filter) {
+                "loans" -> userCommitments.filter { it.kind == CommitmentKind.LOAN }
+                "cheques" -> userCommitments.filter { it.kind == CommitmentKind.CHEQUE }
+                "cards" -> emptyList()
+                else -> userCommitments
             }
         }
 
-        // User-added commitments from Store
-        if (filter == "all" || filter == "loans" || filter == "cheques") {
-            userCommitments.forEach { c ->
-                CommitmentPodCard(
-                    title = "${c.title} • ${c.provider}",
-                    subtitle = c.kind.fa,
-                    badgeFa = if (c.isSettled) "تسویه شده" else "فعال",
-                    badgeColor = if (c.isSettled) Color(0xFF10B981) else Color(0xFF2563EB),
-                    monthlyAmountFa = "${faNumber(c.remainingAmountToman)} تومان",
-                    progress = c.progressPercent,
-                    actionLabel = if (c.isSettled) "بازگردانی به فعال" else "ثبت تسویه کامل",
-                    onAction = { onToggleUserCommitment(c.id) },
-                )
+        if (filter != "cards") {
+            if (filteredCommitments.isEmpty()) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    color = t.card,
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        Text("📋", fontSize = 28.sp)
+                        Text(
+                            text = if (filter == "loans") "هیچ وام فعالی ثبت نشده است" else if (filter == "cheques") "هیچ چک صیادی ثبت نشده است" else "هیچ قسط، وام یا چکی ثبت نشده است",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = t.ink,
+                        )
+                        Text(
+                            text = "اقساط و چک‌های شما با دریافت پیامک‌های بانکی یا با افزودن دستی در اینجا نمایش داده می‌شوند.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = t.muted,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        )
+                        Button(
+                            onClick = onAddNewCommitment,
+                            shape = RoundedCornerShape(999.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = t.primaryAction),
+                        ) {
+                            Text("+ ثبت تعهد یا قسط جدید", color = t.onPrimaryAction, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            } else {
+                filteredCommitments.forEach { c ->
+                    CommitmentPodCard(
+                        title = "${c.title} • ${c.provider}",
+                        subtitle = c.kind.fa,
+                        badgeFa = if (c.isSettled) "تسویه شده" else "فعال",
+                        badgeColor = if (c.isSettled) Color(0xFF10B981) else Color(0xFF2563EB),
+                        monthlyAmountFa = "${faNumber(c.remainingAmountToman)} تومان",
+                        progress = c.progressPercent,
+                        actionLabel = if (c.isSettled) "بازگردانی به فعال" else "ثبت تسویه کامل",
+                        onAction = { onToggleUserCommitment(c.id) },
+                    )
+                }
             }
         }
 
@@ -2382,206 +2322,77 @@ private fun CommitmentsStreamList(
                         }
                     }
                     Spacer(Modifier.height(12.dp))
-                    val cards = if (bankAccounts.isNotEmpty()) {
-                        bankAccounts.map {
-                            Triple(
-                                it.nickname.ifBlank { "بانک ${it.bankFa}" },
-                                it.fullPan.ifBlank { "۶۱۰۴ ۳۳۷۸ ۴۴۱۲ ۸۸۹۰" },
-                                it.sheba.ifBlank { "IR820120000000008492019482" },
-                            )
-                        }
-                    } else {
-                        listOf(
-                            Triple("بانک ملت • حساب اصلی", "۶۱۰۴ ۳۳۷۸ ۴۴۱۲ ۸۸۹۰", "IR820120000000008492019482"),
-                            Triple("بلوبانک سامان", "۶۲۱۹ ۸۶۱۹ ۰۴۵۱ ۲۲۱۰", "IR450560084180002918471001"),
-                        )
-                    }
-                    cards.forEachIndexed { idx, (bankTitle, pan, sheba) ->
+                    if (bankAccounts.isEmpty()) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(18.dp))
                                 .background(t.track.copy(alpha = 0.55f))
-                                .padding(14.dp),
+                                .padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
-                            Text(bankTitle, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.ExtraBold, color = t.ink)
-                            Spacer(Modifier.height(6.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically,
+                            Text("💳", fontSize = 24.sp)
+                            Text("هنوز کارتی ثبت نشده است", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = t.ink)
+                            Text("کارت‌ها به صورت خودکار از پیامک‌های بانکی استخراج یا از بخش مدیریت حساب‌ها اضافه می‌شوند.", style = MaterialTheme.typography.labelSmall, color = t.muted, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        }
+                    } else {
+                        bankAccounts.forEach { acc ->
+                            val bankTitle = acc.nickname.ifBlank { "بانک ${acc.bankFa}" }
+                            val pan = acc.fullPan.ifBlank { "•••• •••• •••• ••••" }
+                            val sheba = acc.sheba.ifBlank { "—" }
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(18.dp))
+                                    .background(t.track.copy(alpha = 0.55f))
+                                    .padding(14.dp),
                             ) {
-                                Text(pan, style = figureStyle(t.inkSecondary, FontWeight.Bold).copy(fontSize = 14.sp))
-                                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    Surface(
-                                        onClick = { onCopyText("شماره کارت", pan) },
-                                        shape = RoundedCornerShape(999.dp),
-                                        color = t.card,
-                                    ) {
-                                        Text("کپی کارت", modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color(0xFF2563EB))
-                                    }
-                                    Surface(
-                                        onClick = { onCopyText("شماره شبا", sheba) },
-                                        shape = RoundedCornerShape(999.dp),
-                                        color = t.card,
-                                    ) {
-                                        Text("کپی شبا", modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = t.inkSecondary)
+                                Text(bankTitle, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.ExtraBold, color = t.ink)
+                                Spacer(Modifier.height(6.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Text(pan, style = figureStyle(t.inkSecondary, FontWeight.Bold).copy(fontSize = 14.sp))
+                                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Surface(
+                                            onClick = { onCopyText("شماره کارت", pan) },
+                                            shape = RoundedCornerShape(999.dp),
+                                            color = t.card,
+                                        ) {
+                                            Text(
+                                                text = "کپی کارت",
+                                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                                style = MaterialTheme.typography.labelSmall,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color(0xFF2563EB),
+                                            )
+                                        }
+                                        if (sheba != "—") {
+                                            Surface(
+                                                onClick = { onCopyText("شماره شبا", sheba) },
+                                                shape = RoundedCornerShape(999.dp),
+                                                color = t.card,
+                                            ) {
+                                                Text(
+                                                    text = "کپی شبا",
+                                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                                    style = MaterialTheme.typography.labelSmall,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color(0xFF10B981),
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }
+                            Spacer(Modifier.height(8.dp))
                         }
-                        if (idx < cards.lastIndex) Spacer(Modifier.height(8.dp))
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun CommitmentPodCard(
-    title: String,
-    subtitle: String,
-    badgeFa: String,
-    badgeColor: Color,
-    monthlyAmountFa: String,
-    progress: Float,
-    actionLabel: String,
-    onAction: () -> Unit,
-) {
-    val t = CanvasTheme.tokens
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        color = t.card,
-        shadowElevation = 2.dp,
-    ) {
-        Column(modifier = Modifier.padding(18.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.ExtraBold, color = t.ink)
-                    Text(subtitle, style = MaterialTheme.typography.labelSmall, color = t.muted)
-                }
-                Surface(
-                    shape = RoundedCornerShape(999.dp),
-                    color = badgeColor.copy(alpha = 0.12f),
-                ) {
-                    Text(
-                        text = badgeFa,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = badgeColor,
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(999.dp))
-                    .background(t.track),
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(progress.coerceIn(0.05f, 1f))
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(999.dp))
-                        .background(badgeColor),
-                )
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(monthlyAmountFa, style = figureStyle(t.ink, FontWeight.Black).copy(fontSize = 16.sp))
-                Surface(
-                    onClick = onAction,
-                    shape = RoundedCornerShape(999.dp),
-                    color = t.primaryAction,
-                ) {
-                    Text(
-                        text = actionLabel,
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = t.onPrimaryAction,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CommitmentsReminderSettingsPod(
-    smsReminder: Boolean,
-    onSmsReminderChange: (Boolean) -> Unit,
-    voiceAlarm: Boolean,
-    onVoiceAlarmChange: (Boolean) -> Unit,
-    onAddCommitment: () -> Unit,
-) {
-    val t = CanvasTheme.tokens
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(24.dp),
-            color = t.card,
-            shadowElevation = 2.dp,
-        ) {
-            Column(modifier = Modifier.padding(18.dp)) {
-                Text(
-                    text = "تنظیمات یادآور هوشمند سررسید",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = t.ink,
-                )
-                Spacer(Modifier.height(10.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("یادآوری ۳ روز قبل از سررسید قسط", style = MaterialTheme.typography.bodySmall, color = t.inkSecondary)
-                    Switch(checked = smsReminder, onCheckedChange = onSmsReminderChange)
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("هشدار روز سررسید چک صیادی", style = MaterialTheme.typography.bodySmall, color = t.inkSecondary)
-                    Switch(checked = voiceAlarm, onCheckedChange = onVoiceAlarmChange)
-                }
-            }
-        }
-
-        Button(
-            onClick = onAddCommitment,
-            shape = RoundedCornerShape(999.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = t.primaryAction),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(54.dp)
-                .testTag("add_new_commitment_cta"),
-        ) {
-            Text(
-                text = "+ ثبت قسط یا چک صیادی جدید",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.ExtraBold,
-                color = t.onPrimaryAction,
-            )
         }
     }
 }
@@ -3388,43 +3199,54 @@ private fun LitheTransferCardsSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text("انتقال سریع و اشتراک‌گذاری کارت و شبا", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = t.ink)
-            val rows = if (bankAccounts.isNotEmpty()) {
-                bankAccounts.map {
-                    Triple(
-                        it.nickname.ifBlank { "بانک ${it.bankFa}" },
-                        it.fullPan.ifBlank { "۶۱۰۴ ۳۳۷۸ ۴۴۱۲ ۸۸۹۰" },
-                        it.sheba.ifBlank { "IR820120000000008492019482" },
-                    )
+            if (bankAccounts.isEmpty()) {
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = t.card,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Text("💳", fontSize = 28.sp)
+                        Text("هیچ حسابی ثبت نشده است", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = t.ink)
+                        Text("شماره کارت و شبای شما پس از دریافت پیامک‌های بانکی یا با افزودن دستی در اینجا قرار می‌گیرد.", style = MaterialTheme.typography.labelSmall, color = t.muted, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    }
                 }
             } else {
-                listOf(
-                    Triple("بانک ملت • حساب اصلی", "۶۱۰۴ ۳۳۷۸ ۴۴۱۲ ۸۸۹۰", "IR820120000000008492019482"),
-                    Triple("بلوبانک سامان", "۶۲۱۹ ۸۶۱۹ ۰۴۵۱ ۲۲۱۰", "IR450560084180002918471001"),
-                )
-            }
-            rows.forEach { (title, pan, sheba) ->
-                Surface(shape = RoundedCornerShape(20.dp), color = t.card, modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.ExtraBold, color = t.ink)
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(pan, style = figureStyle(t.inkSecondary, FontWeight.Bold).copy(fontSize = 14.sp))
-                            Text(
-                                text = "کپی شماره کارت",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF2563EB),
-                                modifier = Modifier.clickable { onCopy("شماره کارت", pan) },
-                            )
-                        }
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text(sheba, style = MaterialTheme.typography.labelSmall, color = t.muted)
-                            Text(
-                                text = "کپی شبا",
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF10B981),
-                                modifier = Modifier.clickable { onCopy("شماره شبا", sheba) },
-                            )
+                bankAccounts.forEach { acc ->
+                    val title = acc.nickname.ifBlank { "بانک ${acc.bankFa}" }
+                    val pan = acc.fullPan.ifBlank { "•••• •••• •••• ••••" }
+                    val sheba = acc.sheba.ifBlank { "—" }
+                    Surface(shape = RoundedCornerShape(20.dp), color = t.card, modifier = Modifier.fillMaxWidth()) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.ExtraBold, color = t.ink)
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(pan, style = figureStyle(t.inkSecondary, FontWeight.Bold).copy(fontSize = 14.sp))
+                                Text(
+                                    text = "کپی شماره کارت",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF2563EB),
+                                    modifier = Modifier.clickable { onCopy("شماره کارت", pan) },
+                                )
+                            }
+                            if (sheba != "—") {
+                                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                    Text(sheba, style = MaterialTheme.typography.labelSmall, color = t.muted)
+                                    Text(
+                                        text = "کپی شبا",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF10B981),
+                                        modifier = Modifier.clickable { onCopy("شماره شبا", sheba) },
+                                    )
+                                }
+                            }
                         }
                     }
                 }
