@@ -1,68 +1,102 @@
-# Design system
+# Zheton (ژتون) — Master UI/UX & Design System Specification (DESIGN.md)
 
-Andis uses one design language, the **canvas**: a black (or near-white) ground, one saffron
-light behind the top of each page, large Persian figures, 26dp cards with a 1px edge, and a
-floating pill nav. The approved artboards are in [`docs/design/canvas/project`](docs/design/canvas/project)
-(`Main.dc.html` for night, `HomeLight.dc.html` for day, one file per screen). Code that
-implements a screen cites its artboard.
+> **سند مرجع و راهنمای جامع سیستم طراحی ژتون (چندتومان / Andis)**  
+> این سند استانداردهای بصری، پالت رنگ، تایپوگرافی، مؤلفه‌ها، فواصل و تعاملات حرکتی مشترک میان اپلیکیشن بومی اندروید (Jetpack Compose) و وب‌اپلیکیشن (React / PWA) را تعریف می‌کند.
 
-## Colour tokens
+---
 
-Defined in [`Theme.kt`](app/src/main/java/com/doxigo/muchtoman/Theme.kt) as `CanvasTokens`,
-read through `CanvasTheme.tokens`. Material's `ColorScheme` is mapped from these values, but
-canvas components read the tokens directly, because Material has no role for "card edge",
-"nav glass" or "saffron as a fill but ochre as text".
+## ۱. فلسفه طراحی و هویت بصری (Design Philosophy)
 
-| Role | Dark (`CanvasDark`) | Light (`CanvasLight`) | Use |
-| --- | --- | --- | --- |
-| `ground` | `#000000` | `#F6F6F7` | Page background |
-| `card` | `#0F0F11` | `#FFFFFF` | Cards |
-| `cardBorder` | white 7% | black 6% | 1px card edge |
-| `ink` | `#F5F5F4` | `#0B0B0C` | Primary text and figures |
-| `inkSecondary` | `#B5B5B8` | `#3E3E44` | Captions |
-| `muted` | `#8E8E93` | `#5E5E66` | Dates, units, idle nav icons |
-| `accent` | `#F5B840` | `#E9A425` | Saffron fill: progress, today's dot, glow |
-| `accentText` | `#F5B840` | `#8A5A00` | Saffron as text: links, section actions |
-| `accentWell` | `#1C1608` | `#FBEFD6` | Tinted well behind a saffron glyph |
-| `gain` / `gainWell` | `#3FD98B` / 12% | `#0A6B42` / `#E2F5EB` | Income, positive change |
-| `loss` | `#FF7B6B` | `#C0392B` | Spending, negative change |
-| `track` | `#1C1C1F` | `#E4E4E7` | Empty part of a bar |
-| `navFill` / `navBorder` | `#1C1C1E` 86% / white 9% | white 92% / black 8% | Floating nav glass |
-| `primaryAction` | saffron | ink | The one filled round action (ثبت خرج) |
+ژتون یک دستیار مالی شخصی و دیده‌بان قدرت خرید بلادرنگ ویژه کاربران ایرانی است. پارادایم بصری بر پایه سه ستون اصلی شکل گرفته است:
 
-`ThemeMode.SYSTEM` follows the phone between the two. `DARK` and `ANDIS_TERMINAL` use the dark
-tokens, `LIGHT` the light ones. The other legacy themes in `ThemeMode` get the same roles
-derived from their own colour scheme (`getCanvasTokens`), so every layout works under every
-theme.
+1. **الگوی نئوبانک‌های لوکس بین‌المللی (Revolut 10 / Apple Card):**
+   - پس‌زمینه‌های یکپارچه، کارت‌های اعتباری شتاب با افکت سه‌بعدی و انعکاس نور، داک ناوبری شناور جزیره‌ای (`Floating Island Dock`) و کنتراست بی‌نقص.
+2. **کابین بنتو و گرمای تحریریه (Bento Cockpit):**
+   - شبکه‌بندی ماژولار با گوشه‌های بسیار نرم (`20dp` تا `28dp`) و اجتناب قطعی از لبه‌های تیز (`0dp`) برای از بین بردن اضطراب کار با مبالغ مالی.
+3. **وضوح خوانش ارقام و هپاتیک فین‌تک:**
+   - نمایش اعداد بزرگ با فونت‌های اصلاح‌شده فارسی، فاصله افقی پایدار ارقام (`tnum`) و فیدبک‌های لرزشی حسی.
 
-Layout constants: `CanvasTheme.gutter` = 20dp page gutter, `CanvasTheme.cardRadius` = 26dp.
+---
 
-## Shared components
+## ۲. توکن‌های رنگی سیستم طراحی (Color Tokens)
 
-[`ui/components/CanvasKit.kt`](app/src/main/java/com/doxigo/muchtoman/ui/components/CanvasKit.kt):
+### ۲.۱. رنگ‌های کلیدی و شاخص (Brand & Semantics)
+- **Primary Accent (`#F26430` / `0xFFF26430`):** نارنجی مرجانی گرم؛ رنگ اکشن اصلی، دکمه مرکزی ثبت سریع (`+`) و نشانگرهای فعال.
+- **Primary Lime (`#C8F36A` / `0xFFC8F36A`):** سبز لایم فسفری نئونی؛ نشانگر تب‌های فعال و وضعیت‌های هوشمند.
+- **Gold Accent (`#E5A93C` / `0xFFE5A93C`):** طلایی سلطنتی؛ نشانگرهای طلا، سکه، تگ‌ها و پیل‌های انتخابی.
+- **Market Up / Gain (`#0CBC8D` / `0xFF0CBC8D`):** سبز زمردی شاداب؛ سود دارایی، افزایش قیمت و تراکنش‌های واریزی.
+- **Market Up Tint (`0x1F0CBC8D` / `rgba(12, 188, 141, 0.12)`):** پس‌زمینه کم‌رنگ پیل‌های درصد سود.
+- **Market Down / Loss (`#DC2626` / `0xFFDC2626` - دارک: `#FF4D4D`):** قرمز مرجانی شفاف؛ ضرر دارایی، کاهش قیمت، برداشت و مخارج.
+- **Market Down Tint (`0x1FDC2626` / `rgba(220, 38, 38, 0.12)`):** پس‌زمینه کم‌رنگ پیل‌های افت قیمت و هزینه‌ها.
+- **Market Stable (`#6B7280` / `0xFF6B7280`):** خاکستری خنثی؛ دارایی بدون نوسان.
 
-- `CanvasPage`: the ground plus `SaffronGlow`, the radial light behind the top of a page.
-- `CanvasPageHeader`: 11sp caption over a 40sp ExtraBold title, round controls on the end edge.
-- `CanvasCard`: card fill, 1px edge, 26dp corners, 16dp padding; optionally clickable.
-- `RoundAction`: 56dp round action with a label (Home's row of four). One is primary.
-- `OutlineIconButton`: 40/44dp outlined round control for page headers.
-- `PillChip`, `TonePill`: filter chips and small tinted badges.
-- `CanvasGlyph`: stroked icons drawn from 24-unit SVG path data.
-- `CanvasNavBar`: the floating nav.
+### ۲.۲. پالت تم روشن (Day Market - Light Theme)
+- **Canvas Base (پس‌زمینه اصلی):** `#F5F6F8` (یا `#F6F1E9` گرم)
+- **Surface Pure (کارت‌های بنتو، باتم‌شیت‌ها):** `#FFFFFF`
+- **Surface Muted (فیلدهای ورودی، پس‌زمینه کنترل‌ها):** `#EBECEF`
+- **Text Primary (تیترها، ارقام بزرگ قیمت):** `#18130E`
+- **Text Secondary (برچسب‌ها، نمادهای فرعی):** `#4E4A43`
+- **Text Muted (زمان‌سنج‌ها و راهنماها):** `#9E9B93`
+- **Border Subtle (حاشیه ۱ پیکسلی کارت‌ها):** `rgba(24, 19, 14, 0.08)`
 
-## Navigation
+### ۲.۳. پالت تم تاریک (Night Trading - Dark Theme)
+- **Canvas Dark (پس‌زمینه اصلی دارک):** `#1A1A1D`
+- **Surface Dark (کارت‌های قیمت و سطوح شناور):** `#222227`
+- **Surface Dark Variant (فیلدها، دکمه‌های ثانویه):** `#2A2A30`
+- **Text Light (ارقام و تیترها در دارک):** `#FFFFFF`
+- **Text Light Muted (برچسب‌ها و زیرعنوان‌ها):** `#9EA3AE`
+- **Border Dark Subtle (حاشیه کارت‌های دارک):** `rgba(255, 255, 255, 0.12)`
 
-Five tabs (`Tab` in [`TabBar.kt`](app/src/main/java/com/doxigo/muchtoman/TabBar.kt)): امروز
-(Home), دفتر (Ledger), دارایی (Assets), حساب‌ها (Accounts), گزارش (Report). The nav is a 66dp
-pill inset 20dp from both edges, floating 10dp above the system inset, with a ground-coloured
-scrim so content fades under it. The selected tab is an inverted pill with icon and label; the
-others are icon-only. The lite edition has only دارایی and draws no nav.
+### ۲.۴. لهجه‌های پاستلی دسته‌بندی‌ها (Pastel Category Accents)
+- **Pastel Peach (`#FFF0EB` / `#332018`):** مخارج خوراک و کارت نارنجی
+- **Pastel Mint (`#EAF8F2` / `#142B24`):** سود و درآمد
+- **Pastel Gold (`#FDF6E7` / `#332A15`):** طلا، سکه و دارایی‌های فیزیکی
+- **Pastel Sky (`#EEF7FE` / `#14273D`):** کارت‌های بانکی و تراکنش‌ها
+- **Pastel Lilac (`#F6F0FE` / `#281E3D`):** گزارش‌ها و تحلیل‌های ۵۰/۳۰/۲۰
+- **Pastel Rose (`#FDF0F3` / `#331620`):** تعهدات، اقساط وام و چک‌های صیادی
 
-## Type
+---
 
-The app is set in **Modam** (variable font, `app/src/main/res/font/modam.ttf`, axes `wght`
-200–900 and `wdth` 70–100). Text uses the `Modam` family. Figures use `ModamFigures`: the same
-font at 90% width with proportional digits (`pnum`), so long Toman totals fit without negative
-tracking, which would break Persian joins. All digits are Persian, the layout is RTL, and
-displayed amounts truncate rather than round. See [DEVELOPMENT.md](DEVELOPMENT.md#typography)
-for how the font file is prepared and the licensing note.
+## ۳. تایپوگرافی (Typography)
+
+- **قلم‌های استاندارد:** `Modam`، `Estedad` و `Vazirmatn` با اعداد فارسی توکار (`FaNum`).
+- **ویژگی اعداد:** اجباری بودن ارقام با عرض ثابت (`tnum` / Tabular Figures) برای ارقام متغیر و نوسانی قیمت‌ها جهت جلوگیری از پرش چشمی (`Jitter`).
+- **مقیاس‌های کلیدی فونت:**
+  - **Price Hero:** اندازه 28sp تا 32sp | وزن: ExtraBold تا Black (800-900)
+  - **Price Card Value:** اندازه 22sp | وزن: ExtraBold (800)
+  - **Section Heading:** اندازه 18sp | وزن: Bold (700)
+  - **Card Title / Subhead:** اندازه 14sp تا 15sp | وزن: SemiBold (600)
+  - **Body Label:** اندازه 13sp تا 14sp | وزن: Medium (500)
+  - **Caption & Timestamps:** اندازه 11sp تا 12sp | وزن: Regular (400)
+  - **Delta Pill:** اندازه 11sp تا 12sp | وزن: Bold (700)
+
+---
+
+## ۴. مقیاس فواصل، گوشه‌ها و سایه‌ها (Metrics & Elevation)
+
+- **گرید پایه فواصل (Base 4dp):**
+  - `xs`: 4dp | `s`: 8dp | `m`: 12dp | `l`: 16dp | `xl`: 24dp | `xxl`: 32dp
+- **انحنای گوشه‌ها (Border Radius):**
+  - `radius-pill`: **999dp** (پیل‌های سود/ضرر، چیپ‌های فیلتر، دکمه‌های کپسولی)
+  - `radius-sm`: **14dp** (فیلدهای ورودی، آیکون‌باکس‌ها)
+  - `radius-md`: **20dp** (کارت‌های بنتو، ردیف تراکنش‌ها)
+  - `radius-lg`: **24dp** (کارت‌های هیرو، کارت‌های گزارش)
+  - `radius-xl`: **28dp** (داک شناور ناوبری، هدر باتم‌شیت‌ها)
+- **سایه‌ها (Elevation):**
+  - متکی بر حاشیه ۱ پیکسلی `Border Subtle` به جای سایه‌های تند و تیره.
+
+---
+
+## ۵. کامپوننت‌های کلیدی دیزاین‌سیستم (Core Components)
+
+1. **کابین بنتو و هیرو دارایی (Hero & Bento Cockpit):**
+   - کارت‌های تعاملی با گوشه‌های ۲۰ تا ۲۴ دی‌پی.
+   - نمایش جفت‌نرخی نقدینگی و طلای ۱۸ عیار.
+2. **کارت‌های بانکی شتاب ۳بعدی (3D Card Deck):**
+   - لوگوی استاندارد بانک‌های ایران، اعتبارسنجی لوهن و پالت گرادیان اختصاصی هر بانک.
+3. **پیل‌های تغییرات بازار (Delta Pills):**
+   - پیل‌های کپسولی ۹۹۹ دی‌پی با پس‌زمینه ۱۲٪ تینت رنگی سود (`#0CBC8D`) یا ضرر (`#DC2626`).
+4. **داک شناور ناوبری (Floating Island Glass Dock):**
+   - نواری معلق با افکت مات‌شدگی شیشه‌ای (`Backdrop Blur`) در پایین صفحه.
+5. **جعبه ابزار ماشین‌حساب‌های ۷‌گانه:**
+   - حباب‌سنج سکه، اقساط وام، تورم CPI، مهریه، تأخیر تادیه، قدرت خرید حقوق و هزینه عادت‌های روزانه.
