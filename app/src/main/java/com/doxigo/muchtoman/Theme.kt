@@ -170,7 +170,7 @@ object Hero {
 /** Theme choices: follow phone, light, dark, AMOLED, or iconic global fintech presets. */
 enum class ThemeMode(val fa: String) {
     SYSTEM("خودکار"),
-    ANDIS_TERMINAL("اندیس"),
+    ZHETON_TERMINAL("ژتون"),
     LIGHT("کلاسیک روشن"),
     DARK("تیره"),
     AMOLED("آمولد"),
@@ -275,7 +275,7 @@ fun getThemeVisualSpec(mode: ThemeMode): ThemeVisualSpec = when (mode) {
         heroTopPreview = Color(0xFFFFE4E6),
         heroBottomPreview = Color(0xFFFFF1F2),
     )
-    ThemeMode.ANDIS_TERMINAL, ThemeMode.DARK -> ThemeVisualSpec(
+    ThemeMode.ZHETON_TERMINAL, ThemeMode.DARK -> ThemeVisualSpec(
         mode = mode,
         isDark = true,
         bgPreview = CanvasDark.ground,
@@ -404,7 +404,7 @@ object Radius {
 /**
  * ANDIS Neobank & Fintech Radius Geometry (Revolut / N26 / Monzo style).
  */
-object AndisRadius {
+object ZhetonRadius {
     val sharp = 0.dp
     val xs = 4.dp
     val sm = 8.dp
@@ -418,7 +418,7 @@ object AndisRadius {
  * ANDIS Neobank Design System Colors — Revolut × N26 × Monzo × Apple Card.
  * Deep obsidian, midnight navy surfaces, electric cyan, emerald, and soft coral.
  */
-data class AndisColors(
+data class ZhetonColors(
     val background: Color = Color(0xFF070A0F),
     val backgroundSecondary: Color = Color(0xFF0B1017),
     val surfacePrimary: Color = Color(0xFF0F1622),
@@ -440,12 +440,12 @@ data class AndisColors(
     val ghostLedDark: Color = Color(0x121E293B),
 )
 
-val LocalAndisColors = staticCompositionLocalOf { AndisColors() }
+val LocalZhetonColors = staticCompositionLocalOf { ZhetonColors() }
 
 /**
  * Editorial typography scale for ANDIS Financial OS.
  */
-object AndisTypography {
+object ZhetonTypography {
     val displayMonumental = TextStyle(
         fontFamily = ModamFigures,
         fontWeight = FontWeight.Black,
@@ -500,14 +500,14 @@ fun HairlineDivider(
     }
 }
 
-object AndisTheme {
-    val colors: AndisColors
+object ZhetonTheme {
+    val colors: ZhetonColors
         @Composable
-        get() = LocalAndisColors.current
+        get() = LocalZhetonColors.current
 
     val space = Space
-    val radius = AndisRadius
-    val typography = AndisTypography
+    val radius = ZhetonRadius
+    val typography = ZhetonTypography
 }
 
 /**
@@ -595,7 +595,7 @@ object Rev {
  * "the 1px edge of a card", "the nav glass" or "saffron as a fill but ochre as text", so the
  * canvas components read these instead of guessing from a [androidx.compose.material3.ColorScheme].
  *
- * The canvas themes (SYSTEM/DARK/ANDIS_TERMINAL at night, SYSTEM/LIGHT by day) get the drawn
+ * The canvas themes (SYSTEM/DARK/ZHETON_TERMINAL at night, SYSTEM/LIGHT by day) get the drawn
  * values exactly; every other theme gets the same roles derived from its own scheme, so the new
  * layouts work under all nineteen without those themes changing colour.
  */
@@ -732,7 +732,7 @@ fun getCanvasTokens(
     hero: HeroPalette,
 ): CanvasTokens = when (mode) {
     ThemeMode.SYSTEM -> if (systemDark) CanvasDark.tokens else CanvasLight.tokens
-    ThemeMode.DARK, ThemeMode.ANDIS_TERMINAL -> CanvasDark.tokens
+    ThemeMode.DARK, ThemeMode.ZHETON_TERMINAL -> CanvasDark.tokens
     ThemeMode.LIGHT -> CanvasLight.tokens
     else -> {
         val dark = mode.isDark
@@ -1522,7 +1522,7 @@ fun goldMoneyColor(): Color = if (isLightPage()) Color(0xFF7A5E12) else Color(0x
 
 fun getColorScheme(mode: ThemeMode, systemDark: Boolean = false): androidx.compose.material3.ColorScheme = when (mode) {
     ThemeMode.SYSTEM -> if (systemDark) DarkColors else LightColors
-    ThemeMode.ANDIS_TERMINAL -> DarkColors
+    ThemeMode.ZHETON_TERMINAL -> DarkColors
     ThemeMode.LIGHT -> LightColors
     ThemeMode.DARK -> DarkColors
     ThemeMode.AMOLED -> AmoledDarkColors
@@ -1542,9 +1542,9 @@ fun getColorScheme(mode: ThemeMode, systemDark: Boolean = false): androidx.compo
     ThemeMode.CYBER_GOLD -> CyberGoldColors
 }
 
-fun getAndisColors(colorScheme: androidx.compose.material3.ColorScheme, isDark: Boolean, heroPalette: HeroPalette): AndisColors =
+fun getZhetonColors(colorScheme: androidx.compose.material3.ColorScheme, isDark: Boolean, heroPalette: HeroPalette): ZhetonColors =
     if (isDark) {
-        AndisColors(
+        ZhetonColors(
             background = colorScheme.background,
             backgroundSecondary = colorScheme.surfaceContainerLow,
             surfacePrimary = colorScheme.surface,
@@ -1566,7 +1566,7 @@ fun getAndisColors(colorScheme: androidx.compose.material3.ColorScheme, isDark: 
             ghostLedDark = Color(0x121E293B),
         )
     } else {
-        AndisColors(
+        ZhetonColors(
             background = colorScheme.background,
             backgroundSecondary = colorScheme.surfaceContainerLow,
             surfacePrimary = colorScheme.surface,
@@ -1591,7 +1591,7 @@ fun getAndisColors(colorScheme: androidx.compose.material3.ColorScheme, isDark: 
 
 fun getHeroPalette(mode: ThemeMode, systemDark: Boolean = false): HeroPalette = when (mode) {
     ThemeMode.SYSTEM -> if (systemDark) CanvasDark.hero() else CanvasLight.hero()
-    ThemeMode.ANDIS_TERMINAL,
+    ThemeMode.ZHETON_TERMINAL,
     ThemeMode.DARK -> CanvasDark.hero()
     ThemeMode.LIGHT -> CanvasLight.hero()
     ThemeMode.REVOLUT_OBSIDIAN -> HeroPalette(
@@ -1790,7 +1790,7 @@ fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -
 
     val heroPalette = getHeroPalette(mode, systemDark)
     val isDark = mode.isDark || (mode == ThemeMode.SYSTEM && systemDark)
-    val andisColors = getAndisColors(colorScheme, isDark, heroPalette)
+    val andisColors = getZhetonColors(colorScheme, isDark, heroPalette)
     val canvasTokens = getCanvasTokens(mode, systemDark, colorScheme, heroPalette)
 
     val rikkaColors = RikkaColors(
@@ -1817,7 +1817,7 @@ fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -
 
     CompositionLocalProvider(
         LocalHeroPalette provides heroPalette,
-        LocalAndisColors provides andisColors,
+        LocalZhetonColors provides andisColors,
         LocalCanvasTokens provides canvasTokens,
         LocalRikkaColors provides rikkaColors,
         LocalContentColor provides colorScheme.onSurface,
@@ -1836,6 +1836,6 @@ fun MuchTomanTheme(mode: ThemeMode = ThemeMode.SYSTEM, content: @Composable () -
  * ANDIS Financial OS Root Theme wrapper.
  */
 @Composable
-fun AndisTheme(content: @Composable () -> Unit) {
-    MuchTomanTheme(mode = ThemeMode.ANDIS_TERMINAL, content = content)
+fun ZhetonTheme(content: @Composable () -> Unit) {
+    MuchTomanTheme(mode = ThemeMode.ZHETON_TERMINAL, content = content)
 }

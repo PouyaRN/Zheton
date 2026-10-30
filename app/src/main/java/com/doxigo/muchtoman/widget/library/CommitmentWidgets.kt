@@ -17,7 +17,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.doxigo.muchtoman.AndisTheme
+import com.doxigo.muchtoman.ZhetonTheme
 import com.doxigo.muchtoman.Commitment
 import com.doxigo.muchtoman.Goal
 import com.doxigo.muchtoman.HairlineDivider
@@ -58,7 +58,7 @@ fun InstallmentsWidget(
                 style = TextStyle(
                     fontFamily = Modam,
                     fontSize = 13.sp,
-                    color = AndisTheme.colors.textMuted
+                    color = ZhetonTheme.colors.textMuted
                 )
             )
         } else {
@@ -76,7 +76,7 @@ fun InstallmentsWidget(
                                     fontFamily = Modam,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp,
-                                    color = AndisTheme.colors.textPrimary
+                                    color = ZhetonTheme.colors.textPrimary
                                 )
                             )
                             Text(
@@ -86,7 +86,7 @@ fun InstallmentsWidget(
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.sp,
                                     fontFeatureSettings = TABULAR,
-                                    color = AndisTheme.colors.accentLime
+                                    color = ZhetonTheme.colors.accentLime
                                 )
                             )
                         }
@@ -107,7 +107,7 @@ fun InstallmentsWidget(
                                     style = TextStyle(
                                         fontFamily = Modam,
                                         fontSize = 12.sp,
-                                        color = AndisTheme.colors.textSecondary
+                                        color = ZhetonTheme.colors.textSecondary
                                     )
                                 )
                             }
@@ -145,7 +145,7 @@ fun GoalsWidget(
                 style = TextStyle(
                     fontFamily = Modam,
                     fontSize = 13.sp,
-                    color = AndisTheme.colors.textMuted
+                    color = ZhetonTheme.colors.textMuted
                 )
             )
         } else {
@@ -163,7 +163,7 @@ fun GoalsWidget(
                                     fontFamily = Modam,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp,
-                                    color = AndisTheme.colors.textPrimary
+                                    color = ZhetonTheme.colors.textPrimary
                                 )
                             )
                             FinancialValue(
@@ -175,7 +175,7 @@ fun GoalsWidget(
                         Spacer(Modifier.height(6.dp))
                         DotProgressBar(
                             progress = 0.65f,
-                            activeColor = AndisTheme.colors.accentLime
+                            activeColor = ZhetonTheme.colors.accentLime
                         )
                     }
                 }
@@ -207,14 +207,14 @@ fun BillsWidget(
                 style = TextStyle(
                     fontFamily = Modam,
                     fontSize = 13.sp,
-                    color = AndisTheme.colors.textMuted
+                    color = ZhetonTheme.colors.textMuted
                 )
             )
         } else {
             Column {
                 dueSoon.take(3).forEachIndexed { index, bill ->
                     if (index > 0) {
-                        HairlineDivider(color = AndisTheme.colors.border)
+                        HairlineDivider(color = ZhetonTheme.colors.border)
                     }
                     Row(
                         modifier = Modifier
@@ -230,7 +230,7 @@ fun BillsWidget(
                                     fontFamily = Modam,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp,
-                                    color = AndisTheme.colors.textPrimary
+                                    color = ZhetonTheme.colors.textPrimary
                                 )
                             )
                             Text(
@@ -238,7 +238,7 @@ fun BillsWidget(
                                 style = TextStyle(
                                     fontFamily = Modam,
                                     fontSize = 11.sp,
-                                    color = AndisTheme.colors.textMuted
+                                    color = ZhetonTheme.colors.textMuted
                                 )
                             )
                         }
@@ -253,7 +253,7 @@ fun BillsWidget(
                                 style = TextStyle(
                                     fontFamily = Modam,
                                     fontSize = 11.sp,
-                                    color = if (bill.nextDueDays <= 3) AndisTheme.colors.danger else AndisTheme.colors.textMuted
+                                    color = if (bill.nextDueDays <= 3) ZhetonTheme.colors.danger else ZhetonTheme.colors.textMuted
                                 )
                             )
                         }
@@ -286,14 +286,14 @@ fun TransactionsWidget(
                 style = TextStyle(
                     fontFamily = Modam,
                     fontSize = 13.sp,
-                    color = AndisTheme.colors.textMuted
+                    color = ZhetonTheme.colors.textMuted
                 )
             )
         } else {
             Column {
                 entries.take(4).forEachIndexed { index, entry ->
                     if (index > 0) {
-                        HairlineDivider(color = AndisTheme.colors.border)
+                        HairlineDivider(color = ZhetonTheme.colors.border)
                     }
                     val amountRial = entry.txn.amountRial ?: 0L
                     val isExpense = amountRial < 0

@@ -126,7 +126,7 @@ fun promptUnlock(activity: FragmentActivity, onSuccess: () -> Unit) {
     )
     prompt.authenticate(
         BiometricPrompt.PromptInfo.Builder()
-            .setTitle("قفل اندیس // ANDIS OS")
+            .setTitle("قفل ژتون // ANDIS OS")
             .setSubtitle("برای مشاهده دارایی‌ها، هویت خود را تأیید کنید")
             .setAllowedAuthenticators(authenticators)
             .build()
@@ -167,7 +167,7 @@ fun LockScreen(onUnlock: () -> Unit) {
             }
             Spacer(Modifier.height(Space.xxl))
             Text(
-                "اندیس قفل شده",
+                "ژتون قفل شده",
                 fontSize = 26.sp,
                 fontWeight = FontWeight.ExtraBold,
                 color = Hero.strong,
@@ -658,7 +658,7 @@ fun SettingsScreen(
             Spacer(Modifier.height(Space.xxl))
             Text(
                 buildString {
-                    append("اندیس • نسخهٔ ${faVersion(BuildConfig.VERSION_NAME)}")
+                    append("ژتون • نسخهٔ ${faVersion(BuildConfig.VERSION_NAME)}")
                     append(" • ساخت ${faVersion(BuildConfig.VERSION_CODE.toString())}")
                     if (BuildConfig.BUILD_TYPE != "release") {
                         append(" • ${bidi(BuildConfig.BUILD_TYPE)}")
@@ -868,7 +868,7 @@ private fun ThemeLivePreviewCard(spec: ThemeVisualSpec) {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            text = "پیش‌نمایش زنده • اندیس",
+                            text = "پیش‌نمایش زنده • ژتون",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = mutedColor,

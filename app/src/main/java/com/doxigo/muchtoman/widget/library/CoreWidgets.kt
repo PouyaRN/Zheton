@@ -18,7 +18,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.doxigo.muchtoman.AndisTheme
+import com.doxigo.muchtoman.ZhetonTheme
 import com.doxigo.muchtoman.HairlineDivider
 import com.doxigo.muchtoman.Modam
 import com.doxigo.muchtoman.ModamFigures
@@ -84,7 +84,7 @@ fun NetWorthWidget(
             SubtleLineChart(
                 data = historyPoints,
                 modifier = Modifier.height(64.dp),
-                lineColor = AndisTheme.colors.accentLime
+                lineColor = ZhetonTheme.colors.accentLime
             )
         }
     }
@@ -118,7 +118,7 @@ fun CurrencyWidget(
                 unit = "تومان",
                 delta = 1.72
             )
-            HairlineDivider(color = AndisTheme.colors.border)
+            HairlineDivider(color = ZhetonTheme.colors.border)
             EditorialRow(
                 label = "طلای ۱۸ عیار",
                 sublabel = "GOLD 18K",
@@ -127,7 +127,7 @@ fun CurrencyWidget(
                 delta = 2.31
             )
             if (density == WidgetDensity.EXPANDED) {
-                HairlineDivider(color = AndisTheme.colors.border)
+                HairlineDivider(color = ZhetonTheme.colors.border)
                 EditorialRow(
                     label = "یورو اروپا",
                     sublabel = "EUR / IRR",
@@ -177,7 +177,7 @@ fun PortfolioWidget(
                     style = TextStyle(
                         fontFamily = Modam,
                         fontSize = 12.sp,
-                        color = AndisTheme.colors.textSecondary
+                        color = ZhetonTheme.colors.textSecondary
                     )
                 )
             }
@@ -209,14 +209,14 @@ fun MarketWatchWidget(
     ) {
         Column {
             MarketRow(ticker = "USD / IRR", price = fa(Math.round(usd)), delta = 1.72)
-            HairlineDivider(color = AndisTheme.colors.border)
+            HairlineDivider(color = ZhetonTheme.colors.border)
             MarketRow(ticker = "EUR / IRR", price = fa(Math.round(eur)), delta = 0.84)
-            HairlineDivider(color = AndisTheme.colors.border)
+            HairlineDivider(color = ZhetonTheme.colors.border)
             MarketRow(ticker = "GBP / IRR", price = fa(Math.round(gbp)), delta = 1.21)
-            HairlineDivider(color = AndisTheme.colors.border)
+            HairlineDivider(color = ZhetonTheme.colors.border)
             MarketRow(ticker = "XAU / 18K", price = fa(Math.round(gold)), delta = 2.31)
             if (btc > 0) {
-                HairlineDivider(color = AndisTheme.colors.border)
+                HairlineDivider(color = ZhetonTheme.colors.border)
                 MarketRow(ticker = "BTC / USD", price = faCompact(btc), delta = -0.42)
             }
         }

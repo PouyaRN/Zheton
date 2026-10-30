@@ -28,7 +28,7 @@ export const IRANIAN_BANKS: BankInfo[] = [
 export const CARD_THEME_PRESETS: Record<string, { labelFa: string; gradient: string; accent: string }> = {
   obsidian: { labelFa: 'ابسیدین تیره', gradient: 'from-[#0D0D11] via-[#1E1F24] to-[#141519]', accent: '#F7C948' },
   gold: { labelFa: 'طلای سلطنتی', gradient: 'from-[#5C4012] via-[#8A6220] to-[#3B2809]', accent: '#FDE047' },
-  emerald: { labelFa: 'زمردی اندیس', gradient: 'from-[#0C544A] via-[#064E3B] to-[#03201C]', accent: '#3BE0A8' },
+  emerald: { labelFa: 'زمردی ژتون', gradient: 'from-[#0C544A] via-[#064E3B] to-[#03201C]', accent: '#3BE0A8' },
   royal: { labelFa: 'لاجوردی نئون', gradient: 'from-[#1E1B4B] via-[#312E81] to-[#0F172A]', accent: '#818CF8' },
   crimson: { labelFa: 'یاقوت سرخ', gradient: 'from-[#4C0519] via-[#881337] to-[#2B030E]', accent: '#FDA4AF' },
   titanium: { labelFa: 'تیتانیوم متالیک', gradient: 'from-[#1F2937] via-[#374151] to-[#111827]', accent: '#93C5FD' },

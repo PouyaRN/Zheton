@@ -960,7 +960,7 @@ internal fun HeroField(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text("اندیس · شخصی", fontSize = 12.sp, color = Hero.muted, maxLines = 1)
+                Text("ژتون · شخصی", fontSize = 12.sp, color = Hero.muted, maxLines = 1)
             }
             HeroRoundButton(
                 label = if (privacyMode) "حالت امن (فعال)" else "حالت عادی",

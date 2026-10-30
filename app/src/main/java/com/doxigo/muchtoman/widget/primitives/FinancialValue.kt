@@ -41,7 +41,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.doxigo.muchtoman.AndisTheme
+import com.doxigo.muchtoman.ZhetonTheme
 import com.doxigo.muchtoman.Modam
 import com.doxigo.muchtoman.ModamFigures
 import com.doxigo.muchtoman.TABULAR
@@ -69,9 +69,9 @@ fun PersianRollingOdometer(
         fontWeight = FontWeight.Black,
         fontSize = 38.sp,
         fontFeatureSettings = TABULAR,
-        color = AndisTheme.colors.textPrimary,
+        color = ZhetonTheme.colors.textPrimary,
     ),
-    unitColor: Color = AndisTheme.colors.textSecondary,
+    unitColor: Color = ZhetonTheme.colors.textSecondary,
     privacyMode: Boolean = false,
 ) {
     if (privacyMode) {
@@ -178,8 +178,8 @@ fun FinancialValue(
     modifier: Modifier = Modifier,
     unit: String = "تومان",
     size: FinancialValueSize = FinancialValueSize.LARGE,
-    color: Color = AndisTheme.colors.textPrimary,
-    unitColor: Color = AndisTheme.colors.textSecondary,
+    color: Color = ZhetonTheme.colors.textPrimary,
+    unitColor: Color = ZhetonTheme.colors.textSecondary,
     privacyMode: Boolean = false,
 ) {
     val displayAmount = if (privacyMode) "••••••••" else amount
@@ -231,9 +231,9 @@ fun FinancialDelta(
     val isNegative = deltaPercent < -0.001
 
     val color = when {
-        isPositive -> AndisTheme.colors.accentLime
-        isNegative -> AndisTheme.colors.danger
-        else -> AndisTheme.colors.textSecondary
+        isPositive -> ZhetonTheme.colors.accentLime
+        isNegative -> ZhetonTheme.colors.danger
+        else -> ZhetonTheme.colors.textSecondary
     }
 
     val arrow = when {
@@ -248,8 +248,8 @@ fun FinancialDelta(
     if (showBackground) {
         Box(
             modifier = modifier
-                .background(AndisTheme.colors.surfaceSecondary, RoundedCornerShape(2.dp))
-                .border(1.dp, AndisTheme.colors.border, RoundedCornerShape(2.dp))
+                .background(ZhetonTheme.colors.surfaceSecondary, RoundedCornerShape(2.dp))
+                .border(1.dp, ZhetonTheme.colors.border, RoundedCornerShape(2.dp))
                 .padding(horizontal = 6.dp, vertical = 2.dp),
             contentAlignment = Alignment.Center
         ) {

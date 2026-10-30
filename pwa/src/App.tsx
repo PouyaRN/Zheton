@@ -2663,7 +2663,7 @@ export default function App() {
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 backdrop-blur-sm p-0 sm:p-4">
           <div className="w-full max-w-md bg-[#f8f9fc] rounded-t-[32px] sm:rounded-[32px] overflow-hidden shadow-2xl border border-white">
             <div className="flex items-center justify-between px-5 py-4 bg-white border-b border-gray-100">
-              <h3 className="text-[15px] font-extrabold text-primary">ثبت هوشمند در چندتومان</h3>
+              <h3 className="text-[15px] font-extrabold text-primary">ثبت هوشمند در ژتون</h3>
               <button
                 onClick={() => setIsQuickAddOpen(false)}
                 className="w-9 h-9 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface"

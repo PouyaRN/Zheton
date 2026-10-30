@@ -26,7 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.doxigo.muchtoman.AndisTheme
+import com.doxigo.muchtoman.ZhetonTheme
 import com.doxigo.muchtoman.BankAccount
 import com.doxigo.muchtoman.HairlineDivider
 import com.doxigo.muchtoman.HomeStory
@@ -74,8 +74,8 @@ fun BankCardWidget(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(AndisTheme.colors.surfacePrimary, RoundedCornerShape(8.dp))
-                .border(1.dp, AndisTheme.colors.border, RoundedCornerShape(8.dp))
+                .background(ZhetonTheme.colors.surfacePrimary, RoundedCornerShape(8.dp))
+                .border(1.dp, ZhetonTheme.colors.border, RoundedCornerShape(8.dp))
                 .padding(16.dp)
         ) {
             Text(
@@ -86,7 +86,7 @@ fun BankCardWidget(
                     fontSize = 16.sp,
                     fontFeatureSettings = TABULAR,
                     letterSpacing = 1.sp,
-                    color = AndisTheme.colors.textSecondary,
+                    color = ZhetonTheme.colors.textSecondary,
                     textDirection = TextDirection.Ltr
                 ),
                 modifier = Modifier.then(
@@ -110,7 +110,7 @@ fun BankCardWidget(
                         style = TextStyle(
                             fontFamily = ModamFigures,
                             fontSize = 11.sp,
-                            color = AndisTheme.colors.accentLime
+                            color = ZhetonTheme.colors.accentLime
                         )
                     )
                 }
@@ -145,15 +145,15 @@ fun AccountsWidget(
                 name = "حساب‌های بانکی",
                 balance = faCompact(state.bankToman),
                 allocationPercent = ((state.bankToman / total) * 100.0).coerceIn(0.0, 100.0),
-                indicatorColor = AndisTheme.colors.accentLime
+                indicatorColor = ZhetonTheme.colors.accentLime
             )
             for ((kind, amount) in composition.take(3)) {
-                HairlineDivider(color = AndisTheme.colors.border)
+                HairlineDivider(color = ZhetonTheme.colors.border)
                 val color = when (kind) {
                     Kind.GOLD, Kind.SILVER, Kind.COIN -> Color(0xFFFFD700)
                     Kind.FIAT -> Color(0xFF38BDF8)
                     Kind.CRYPTO -> Color(0xFFA78BFA)
-                    else -> AndisTheme.colors.accentLime
+                    else -> ZhetonTheme.colors.accentLime
                 }
                 AccountRow(
                     name = kind.fa,
@@ -197,7 +197,7 @@ fun SpendingWidget(
                     style = TextStyle(
                         fontFamily = Modam,
                         fontSize = 12.sp,
-                        color = AndisTheme.colors.textMuted
+                        color = ZhetonTheme.colors.textMuted
                     )
                 )
                 Spacer(Modifier.height(4.dp))
@@ -213,14 +213,14 @@ fun SpendingWidget(
                     style = TextStyle(
                         fontFamily = Modam,
                         fontSize = 12.sp,
-                        color = AndisTheme.colors.textMuted
+                        color = ZhetonTheme.colors.textMuted
                     )
                 )
                 Spacer(Modifier.height(4.dp))
                 FinancialValue(
                     amount = faCompact(incomeToman),
                     size = FinancialValueSize.MEDIUM,
-                    color = AndisTheme.colors.accentLime,
+                    color = ZhetonTheme.colors.accentLime,
                     privacyMode = privacyMode
                 )
             }
@@ -230,7 +230,7 @@ fun SpendingWidget(
         val progress = (spentToman / totalFlow).toFloat()
         DotProgressBar(
             progress = progress,
-            activeColor = if (spentToman > incomeToman) AndisTheme.colors.danger else AndisTheme.colors.accentLime
+            activeColor = if (spentToman > incomeToman) ZhetonTheme.colors.danger else ZhetonTheme.colors.accentLime
         )
     }
 }
@@ -273,7 +273,7 @@ fun DailyBurnWidget(
         SegmentedProgress(
             segments = 30,
             filledSegments = runwayDays.coerceIn(0, 30),
-            activeColor = if (runwayDays < 10) AndisTheme.colors.danger else AndisTheme.colors.accentLime
+            activeColor = if (runwayDays < 10) ZhetonTheme.colors.danger else ZhetonTheme.colors.accentLime
         )
     }
 }
@@ -306,7 +306,7 @@ fun FinancialHealthWidget(
                         fontWeight = FontWeight.Black,
                         fontSize = 38.sp,
                         fontFeatureSettings = TABULAR,
-                        color = AndisTheme.colors.accentLime
+                        color = ZhetonTheme.colors.accentLime
                     )
                 )
                 Spacer(Modifier.width(10.dp))
@@ -316,7 +316,7 @@ fun FinancialHealthWidget(
                         fontFamily = Modam,
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
-                        color = AndisTheme.colors.textPrimary
+                        color = ZhetonTheme.colors.textPrimary
                     ),
                     modifier = Modifier.padding(bottom = 6.dp)
                 )
@@ -327,31 +327,31 @@ fun FinancialHealthWidget(
                     fontFamily = ModamFigures,
                     fontWeight = FontWeight.Bold,
                     fontSize = 12.sp,
-                    color = AndisTheme.colors.accentLime
+                    color = ZhetonTheme.colors.accentLime
                 )
             )
         }
         Spacer(Modifier.height(14.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("پس‌انداز", style = TextStyle(fontFamily = Modam, fontSize = 11.sp, color = AndisTheme.colors.textMuted))
+                Text("پس‌انداز", style = TextStyle(fontFamily = Modam, fontSize = 11.sp, color = ZhetonTheme.colors.textMuted))
                 Spacer(Modifier.height(4.dp))
-                SegmentedProgress(segments = 5, filledSegments = 4, activeColor = AndisTheme.colors.accentLime)
+                SegmentedProgress(segments = 5, filledSegments = 4, activeColor = ZhetonTheme.colors.accentLime)
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text("نقدینگی", style = TextStyle(fontFamily = Modam, fontSize = 11.sp, color = AndisTheme.colors.textMuted))
+                Text("نقدینگی", style = TextStyle(fontFamily = Modam, fontSize = 11.sp, color = ZhetonTheme.colors.textMuted))
                 Spacer(Modifier.height(4.dp))
-                SegmentedProgress(segments = 5, filledSegments = 5, activeColor = AndisTheme.colors.accentLime)
+                SegmentedProgress(segments = 5, filledSegments = 5, activeColor = ZhetonTheme.colors.accentLime)
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text("بدهی", style = TextStyle(fontFamily = Modam, fontSize = 11.sp, color = AndisTheme.colors.textMuted))
+                Text("بدهی", style = TextStyle(fontFamily = Modam, fontSize = 11.sp, color = ZhetonTheme.colors.textMuted))
                 Spacer(Modifier.height(4.dp))
-                SegmentedProgress(segments = 5, filledSegments = 2, activeColor = AndisTheme.colors.warning)
+                SegmentedProgress(segments = 5, filledSegments = 2, activeColor = ZhetonTheme.colors.warning)
             }
             Column(modifier = Modifier.weight(1f)) {
-                Text("انضباط", style = TextStyle(fontFamily = Modam, fontSize = 11.sp, color = AndisTheme.colors.textMuted))
+                Text("انضباط", style = TextStyle(fontFamily = Modam, fontSize = 11.sp, color = ZhetonTheme.colors.textMuted))
                 Spacer(Modifier.height(4.dp))
-                SegmentedProgress(segments = 5, filledSegments = 4, activeColor = AndisTheme.colors.accentLime)
+                SegmentedProgress(segments = 5, filledSegments = 4, activeColor = ZhetonTheme.colors.accentLime)
             }
         }
     }
@@ -373,27 +373,27 @@ fun BudgetWidget(
     ) {
         Column {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("نیازهای اساسی (۵۰٪)", style = TextStyle(fontFamily = Modam, fontSize = 12.sp, color = AndisTheme.colors.textSecondary))
-                Text("۴۲٪ مصرف‌شده", style = TextStyle(fontFamily = ModamFigures, fontSize = 12.sp, color = AndisTheme.colors.textPrimary))
+                Text("نیازهای اساسی (۵۰٪)", style = TextStyle(fontFamily = Modam, fontSize = 12.sp, color = ZhetonTheme.colors.textSecondary))
+                Text("۴۲٪ مصرف‌شده", style = TextStyle(fontFamily = ModamFigures, fontSize = 12.sp, color = ZhetonTheme.colors.textPrimary))
             }
             Spacer(Modifier.height(4.dp))
-            DotProgressBar(progress = 0.42f, activeColor = AndisTheme.colors.accentLime)
+            DotProgressBar(progress = 0.42f, activeColor = ZhetonTheme.colors.accentLime)
 
             Spacer(Modifier.height(10.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("خواسته‌ها و تفریح (۳۰٪)", style = TextStyle(fontFamily = Modam, fontSize = 12.sp, color = AndisTheme.colors.textSecondary))
-                Text("۲۸٪ مصرف‌شده", style = TextStyle(fontFamily = ModamFigures, fontSize = 12.sp, color = AndisTheme.colors.textPrimary))
+                Text("خواسته‌ها و تفریح (۳۰٪)", style = TextStyle(fontFamily = Modam, fontSize = 12.sp, color = ZhetonTheme.colors.textSecondary))
+                Text("۲۸٪ مصرف‌شده", style = TextStyle(fontFamily = ModamFigures, fontSize = 12.sp, color = ZhetonTheme.colors.textPrimary))
             }
             Spacer(Modifier.height(4.dp))
-            DotProgressBar(progress = 0.28f, activeColor = AndisTheme.colors.accentLime)
+            DotProgressBar(progress = 0.28f, activeColor = ZhetonTheme.colors.accentLime)
 
             Spacer(Modifier.height(10.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("پس‌انداز و سرمایه (۲۰٪)", style = TextStyle(fontFamily = Modam, fontSize = 12.sp, color = AndisTheme.colors.textSecondary))
-                Text("۱۸٪ ذخیره‌شده", style = TextStyle(fontFamily = ModamFigures, fontSize = 12.sp, color = AndisTheme.colors.accentLime))
+                Text("پس‌انداز و سرمایه (۲۰٪)", style = TextStyle(fontFamily = Modam, fontSize = 12.sp, color = ZhetonTheme.colors.textSecondary))
+                Text("۱۸٪ ذخیره‌شده", style = TextStyle(fontFamily = ModamFigures, fontSize = 12.sp, color = ZhetonTheme.colors.accentLime))
             }
             Spacer(Modifier.height(4.dp))
-            DotProgressBar(progress = 0.18f, activeColor = AndisTheme.colors.accentLime)
+            DotProgressBar(progress = 0.18f, activeColor = ZhetonTheme.colors.accentLime)
         }
     }
 }

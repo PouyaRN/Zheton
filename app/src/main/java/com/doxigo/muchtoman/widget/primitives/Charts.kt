@@ -19,7 +19,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import com.doxigo.muchtoman.AndisTheme
+import com.doxigo.muchtoman.ZhetonTheme
 
 /**
  * Minimalist High-Contrast Financial Sparkline.
@@ -29,7 +29,7 @@ import com.doxigo.muchtoman.AndisTheme
 fun SubtleLineChart(
     data: List<Double>,
     modifier: Modifier = Modifier,
-    lineColor: Color = AndisTheme.colors.accentLime,
+    lineColor: Color = ZhetonTheme.colors.accentLime,
     lineWidth: Dp = 1.2.dp,
     showArea: Boolean = true,
 ) {
@@ -100,7 +100,7 @@ fun SubtleLineChart(
 fun Sparkline(
     data: List<Double>,
     modifier: Modifier = Modifier,
-    lineColor: Color = AndisTheme.colors.accentLime,
+    lineColor: Color = ZhetonTheme.colors.accentLime,
     lineWidth: Dp = 1.8.dp,
     showGradient: Boolean = true,
 ) {
@@ -174,8 +174,8 @@ fun DotGraphCanvas(
     columns: Int = 24,
     rows: Int = 10,
     dotRadius: Dp = 1.5.dp,
-    activeColor: Color = AndisTheme.colors.accentLime,
-    ghostColor: Color = AndisTheme.colors.ghostLedDark,
+    activeColor: Color = ZhetonTheme.colors.accentLime,
+    ghostColor: Color = ZhetonTheme.colors.ghostLedDark,
 ) {
     if (data.isEmpty()) return
 
@@ -256,8 +256,8 @@ fun DotProgressBar(
     progress: Float,
     modifier: Modifier = Modifier,
     totalDots: Int = 20,
-    activeColor: Color = AndisTheme.colors.accentLime,
-    inactiveColor: Color = AndisTheme.colors.surfaceSecondary,
+    activeColor: Color = ZhetonTheme.colors.accentLime,
+    inactiveColor: Color = ZhetonTheme.colors.surfaceSecondary,
     dotRadius: Dp = 2.dp,
 ) {
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
@@ -300,8 +300,8 @@ fun SegmentedProgress(
     segments: Int,
     filledSegments: Int,
     modifier: Modifier = Modifier,
-    activeColor: Color = AndisTheme.colors.accentLime,
-    inactiveColor: Color = AndisTheme.colors.surfaceSecondary,
+    activeColor: Color = ZhetonTheme.colors.accentLime,
+    inactiveColor: Color = ZhetonTheme.colors.surfaceSecondary,
     segmentHeight: Dp = 4.dp,
     gap: Dp = 2.dp,
 ) {

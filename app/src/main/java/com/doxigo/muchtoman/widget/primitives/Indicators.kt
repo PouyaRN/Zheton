@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.doxigo.muchtoman.AndisTheme
+import com.doxigo.muchtoman.ZhetonTheme
 import com.doxigo.muchtoman.Modam
 import com.doxigo.muchtoman.ModamFigures
 import com.doxigo.muchtoman.TABULAR
@@ -46,9 +46,9 @@ fun FinancialTimeline(
     totalSteps: Int,
     currentStep: Int,
     modifier: Modifier = Modifier,
-    activeColor: Color = AndisTheme.colors.accentLime,
-    inactiveColor: Color = AndisTheme.colors.border,
-    surfaceSecondary: Color = AndisTheme.colors.surfaceSecondary,
+    activeColor: Color = ZhetonTheme.colors.accentLime,
+    inactiveColor: Color = ZhetonTheme.colors.border,
+    surfaceSecondary: Color = ZhetonTheme.colors.surfaceSecondary,
     dotRadius: Dp = 3.5.dp,
     lineHeight: Dp = 1.5.dp,
 ) {
@@ -116,8 +116,8 @@ fun FinancialTimeline(
 fun StatusIndicator(
     active: Boolean = true,
     modifier: Modifier = Modifier,
-    activeColor: Color = AndisTheme.colors.accentLime,
-    inactiveColor: Color = AndisTheme.colors.textMuted,
+    activeColor: Color = ZhetonTheme.colors.accentLime,
+    inactiveColor: Color = ZhetonTheme.colors.textMuted,
     pulsing: Boolean = false,
     size: Dp = 6.dp,
 ) {
@@ -160,7 +160,7 @@ fun Metric(
                 fontFamily = Modam,
                 fontWeight = FontWeight.Medium,
                 fontSize = 10.sp,
-                color = AndisTheme.colors.textMuted
+                color = ZhetonTheme.colors.textMuted
             )
         )
         Spacer(Modifier.height(2.dp))
@@ -172,7 +172,7 @@ fun Metric(
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
                     fontFeatureSettings = TABULAR,
-                    color = AndisTheme.colors.textPrimary
+                    color = ZhetonTheme.colors.textPrimary
                 )
             )
             if (unit.isNotEmpty()) {
@@ -183,7 +183,7 @@ fun Metric(
                         fontFamily = Modam,
                         fontWeight = FontWeight.Normal,
                         fontSize = 10.sp,
-                        color = AndisTheme.colors.textSecondary
+                        color = ZhetonTheme.colors.textSecondary
                     )
                 )
             }

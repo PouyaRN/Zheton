@@ -26,7 +26,7 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.doxigo.muchtoman.AndisTheme
+import com.doxigo.muchtoman.ZhetonTheme
 import com.doxigo.muchtoman.HairlineDivider
 import com.doxigo.muchtoman.Modam
 import com.doxigo.muchtoman.ModamFigures
@@ -73,7 +73,7 @@ fun EditorialSection(
                         fontFamily = Modam,
                         fontWeight = FontWeight.Bold,
                         fontSize = 17.sp,
-                        color = AndisTheme.colors.textPrimary
+                        color = ZhetonTheme.colors.textPrimary
                     )
                 )
                 if (technicalLabel != null) {
@@ -85,7 +85,7 @@ fun EditorialSection(
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 10.sp,
                             letterSpacing = 0.8.sp,
-                            color = AndisTheme.colors.textMuted
+                            color = ZhetonTheme.colors.textMuted
                         )
                     )
                 }
@@ -128,7 +128,7 @@ fun EditorialRow(
                     fontFamily = Modam,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 14.sp,
-                    color = AndisTheme.colors.textPrimary
+                    color = ZhetonTheme.colors.textPrimary
                 )
             )
             if (sublabel != null) {
@@ -137,7 +137,7 @@ fun EditorialRow(
                     style = TextStyle(
                         fontFamily = Modam,
                         fontSize = 11.sp,
-                        color = AndisTheme.colors.textMuted
+                        color = ZhetonTheme.colors.textMuted
                     )
                 )
             }
@@ -148,7 +148,7 @@ fun EditorialRow(
                 amount = value,
                 unit = unit,
                 size = FinancialValueSize.COMPACT,
-                color = AndisTheme.colors.textPrimary
+                color = ZhetonTheme.colors.textPrimary
             )
             if (delta != null) {
                 Spacer(Modifier.width(8.dp))
@@ -167,7 +167,7 @@ fun WidgetHeader(
     modifier: Modifier = Modifier,
     badgeText: String? = null,
     showBeacon: Boolean = false,
-    beaconColor: Color = AndisTheme.colors.accentLime,
+    beaconColor: Color = ZhetonTheme.colors.accentLime,
     action: (@Composable () -> Unit)? = null,
 ) {
     Row(
@@ -187,7 +187,7 @@ fun WidgetHeader(
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 11.sp,
                     letterSpacing = 0.5.sp,
-                    color = AndisTheme.colors.textSecondary
+                    color = ZhetonTheme.colors.textSecondary
                 )
             )
             if (badgeText != null) {
@@ -216,11 +216,11 @@ fun WidgetContainer(
     onClick: (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) {
-    val shape = RoundedCornerShape(AndisTheme.radius.card)
+    val shape = RoundedCornerShape(ZhetonTheme.radius.card)
     val baseModifier = modifier
         .fillMaxWidth()
-        .background(AndisTheme.colors.surfacePrimary, shape)
-        .border(1.dp, AndisTheme.colors.border, shape)
+        .background(ZhetonTheme.colors.surfacePrimary, shape)
+        .border(1.dp, ZhetonTheme.colors.border, shape)
         .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
         .padding(14.dp)
 
@@ -256,9 +256,9 @@ fun MarketRow(
         Row(verticalAlignment = Alignment.CenterVertically) {
             DotMatrixBadge(
                 text = ticker,
-                activeColor = AndisTheme.colors.textPrimary,
-                surfaceColor = AndisTheme.colors.surfaceSecondary,
-                borderColor = AndisTheme.colors.border
+                activeColor = ZhetonTheme.colors.textPrimary,
+                surfaceColor = ZhetonTheme.colors.surfaceSecondary,
+                borderColor = ZhetonTheme.colors.border
             )
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -266,7 +266,7 @@ fun MarketRow(
                 amount = price,
                 unit = unit,
                 size = FinancialValueSize.COMPACT,
-                color = AndisTheme.colors.textPrimary
+                color = ZhetonTheme.colors.textPrimary
             )
             Spacer(Modifier.width(10.dp))
             FinancialDelta(deltaPercent = delta)
@@ -284,7 +284,7 @@ fun AccountRow(
     allocationPercent: Double,
     modifier: Modifier = Modifier,
     identifier: String? = null,
-    indicatorColor: Color = AndisTheme.colors.accentLime,
+    indicatorColor: Color = ZhetonTheme.colors.accentLime,
     onClick: (() -> Unit)? = null,
 ) {
     Row(
@@ -309,7 +309,7 @@ fun AccountRow(
                         fontFamily = Modam,
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
-                        color = AndisTheme.colors.textPrimary
+                        color = ZhetonTheme.colors.textPrimary
                     )
                 )
                 if (identifier != null) {
@@ -319,7 +319,7 @@ fun AccountRow(
                             fontFamily = ModamFigures,
                             fontSize = 10.sp,
                             fontFeatureSettings = TABULAR,
-                            color = AndisTheme.colors.textMuted,
+                            color = ZhetonTheme.colors.textMuted,
                             textDirection = TextDirection.Ltr
                         )
                     )
@@ -330,7 +330,7 @@ fun AccountRow(
             FinancialValue(
                 amount = balance,
                 size = FinancialValueSize.COMPACT,
-                color = AndisTheme.colors.textPrimary
+                color = ZhetonTheme.colors.textPrimary
             )
             Text(
                 text = String.format(java.util.Locale.US, "%.1f%%", allocationPercent),
@@ -339,7 +339,7 @@ fun AccountRow(
                     fontWeight = FontWeight.Medium,
                     fontSize = 10.sp,
                     fontFeatureSettings = TABULAR,
-                    color = AndisTheme.colors.textMuted
+                    color = ZhetonTheme.colors.textMuted
                 )
             )
         }
@@ -376,7 +376,7 @@ fun TransactionRow(
                 modifier = Modifier
                     .size(5.dp)
                     .background(
-                        if (isExpense) AndisTheme.colors.danger else AndisTheme.colors.accentLime,
+                        if (isExpense) ZhetonTheme.colors.danger else ZhetonTheme.colors.accentLime,
                         CircleShape
                     )
             )
@@ -390,7 +390,7 @@ fun TransactionRow(
                         fontFamily = Modam,
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
-                        color = AndisTheme.colors.textPrimary
+                        color = ZhetonTheme.colors.textPrimary
                     )
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -399,7 +399,7 @@ fun TransactionRow(
                         style = TextStyle(
                             fontFamily = Modam,
                             fontSize = 10.sp,
-                            color = AndisTheme.colors.textSecondary
+                            color = ZhetonTheme.colors.textSecondary
                         )
                     )
                     if (accountName != null) {
@@ -408,7 +408,7 @@ fun TransactionRow(
                             style = TextStyle(
                                 fontFamily = Modam,
                                 fontSize = 10.sp,
-                                color = AndisTheme.colors.textMuted
+                                color = ZhetonTheme.colors.textMuted
                             )
                         )
                     }
@@ -423,7 +423,7 @@ fun TransactionRow(
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
                     fontFeatureSettings = TABULAR,
-                    color = if (isExpense) AndisTheme.colors.textPrimary else AndisTheme.colors.accentLime,
+                    color = if (isExpense) ZhetonTheme.colors.textPrimary else ZhetonTheme.colors.accentLime,
                     textDirection = TextDirection.Ltr
                 )
             )
@@ -433,7 +433,7 @@ fun TransactionRow(
                     fontFamily = ModamFigures,
                     fontSize = 10.sp,
                     fontFeatureSettings = TABULAR,
-                    color = AndisTheme.colors.textMuted
+                    color = ZhetonTheme.colors.textMuted
                 )
             )
         }

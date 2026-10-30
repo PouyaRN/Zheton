@@ -1,119 +1,139 @@
-# ژتون — Zheton
+# ژتون (Zheton) — دستیار هوشمند مالی و دیده‌بان قدرت خرید
 
-An offline-first Android personal finance assistant for Persian-speaking households: an intelligent ledger built automatically from bank SMS, real-time portfolio valuation at Tehran free-market rates, and Iranian financial calculators — all in Toman.
+<div dir="rtl">
 
-[![check](https://github.com/PouyaRN/Zheton/actions/workflows/check.yml/badge.svg)](https://github.com/PouyaRN/Zheton/actions/workflows/check.yml)
-[![release](https://github.com/PouyaRN/Zheton/actions/workflows/release.yml/badge.svg)](https://github.com/PouyaRN/Zheton/actions/workflows/release.yml)
-[![latest release](https://img.shields.io/github/v/release/PouyaRN/Zheton?sort=semver)](https://github.com/PouyaRN/Zheton/releases/latest)
-![minSdk 24](https://img.shields.io/badge/Android-7.0%2B%20(API%2024)-3DDC84)
-[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+**ژتون (Zheton)** یک دستیار مالی شخصی و خانوادگی، دیده‌بان بلادرنگ قدرت خرید و جعبه‌ابزار محاسبات اقتصادی ویژه کاربران ایرانی است. این نرم‌افزار با معماری **اول-محلی (Local-First)**، کاملاً آفلاین و با اولویت مطلق بر حریم خصوصی و امنیت داده‌ها طراحی شده است؛ بدون نیاز به شماره موبایل، بدون ارسال داده به سرور و بدون ره‌گیری تبلیغاتی.
+
+</div>
 
 <p align="center">
-  <img src="docs/screenshots/home-dark.webp" width="160" alt="Home (Dark)">
-  <img src="docs/screenshots/ledger-dark.webp" width="160" alt="Ledger">
-  <img src="docs/screenshots/assets-dark.webp" width="160" alt="Assets">
-  <img src="docs/screenshots/accounts-dark.webp" width="160" alt="Accounts">
-  <img src="docs/screenshots/report-dark.webp" width="160" alt="Report">
-  <img src="docs/screenshots/home-light.webp" width="160" alt="Home (Light)">
+  <a href="https://github.com/PouyaRN/Zheton/actions/workflows/check.yml"><img src="https://github.com/PouyaRN/Zheton/actions/workflows/check.yml/badge.svg" alt="CI Status"></a>
+  <a href="https://github.com/PouyaRN/Zheton/actions/workflows/release.yml"><img src="https://github.com/PouyaRN/Zheton/actions/workflows/release.yml/badge.svg" alt="Release Status"></a>
+  <a href="https://github.com/PouyaRN/Zheton/releases/latest"><img src="https://img.shields.io/github/v/release/PouyaRN/Zheton?sort=semver" alt="Latest Release"></a>
+  <img src="https://img.shields.io/badge/Android-7.0%2B%20(API%2024)-3DDC84" alt="Android 7.0+">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License"></a>
+</p>
+
+---
+
+## 📱 نمای اپلیکیشن ژتون (Screenshots)
+
+<p align="center">
+  <img src="docs/screenshots/zheton_01_onboarding.png" width="160" alt="خوش‌آمدگویی و حریم خصوصی ژتون">
+  <img src="docs/screenshots/zheton_02_dashboard.png" width="160" alt="داشبورد و تابلوی دارایی ژتون">
+  <img src="docs/screenshots/zheton_03_analytics.png" width="160" alt="تحلیل مخارج و بودجه‌بندی">
+  <img src="docs/screenshots/zheton_04_commitments.png" width="160" alt="اقساط، چک‌های صیادی و کارت‌ها">
+  <img src="docs/screenshots/zheton_05_goals.png" width="160" alt="اهداف و قلک پس‌انداز هوشمند">
+  <img src="docs/screenshots/zheton_06_calculators.png" width="160" alt="ماشین‌حساب‌های تخصصی اقتصاد ایران">
 </p>
 
 <p align="center">
-  <sub>Lithe Vitality UI: Home, Ledger, Assets, Accounts, and Report in dark mode, plus Home in light mode.</sub>
+  <sub>از راست به چپ: ماشین‌حساب‌های مالی، پس‌انداز و اهداف، اقساط و چک‌های صیادی، تحلیل مخارج، داشبورد نئوبانک و صفحه خوش‌آمدگویی استارتر.</sub>
 </p>
 
-The interface is native Persian and right-to-left, with Persian typography and natural numeral formatting. Large amounts are displayed the way Iranians say them (e.g. «۴٫۷ میلیارد تومان»), and figures truncate rather than round so numbers are always honest and exact.
+---
+
+<div dir="rtl">
+
+## 🌟 قابلیت‌های کلیدی ژتون
+
+### ۱. سیستم دیزاین نوین Lithe Vitality و تجربه کاربری تمیز
+- **جریان آنبوردینگ استارتر (Starter Onboarding Flow):** معرفی سه‌مرحله‌ای فلسفه محرمانگی، سپر تورمی و مدیریت خودکار تعهدات با شروع کاملاً پاک و بدون هرگونه داده ساختگی، تست یا ماک.
+- **تایپوگرافی اصیل فارسی و قالب اعداد طبیعی:** نمایش مبالغ به شیوه رایج گفتاری ایرانیان (مانند «۴٫۷ میلیارد تومان») همراه با قطع اعداد اعشاری به جای گرد کردن جهت شفافیت صددرصدی مالی.
+
+### ۲. داشبورد و مرکز فرمان مالی (Command Center & Cockpit)
+- **نمایشگر مرکزی دارایی (Hero Display):** پایش همزمان ارزش کل دارایی، تراز نقدینگی و معادل گرم طلای ۱۸ عیار.
+- **موتور خرج امن روزانه (`SafeSpendEngine`):** محاسبه هوشمند سقف خرج مجاز امروز با اعمال ضریب استراحت و افزایش مخارج پنج‌شنبه و جمعه در ایران و کسر تعهدات جاری.
+- **دیده‌بان خونریزی تورمی نقدینگی:** محاسبه افت روزانه ارزش ریال راکد بر اساس نرخ رسمی تورم کشور.
+- **تابلوی زنده مظنه بازار:** رصد لحظه‌ای نرخ طلای ۱۸ عیار، مثقال، نقره، سکه امامی، بهار آزادی، نیم‌سکه، ربع‌سکه، تتر (USDT)، دلار، یورو، درهم و صندوق‌های طلای بورس با نمودارهای خطی (`Sparkline`).
+
+### ۳. خوانش هوشمند و امن پیامک‌های بانکی (`SmsParser`)
+- استخراج خودکار مبلغ، جهت تراکنش (واریز/برداشت)، مانده حساب و نام بانک از پیامک‌های بانکی کشور به صورت کاملاً آفلاین روی حافظه دستگاه.
+- نگهداری تصحیحات کاربر، یادداشت‌ها و برچسب‌های ضرورت تراکنش.
+
+### ۴. دسته کارت‌های بانکی شتاب و مدیریت اقساط
+- **کارت‌های تعاملی شتاب:** پشتیبانی کامل از پیش‌شماره‌های شبکه شتاب بانکی کشور، اعتبارسنجی الگوریتم `Luhn` و ساختار شبا (`ISO-7064`)، همراه با کپی تک‌لمسی شماره کارت و شبا.
+- **رهگیری اقساط و چک صیادی:** ثبت و پایش اقساط سرویس‌های `BNPL` (اسنپ‌پی، دیجی‌پی، تارا)، وام‌های بانکی و موعد چک‌های صیادی همراه با یادآور هوشمند روز سررسید.
+
+### ۵. تحلیل ۵۰/۳۰/۲۰ و دسته‌بندی هوشمند مخارج
+- تفکیک خودکار و دستی مخارج به ۳ گروه: نیازهای اساسی (۵۰٪)، خواسته‌ها (۳۰٪) و پس‌انداز/سرمایه‌گذاری (۲۰٪).
+- پایش سقف بودجه تعیین‌شده در هر سرفصل و هشدارهای صرفه‌جویی هفتگی.
+
+### ۶. قلک خودکار خرده‌خریدها و اهداف پس‌انداز
+- قابلیت گرد کردن خودکار مانده تراکنش‌ها به بالا (سقف ۱۰ هزار تومان) و پس‌انداز نامحسوس روزانه در صندوق طلا.
+- تعیین اهداف مالی کوتاه‌مدت، اضطراری و میان‌مدت با شبیه‌ساز پیشرفت بازدهی.
+
+### ۷. هفت ماشین‌حساب تخصصی اقتصاد ایران
+۱. **حباب‌سنج سکه:** محاسبه ارزش ذاتی طلای انواع قطعات سکه و استخراج درصد حباب اسمی.  
+۲. **اقساط وام بانکی:** محاسبه فرمول `PMT`، مجموع بازپرداخت و سود کل بر اساس سودهای رایج بانکی ایران.  
+۳. **تورم و قدرت خرید تومان:** محاسبه افت ارزش ریال در طول زمان بر اساس شاخص رسمی `CPI` بانک مرکزی از سال ۱۳۸۰ تا ۱۴۰۵.  
+۴. **ارزش روز مهریه:** فرمول رسمی قوه قضائیه به نرخ روز و معادل‌سازی بر حسب گرم طلای ۱۸ عیار.  
+۵. **خسارت تأخیر تادیه:** محاسبه جریمه دیرکرد قانونی بر اساس شاخص سالانه/ماهانه بانک مرکزی و ماده ۵۲۲ آیین دادرسی مدنی.  
+۶. **سنجش قدرت خرید حقوق:** مقایسه درآمد سال‌های پیشین با سبد معیشت واقعی و تورم انباشته.  
+۷. **هزینهٔ عادت‌های روزانه:** محاسبه اثر مرکب خریدهای کوچک مکرر (کافه، دخانیات و...) با اعمال نرخ تورم انتظاری.
 
 ---
 
-## 🌟 Key Features
+### 🏦 بانک‌های تحت پوشش
+بلو بانک (Blu)، سامان، رفاه، پاسارگاد، اقتصاد نوین، خاورمیانه، صادرات، رسالت، پارسیان، ملت، ملی، مسکن، سپه، تجارت، شهر و تمامی بانک‌های عضو شبکه شتاب.
 
-- **📱 Smart On-Device SMS Ledger:** Reads incoming and existing bank SMS from your phone inbox and parses them completely on-device. Extracts amounts, account balance, direction (deposit/withdrawal), and counterparty. Corrections, custom categories, and notes are preserved across updates.
-- **🚀 Clean Starter Onboarding:** Brand-new onboarding greeting and intro flow without intrusive mock/fake data or placeholder commitments. Every user starts with their own fresh, personalized ledger.
-- **💎 Assets & Live Tehran Rates:** 
-  - 18k Gold, Mesghal, and Silver
-  - Iranian Coins: Emami, Bahar Azadi, Half, Quarter, and Parsian coins
-  - Currencies: US Dollar (USD), Euro (EUR), UAE Dirham (AED) at open-market rates
-  - Tehran Stock Exchange (TSETMC) symbols and top cryptocurrencies
-  - Coin Bubble Radar: live calculation of coin intrinsic gold value vs. market price
-- **💳 Shetab Card Deck & Commitments:**
-  - Interactive Shetab bank cards with Luhn verification and one-touch IBAN (شبا) copying
-  - Track loans, installments, BNPL services (SnappPay, DigiPay, Tara), and Sayadi checks with smart reminder alerts
-- **📊 50/30/20 Budgeting & Daily Safe Spend:**
-  - `SafeSpendEngine` calculates how much you can safely spend today, weighting weekends (Thursday/Friday) and subtracting monthly obligations
-  - Category budget caps with 50% Needs, 30% Wants, 20% Savings breakdown
-- **🧮 7 Specialized Iranian Economic Calculators (PWA Companion):**
-  1. Gold Coin Bubble Calculator
-  2. Bank Loan & Installment Calculator (PMT formula with Iranian banking interest)
-  3. Toman Inflation & Purchasing Power (Official CBI CPI index from 1380 to 1405)
-  4. Real-time Dowry Valuation (قوه قضائیه & Gold equivalent)
-  5. Delayed Payment Penalty (ماده ۵۲۲ آیین دادرسی مدنی)
-  6. Salary Purchasing Power Tracker
-  7. Compound Daily Habit Cost Analyzer
-- **🔒 Privacy & Local-First:** No accounts, no phone numbers, no tracking, no ads. All transaction data stays on your device.
+</div>
 
 ---
 
-### 🏦 Supported Iranian Banks
+## 📥 دانلود و نصب اپلیکیشن
 
-بلو بانک (Blu Bank)، سامان (Saman)، رفاه (Refah)، پاسارگاد (Pasargad)، اقتصاد نوین (EN Bank)، خاورمیانه (Middle East)، صادرات (Saderat)، رسالت (Resalat)، پارسیان (Parsian)، ملت (Mellat)، ملی (Melli)، مسکن (Maskan)، سپه (Sepah)، تجارت (Tejarat)، شهر (Shahr) و تمامی بانک‌های عضو شتاب.
+نسخه رسمی، کامپایل‌شده و امضاشده (`Signed APK`) را می‌توانید مستقیماً از بخش انتشار گیت‌هاب دریافت نمایید:
 
-> [!NOTE]
-> پیامک‌ها تنها از فرستنده‌های رسمی و تأییدشده بانکی خوانده می‌شوند. پیامک‌های متفرقه یا اعلان‌های برنامه‌ها خوانده نمی‌شوند و هیچ پیامی هرگز به اینترنت ارسال نمی‌گردد.
-
----
-
-## 📥 Download & Install
-
-Download the latest signed release APK from [GitHub Releases](https://github.com/PouyaRN/Zheton/releases):
-
-- **[دانلود مستقیم zheton-v1.0.0.apk](https://github.com/PouyaRN/Zheton/releases/download/v1.0.0/zheton-v1.0.0.apk)** (~12.9 MB)
-- **Minimum Requirement:** Android 7.0 (API 24) or higher.
+- **[دانلود مستقیم zheton-v1.0.0.apk](https://github.com/PouyaRN/Zheton/releases/download/v1.0.0/zheton-v1.0.0.apk)** (حجم: ۱۲.۹ مگابایت)
+- **پیش‌نیاز:** اندروید نسخه ۷.۰ (API 24) به بالا
 
 ---
 
-## 🛠️ Build from Source
+## 🛠️ ساخت و کامپایل از سورس (Build from Source)
 
-Requirements: JDK 21 and the Android SDK (API 36).
+پیش‌نیازها: `JDK 21`، `Node.js 20+` و `Android SDK (API 36)`.
 
 ```bash
-# Clone the repository
+# دریافت مخزن
 git clone https://github.com/PouyaRN/Zheton.git
 cd Zheton
 
-# Run unit tests
+# ۱. اجرای تست‌های واحد و کامپایل نسخه اندروید
 ./gradlew testDebugUnitTest
-
-# Assemble Release APK
 ./gradlew assembleRelease
-```
+# خروجی در app/build/outputs/apk/release/app-release.apk
 
-The compiled APK will be generated at:
-`app/build/outputs/apk/release/app-release.apk`
+# ۲. اجرای وب‌اپلیکیشن و ماشین‌حساب‌ها (PWA)
+cd pwa
+npm install
+npm run dev
+```
 
 ---
 
-## 📂 Project Architecture
+## 📂 معماری ماژولار پروژه
 
 ```text
 Zheton/
-├── app/       # Native Android Application (Kotlin, Jetpack Compose, Room, KSP, Coroutines)
-├── pwa/       # Web Companion & Calculators (React 18, Vite, TypeScript, Tailwind CSS)
-├── sync/      # Encrypted Family Sync Service (Cloudflare Worker + Durable Objects)
-├── worker/    # Live Rates & TSETMC API Engine (Cloudflare Worker)
-└── docs/      # Design canvas, ADRs, and App Screenshots
+├── app/       # اپلیکیشن نیتیو اندروید (Kotlin, Jetpack Compose, Room DB, KSP, Coroutines)
+├── pwa/       # وب‌اپلیکیشن همراه و ماشین‌حساب‌های مالی (React 18, Vite, TypeScript, Tailwind CSS)
+├── sync/      # سرویس رمزنگاری‌شده گاوصندوق خانواده (Cloudflare Worker + Durable Objects)
+├── worker/    # سرور استعلام بلادرنگ نرخ طلا، ارز و بورس تهران (Cloudflare Worker)
+└── docs/      # اسناد معماری، دیزاین سیستم Lithe و اسکرین‌شات‌ها
 ```
 
 ---
 
-## 🛡️ Privacy & Security
+## 🛡️ امنیت و محرمانگی داده‌ها (Privacy by Design)
 
-- **No Remote Storage of Personal Data:** All financial ledger entries, bank accounts, and notes stay strictly on your phone.
-- **Local-Only SMS Parsing:** The `READ_SMS` permission is used strictly to read bank notifications on the device. Raw SMS text is never transmitted over the network.
-- **End-to-End Encryption (E2EE):** Optional family sync and backup vault use device-level `AES-GCM` encryption. The relay server never sees cleartext financial information.
-- **Open Source:** Full code transparency under the MIT license.
+- **بدون ذخیره ابری اطلاعات شخصی:** کلیه پیامک‌ها، تراکنش‌ها، کارت‌های بانکی و ترازهای مالی منحصراً روی حافظه رمزنگاری‌شده دستگاه کاربر ذخیره می‌شوند.
+- **پردازش درون‌دستگاهی پیامک:** مجوز `READ_SMS` تنها جهت استخراج محلی مبالغ بانکی استفاده شده و متن هیچ پیامکی به اینترنت ارسال نمی‌شود.
+- **رمزنگاری سرتاسری (`E2EE`):** همگام‌سازی اختیاری خانوادگی با کلید متقارن `AES-GCM` روی دستگاه رمزگذاری می‌شود و سرور به داده‌های خام مالی دسترسی ندارد.
+- **بدون ترکر، تبلیغات یا تلهمتری:** کد پروژه کاملاً متن‌باز و تحت مجوز MIT منتشر شده است.
 
 ---
 
-## 📄 License
+## 📄 مجوز (License)
 
-Distributed under the [MIT](LICENSE) License.
+توسعه‌یافته تحت مجوز آزاد [MIT](LICENSE).

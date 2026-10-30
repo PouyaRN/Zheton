@@ -30,7 +30,7 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.doxigo.muchtoman.AndisTheme
+import com.doxigo.muchtoman.ZhetonTheme
 import com.doxigo.muchtoman.Modam
 import com.doxigo.muchtoman.ModamFigures
 import com.doxigo.muchtoman.TABULAR
@@ -95,12 +95,12 @@ private fun QuickActionButton(
                 .size(52.dp)
                 .clip(CircleShape)
                 .background(
-                    if (isPrimary) AndisTheme.colors.accentLime
+                    if (isPrimary) ZhetonTheme.colors.accentLime
                     else MaterialTheme.colorScheme.surfaceContainerHigh
                 )
                 .border(
                     1.dp,
-                    if (isPrimary) Color.Transparent else AndisTheme.colors.border,
+                    if (isPrimary) Color.Transparent else ZhetonTheme.colors.border,
                     CircleShape
                 ),
             contentAlignment = Alignment.Center
@@ -109,7 +109,7 @@ private fun QuickActionButton(
                 text = iconText,
                 fontSize = if (iconText == "+" || iconText == "⇄") 22.sp else 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (isPrimary) Color(0xFF070A0F) else AndisTheme.colors.textPrimary
+                color = if (isPrimary) Color(0xFF070A0F) else ZhetonTheme.colors.textPrimary
             )
         }
         Spacer(Modifier.height(6.dp))
@@ -119,7 +119,7 @@ private fun QuickActionButton(
                 fontFamily = Modam,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 12.sp,
-                color = AndisTheme.colors.textSecondary
+                color = ZhetonTheme.colors.textSecondary
             )
         )
     }
@@ -162,7 +162,7 @@ fun PotsProgress(
     progress: Float,
     modifier: Modifier = Modifier,
     iconEmoji: String = "🎯",
-    tintColor: Color = AndisTheme.colors.accentLime,
+    tintColor: Color = ZhetonTheme.colors.accentLime,
     onClick: (() -> Unit)? = null,
 ) {
     NeobankCard(modifier = modifier, onClick = onClick) {
@@ -189,7 +189,7 @@ fun PotsProgress(
                             fontFamily = Modam,
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
-                            color = AndisTheme.colors.textPrimary
+                            color = ZhetonTheme.colors.textPrimary
                         )
                     )
                     Text(
@@ -197,7 +197,7 @@ fun PotsProgress(
                         style = TextStyle(
                             fontFamily = Modam,
                             fontSize = 11.sp,
-                            color = AndisTheme.colors.textSecondary
+                            color = ZhetonTheme.colors.textSecondary
                         )
                     )
                 }
@@ -217,7 +217,7 @@ fun PotsProgress(
         DotProgressBar(
             progress = progress,
             activeColor = tintColor,
-            inactiveColor = AndisTheme.colors.border
+            inactiveColor = ZhetonTheme.colors.border
         )
     }
 }
@@ -254,7 +254,7 @@ fun TransactionFeedItem(
                     .clip(CircleShape)
                     .background(
                         if (isExpense) MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.5f)
-                        else AndisTheme.colors.emerald.copy(alpha = 0.18f)
+                        else ZhetonTheme.colors.emerald.copy(alpha = 0.18f)
                     ),
                 contentAlignment = Alignment.Center
             ) {
@@ -273,7 +273,7 @@ fun TransactionFeedItem(
                         fontFamily = Modam,
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
-                        color = AndisTheme.colors.textPrimary
+                        color = ZhetonTheme.colors.textPrimary
                     )
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -282,7 +282,7 @@ fun TransactionFeedItem(
                         style = TextStyle(
                             fontFamily = Modam,
                             fontSize = 11.sp,
-                            color = AndisTheme.colors.textSecondary
+                            color = ZhetonTheme.colors.textSecondary
                         )
                     )
                     if (bankName != null) {
@@ -291,7 +291,7 @@ fun TransactionFeedItem(
                             style = TextStyle(
                                 fontFamily = Modam,
                                 fontSize = 11.sp,
-                                color = AndisTheme.colors.textMuted
+                                color = ZhetonTheme.colors.textMuted
                             )
                         )
                     }
@@ -307,7 +307,7 @@ fun TransactionFeedItem(
                     fontWeight = FontWeight.Black,
                     fontSize = 14.sp,
                     fontFeatureSettings = TABULAR,
-                    color = if (isExpense) AndisTheme.colors.textPrimary else AndisTheme.colors.emerald,
+                    color = if (isExpense) ZhetonTheme.colors.textPrimary else ZhetonTheme.colors.emerald,
                     textDirection = TextDirection.Ltr
                 )
             )
@@ -317,7 +317,7 @@ fun TransactionFeedItem(
                     fontFamily = ModamFigures,
                     fontSize = 11.sp,
                     fontFeatureSettings = TABULAR,
-                    color = AndisTheme.colors.textMuted
+                    color = ZhetonTheme.colors.textMuted
                 )
             )
         }

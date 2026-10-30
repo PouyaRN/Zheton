@@ -1,5 +1,5 @@
 /**
- * Formatting utilities for ChandToman / Andis
+ * Formatting utilities for ChandToman / Zheton
  */
 
 const FA_DIGITS = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];

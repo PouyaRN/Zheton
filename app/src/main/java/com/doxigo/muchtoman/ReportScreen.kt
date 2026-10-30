@@ -157,7 +157,7 @@ internal fun reportShareText(m: MonthOverMonth): String = buildString {
             appendLine("• ${p.nameFa}: ${faCompact(tomanOf(p.spentRial))}$change")
         }
     }
-    append("— اندیس")
+    append("— ژتون")
 }
 
 // ─────────────────────────── the screen ───────────────────────────

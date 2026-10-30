@@ -299,7 +299,7 @@ AnimatedVisibility(visible = showingExplain) {
                         }
                         Spacer(Modifier.height(Space.s))
                         Text(
-                            "در اندروید، صفحه بازشده رو با اپ اندیس باز کن. کد ده دقیقه اعتبار داره و یک‌بار مصرفه.",
+                            "در اندروید، صفحه بازشده رو با اپ ژتون باز کن. کد ده دقیقه اعتبار داره و یک‌بار مصرفه.",
                             fontSize = 13.sp,
                             lineHeight = 22.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,

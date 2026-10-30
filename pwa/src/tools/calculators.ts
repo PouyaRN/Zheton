@@ -1,5 +1,5 @@
 /**
- * Port of Andis Financial Calculators (pwa/src/tools/calc.ts, cpi.ts, coins.ts)
+ * Port of Zheton Financial Calculators (pwa/src/tools/calc.ts, cpi.ts, coins.ts)
  */
 
 // Annual Consumer Price Index (CPI) table (1380 - 1405)

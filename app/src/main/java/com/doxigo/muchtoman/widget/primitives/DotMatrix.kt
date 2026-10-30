@@ -30,7 +30,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.doxigo.muchtoman.AndisTheme
+import com.doxigo.muchtoman.ZhetonTheme
 
 @Immutable
 object DotMatrixGlyphs {
@@ -121,8 +121,8 @@ fun DotMatrixText(
     dotSize: Dp = 2.dp,
     dotSpacing: Dp = 1.dp,
     charSpacing: Dp = 2.dp,
-    activeColor: Color = AndisTheme.colors.textPrimary,
-    inactiveColor: Color = AndisTheme.colors.ghostLedDark,
+    activeColor: Color = ZhetonTheme.colors.textPrimary,
+    inactiveColor: Color = ZhetonTheme.colors.ghostLedDark,
 ) {
     val density = LocalDensity.current
     val dotSizePx = with(density) { dotSize.toPx() }
@@ -207,9 +207,9 @@ fun DotMatrixText(
 fun DotMatrixBadge(
     text: String,
     modifier: Modifier = Modifier,
-    activeColor: Color = AndisTheme.colors.accentLime,
-    surfaceColor: Color = AndisTheme.colors.surfaceSecondary,
-    borderColor: Color = AndisTheme.colors.border,
+    activeColor: Color = ZhetonTheme.colors.accentLime,
+    surfaceColor: Color = ZhetonTheme.colors.surfaceSecondary,
+    borderColor: Color = ZhetonTheme.colors.border,
     dotSize: Dp = 1.5.dp,
     showBeacon: Boolean = false,
 ) {
