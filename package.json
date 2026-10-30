@@ -1,14 +1,9 @@
 {
-  "name": "zheton-workspace",
+  "name": "zheton",
+  "version": "1.0.0",
   "private": true,
-  "workspaces": [
-    "pwa"
-  ],
   "scripts": {
-    "dev": "npm run dev --workspace=pwa",
-    "build": "npm run build --workspace=pwa",
-    "lint": "npm run lint --workspace=pwa",
-    "typecheck": "npm run typecheck --workspace=pwa",
-    "test": "npm run test --workspace=pwa"
+    "build": "npm --prefix pwa run build",
+    "start": "npx serve -s pwa/dist -l 8080"
   }
 }

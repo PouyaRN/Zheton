@@ -1,0 +1,17 @@
+.git
+.github
+.gradle
+.kotlin
+.idea
+app/
+gradle/
+gradlew
+gradlew.bat
+gradle.properties
+docs/
+sync/
+worker/
+node_modules
+*/node_modules
+pwa/node_modules
+pwa/dist
