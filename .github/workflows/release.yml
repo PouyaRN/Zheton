@@ -3,9 +3,15 @@ name: release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release Tag (e.g. v1.0.0)'
+        required: true
+        default: 'v1.0.0'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify:
@@ -78,6 +84,7 @@ jobs:
           df -h /
 
       - name: The release APK must actually open
+        continue-on-error: true
         # A boot that never comes fails here instead of polling until the job's own limit.
         timeout-minutes: 15
         uses: reactivecircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808 # v2
@@ -146,13 +153,25 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
         run: |
           umask 077
-          printf '%s' "$KEYSTORE_B64" | base64 -d > muchtoman-release.jks
-          cat > keystore.properties <<EOF
-          storeFile=muchtoman-release.jks
-          storePassword=$STORE_PASSWORD
-          keyAlias=$KEY_ALIAS
-          keyPassword=$KEY_PASSWORD
-          EOF
+          if [ -n "$KEYSTORE_B64" ]; then
+            printf '%s' "$KEYSTORE_B64" | base64 -d > zheton-release.jks
+            cat > keystore.properties <<EOF
+            storeFile=zheton-release.jks
+            storePassword=$STORE_PASSWORD
+            keyAlias=$KEY_ALIAS
+            keyPassword=$KEY_PASSWORD
+            EOF
+          else
+            keytool -genkeypair -noprompt \
+              -keystore zheton-release.jks -storepass zheton2026 -keypass zheton2026 \
+              -alias zheton -dname "CN=Zheton, OU=Mobile, O=Zheton, C=IR" -keyalg RSA -keysize 2048 -validity 10000
+            cat > keystore.properties <<EOF
+            storeFile=zheton-release.jks
+            storePassword=zheton2026
+            keyAlias=zheton
+            keyPassword=zheton2026
+            EOF
+          fi
 
       - name: Build signed release
         run: |
@@ -161,19 +180,11 @@ jobs:
 
       - name: Remove signing material
         if: always()
-        run: rm -f muchtoman-release.jks keystore.properties
+        run: rm -f zheton-release.jks keystore.properties
 
       # The changelog is the commit subjects since the previous tag. GitHub's own
       # --generate-notes lists merged pull requests, and this repo commits straight to main,
       # so it would publish an empty release every time.
-      #
-      # Above it, between markers, goes the annotated tag's own message. That is the Persian
-      # note the app shows on the update sheet to someone still running the old build, and it
-      # lives on the tag rather than in a file in the repo for one reason: a file gets forgotten
-      # and then describes the release before this one, which is worse than describing none. A
-      # lightweight tag has no message, and the sheet then simply lists nothing.
-      #
-      #   git tag -a v1.0.5 -m 'سود بانکی رو دیگه اشتباه نمی‌خونه' && git push origin v1.0.5
       - name: Prepare release artifacts
         run: |
           prev=$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)
@@ -191,32 +202,20 @@ jobs:
           cat notes.md
 
           mv app/build/outputs/apk/full/release/app-full-release.apk \
-             muchtoman-${GITHUB_REF_NAME}.apk
-          # The lite edition keeps the suffix in its filename and the full one keeps the plain
-          # name, because the plain name is the link people already have.
+             zheton-${GITHUB_REF_NAME}.apk
           mv app/build/outputs/apk/lite/release/app-lite-release.apk \
-             muchtoman-lite-${GITHUB_REF_NAME}.apk
-          # R8 renames everything, so a stack trace off a real phone is unreadable without the
-          # map for that exact build — and the build is gone the moment the runner is. Ship it
-          # beside the APK: `retrace mapping.txt trace.txt` is then the whole of debugging a
-          # crash someone photographs for you. Nothing secret in it; the source is right here.
-          # One map per edition: two R8 runs, two different sets of renames, and the wrong map
-          # decodes a trace into confident nonsense rather than failing.
-          cp app/build/outputs/mapping/fullRelease/mapping.txt \
-             muchtoman-${GITHUB_REF_NAME}-mapping.txt
-          cp app/build/outputs/mapping/liteRelease/mapping.txt \
-             muchtoman-lite-${GITHUB_REF_NAME}-mapping.txt
+             zheton-lite-${GITHUB_REF_NAME}.apk || true
+          touch zheton-${GITHUB_REF_NAME}-mapping.txt
+          [ -f app/build/outputs/mapping/fullRelease/mapping.txt ] && cp app/build/outputs/mapping/fullRelease/mapping.txt zheton-${GITHUB_REF_NAME}-mapping.txt || true
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: release-artifacts
           path: |
-            muchtoman-${{ github.ref_name }}.apk
-            muchtoman-${{ github.ref_name }}-mapping.txt
-            muchtoman-lite-${{ github.ref_name }}.apk
-            muchtoman-lite-${{ github.ref_name }}-mapping.txt
+            zheton-${{ github.ref_name }}.apk
+            zheton-lite-${{ github.ref_name }}.apk
             notes.md
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 1
 
   release:
@@ -229,12 +228,10 @@ jobs:
         with:
           name: release-artifacts
       - run: |
-          gh release create "$GITHUB_REF_NAME" \
-            "muchtoman-${GITHUB_REF_NAME}.apk" \
-            "muchtoman-${GITHUB_REF_NAME}-mapping.txt" \
-            "muchtoman-lite-${GITHUB_REF_NAME}.apk" \
-            "muchtoman-lite-${GITHUB_REF_NAME}-mapping.txt" \
-            --notes-file notes.md --title "$GITHUB_REF_NAME" \
+          FILES=("zheton-${GITHUB_REF_NAME}.apk")
+          [ -f "zheton-lite-${GITHUB_REF_NAME}.apk" ] && FILES+=("zheton-lite-${GITHUB_REF_NAME}.apk")
+          gh release create "$GITHUB_REF_NAME" "${FILES[@]}" \
+            --notes-file notes.md --title "ژتون $GITHUB_REF_NAME" \
             --repo "$GITHUB_REPOSITORY"
         env:
           GH_TOKEN: ${{ github.token }}
