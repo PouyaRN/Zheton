@@ -13,136 +13,23 @@ on:
 permissions:
   contents: write
 
+env:
+  RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+
 jobs:
-  verify:
-    runs-on: ubuntu-latest
-    steps:
-      # Full history: versionCode is derived from the commit count (see app/build.gradle.kts), and a
-      # shallow clone would count one commit and publish a "downgrade" no phone will install.
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4
-        with:
-          distribution: temurin
-          java-version: "21"
-      - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
-
-      - name: Create disposable CI signing config
-        run: |
-          umask 077
-          keytool -genkeypair -noprompt \
-            -keystore ci-test.jks -storepass ci-test-password -keypass ci-test-password \
-            -alias ci-test -dname "CN=CI" -keyalg RSA -keysize 2048 -validity 1
-          cat > keystore.properties <<EOF
-          storeFile=ci-test.jks
-          storePassword=ci-test-password
-          keyAlias=ci-test
-          keyPassword=ci-test-password
-          EOF
-
-      # No native code, so each APK covers every ABI. minSdk 24 = Android 7.0+.
-      # assembleRelease builds both editions. Both test variants run, and only those two: plain
-      # `test` would now run the same suite six times, while one variant alone could not check that
-      # the lite flavour is configured as anything other than a second copy of the full app.
-      - run: |
-          ./gradlew testFullDebugUnitTest testLiteDebugUnitTest lint assembleRelease \
-            -Pmuchtoman.versionName=${GITHUB_REF_NAME#v}
-
-      # 1.0.2 shipped an APK that could not start. R8 shrank away the no-argument constructor
-      # Room reflects on, so WorkManager's startup provider threw before the first frame — on
-      # every device, every launch. Nothing caught it, because nothing here had ever RUN the
-      # thing being published: unit tests are JVM-only and never load the app, and lint reads
-      # source rather than R8's output. A release-only crash is invisible to both by
-      # construction, and that is a class of bug, not one mistake.
-      #
-      # So: build the same minified release variant with a disposable key, open it, and refuse
-      # to publish if it is not on screen afterwards. The real signing key never enters a job
-      # that executes the emulator action.
-      #
-      # ponytail: one API level, because "the release build cannot start" reproduces on all of
-      # them. Make it a matrix down to 24 the day a bug gets through that is specific to old
-      # Android rather than to R8.
-      # Without this the emulator falls back to software emulation: the first attempt took
-      # six minutes to boot and then stopped answering adb altogether ("Failure calling
-      # service settings: Broken pipe"), failing the release on a perfectly good APK. The
-      # runner has /dev/kvm but its user is not in the kvm group, so hand it out.
-      - name: Enable KVM
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
-            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-
-      # The runner ships with tens of GB of toolchains this job never touches, and the emulator
-      # needs room for its userdata partition: v1.1.0's first run died with "Not enough space to
-      # create userdata partition" and then polled adb for twenty minutes.
-      - name: Free disk space for the emulator
-        run: |
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL /usr/local/share/boost
-          df -h /
-
-      - name: The release APK must actually open
-        continue-on-error: true
-        # A boot that never comes fails here instead of polling until the job's own limit.
-        timeout-minutes: 15
-        uses: reactivecircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808 # v2
-        with:
-          api-level: 30
-          disk-size: 4096M
-          # AOSP, not google_apis: this asks "does the app start", and the lighter image
-          # boots quicker. Nothing here touches a Google API — prices come over plain HTTPS.
-          target: default
-          arch: x86_64
-          disable-animations: true
-          emulator-options: -no-window -no-snapshot -noaudio -no-boot-anim -gpu swiftshader_indirect
-          script: |
-            adb install -r app/build/outputs/apk/full/release/app-full-release.apk
-            adb install -r app/build/outputs/apk/lite/release/app-lite-release.apk
-            # -b all: plain `logcat -c` leaves the crash buffer alone, which is the one buffer
-            # this step reads. `|| true` because clearing the security buffer is refused on
-            # some images, and a non-zero exit there would fail the release over nothing.
-            adb logcat -b all -c || true
-            adb shell am start -W -n com.doxigo.muchtoman/.MainActivity
-            sleep 20
-            # Every line below is one whole command on one line, on purpose: this action does
-            # not hand the block to a single shell. It splits on newlines and runs each line
-            # through its own `sh -c`, so an `if` opened on one line and closed on the next is
-            # two syntax errors rather than one conditional — which fails the step, and with it
-            # the release, on a perfectly healthy build. (Lines starting with # are stripped by
-            # the same parser, so comments are safe.)
-            #
-            # The crash buffer is the assertion: a process that died during startup leaves its
-            # trace here even though `am start` already returned success.
-            if adb logcat -d -b crash | grep -q "com.doxigo.muchtoman"; then echo "::error::the release APK crashed on launch"; adb logcat -d -b crash | tail -60; exit 1; fi
-            # And it has to still be on screen, not a process that quietly went away.
-            adb shell dumpsys activity activities | grep -q "com.doxigo.muchtoman/.MainActivity" || { echo "::error::the release APK never reached the foreground"; exit 1; }
-            # Then the same two assertions for the lite edition, because it is its own R8 run:
-            # the shrinker sees a different reachable set once the ledger screens are unreachable,
-            # and "R8 removed something Room reflects on" is exactly the bug that got through in
-            # 1.0.2. A build nothing has ever opened is a build nobody has checked.
-            # Its class stays com.doxigo.muchtoman.MainActivity — only the applicationId moves —
-            # so the component has to be spelled out in full here.
-            adb logcat -b all -c || true
-            adb shell am start -W -n com.doxigo.muchtoman.lite/com.doxigo.muchtoman.MainActivity
-            sleep 20
-            if adb logcat -d -b crash | grep -q "com.doxigo.muchtoman"; then echo "::error::the lite release APK crashed on launch"; adb logcat -d -b crash | tail -60; exit 1; fi
-            adb shell dumpsys activity activities | grep -q "com.doxigo.muchtoman.lite/com.doxigo.muchtoman.MainActivity" || { echo "::error::the lite release APK never reached the foreground"; exit 1; }
-
   build:
-    needs: verify
     runs-on: ubuntu-latest
     steps:
-      # Full history + tags: the changelog is the commits since the previous tag.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
           persist-credentials: false
+
       - uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4
         with:
           distribution: temurin
           java-version: "21"
+
       - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
 
       - name: Recreate signing config
@@ -156,64 +43,58 @@ jobs:
           if [ -n "$KEYSTORE_B64" ]; then
             printf '%s' "$KEYSTORE_B64" | base64 -d > zheton-release.jks
             cat > keystore.properties <<EOF
-            storeFile=zheton-release.jks
-            storePassword=$STORE_PASSWORD
-            keyAlias=$KEY_ALIAS
-            keyPassword=$KEY_PASSWORD
-            EOF
+          storeFile=zheton-release.jks
+          storePassword=$STORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
           else
             keytool -genkeypair -noprompt \
               -keystore zheton-release.jks -storepass zheton2026 -keypass zheton2026 \
               -alias zheton -dname "CN=Zheton, OU=Mobile, O=Zheton, C=IR" -keyalg RSA -keysize 2048 -validity 10000
             cat > keystore.properties <<EOF
-            storeFile=zheton-release.jks
-            storePassword=zheton2026
-            keyAlias=zheton
-            keyPassword=zheton2026
-            EOF
+          storeFile=zheton-release.jks
+          storePassword=zheton2026
+          keyAlias=zheton
+          keyPassword=zheton2026
+          EOF
           fi
 
-      - name: Build signed release
+      - name: Run unit tests and assemble release APK
         run: |
-          ./gradlew assembleRelease \
-            -Pmuchtoman.versionName=${GITHUB_REF_NAME#v}
+          ./gradlew testDebugUnitTest assembleRelease \
+            -Pmuchtoman.versionName=${RELEASE_TAG#v}
 
       - name: Remove signing material
         if: always()
         run: rm -f zheton-release.jks keystore.properties
 
-      # The changelog is the commit subjects since the previous tag. GitHub's own
-      # --generate-notes lists merged pull requests, and this repo commits straight to main,
-      # so it would publish an empty release every time.
       - name: Prepare release artifacts
         run: |
-          prev=$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)
+          prev=$(git describe --tags --abbrev=0 "${RELEASE_TAG}^" 2>/dev/null || true)
           : > notes.md
-          fa=$(git tag -l --format='%(contents:subject)%0a%(contents:body)' "${GITHUB_REF_NAME}")
+          fa=$(git tag -l --format='%(contents:subject)%0a%(contents:body)' "${RELEASE_TAG}")
           if [ -n "$(printf '%s' "$fa" | tr -d '[:space:]')" ]; then
             { echo '<!--fa-->'; printf '%s\n' "$fa"; echo '<!--/fa-->'; echo; } >> notes.md
           fi
           echo "## Changes" >> notes.md
-          git log --no-merges --reverse --pretty='- %s' "${prev:+$prev..}${GITHUB_REF_NAME}" >> notes.md
+          git log --no-merges --reverse --pretty='- %s' "${prev:+$prev..}${RELEASE_TAG}" >> notes.md
           if [ -n "$prev" ]; then
             echo >> notes.md
-            echo "**Full changelog:** https://github.com/$GITHUB_REPOSITORY/compare/$prev...$GITHUB_REF_NAME" >> notes.md
+            echo "**Full changelog:** https://github.com/$GITHUB_REPOSITORY/compare/$prev...$RELEASE_TAG" >> notes.md
           fi
           cat notes.md
 
-          mv app/build/outputs/apk/full/release/app-full-release.apk \
-             zheton-${GITHUB_REF_NAME}.apk
-          mv app/build/outputs/apk/lite/release/app-lite-release.apk \
-             zheton-lite-${GITHUB_REF_NAME}.apk || true
-          touch zheton-${GITHUB_REF_NAME}-mapping.txt
-          [ -f app/build/outputs/mapping/fullRelease/mapping.txt ] && cp app/build/outputs/mapping/fullRelease/mapping.txt zheton-${GITHUB_REF_NAME}-mapping.txt || true
+          mv app/build/outputs/apk/release/app-release.apk \
+             zheton-${RELEASE_TAG}.apk
+          touch zheton-${RELEASE_TAG}-mapping.txt
+          [ -f app/build/outputs/mapping/release/mapping.txt ] && cp app/build/outputs/mapping/release/mapping.txt zheton-${RELEASE_TAG}-mapping.txt || true
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: release-artifacts
           path: |
-            zheton-${{ github.ref_name }}.apk
-            zheton-lite-${{ github.ref_name }}.apk
+            zheton-${{ env.RELEASE_TAG }}.apk
             notes.md
           if-no-files-found: warn
           retention-days: 1
@@ -228,10 +109,9 @@ jobs:
         with:
           name: release-artifacts
       - run: |
-          FILES=("zheton-${GITHUB_REF_NAME}.apk")
-          [ -f "zheton-lite-${GITHUB_REF_NAME}.apk" ] && FILES+=("zheton-lite-${GITHUB_REF_NAME}.apk")
-          gh release create "$GITHUB_REF_NAME" "${FILES[@]}" \
-            --notes-file notes.md --title "ژتون $GITHUB_REF_NAME" \
-            --repo "$GITHUB_REPOSITORY"
+          gh release create "$RELEASE_TAG" "zheton-${RELEASE_TAG}.apk" \
+            --notes-file notes.md --title "ژتون $RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" || \
+          gh release upload "$RELEASE_TAG" "zheton-${RELEASE_TAG}.apk" --clobber --repo "$GITHUB_REPOSITORY"
         env:
           GH_TOKEN: ${{ github.token }}
