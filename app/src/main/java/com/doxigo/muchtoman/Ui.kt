@@ -659,10 +659,7 @@ val snackbarHostState = remember { SnackbarHostState() }
             SnackbarHost(snackbarHostState)
         },
         bottomBar = {
-            // The canvas's floating pill. It used to carry a + for quick add; the canvas puts
-            // that on Home's round actions («ثبت خرج»), alongside the tile and the widget.
-            // Content runs under the pill: screens pad their lists by the Scaffold's bottom pad.
-            if (tabs.size > 1) {
+            if (tabs.size > 1 && tab != Tab.HOME) {
                 androidx.compose.animation.AnimatedVisibility(
                     visible = !isTimelineSelecting && !(tab == Tab.ASSETS && assetDetail != null),
                     enter = androidx.compose.animation.fadeIn() + androidx.compose.animation.slideInVertically { it },
@@ -673,11 +670,6 @@ val snackbarHostState = remember { SnackbarHostState() }
                         onSelect = { tab = it },
                     )
                 }
-            } else {
-                // The lite edition has no bar, but the Scaffold's inset is the only thing keeping
-                // the last holding clear of the gesture pill, so something still has to stand
-                // there and be exactly that tall.
-                Spacer(Modifier.fillMaxWidth().navigationBarsPadding())
             }
         },
     ) { pad ->
@@ -785,23 +777,21 @@ val snackbarHostState = remember { SnackbarHostState() }
         return@Scaffold
       }
 
-      // The Today tab, per the canvas (HomeScreen.kt).
-      HomeScreen(
+      // Stitch / Lithe Vitality 4-Tab Primary Experience
+      LitheShell(
           state = state,
-          listState = listState,
-          bottomInset = pad.calculateBottomPadding(),
+          vm = vm,
           privacyMode = privacyMode,
           onTogglePrivacy = { privacyMode = !privacyMode },
-          onRefresh = vm::refreshAll,
-          onSettings = { settings = true },
-          onSearch = { timelineSearchQuery = null; tab = Tab.LEDGER },
-          onQuickAdd = { showQuickAdd = true },
-          onAssets = { tab = Tab.ASSETS },
-          onReport = { tab = Tab.REPORTS },
-          onLedger = { timelineCategoryId = null; timelineSearchQuery = null; tab = Tab.LEDGER },
-          onOpenTransaction = { transactionRef = it },
-          onManageAccounts = { banks = true },
-          onSetBudget = vm::setMonthlyBudgetToman,
+          onOpenSettings = { settings = true },
+          onOpenNativeLedger = {
+              timelineCategoryId = null
+              timelineSearchQuery = null
+              tab = Tab.LEDGER
+          },
+          onOpenNativeAssets = { tab = Tab.ASSETS },
+          onOpenNativeCards = { tab = Tab.CARDS },
+          onOpenBankSheet = { banks = true },
       )
     }
 
