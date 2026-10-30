@@ -1,10 +1,11 @@
 name: check
 
-# The repo runs CI on every push and every pull request.
+# The repo runs CI on every push, pull request, and manual dispatch.
 on:
   push:
     branches: ["**"]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -27,7 +28,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
 
       - name: Unit tests and assemble
-        run: ./gradlew testDebugUnitTest assembleDebug
+        run: |
+          chmod +x ./gradlew
+          ./gradlew testDebugUnitTest assembleDebug
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -48,7 +51,7 @@ jobs:
           node-version: "22"
       - name: Rates Worker
         working-directory: worker
-        run: npm ci && npm run check
+        run: npm install && npm run check
 
   pwa:
     runs-on: ubuntu-latest
@@ -61,7 +64,7 @@ jobs:
           node-version: "22"
       - name: PWA
         working-directory: pwa
-        run: npm ci && npm run check
+        run: npm install && npm run check
 
   sync:
     needs: pwa
@@ -75,7 +78,7 @@ jobs:
           node-version: "22"
       - name: Build the PWA it serves
         working-directory: pwa
-        run: npm ci && npm run build
+        run: npm install && npm run build
       - name: Sync Worker
         working-directory: sync
-        run: npm ci && npm run check
+        run: npm install && npm run check
