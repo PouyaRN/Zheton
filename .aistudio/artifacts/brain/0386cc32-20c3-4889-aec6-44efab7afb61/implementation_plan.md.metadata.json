@@ -1,6 +1,6 @@
 {
-  "summary":  "Comprehensive implementation plan for redesigning the entire Zheton Android app with the Lithe Vitality (Stitch) Design System, 4-tab floating navigation dock with central Quick-Add button, interactive savings & commitment pods, and the 7 Persian financial calculators modal while preserving all native SMS, market, and Room capabilities.",
-  "updatedAt":  "2026-10-30T01:44:50.535550674Z",
+  "summary":  "برنامه جامع جداسازی کامل پروژه ژتون (Zheton) از مخزن اصلی (muchtoman / doxigo)، اصلاح کنتراست دکمه‌ها و لوگو در حالت تیره (Dark Mode)، و رفع کامل وارنینگ‌های سیستمی اندروید (Predictive Back و بستن منابع شبکه).",
+  "updatedAt":  "2026-11-02T08:23:39.353289814Z",
   "requestFeedback":  true,
   "userFacing":  true
 }

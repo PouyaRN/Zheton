@@ -172,7 +172,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         val app = getApplication<Application>()
         ledgerJob = viewModelScope.launch(Dispatchers.Default) {
             runCatching { runLedgerPipeline(app, extraLookup(store.extraBankNumbers)) }
-                .onFailure { android.util.Log.w("muchtoman", "ledger pipeline failed: $it") }
+                .onFailure { android.util.Log.d("zheton", "ledger pipeline failed: $it") }
         }
     }
 
@@ -222,7 +222,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 // Keep showing the cached rates; an old number beats a blank screen. The
                 // log line is the only place the real reason survives — the UI stays Persian
                 // and calm, but `adb logcat -s muchtoman` must be able to answer "why".
-                android.util.Log.w("muchtoman", "rates fetch failed: $e")
+                android.util.Log.d("zheton", "rates fetch failed: $e")
                 failure = "نرخ‌ها به‌روز نشدن. اینترنتت رو چک کن."
             }
 
@@ -264,9 +264,9 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 _state.update { it.copy(tse = fresh) }
                 checkPriceAlerts()
                 saveDailyRates(fresh.toman, fresh.updatedAt)
-                android.util.Log.i("muchtoman", "tse ok: ${fresh.stocks.size} instruments")
+                android.util.Log.d("zheton", "tse ok: ${fresh.stocks.size} instruments")
             }.onFailure { error ->
-                android.util.Log.w("muchtoman", "tse fetch failed: $error")
+                android.util.Log.d("zheton", "tse fetch failed: $error")
             }
             _state.update { it.copy(stocksLoading = false) }
             if (changed && _state.value.holdings.any { isStockId(it.typeId) }) recordSnapshot()
@@ -680,7 +680,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 val derived = DerivedDb.get(app)
                 _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
                 requestFamilySync(silent = true)
-            }.onFailure { android.util.Log.w("muchtoman", "categorise failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "categorise failed: $it") }
         }
     }
 
@@ -699,7 +699,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 val durable = DurableDb.get(app)
                 val derived = DerivedDb.get(app)
                 _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
-            }.onFailure { android.util.Log.w("muchtoman", "pin merchant alias failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "pin merchant alias failed: $it") }
         }
     }
 
@@ -720,7 +720,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
                 recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
-            }.onFailure { android.util.Log.w("muchtoman", "bulk categorise failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "bulk categorise failed: $it") }
         }
     }
 
@@ -740,7 +740,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
                 recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
-            }.onFailure { android.util.Log.w("muchtoman", "bulk save note failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "bulk save note failed: $it") }
         }
     }
 
@@ -760,7 +760,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
                 recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
-            }.onFailure { android.util.Log.w("muchtoman", "bulk pin merchant failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "bulk pin merchant failed: $it") }
         }
     }
 
@@ -798,7 +798,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
                 recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
-            }.onFailure { android.util.Log.w("muchtoman", "hide transaction failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "hide transaction failed: $it") }
         }
     }
 
@@ -836,7 +836,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
                 recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
-            }.onFailure { android.util.Log.w("muchtoman", "direction change failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "direction change failed: $it") }
         }
     }
 
@@ -862,7 +862,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 derive(durable, derived, extraLookup(store.extraBankNumbers))
                 _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
                 requestFamilySync(silent = true)
-            }.onFailure { android.util.Log.w("muchtoman", "unpin category failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "unpin category failed: $it") }
         }
     }
 
@@ -922,7 +922,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
                 recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
-            }.onFailure { android.util.Log.w("muchtoman", "toggle transfer failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "toggle transfer failed: $it") }
         }
     }
 
@@ -1058,7 +1058,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             }
             recomputeAccountBalancesFromLedger()
             requestFamilySync(silent = true)
-        }.onFailure { android.util.Log.w("muchtoman", "batch ${batch.kind} failed: $it") }
+        }.onFailure { android.util.Log.d("zheton", "batch ${batch.kind} failed: $it") }
     }
 
     /** Add a hand-entered cash or off-SMS transaction directly to durable storage. */
@@ -1081,7 +1081,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 // A row on one of her bank accounts moves that account's balance too.
                 if (accountId != MANUAL_ACCOUNT_ID) recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
-            }.onFailure { android.util.Log.w("muchtoman", "add manual transaction failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "add manual transaction failed: $it") }
         }
     }
 
@@ -1184,7 +1184,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 derive(durable, derived, extraLookup(store.extraBankNumbers))
                 _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
                 requestFamilySync(silent = true)
-            }.onFailure { android.util.Log.w("muchtoman", "deleteCategory failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "deleteCategory failed: $it") }
         }
     }
 
@@ -1239,7 +1239,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     requestFamilySync(silent = true)
                 }
                 .onFailure {
-                    android.util.Log.w("muchtoman", "claim failed: $it")
+                    android.util.Log.d("zheton", "claim failed: $it")
                     refreshFamily(null, error = "اتصال نشد. بعداً دوباره امتحان کن.")
                 }
         }
@@ -1287,7 +1287,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     requestFamilySync(silent = true)
                 }
                 .onFailure {
-                    android.util.Log.w("muchtoman", "pair failed: $it")
+                    android.util.Log.d("zheton", "pair failed: $it")
                     _state.update {
                         it.copy(family = it.family.copy(working = false, error = "کد منقضی شده یا قبلاً استفاده شده."))
                     }
@@ -1403,7 +1403,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     val set = current.split(',').filter(String::isNotBlank).toMutableSet() + memberId
                     durable.meta().put(DurableMeta(META_SYNC_REMOVED_MEMBERS, set.joinToString(",")))
                 }
-            }.onFailure { android.util.Log.w("muchtoman", "remove member failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "remove member failed: $it") }
             refreshFamily(session)
             requestFamilySync(silent = true)
         }
@@ -1418,7 +1418,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             runCatching { pairingUrl(session, invite(session, durable)) }
                 .onSuccess { url -> _state.update { it.copy(family = it.family.copy(paired = true, pairingUrl = url, error = null)) } }
                 .onFailure {
-                    android.util.Log.w("muchtoman", "invite failed: $it")
+                    android.util.Log.d("zheton", "invite failed: $it")
                     refreshFamily(session, error = "کد ساخته نشد. اینترنتت رو چک کن.")
                 }
         }
@@ -1454,7 +1454,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     )
                 )
                 _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable, limit = ledgerLimit())) }
-            }.onFailure { android.util.Log.w("muchtoman", "addGoal failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "addGoal failed: $it") }
         }
     }
 
@@ -1465,7 +1465,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             runCatching {
                 durable.goals().delete(id, System.currentTimeMillis())
                 _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable, limit = ledgerLimit())) }
-            }.onFailure { android.util.Log.w("muchtoman", "deleteGoal failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "deleteGoal failed: $it") }
         }
     }
 
@@ -1514,7 +1514,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     ))
                 }
                 _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
-            }.onFailure { android.util.Log.w("muchtoman", "saveNote failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "saveNote failed: $it") }
         }
     }
 
@@ -1540,7 +1540,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     )
                 )
                 _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable, limit = ledgerLimit())) }
-            }.onFailure { android.util.Log.w("muchtoman", "addCategory failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "addCategory failed: $it") }
         }
     }
 
@@ -1557,7 +1557,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     existing.copy(nameFa = newNameFa.trim().take(30), updatedAt = now)
                 )
                 _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable, limit = ledgerLimit())) }
-            }.onFailure { android.util.Log.w("muchtoman", "editCategory failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "editCategory failed: $it") }
         }
     }
 
@@ -1606,7 +1606,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 durable.installmentPayments().putAll(payments)
                 refreshObligations(durable)
                 android.util.Log.i("muchtoman", "saveObligation: saved successfully, id=$id")
-            }.onFailure { android.util.Log.w("muchtoman", "saveObligation failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "saveObligation failed: $it") }
         }
     }
 
@@ -1619,7 +1619,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             runCatching {
                 durable.installmentPayments().markPaid(paymentId, now, txnRef)
                 refreshObligations(durable)
-            }.onFailure { android.util.Log.w("muchtoman", "markInstallmentPaid failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "markInstallmentPaid failed: $it") }
         }
         viewModelScope.launch { ReminderScheduler.reschedule(getApplication()) }
     }
@@ -1633,7 +1633,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             runCatching {
                 durable.installmentPayments().markAllPaid(obligationId, now)
                 refreshObligations(durable)
-            }.onFailure { android.util.Log.w("muchtoman", "payOffRemaining failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "payOffRemaining failed: $it") }
         }
         viewModelScope.launch { ReminderScheduler.reschedule(getApplication()) }
     }
@@ -1647,7 +1647,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             runCatching {
                 durable.obligations().archive(obligationId, now)
                 refreshObligations(durable)
-            }.onFailure { android.util.Log.w("muchtoman", "archiveObligation failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "archiveObligation failed: $it") }
         }
     }
 
@@ -1705,7 +1705,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     Reservation(id, purpose, amountRial, categoryId, now, now)
                 )
                 refreshObligations(durable)
-            }.onFailure { android.util.Log.w("muchtoman", "saveReservation failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "saveReservation failed: $it") }
         }
     }
 
@@ -1717,7 +1717,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             runCatching {
                 durable.reservations().release(id, now)
                 refreshObligations(durable)
-            }.onFailure { android.util.Log.w("muchtoman", "releaseReservation failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "releaseReservation failed: $it") }
         }
     }
 
@@ -1728,7 +1728,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             runCatching {
                 durable.reservations().delete(id)
                 refreshObligations(durable)
-            }.onFailure { android.util.Log.w("muchtoman", "deleteReservation failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "deleteReservation failed: $it") }
         }
     }
 
@@ -1773,7 +1773,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     return@launch
                 }
                 val csv = generateLedgerCsv(entries, ledger.notes)
-                val file = File(context.cacheDir, "muchtoman_ledger.csv")
+                val file = File(context.cacheDir, "zheton_ledger.csv")
                 file.writeText(csv, Charsets.UTF_8)
                 val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
                 val intent = Intent(Intent.ACTION_SEND).apply {
@@ -2078,7 +2078,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 store.bankAccounts = next
                 _state.update { it.copy(bankAccounts = next) }
                 recordSnapshot()
-            }.onFailure { android.util.Log.w("muchtoman", "recompute balances failed: $it") }
+            }.onFailure { android.util.Log.d("zheton", "recompute balances failed: $it") }
         }
     }
 

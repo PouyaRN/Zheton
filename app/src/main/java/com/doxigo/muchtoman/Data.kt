@@ -273,7 +273,7 @@ private const val MAX_CONTRACT_LENGTH = 128
 private const val MAX_RELEASE_NOTES = 6
 private const val MAX_RELEASE_NOTE_LENGTH = 120
 private const val MAX_FUTURE_CLOCK_SKEW_MS = 5 * 60_000L
-private const val OFFICIAL_RATES_ORIGIN = "https://rates.muchtoman.com"
+private const val OFFICIAL_RATES_ORIGIN = "https://rates.zheton.app"
 
 private val EVM_ADDRESS = Regex("^0x[0-9a-fA-F]{40}$")
 private val BASE58_KEY = Regex("^[1-9A-HJ-NP-Za-km-z]{32,44}$")
@@ -369,7 +369,7 @@ private fun trustedRelease(value: Release?, ratesUrl: String): Release? {
             url.host.equals("github.com", ignoreCase = true) &&
             (url.port == -1 || url.port == 443) &&
             url.userInfo == null &&
-            releasePath.startsWith("/doxigo/muchtoman/releases/")
+            releasePath.startsWith("/pouyarn/zheton/releases/")
     }
 }
 
@@ -508,16 +508,26 @@ internal fun InputStream.readUtf8Limited(maxBytes: Int): String {
 private const val SMS_SCHEMA = 12
 
 class Store(context: Context) {
-    private val prefs = context.getSharedPreferences("muchtoman", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences("zheton", Context.MODE_PRIVATE)
 
     init {
-        // A version bump no longer deletes anything. Older builds erased the fold (bank
-        // balances, the seen-message index and the scan watermark) on a schema change, which
-        // could lose figures a re-read can never rebuild — hand-typed anchors, or messages
-        // already pruned from the phone's inbox. Hand-typed anchors now live in the durable
-        // store via migrateAnchorsFromPrefs, and the ledger re-derives from durable messages;
-        // the fold is just a cache of the same reading, so wiping it bought nothing.
-        // The marker itself is kept so the Store can still observe that a re-parse happened.
+        if (prefs.all.isEmpty()) {
+            val legacy = context.getSharedPreferences("muchtoman", Context.MODE_PRIVATE)
+            if (legacy.all.isNotEmpty()) {
+                val editor = prefs.edit()
+                for ((k, v) in legacy.all) {
+                    when (v) {
+                        is String -> editor.putString(k, v)
+                        is Int -> editor.putInt(k, v)
+                        is Long -> editor.putLong(k, v)
+                        is Float -> editor.putFloat(k, v)
+                        is Boolean -> editor.putBoolean(k, v)
+                        is Set<*> -> @Suppress("UNCHECKED_CAST") editor.putStringSet(k, v as Set<String>)
+                    }
+                }
+                editor.apply()
+            }
+        }
         if (prefs.getInt("smsSchema", 0) != SMS_SCHEMA) {
             prefs.edit().putInt("smsSchema", SMS_SCHEMA).apply()
         }
@@ -741,7 +751,10 @@ suspend fun fetchRates(url: String): Result<Rates> = withContext(Dispatchers.IO)
         }
         try {
             val code = conn.responseCode
-            if (code !in 200..299) error("HTTP $code")
+            if (code !in 200..299) {
+                conn.errorStream?.use { it.readBytes() }
+                error("HTTP $code")
+            }
             val body = conn.inputStream.use { it.readUtf8Limited(MAX_RATES_RESPONSE_BYTES) }
             val parsed = sanitizeRates(JSON.decodeFromString<Rates>(body), url)
             if (parsed.toman.isEmpty()) error("empty rates")

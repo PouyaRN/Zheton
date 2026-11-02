@@ -88,7 +88,7 @@ suspend fun recordManualTransaction(
 
 /**
  * Quick add from outside the app: the quick-settings tile, the Quick Add widget and the
- * `muchtoman://quick_add` link. The same full-screen entry the app opens ([QuickAddScreen]).
+ * `zheton://quick_add` link. The same full-screen entry the app opens ([QuickAddScreen]).
  */
 class QuickAddActivity : ComponentActivity() {
 
@@ -122,6 +122,6 @@ class QuickAddActivity : ComponentActivity() {
 
     companion object {
         /** Optional preselected category id passed by the Quick Add widget. */
-        const val EXTRA_CATEGORY_ID = "com.doxigo.muchtoman.extra.CATEGORY_ID"
+        const val EXTRA_CATEGORY_ID = "com.pouyarn.zheton.extra.CATEGORY_ID"
     }
 }

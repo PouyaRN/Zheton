@@ -241,7 +241,7 @@ fun AppVm.saveQuickAdd(legs: List<ManualLeg>) {
     val before = legs.dropLast(1)
     viewModelScope.launch(Dispatchers.Default) {
         runCatching { recordQuickAdd(getApplication<Application>(), before) }
-            .onFailure { android.util.Log.w("muchtoman", "quick add first leg failed: $it") }
+            .onFailure { android.util.Log.d("zheton", "quick add first leg failed: $it") }
         addManualTransaction(last.amountRial, last.isExpense, last.categoryId, last.merchant, "", last.at, last.accountId)
     }
 }

@@ -45,15 +45,15 @@ object ReminderNotifications {
      * The app can read it in `onCreate`/`onNewIntent` to scroll to the right cheque. Not required
      * for the notification to work, which is why it is only an extra on the launch intent.
      */
-    const val EXTRA_REMINDER_KEY = "com.doxigo.muchtoman.extra.REMINDER_KEY"
+    const val EXTRA_REMINDER_KEY = "com.pouyarn.zheton.extra.REMINDER_KEY"
 
     /** The [ReminderItem.id] behind a due reminder, understood by the receiver and the app. */
-    const val EXTRA_REMINDER_ITEM_ID = "com.doxigo.muchtoman.extra.REMINDER_ITEM_ID"
+    const val EXTRA_REMINDER_ITEM_ID = "com.pouyarn.zheton.extra.REMINDER_ITEM_ID"
 
     /** Broadcast action for «رسیدگی شد». The receiver is registered in the manifest. */
-    const val ACTION_MARK_HANDLED = "com.doxigo.muchtoman.action.REMINDER_HANDLED"
+    const val ACTION_MARK_HANDLED = "com.pouyarn.zheton.action.REMINDER_HANDLED"
 
-    const val EXTRA_KEY = "com.doxigo.muchtoman.extra.REMINDER_DEDUPE_KEY"
+    const val EXTRA_KEY = "com.pouyarn.zheton.extra.REMINDER_DEDUPE_KEY"
 
     /** A test notification has no dedupe key and is never recorded as fired. */
     const val TEST_KEY = "test"

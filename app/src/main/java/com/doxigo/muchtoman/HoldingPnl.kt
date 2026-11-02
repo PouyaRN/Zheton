@@ -402,7 +402,7 @@ fun persistDailyRates(
 ): Map<String, DailyCloses> {
     if (updatedAt <= 0L) return emptyMap()
     return runCatching { files.record(rates, tehranDay(updatedAt), dailyRateIds(holdings)) }
-        .onFailure { android.util.Log.w("muchtoman", "daily rates write failed: $it") }
+        .onFailure { android.util.Log.d("zheton", "daily rates write failed: $it") }
         .getOrDefault(emptyMap())
 }
 

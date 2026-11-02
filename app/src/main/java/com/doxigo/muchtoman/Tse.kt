@@ -170,7 +170,10 @@ suspend fun fetchTse(now: Long = System.currentTimeMillis()): Result<TseSnapshot
             }
             try {
                 val code = conn.responseCode
-                if (code !in 200..299) error("HTTP $code")
+                if (code !in 200..299) {
+                    conn.errorStream?.use { it.readBytes() }
+                    error("HTTP $code")
+                }
                 parseMarketWatch(
                     conn.inputStream.use { it.readUtf8Limited(MAX_TSE_RESPONSE_BYTES) },
                     now,

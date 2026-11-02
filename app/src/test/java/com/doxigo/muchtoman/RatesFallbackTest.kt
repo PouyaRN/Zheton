@@ -75,7 +75,7 @@ class RatesFallbackTest {
     @Test
     fun `network catalogue URLs are restricted to the trusted services`() {
         val now = 1_000_000L
-        val safeIcon = "https://rates.muchtoman.com/coin-icon?path=%2Fcoins%2Fimages%2F1%2Fsmall.png"
+        val safeIcon = "https://rates.zheton.app/coin-icon?path=%2Fcoins%2Fimages%2F1%2Fsmall.png"
         val raw = Rates(
             updatedAt = now,
             toman = mapOf("btc" to 1.0, "bad" to Double.POSITIVE_INFINITY),
@@ -86,7 +86,7 @@ class RatesFallbackTest {
             latest = Release("2.0", "https://evil.example/fake.apk"),
         )
 
-        val clean = sanitizeRates(raw, "https://rates.muchtoman.com/rates", now)
+        val clean = sanitizeRates(raw, "https://rates.zheton.app/rates", now)
 
         assertEquals(setOf("btc"), clean.toman.keys)
         assertEquals(safeIcon, clean.coins.first().icon)
@@ -97,8 +97,8 @@ class RatesFallbackTest {
     @Test
     fun `the update note downloads the proxied APK, and only from the rates origin`() {
         val now = 1_000_000L
-        val page = "https://github.com/doxigo/muchToman/releases/tag/v2.0"
-        val origin = "https://rates.muchtoman.com"
+        val page = "https://github.com/pouyarn/zheton/releases/tag/v2.0"
+        val origin = "https://rates.zheton.app"
         val ours = "$origin/rates"
 
         // The normal answer: the tap downloads the file rather than opening a github.com page.
@@ -139,8 +139,8 @@ class RatesFallbackTest {
     @Test
     fun `release notes are trimmed of anything that would misdraw the update sheet`() {
         val now = 1_000_000L
-        val page = "https://github.com/doxigo/muchToman/releases/tag/v2.0"
-        val ours = "https://rates.muchtoman.com/rates"
+        val page = "https://github.com/pouyarn/zheton/releases/tag/v2.0"
+        val ours = "https://rates.zheton.app/rates"
 
         val clean = sanitizeRates(
             Rates(
@@ -190,13 +190,13 @@ class RatesFallbackTest {
     fun `a future rates timestamp cannot suppress refresh indefinitely`() {
         val now = 1_000_000L
         val raw = Rates(now + 5 * 60_000L + 1, mapOf("usd" to 1.0))
-        assertEquals(0L, sanitizeRates(raw, "https://rates.muchtoman.com/rates", now).updatedAt)
+        assertEquals(0L, sanitizeRates(raw, "https://rates.zheton.app/rates", now).updatedAt)
     }
 
     @Test
     fun `usd rate anomaly jumping to gold coin or extreme values is sanitized`() {
         val now = 1_000_000L
-        val ours = "https://rates.muchtoman.com/rates"
+        val ours = "https://rates.zheton.app/rates"
 
         // 1. USD mixed up with coin_emami (54M) is rejected
         val mixedUp = Rates(now, mapOf("usd" to 54_000_000.0, "coin_emami" to 54_000_000.0))

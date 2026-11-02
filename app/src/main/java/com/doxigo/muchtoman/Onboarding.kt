@@ -74,7 +74,7 @@ fun OnboardingDialog(
             OnboardingSlide(
                 title = "محرمانگی اول-محلی (Local-First)",
                 subtitle = "امنیت ۱۰۰٪ آفلاین",
-                description = "ژتون بدون نیاز به شماره موبایل، سرور خارجی یا تلهمتری کار می‌کند. تمامی پیامک‌های بانکی، تراکنش‌ها و کارت‌های شما به صورت رمزنگاری‌شده صرفاً روی حافظه همین دستگاه ذخیره می‌شوند.",
+                description = "ژتون بدون نیاز به شماره موبایل، سرور خارجی یا تله‌متری کار می‌کند. تمامی پیامک‌های بانکی، تراکنش‌ها و کارت‌های شما به صورت رمزنگاری‌شده صرفاً روی حافظه همین دستگاه ذخیره می‌شوند.",
                 highlight = "اطلاعات مالی شما هرگز از گوشی خارج نمی‌شود",
                 icon = Icons.Rounded.Lock,
                 accentColor = Color(0xFF10B981),
@@ -135,12 +135,12 @@ fun OnboardingDialog(
                             modifier = Modifier
                                 .size(38.dp)
                                 .clip(RoundedCornerShape(12.dp))
-                                .background(t.ink),
+                                .background(t.inverse),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
                                 text = "ژ",
-                                color = Color.White,
+                                color = t.onInverse,
                                 fontWeight = FontWeight.Black,
                                 fontSize = 18.sp,
                             )
@@ -285,8 +285,8 @@ fun OnboardingDialog(
                                 .height(52.dp),
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = t.ink,
-                                contentColor = Color.White,
+                                containerColor = t.inverse,
+                                contentColor = t.onInverse,
                             ),
                         ) {
                             Row(
@@ -314,8 +314,8 @@ fun OnboardingDialog(
                                 .height(52.dp),
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = t.ink,
-                                contentColor = Color.White,
+                                containerColor = t.inverse,
+                                contentColor = t.onInverse,
                             ),
                         ) {
                             Row(

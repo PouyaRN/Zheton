@@ -195,10 +195,10 @@ private fun request(
     return connection.use { conn ->
         payload?.let { conn.outputStream.use { out -> out.write(it.toByteArray(Charsets.UTF_8)) } }
         if (conn.responseCode !in 200..299) {
-            val detail = conn.errorStream?.readUtf8Limited(4096).orEmpty()
+            val detail = conn.errorStream?.use { it.readUtf8Limited(4096) }.orEmpty()
             throw IllegalStateException("sync ${conn.responseCode}: ${detail.take(120)}")
         }
-        conn.inputStream.readUtf8Limited(1 shl 20)
+        conn.inputStream.use { it.readUtf8Limited(1 shl 20) }
     }
 }
 

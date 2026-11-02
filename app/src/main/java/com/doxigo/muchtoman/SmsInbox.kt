@@ -60,7 +60,7 @@ suspend fun readSmsInbox(context: Context, since: Long): List<RawSms> = withCont
     }.onFailure {
         // A revoked permission or an OEM-locked provider must not take the app down with it;
         // the balances simply stop moving and the log line says why.
-        android.util.Log.w("muchtoman", "sms read failed: $it")
+        android.util.Log.d("zheton", "sms read failed: $it")
     }
     rows
 }

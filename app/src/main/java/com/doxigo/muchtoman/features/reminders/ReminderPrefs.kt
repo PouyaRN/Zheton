@@ -178,7 +178,7 @@ class ReminderPrefs(context: Context) {
          * The same file `Store` uses, on purpose: one backup, one clear-data, one place a person
          * would look. The keys are all prefixed so they cannot collide with the ledger's.
          */
-        const val PREFS_NAME = "muchtoman"
+        const val PREFS_NAME = "zheton"
 
         const val KEY_ENABLED = "remindersEnabled"
         const val KEY_LEAD_DAYS = "remindersLeadDays"

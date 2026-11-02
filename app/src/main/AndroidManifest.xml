@@ -36,6 +36,7 @@
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
+        android:enableOnBackInvokedCallback="true"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -71,7 +72,7 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="muchtoman" android:host="join" />
+                <data android:scheme="zheton" android:host="join" />
             </intent-filter>
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
@@ -79,7 +80,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="https"
-                    android:host="sync.muchtoman.com"
+                    android:host="sync.zheton.app"
                     android:pathPrefix="/join" />
             </intent-filter>
         </activity>
@@ -90,7 +91,7 @@
             android:colorMode="default"
             android:theme="@style/Theme.MuchToman.Translucent">
             <intent-filter>
-                <action android:name="com.doxigo.muchtoman.action.QUICK_ADD" />
+                <action android:name="com.pouyarn.zheton.action.QUICK_ADD" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
             <intent-filter>
@@ -98,7 +99,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
-                    android:scheme="muchtoman"
+                    android:scheme="zheton"
                     android:host="quick_add" />
             </intent-filter>
         </activity>
@@ -230,7 +231,7 @@
             android:name=".features.reminders.ReminderActionReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.doxigo.muchtoman.action.REMINDER_HANDLED" />
+                <action android:name="com.pouyarn.zheton.action.REMINDER_HANDLED" />
             </intent-filter>
         </receiver>
 

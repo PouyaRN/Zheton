@@ -139,12 +139,19 @@ data class LitheMarketRow(
     val badgeColorHex: Long,
 )
 
-private val JALALI_DAYS = listOf(
-    "امروز، ۲۵ اردیبهشت",
-    "دیروز، ۲۴ اردیبهشت",
-    "۲۳ اردیبهشت ۱۴۰۴",
-    "۲۲ اردیبهشت ۱۴۰۴",
-)
+private fun formatTehranDayOffset(dayOffset: Int, nowMs: Long = System.currentTimeMillis()): String {
+    val today = tehranDay(nowMs)
+    val targetDay = today + dayOffset
+    val j = jalaliOf(targetDay)
+    val monthName = MONTHS.getOrElse(j.month - 1) { "" }
+    val dayAndMonth = "${faNumber(j.day)} $monthName"
+    return when (dayOffset) {
+        0 -> "امروز، $dayAndMonth"
+        -1 -> "دیروز، $dayAndMonth"
+        1 -> "فردا، $dayAndMonth"
+        else -> "$dayAndMonth ${faDigits(j.year.toString())}"
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -202,7 +209,7 @@ fun LitheShell(
 
     // Tab 4 Goals local state
     var goalFilter by rememberSaveable { mutableStateOf("all") }
-    var roundUpEnabled by rememberSaveable { mutableStateOf(true) }
+    var roundUpEnabled by rememberSaveable { mutableStateOf(false) }
     var simTargetMillion by rememberSaveable { mutableFloatStateOf(50f) }
     var simMonthlyMillion by rememberSaveable { mutableFloatStateOf(4.5f) }
 
@@ -228,9 +235,27 @@ fun LitheShell(
         )
     }
 
-    val totalAssetToman = remember(state.totals.toman, customGoals) {
-        val realTotal = state.totals.toman.roundToLong()
-        if (realTotal > 0L) realTotal else 245_800_000L
+    val todayTehran = remember { tehranDay(System.currentTimeMillis()) }
+    val currentJalaliMonthName = remember(todayTehran) {
+        val j = jalaliOf(todayTehran)
+        MONTHS.getOrElse(j.month - 1) { "جاری" }
+    }
+
+    val monthlyCashflowToman = remember(state.story.month) {
+        (state.story.month.incomeRial - state.story.month.spentRial) / 10L
+    }
+
+    val totalAssetToman = remember(state.totals.toman, state.bankAccounts, state.smsEnabled, monthlyCashflowToman) {
+        val holdingsAndSmsBanks = state.totals.toman.roundToLong()
+        val manualBanks = if (!state.smsEnabled && state.bankAccounts.isNotEmpty()) {
+            bankTotal(state.bankAccounts, state.disabledBanks).roundToLong()
+        } else 0L
+        val baseTotal = holdingsAndSmsBanks + manualBanks
+        if (baseTotal > 0L) baseTotal else monthlyCashflowToman.coerceAtLeast(0L)
+    }
+
+    val glance = remember(state.history, totalAssetToman, todayTehran) {
+        netWorthGlance(state.history, totalAssetToman.toDouble(), todayTehran)
     }
 
     Box(
@@ -255,9 +280,10 @@ fun LitheShell(
             item(key = "lithe_header") {
                 LitheTopHeader(
                     activeTab = activeTab,
-                    dateLabel = JALALI_DAYS[dayOffset.coerceIn(0, JALALI_DAYS.lastIndex)],
-                    onPrevDay = { dayOffset = (dayOffset + 1).coerceAtMost(JALALI_DAYS.lastIndex) },
-                    onNextDay = { dayOffset = (dayOffset - 1).coerceAtLeast(0) },
+                    dateLabel = formatTehranDayOffset(dayOffset),
+                    onPrevDay = { dayOffset -= 1 },
+                    onNextDay = { dayOffset += 1 },
+                    onResetToday = { dayOffset = 0 },
                     onOpenCalculators = { showCalculators = true },
                     onOpenSettings = onOpenSettings,
                 )
@@ -269,6 +295,8 @@ fun LitheShell(
                     item(key = "dash_hero") {
                         DashboardHeroBalanceCard(
                             totalToman = totalAssetToman,
+                            monthlyNetToman = monthlyCashflowToman,
+                            monthlyChangePercent = glance.changePercent,
                             privacyMode = privacyMode,
                             onTogglePrivacy = onTogglePrivacy,
                             onDeposit = {
@@ -296,8 +324,11 @@ fun LitheShell(
                         DashboardSplitBentoRow(
                             budgetPercent = activeBudget?.spentPercent?.coerceIn(0, 100) ?: 0,
                             remainingBudgetToman = activeBudget?.let { (it.remainingRial / 10L).coerceAtLeast(0L) } ?: 0L,
+                            monthNameFa = currentJalaliMonthName,
+                            hasBudgetConfigured = activeBudget != null,
                             activeCommitmentsCount = state.commitments.count { !it.isSettled },
                             commitmentSubtitle = subText,
+                            hasUrgentCommitment = urgentCommitment != null,
                             onOpenBudget = { activeTab = LitheTab.ANALYTICS },
                             onOpenCommitments = { activeTab = LitheTab.COMMITMENTS },
                         )
@@ -305,6 +336,7 @@ fun LitheShell(
 
                     item(key = "dash_insight") {
                         DashboardSmartInsightBanner(
+                            liquidBalanceToman = state.bankToman.roundToLong(),
                             onAction = {
                                 activeTab = LitheTab.GOALS
                                 Toast.makeText(context, "انتقال هوشمند به بخش پس‌انداز و اهداف باز شد", Toast.LENGTH_SHORT).show()
@@ -341,12 +373,15 @@ fun LitheShell(
                     item(key = "ana_hero_flow") {
                         AnalyticsCashflowHeroCard(
                             period = analyticsPeriod,
+                            entries = state.ledger.entries,
+                            todayTehran = todayTehran,
                             privacyMode = privacyMode,
                         )
                     }
 
                     item(key = "ana_insight") {
                         AnalyticsBehavioralInsightCard(
+                            entries = state.ledger.entries,
                             smartCapEnabled = smartCapEnabled,
                             onToggleCap = {
                                 smartCapEnabled = !smartCapEnabled
@@ -359,7 +394,10 @@ fun LitheShell(
                     }
 
                     item(key = "ana_donut") {
-                        AnalyticsCategoryDonutCard(privacyMode = privacyMode)
+                        AnalyticsCategoryDonutCard(
+                            entries = state.ledger.entries,
+                            privacyMode = privacyMode,
+                        )
                     }
 
                     item(key = "ana_sms_banner") {
@@ -626,6 +664,7 @@ private fun LitheTopHeader(
     dateLabel: String,
     onPrevDay: () -> Unit,
     onNextDay: () -> Unit,
+    onResetToday: () -> Unit = {},
     onOpenCalculators: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
@@ -665,7 +704,10 @@ private fun LitheTopHeader(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(5.dp),
-                        modifier = Modifier.padding(horizontal = 4.dp),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(999.dp))
+                            .clickable(onClick = onResetToday)
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.DateRange,
@@ -785,6 +827,8 @@ private fun LitheTopHeader(
 @Composable
 private fun DashboardHeroBalanceCard(
     totalToman: Long,
+    monthlyNetToman: Long,
+    monthlyChangePercent: Double?,
     privacyMode: Boolean,
     onTogglePrivacy: () -> Unit,
     onDeposit: () -> Unit,
@@ -793,6 +837,24 @@ private fun DashboardHeroBalanceCard(
     onScanSms: () -> Unit,
 ) {
     val t = CanvasTheme.tokens
+    val badgePositive = (monthlyChangePercent ?: 0.0) >= 0.0
+    val badgeColor = if (badgePositive) Color(0xFF10B981) else Color(0xFFF43F5E)
+    val badgeTextColor = if (badgePositive) Color(0xFF059669) else Color(0xFFE11D48)
+    val badgeLabel = when {
+        monthlyChangePercent != null && kotlin.math.abs(monthlyChangePercent) >= 0.05 -> {
+            val formatted = String.format(java.util.Locale.US, "%.1f", kotlin.math.abs(monthlyChangePercent))
+            "${if (monthlyChangePercent >= 0) "↗ +" else "↘ -"}${faDigits(formatted)}٪ این ماه"
+        }
+        else -> "۰٪ این ماه"
+    }
+
+    val netFormatted = when {
+        privacyMode -> "••••••"
+        monthlyNetToman == 0L -> "۰ تومان"
+        monthlyNetToman > 0L -> "+${faNumber(monthlyNetToman)} تومان"
+        else -> "-${faNumber(kotlin.math.abs(monthlyNetToman))} تومان"
+    }
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
@@ -827,14 +889,14 @@ private fun DashboardHeroBalanceCard(
 
                 Surface(
                     shape = RoundedCornerShape(999.dp),
-                    color = Color(0xFF10B981).copy(alpha = 0.12f),
+                    color = badgeColor.copy(alpha = 0.12f),
                 ) {
                     Text(
-                        text = "↗ +۸.۴٪ این ماه",
+                        text = badgeLabel,
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF059669),
+                        color = badgeTextColor,
                     )
                 }
             }
@@ -862,7 +924,7 @@ private fun DashboardHeroBalanceCard(
 
             Spacer(Modifier.height(10.dp))
 
-            // Sub-row: Realized monthly profit
+            // Sub-row: Realized monthly net cashflow (income - expense of current Jalali month)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -883,13 +945,13 @@ private fun DashboardHeroBalanceCard(
                             .background(Color(0xFF2563EB)),
                     )
                     Text(
-                        text = "سود محقق شده ماهانه:",
+                        text = "تراز خالص این ماه (درآمد منهای هزینه):",
                         style = MaterialTheme.typography.labelSmall,
                         color = t.muted,
                     )
                 }
                 Text(
-                    text = if (privacyMode) "••••••" else "+۱۸٬۴۰۰٬۰۰۰ تومان",
+                    text = netFormatted,
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.ExtraBold,
                     color = t.ink,
@@ -985,8 +1047,11 @@ private fun HeroActionButton(
 private fun DashboardSplitBentoRow(
     budgetPercent: Int,
     remainingBudgetToman: Long,
+    monthNameFa: String,
+    hasBudgetConfigured: Boolean,
     activeCommitmentsCount: Int,
     commitmentSubtitle: String = "بدون قسط معوق",
+    hasUrgentCommitment: Boolean = false,
     onOpenBudget: () -> Unit,
     onOpenCommitments: () -> Unit,
 ) {
@@ -1027,13 +1092,13 @@ private fun DashboardSplitBentoRow(
                 }
                 Spacer(Modifier.height(14.dp))
                 Text(
-                    text = "${faCompact(remainingBudgetToman)} تومان",
+                    text = if (hasBudgetConfigured) "${faCompact(remainingBudgetToman)} تومان" else "۰ تومان",
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Black,
                     color = t.ink,
                 )
                 Text(
-                    text = "باقی‌مانده از بودجه اردیبهشت",
+                    text = if (hasBudgetConfigured) "باقی‌مانده از بودجه $monthNameFa" else "بودجه $monthNameFa تنظیم نشده",
                     style = MaterialTheme.typography.labelSmall,
                     color = t.muted,
                     fontSize = 10.sp,
@@ -1069,15 +1134,15 @@ private fun DashboardSplitBentoRow(
                     }
                     Surface(
                         shape = RoundedCornerShape(999.dp),
-                        color = Color(0xFFEA5C3C).copy(alpha = 0.12f),
+                        color = if (hasUrgentCommitment) Color(0xFFEA5C3C).copy(alpha = 0.12f) else t.track,
                     ) {
                         Text(
-                            text = "سررسید فردا",
+                            text = if (hasUrgentCommitment) "سررسید نزدیک" else "بدون سررسید فوری",
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                             style = MaterialTheme.typography.labelSmall,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFFEA5C3C),
+                            color = if (hasUrgentCommitment) Color(0xFFEA5C3C) else t.muted,
                         )
                     }
                 }
@@ -1101,8 +1166,17 @@ private fun DashboardSplitBentoRow(
 }
 
 @Composable
-private fun DashboardSmartInsightBanner(onAction: () -> Unit) {
+private fun DashboardSmartInsightBanner(
+    liquidBalanceToman: Long,
+    onAction: () -> Unit,
+) {
     val t = CanvasTheme.tokens
+    val monthlyYieldToman = (liquidBalanceToman * 0.025).roundToLong()
+    val insightBody = if (liquidBalanceToman > 0L) {
+        "شما ${faNumber(liquidBalanceToman)} تومان موجودی نقد دارید. با انتقال آن به صندوق درآمد ثابت، ماهانه حدود ${faNumber(monthlyYieldToman)} تومان سود روزشمار بدون ریسک دریافت خواهید کرد."
+    } else {
+        "هنوز موجودی یا حساب بانکی ثبت نشده است. با ثبت اولین حساب یا دارایی، پیشنهادهای هوشمند سرمایه‌گذاری بر اساس موجودی واقعی شما محاسبه می‌شود."
+    }
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -1138,7 +1212,7 @@ private fun DashboardSmartInsightBanner(onAction: () -> Unit) {
                 }
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "شما ۳۲ میلیون تومان وجه راکد در حساب جاری دارید. با انتقال آن به صندوق درآمد ثابت «افرا»، ماهانه حدود ۸۰۰٬۰۰۰ تومان سود روزشمار بدون ریسک دریافت خواهید کرد.",
+                    text = insightBody,
                     style = MaterialTheme.typography.bodySmall,
                     color = t.inkSecondary,
                     lineHeight = 19.sp,
@@ -1151,7 +1225,7 @@ private fun DashboardSmartInsightBanner(onAction: () -> Unit) {
                     shadowElevation = 1.dp,
                 ) {
                     Text(
-                        text = "مشاهده و انتقال به صندوق ←",
+                        text = "مشاهده بخش پس‌انداز و اهداف ←",
                         modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.ExtraBold,
@@ -1473,17 +1547,31 @@ private fun AnalyticsPeriodSelector(
 @Composable
 private fun AnalyticsCashflowHeroCard(
     period: String,
+    entries: List<LedgerEntry>,
+    todayTehran: Long,
     privacyMode: Boolean,
 ) {
     val t = CanvasTheme.tokens
-    val factor = when (period) {
-        "روزانه" -> 0.04
-        "هفتگی" -> 0.25
-        "سالانه" -> 11.5
-        else -> 1.0
+    val windowDays = when (period) {
+        "روزانه" -> 1L
+        "هفتگی" -> 7L
+        "سالانه" -> 365L
+        else -> 30L
     }
-    val expenseToman = (28_450_000L * factor).roundToLong()
-    val incomeToman = (45_200_000L * factor).roundToLong()
+    val minDay = todayTehran - (windowDays - 1L)
+    val periodEntries = remember(entries, minDay, todayTehran) {
+        entries.filter { it.txn.day in minDay..todayTehran }
+    }
+    val expenseToman = remember(periodEntries) {
+        periodEntries.filter { it.txn.direction == "out" }
+            .sumOf { kotlin.math.abs((it.txn.amountRial ?: it.txn.signedRial ?: 0L) / 10L) }
+    }
+    val incomeToman = remember(periodEntries) {
+        periodEntries.filter { it.txn.direction == "in" }
+            .sumOf { kotlin.math.abs((it.txn.amountRial ?: it.txn.signedRial ?: 0L) / 10L) }
+    }
+    val netToman = incomeToman - expenseToman
+    val dailyAvgToman = if (windowDays > 0L) expenseToman / windowDays else 0L
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -1505,14 +1593,18 @@ private fun AnalyticsCashflowHeroCard(
                 )
                 Surface(
                     shape = RoundedCornerShape(999.dp),
-                    color = Color(0xFF10B981).copy(alpha = 0.12f),
+                    color = (if (netToman >= 0L) Color(0xFF10B981) else Color(0xFFF43F5E)).copy(alpha = 0.12f),
                 ) {
                     Text(
-                        text = "✓ تراز مثبت (+۱۶.۷ م)",
+                        text = when {
+                            netToman > 0L -> "✓ تراز مثبت (+${faCompact(netToman)})"
+                            netToman < 0L -> "↘ تراز منفی (-${faCompact(kotlin.math.abs(netToman))})"
+                            else -> "تراز صفر (۰ تومان)"
+                        },
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF059669),
+                        color = if (netToman >= 0L) Color(0xFF059669) else Color(0xFFE11D48),
                     )
                 }
             }
@@ -1537,7 +1629,12 @@ private fun AnalyticsCashflowHeroCard(
                         text = if (privacyMode) "••••••" else faNumber(expenseToman),
                         style = figureStyle(t.ink, FontWeight.Black).copy(fontSize = 18.sp),
                     )
-                    Text("تومان • ۱۲٪ کمتر از ماه قبل", style = MaterialTheme.typography.labelSmall, color = t.muted, fontSize = 10.sp)
+                    Text(
+                        text = if (expenseToman > 0L) "تومان • بر اساس تراکنش‌های ثبت‌شده" else "تومان • بدون هزینه ثبت‌شده",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = t.muted,
+                        fontSize = 10.sp,
+                    )
                 }
 
                 Column(
@@ -1553,7 +1650,12 @@ private fun AnalyticsCashflowHeroCard(
                         text = if (privacyMode) "••••••" else faNumber(incomeToman),
                         style = figureStyle(t.ink, FontWeight.Black).copy(fontSize = 18.sp),
                     )
-                    Text("تومان • حقوق + سود صندوق", style = MaterialTheme.typography.labelSmall, color = t.muted, fontSize = 10.sp)
+                    Text(
+                        text = if (incomeToman > 0L) "تومان • مجموع واریزی‌های دوره" else "تومان • بدون واریزی ثبت‌شده",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = t.muted,
+                        fontSize = 10.sp,
+                    )
                 }
             }
 
@@ -1566,13 +1668,13 @@ private fun AnalyticsCashflowHeroCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "ریتم جریان نقدینگی روزانه",
+                    text = "ریتم جریان نقدینگی ۷ روز اخیر",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold,
                     color = t.inkSecondary,
                 )
                 Text(
-                    text = "میانگین روزانه: ۹۴۸ هزار تومان",
+                    text = "میانگین روزانه: ${faNumber(dailyAvgToman)} تومان",
                     style = MaterialTheme.typography.labelSmall,
                     color = t.muted,
                     fontSize = 10.sp,
@@ -1581,15 +1683,23 @@ private fun AnalyticsCashflowHeroCard(
 
             Spacer(Modifier.height(12.dp))
 
-            val bars = listOf(
-                Triple("ش", 0.42f, false),
-                Triple("ی", 0.65f, false),
-                Triple("د", 0.30f, false),
-                Triple("س", 0.78f, false),
-                Triple("چ", 0.52f, false),
-                Triple("پ", 0.95f, true),
-                Triple("ج", 0.48f, false),
-            )
+            val last7Days = remember(entries, todayTehran) {
+                val dayLabels = listOf("ش", "ی", "د", "س", "چ", "پ", "ج")
+                val amounts = (6 downTo 0).map { offset ->
+                    val d = todayTehran - offset
+                    val spent = entries
+                        .filter { it.txn.day == d && it.txn.direction == "out" }
+                        .sumOf { kotlin.math.abs((it.txn.amountRial ?: it.txn.signedRial ?: 0L) / 10L) }
+                    val dowIdx = (((d + 5L) % 7L + 7L) % 7L).toInt()
+                    dayLabels.getOrElse(dowIdx) { "•" } to spent
+                }
+                val maxSpent = amounts.maxOfOrNull { it.second } ?: 0L
+                amounts.map { (label, spent) ->
+                    val frac = if (maxSpent > 0L) (spent.toFloat() / maxSpent.toFloat()).coerceIn(0.08f, 1f) else 0.08f
+                    val isPeak = maxSpent > 0L && spent == maxSpent
+                    Triple(label, frac, isPeak)
+                }
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1597,7 +1707,7 @@ private fun AnalyticsCashflowHeroCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Bottom,
             ) {
-                bars.forEach { (day, frac, isPeak) ->
+                last7Days.forEach { (day, frac, isPeak) ->
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Bottom,
@@ -1647,10 +1757,17 @@ private fun AnalyticsCashflowHeroCard(
 
 @Composable
 private fun AnalyticsBehavioralInsightCard(
+    entries: List<LedgerEntry>,
     smartCapEnabled: Boolean,
     onToggleCap: () -> Unit,
 ) {
     val t = CanvasTheme.tokens
+    val expenseEntries = remember(entries) { entries.filter { it.txn.direction == "out" } }
+    val topCategory = remember(expenseEntries) {
+        expenseEntries.groupBy { it.categoryFa.ifBlank { "سایر" } }
+            .mapValues { (_, list) -> list.sumOf { kotlin.math.abs((it.txn.amountRial ?: it.txn.signedRial ?: 0L) / 10L) } }
+            .maxByOrNull { it.value }
+    }
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -1671,14 +1788,22 @@ private fun AnalyticsBehavioralInsightCard(
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "فرصت صرفه‌جویی ۷۵۰ هزار تومانی",
+                    text = if (topCategory != null && topCategory.value > 0L) {
+                        "بیشترین سهم هزینه: ${topCategory.key}"
+                    } else {
+                        "تحلیل هوشمند رفتار مالی"
+                    },
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.ExtraBold,
                     color = t.ink,
                 )
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    text = "هزینه سفارش غذا و کافه در روزهای پنجشنبه و جمعه ۴۲٪ بیشتر از میانگین هفتگی شماست.",
+                    text = if (topCategory != null && topCategory.value > 0L) {
+                        "مجموع هزینه در دسته «${topCategory.key}» برابر ${faNumber(topCategory.value)} تومان بوده است. می‌توانید برای کنترل مخارج سقف بودجه ماهانه تعیین کنید."
+                    } else {
+                        "پس از ثبت تراکنش‌ها، الگوی مخارج شما در روزهای هفته و دسته‌بندی‌ها به‌صورت خودکار تحلیل می‌شود."
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = t.inkSecondary,
                 )
@@ -1702,15 +1827,36 @@ private fun AnalyticsBehavioralInsightCard(
 }
 
 @Composable
-private fun AnalyticsCategoryDonutCard(privacyMode: Boolean) {
+private fun AnalyticsCategoryDonutCard(
+    entries: List<LedgerEntry>,
+    privacyMode: Boolean,
+) {
     val t = CanvasTheme.tokens
-    val categories = listOf(
-        Triple("مسکن و اجاره", 35, Color(0xFF2563EB)),
-        Triple("خوراک و سوپرمارکت", 25, Color(0xFFEA5C3C)),
-        Triple("حمل‌ونقل و اسنپ", 20, Color(0xFF10B981)),
-        Triple("تفریح، کافه و اشتراک", 20, Color(0xFFF59E0B)),
-    )
-    val amounts = listOf(9_950_000L, 7_110_000L, 5_690_000L, 5_700_000L)
+    val palette = remember {
+        listOf(
+            Color(0xFF2563EB),
+            Color(0xFFEA5C3C),
+            Color(0xFF10B981),
+            Color(0xFFF59E0B),
+        )
+    }
+    val breakdown = remember(entries) {
+        val grouped = entries
+            .filter { it.txn.direction == "out" }
+            .groupBy { it.categoryFa.ifBlank { "سایر مخارج" } }
+            .mapValues { (_, list) ->
+                list.sumOf { kotlin.math.abs((it.txn.amountRial ?: it.txn.signedRial ?: 0L) / 10L) }
+            }
+            .entries
+            .filter { it.value > 0L }
+            .sortedByDescending { it.value }
+            .take(4)
+        val total = grouped.sumOf { it.value }.coerceAtLeast(1L)
+        grouped.mapIndexed { index, entry ->
+            val pct = ((entry.value.toDouble() / total.toDouble()) * 100.0).roundToLong().toInt().coerceIn(1, 100)
+            Triple(entry.key, pct, palette[index % palette.size]) to entry.value
+        }
+    }
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -1731,7 +1877,7 @@ private fun AnalyticsCategoryDonutCard(privacyMode: Boolean) {
                     color = t.ink,
                 )
                 Text(
-                    text = "۴ دسته اصلی",
+                    text = if (breakdown.isNotEmpty()) "${faDigits(breakdown.size.toString())} دسته فعال" else "بدون تراکنش",
                     style = MaterialTheme.typography.labelSmall,
                     color = t.muted,
                 )
@@ -1739,91 +1885,146 @@ private fun AnalyticsCategoryDonutCard(privacyMode: Boolean) {
 
             Spacer(Modifier.height(18.dp))
 
-            // Multi-segment Donut Ring + Legend
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(18.dp),
-            ) {
-                Box(
-                    modifier = Modifier.size(128.dp),
-                    contentAlignment = Alignment.Center,
+            if (breakdown.isEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(18.dp),
                 ) {
-                    Canvas(modifier = Modifier.size(116.dp)) {
-                        val stroke = 16.dp.toPx()
-                        var startAngle = -90f
-                        categories.forEach { (_, pct, color) ->
-                            val sweep = (pct / 100f) * 360f
+                    Box(
+                        modifier = Modifier.size(116.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Canvas(modifier = Modifier.size(104.dp)) {
                             drawArc(
-                                color = color,
-                                startAngle = startAngle + 2f,
-                                sweepAngle = (sweep - 4f).coerceAtLeast(2f),
+                                color = t.track,
+                                startAngle = 0f,
+                                sweepAngle = 360f,
                                 useCenter = false,
-                                style = Stroke(width = stroke, cap = StrokeCap.Round),
+                                style = Stroke(width = 14.dp.toPx(), cap = StrokeCap.Round),
                             )
-                            startAngle += sweep
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "۰٪",
+                                style = figureStyle(t.ink, FontWeight.Black).copy(fontSize = 20.sp),
+                            )
+                            Text(
+                                text = "خالی",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = t.muted,
+                                fontSize = 10.sp,
+                            )
                         }
                     }
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
                         Text(
-                            text = "۳۵٪",
-                            style = figureStyle(t.ink, FontWeight.Black).copy(fontSize = 22.sp),
+                            text = "هنوز هزینه‌ای ثبت نشده است",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold,
+                            color = t.ink,
                         )
                         Text(
-                            text = "مسکن",
+                            text = "با ثبت اولین هزینه یا اسکن پیامک بانکی، سهم هر دسته‌بندی در این نمودار نمایش داده می‌شود.",
                             style = MaterialTheme.typography.labelSmall,
                             color = t.muted,
-                            fontSize = 10.sp,
                         )
                     }
                 }
-
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+            } else {
+                // Multi-segment Donut Ring + Legend
+                val topItem = breakdown.first()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(18.dp),
                 ) {
-                    categories.forEachIndexed { idx, (name, pct, color) ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(10.dp)
-                                        .clip(CircleShape)
-                                        .background(color),
+                    Box(
+                        modifier = Modifier.size(128.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Canvas(modifier = Modifier.size(116.dp)) {
+                            val stroke = 16.dp.toPx()
+                            var startAngle = -90f
+                            breakdown.forEach { (catTriple, _) ->
+                                val (_, pct, color) = catTriple
+                                val sweep = (pct / 100f) * 360f
+                                drawArc(
+                                    color = color,
+                                    startAngle = startAngle + 2f,
+                                    sweepAngle = (sweep - 4f).coerceAtLeast(2f),
+                                    useCenter = false,
+                                    style = Stroke(width = stroke, cap = StrokeCap.Round),
                                 )
-                                Column {
-                                    Text(
-                                        text = name,
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontWeight = FontWeight.Bold,
-                                        color = t.ink,
+                                startAngle += sweep
+                            }
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "${faDigits(topItem.first.second.toString())}٪",
+                                style = figureStyle(t.ink, FontWeight.Black).copy(fontSize = 22.sp),
+                            )
+                            Text(
+                                text = topItem.first.first.take(10),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = t.muted,
+                                fontSize = 10.sp,
+                                maxLines = 1,
+                            )
+                        }
+                    }
+
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        breakdown.forEach { (catTriple, amountToman) ->
+                            val (name, pct, color) = catTriple
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(10.dp)
+                                            .clip(CircleShape)
+                                            .background(color),
                                     )
+                                    Column {
+                                        Text(
+                                            text = name,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = t.ink,
+                                        )
+                                        Text(
+                                            text = if (privacyMode) "••••" else "${faCompact(amountToman)} تومان",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = t.muted,
+                                            fontSize = 10.sp,
+                                        )
+                                    }
+                                }
+                                Surface(
+                                    shape = RoundedCornerShape(999.dp),
+                                    color = color.copy(alpha = 0.12f),
+                                ) {
                                     Text(
-                                        text = if (privacyMode) "••••" else "${faCompact(amounts[idx])} تومان",
+                                        text = "${faDigits(pct.toString())}٪",
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = t.muted,
-                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = color,
                                     )
                                 }
-                            }
-                            Surface(
-                                shape = RoundedCornerShape(999.dp),
-                                color = color.copy(alpha = 0.12f),
-                            ) {
-                                Text(
-                                    text = "${faDigits(pct.toString())}٪",
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = color,
-                                )
                             }
                         }
                     }
@@ -2591,7 +2792,7 @@ private fun GoalsHeroAllocationCard(
                     color = Color(0xFF10B981).copy(alpha = 0.12f),
                 ) {
                     Text(
-                        text = "↗ +۱۸.۴٪ رشد کل",
+                        text = if (totalSavings > 0L) "${faDigits(customGoals.size.toString())} هدف فعال" else "بدون دارایی ثبت‌شده",
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
@@ -2621,7 +2822,7 @@ private fun GoalsHeroAllocationCard(
 
             Spacer(Modifier.height(14.dp))
 
-            // Multi-Segmented Progress Bar (Gold 42%, Fixed Income 33%, Equity 15%, Crypto 10%)
+            // Multi-Segmented Progress Bar
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -2629,10 +2830,14 @@ private fun GoalsHeroAllocationCard(
                     .clip(RoundedCornerShape(999.dp)),
                 horizontalArrangement = Arrangement.spacedBy(3.dp),
             ) {
-                Box(Modifier.weight(0.42f).height(12.dp).background(Color(0xFFF59E0B)))
-                Box(Modifier.weight(0.33f).height(12.dp).background(Color(0xFF2563EB)))
-                Box(Modifier.weight(0.15f).height(12.dp).background(Color(0xFF10B981)))
-                Box(Modifier.weight(0.10f).height(12.dp).background(Color(0xFFEA5C3C)))
+                if (totalSavings > 0L) {
+                    Box(Modifier.weight(0.42f).height(12.dp).background(Color(0xFFF59E0B)))
+                    Box(Modifier.weight(0.33f).height(12.dp).background(Color(0xFF2563EB)))
+                    Box(Modifier.weight(0.15f).height(12.dp).background(Color(0xFF10B981)))
+                    Box(Modifier.weight(0.10f).height(12.dp).background(Color(0xFFEA5C3C)))
+                } else {
+                    Box(Modifier.fillMaxWidth().height(12.dp).background(t.track))
+                }
             }
 
             Spacer(Modifier.height(12.dp))
@@ -2641,10 +2846,10 @@ private fun GoalsHeroAllocationCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                AllocationDotItem("طلا و سکه ۴۲٪", Color(0xFFF59E0B))
-                AllocationDotItem("درآمد ثابت ۳۳٪", Color(0xFF2563EB))
-                AllocationDotItem("سهام ۱۵٪", Color(0xFF10B981))
-                AllocationDotItem("رمزارز ۱۰٪", Color(0xFFEA5C3C))
+                AllocationDotItem("طلا و سکه", Color(0xFFF59E0B))
+                AllocationDotItem("درآمد ثابت", Color(0xFF2563EB))
+                AllocationDotItem("سهام", Color(0xFF10B981))
+                AllocationDotItem("رمزارز", Color(0xFFEA5C3C))
             }
         }
     }
@@ -2731,8 +2936,8 @@ private fun GoalsMicroSavingsPod(
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    Text("ذخیره شده خودکار این ماه:", style = MaterialTheme.typography.labelSmall, color = t.inkSecondary)
-                    Text("+۱٬۴۵۰٬۰۰۰ تومان (معادل ۰.۲۲ گرم طلا)", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.ExtraBold, color = Color(0xFF059669))
+                    Text("وضعیت قلک خودکار:", style = MaterialTheme.typography.labelSmall, color = t.inkSecondary)
+                    Text("فعال برای تراکنش‌های جدید", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.ExtraBold, color = Color(0xFF059669))
                 }
             }
         }
@@ -2916,7 +3121,7 @@ private fun GoalsActiveListSection(
                     }
                 } else {
                     Text(
-                        text = "۱۸.۵ گرم طلای ۱۸ عیار • ۲ قطعه سکه امامی • ۴۲۰ تتر",
+                        text = "هنوز دارایی در سبد ثبت نشده است. از بخش «مدیریت کامل دارایی‌ها» طلا، سکه، ارز یا صندوق خود را ثبت کنید.",
                         style = MaterialTheme.typography.bodySmall,
                         color = t.muted,
                     )

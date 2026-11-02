@@ -1544,7 +1544,7 @@ private class AutoSaveState(
         savedText = text
         dirty = false
         runCatching { onSave(text) }
-            .onFailure { android.util.Log.w("muchtoman", "auto-save failed", it) }
+            .onFailure { android.util.Log.d("zheton", "auto-save failed", it) }
         justSaved = true
         scope.launch {
             delay(flashMs)

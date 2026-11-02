@@ -23,12 +23,15 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.doxigo.muchtoman"
+        applicationId = "com.pouyarn.zheton"
         minSdk = 24
         targetSdk = 36
-        versionCode = providers.gradleProperty("muchtoman.versionCode").orNull?.toInt()
+        versionCode = providers.gradleProperty("zheton.versionCode").orNull?.toInt()
+            ?: providers.gradleProperty("muchtoman.versionCode").orNull?.toInt()
             ?: 2_000_001_000
-        versionName = providers.gradleProperty("muchtoman.versionName").orNull ?: "1.0.5"
+        versionName = providers.gradleProperty("zheton.versionName").orNull
+            ?: providers.gradleProperty("muchtoman.versionName").orNull
+            ?: "1.0.5"
         buildConfigField("boolean", "LITE", "false")
     }
 
@@ -49,11 +52,13 @@ android {
         }
     }
 
-    val ratesUrl = providers.gradleProperty("muchtoman.ratesUrl")
-        .getOrElse("https://rates.muchtoman.com/rates")
+    val ratesUrl = providers.gradleProperty("zheton.ratesUrl")
+        .orElse(providers.gradleProperty("muchtoman.ratesUrl"))
+        .getOrElse("https://rates.zheton.app/rates")
 
-    val syncUrl = providers.gradleProperty("muchtoman.syncUrl")
-        .getOrElse("https://sync.muchtoman.com")
+    val syncUrl = providers.gradleProperty("zheton.syncUrl")
+        .orElse(providers.gradleProperty("muchtoman.syncUrl"))
+        .getOrElse("https://sync.zheton.app")
 
     buildTypes {
         debug {
