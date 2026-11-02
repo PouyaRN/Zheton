@@ -254,7 +254,7 @@ class GlanceWidgetTest {
         }
 
         // The widget's intent extra key must match what QuickAddActivity reads back.
-        assertEquals("com.doxigo.muchtoman.extra.CATEGORY_ID", QuickAddActivity.EXTRA_CATEGORY_ID)
+        assertEquals("com.pouyarn.zheton.extra.CATEGORY_ID", QuickAddActivity.EXTRA_CATEGORY_ID)
     }
 
     @Test

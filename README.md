@@ -91,7 +91,7 @@
 
 نسخه رسمی، کامپایل‌شده و امضاشده (`Signed APK`) را می‌توانید مستقیماً از بخش انتشار گیت‌هاب دریافت نمایید:
 
-- **[دانلود مستقیم zheton-v1.0.0.apk](https://github.com/PouyaRN/Zheton/releases/download/v1.0.0/zheton-v1.0.0.apk)** (حجم: ۱۲.۹ مگابایت)
+- **[دانلود مستقیم zheton-v1.1.0.apk](https://github.com/PouyaRN/Zheton/releases/download/v1.1.0/zheton-v1.1.0.apk)** (حجم: ۱۳.۵ مگابایت)
 - **پیش‌نیاز:** اندروید نسخه ۷.۰ (`API 24`) به بالا
 
 </div>
