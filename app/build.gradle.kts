@@ -116,7 +116,8 @@ dependencies {
     implementation(libs.coil.network.okhttp)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler)
+    add("kspDebug", libs.androidx.room.compiler)
+    add("kspRelease", libs.androidx.room.compiler)
     implementation(libs.zxing.core)
     implementation(libs.androidx.glance)
     implementation(libs.androidx.glance.appwidget)
@@ -137,7 +138,28 @@ tasks.matching { it.name.contains("AarMetadata") }.configureEach {
     enabled = false
 }
 
+tasks.matching {
+    it.name.startsWith("ksp") && (it.name.contains("UnitTest") || it.name.contains("AndroidTest"))
+}.configureEach {
+    enabled = false
+}
+
+tasks.matching { it.name.startsWith("ksp") }.configureEach {
+    doFirst {
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            val isBenignKspAwtNpe = thread.name.startsWith("AWT-EventQueue") &&
+                throwable is NullPointerException &&
+                throwable.stackTrace.any { it.className.startsWith("ksp.com.intellij.") }
+            if (!isBenignKspAwtNpe) {
+                System.err.print("Exception in thread \"${thread.name}\" ")
+                throwable.printStackTrace(System.err)
+            }
+        }
+    }
+}
+
 configurations.configureEach {
     exclude(group = "androidx.profileinstaller", module = "profileinstaller")
 }
+
 

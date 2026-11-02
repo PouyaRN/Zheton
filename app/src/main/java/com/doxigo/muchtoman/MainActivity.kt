@@ -612,7 +612,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         // permission and no network — it is why a parser fix is now a Tuesday job.
         if (added > 0 || needsDerive(derived)) {
             val rows = derive(durable, derived, extra)
-            android.util.Log.i("muchtoman", "ledger: +$added messages, $rows transactions")
+            android.util.Log.d("zheton", "ledger: +$added messages, $rows transactions")
         }
 
         _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
@@ -631,8 +631,8 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             if (balance.at > folded.updatedAt) continue
             val foldedRial = Math.round(folded.balance * 10.0)
             if (foldedRial != balance.rial) {
-                android.util.Log.w(
-                    "muchtoman",
+                android.util.Log.d(
+                    "zheton",
                     "ledger disagrees on ${balance.accountId} over the same messages: " +
                         "fold=$foldedRial derived=${balance.rial} Rial (fold at ${folded.updatedAt}, " +
                         "ledger at ${balance.at})",
@@ -1591,7 +1591,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         notes: String,
         linkedTxnRef: String,
     ) {
-        android.util.Log.i("muchtoman", "saveObligation: provider=$provider, total=$totalRial, installments=$installmentCount, amount=$installmentRial")
+        android.util.Log.d("zheton", "saveObligation: provider=$provider, total=$totalRial, installments=$installmentCount, amount=$installmentRial")
         val app = getApplication<Application>()
         viewModelScope.launch(Dispatchers.Default) {
             val durable = DurableDb.get(app)
@@ -1605,7 +1605,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 durable.obligations().put(obligation)
                 durable.installmentPayments().putAll(payments)
                 refreshObligations(durable)
-                android.util.Log.i("muchtoman", "saveObligation: saved successfully, id=$id")
+                android.util.Log.d("zheton", "saveObligation: saved successfully, id=$id")
             }.onFailure { android.util.Log.d("zheton", "saveObligation failed: $it") }
         }
     }
@@ -1792,7 +1792,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     context.startActivity(chooser)
                 }
             }.onFailure { e ->
-                android.util.Log.e("muchtoman", "exportCsv failed: $e", e)
+                android.util.Log.e("zheton", "exportCsv failed: $e", e)
                 withContext(Dispatchers.Main) {
                     android.widget.Toast.makeText(context, "خطا در تهیه خروجی CSV", android.widget.Toast.LENGTH_SHORT).show()
                 }
