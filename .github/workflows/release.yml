@@ -62,6 +62,7 @@ jobs:
 
       - name: Run unit tests and assemble release APK
         run: |
+          chmod +x ./gradlew
           ./gradlew testDebugUnitTest assembleRelease \
             -Pmuchtoman.versionName=${RELEASE_TAG#v}
 
