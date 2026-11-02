@@ -51,7 +51,7 @@ jobs:
           node-version: "22"
       - name: Rates Worker
         working-directory: worker
-        run: npm install && npm run check
+        run: npm ci && npm run check
 
   pwa:
     runs-on: ubuntu-latest
@@ -81,4 +81,4 @@ jobs:
         run: npm install && npm run build
       - name: Sync Worker
         working-directory: sync
-        run: npm install && npm run check
+        run: npm ci && npm run check
