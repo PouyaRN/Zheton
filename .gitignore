@@ -26,6 +26,22 @@ keystore.properties
 # Local agent tooling: skill copies and worktrees stay on disk, out of the repo.
 .claude/
 .agents/
+.aistudio/
 skills-lock.json
 .vscode/
 *.p12
+*.pem
+!rates-pipeline/keys/*.pub.pem
+*.key
+.env*
+.dev.vars
+public/**/*.zip
+pwa/public/**/*.zip
+docs/screenshots/walkthrough/
+docs/security/scan-reports/*.raw
+rates-pipeline/node_modules/
+rates-pipeline/dist/
+rates-pipeline/coverage/
+pwa/cypress/videos/
+pwa/cypress/screenshots/
+

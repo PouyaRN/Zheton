@@ -390,7 +390,7 @@ class MoneyTest {
         assertNull(bankOf("2000486"))
         assertNull(bankOf("200048610"))
         assertNull(bankOf("9000025"))
-        assertNull(bankOf("+989126271948"))
+        assertNull(bankOf("+989000000001"))
     }
 
     @Test
@@ -600,12 +600,12 @@ class MoneyTest {
         assertNull(bankOf("2024", extra))
         // A mobile line she confirms is one sender however the network writes it, and nothing
         // sharing its tail rides along.
-        val line = extraLookup(mapOf("SAMAN" to listOf("0912 345 6789")))
-        assertEquals(Bank.SAMAN, bankOf("+989123456789", line))
-        assertEquals(Bank.SAMAN, bankOf("09123456789", line))
-        assertEquals(Bank.SAMAN, bankOf("9123456789", line))
-        assertNull(bankOf("3456789", line))
-        assertNull(bankOf("989123456789123", line))
+        val line = extraLookup(mapOf("SAMAN" to listOf("0900 000 0002")))
+        assertEquals(Bank.SAMAN, bankOf("+989000000002", line))
+        assertEquals(Bank.SAMAN, bankOf("09000000002", line))
+        assertEquals(Bank.SAMAN, bankOf("9000000002", line))
+        assertNull(bankOf("0000002", line))
+        assertNull(bankOf("989000000002123", line))
     }
 
     @Test
@@ -634,11 +634,11 @@ class MoneyTest {
     fun `everything else in her inbox is not read at all`() {
         // This is the whole point of matching on the number: no one-time code, no advert, no
         // message from her family can reach a function that moves money, whatever it says.
-        assertNull(bankOf("+989121234567"))
+        assertNull(bankOf("+989000000003"))
         assertNull(bankOf("SAMANBANK"))          // the bank's name is not the bank's number
         assertNull(bankOf(""))
         // Not even a message that reads exactly like a real one.
-        assertNull(parseBankSms("+989121234567", SAMAN_IN, 1L))
+        assertNull(parseBankSms("+989000000003", SAMAN_IN, 1L))
         assertNull(parseBankSms("10001", "بانک سامان واریز 500,000,000 ریال مانده 900,000,000", 1L))
     }
 

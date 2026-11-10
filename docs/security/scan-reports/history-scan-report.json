@@ -1,0 +1,17 @@
+{
+  "scannedAt": "2026-11-10T13:42:59.520Z",
+  "totalCommitsScanned": 276,
+  "totalTrackedFilesScanned": 499,
+  "distinctAuthors": [
+    "PouyaRN <121084254+PouyaRN@users.noreply.github.com>",
+    "copilot-swe-agent[bot] <198982749+Copilot@users.noreply.github.com>",
+    "parsavisions <parsavisions@users.noreply.github.com>",
+    "parsavision <235773261+securityvisions@users.noreply.github.com>",
+    "Sohail Lajevardi <doxigo@gmail.com>"
+  ],
+  "verifiedSecretsFound": 0,
+  "workingTreePersonalMobileFound": 0,
+  "findings": [],
+  "workingTreePii": [],
+  "status": "PASS"
+}

@@ -54,7 +54,7 @@ class SmsPickerStateTest {
     fun `an unknown sender is a visible thread but can never be ticked`() {
         val state = SmsPickerState.load(
             listOf(
-                RawSms(from = "0912 123 4567", body = "موجودی: 500,000 ریال", at = 10),
+                RawSms(from = "0900 000 0003", body = "موجودی: 500,000 ریال", at = 10),
                 RawSms(from = "bank advert", body = "تخفیف ویژهٔ سپرده", at = 11),
             ),
         )
@@ -63,7 +63,7 @@ class SmsPickerStateTest {
         assertTrue(state.threads.all { it.bank == null })
         assertTrue(state.threads.all { it.eligibleCount == 0 })
         assertTrue(state.threads.all { it.messages.single().read == null })
-        val phoneNumberThread = state.threads.first { it.sender.startsWith("0912") }
+        val phoneNumberThread = state.threads.first { it.sender.startsWith("0900") }
         assertTrue(phoneNumberThread.title.contains("ناشناس"))
 
         // The whole point: she can see the thread, she cannot book from it.
@@ -75,7 +75,7 @@ class SmsPickerStateTest {
     @Test
     fun `a stranger whose body names a bank offers a suggestion but stays untickable`() {
         val sms = RawSms(
-            from = "0912 000 0000",
+            from = "0900 000 0000",
             body = "بانک سامان\nواریز: 1,000,000 ریال\nمانده: 5,000,000 ریال",
             at = 80,
         )
@@ -88,7 +88,7 @@ class SmsPickerStateTest {
         // Confirming the number is what turns the same bytes into a readable message.
         val confirmed = SmsPickerState.load(
             listOf(sms),
-            extra = mapOf(senderKey("09120000000") to Bank.SAMAN),
+            extra = mapOf(senderKey("09000000000") to Bank.SAMAN),
         ).threads.single()
 
         assertEquals(Bank.SAMAN, confirmed.bank)

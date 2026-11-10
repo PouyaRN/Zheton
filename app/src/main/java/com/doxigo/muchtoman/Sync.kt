@@ -64,11 +64,22 @@ data class SyncSession(
 private fun b64(bytes: ByteArray): String = Base64.encodeToString(bytes, Base64.NO_WRAP)
 private fun unb64(value: String): ByteArray = Base64.decode(value, Base64.NO_WRAP)
 
-fun b64Url(bytes: ByteArray): String =
-    Base64.encodeToString(bytes, Base64.NO_WRAP or Base64.URL_SAFE or Base64.NO_PADDING)
+fun b64Url(bytes: ByteArray): String {
+    val androidEncoded = runCatching {
+        Base64.encodeToString(bytes, Base64.NO_WRAP or Base64.URL_SAFE or Base64.NO_PADDING)
+    }.getOrNull()
+    if (!androidEncoded.isNullOrEmpty()) return androidEncoded
+    return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
+}
 
-private fun unb64Url(value: String): ByteArray =
-    Base64.decode(value, Base64.NO_WRAP or Base64.URL_SAFE or Base64.NO_PADDING)
+private fun unb64Url(value: String): ByteArray {
+    if (!Regex("^[A-Za-z0-9_-]+$").matches(value)) error("invalid base64url")
+    val androidDecoded = runCatching {
+        Base64.decode(value, Base64.NO_WRAP or Base64.URL_SAFE or Base64.NO_PADDING)
+    }.getOrNull()
+    if (androidDecoded != null && androidDecoded.isNotEmpty()) return androidDecoded
+    return java.util.Base64.getUrlDecoder().decode(value)
+}
 
 fun newScopeKey(): ByteArray = ByteArray(32).also { SYNC_RANDOM.nextBytes(it) }
 
@@ -330,17 +341,42 @@ data class PairingInvite(
     val key: ByteArray,
 )
 
+private val PAIRING_HID_REGEX = Regex("^[a-f0-9]{16,64}$")
+private val PAIRING_CODE_REGEX = Regex("^[A-Za-z0-9_-]{4,64}$")
+
 fun parsePairingLink(value: String): PairingInvite? = runCatching {
-    val uri = Uri.parse(value)
-    val fragment = uri.encodedFragment ?: return null
-    val params = Uri.parse("https://pairing.local/?$fragment")
-    val base = params.getQueryParameter("url")?.trimEnd('/') ?: return null
-    val hid = params.getQueryParameter("hid") ?: return null
-    val code = params.getQueryParameter("pair") ?: return null
-    val scope = params.getQueryParameter("scope") ?: return null
-    val key = params.getQueryParameter("k")?.let(::unb64Url) ?: return null
-    val baseUrl = URL(base)
-    if (baseUrl.protocol !in setOf("https", "http") || hid.length !in 16..64 || key.size != 32) return null
+    val trimmed = value.trim()
+    if (trimmed.isEmpty() || trimmed.length > 512 || trimmed.any { it.isISOControl() }) return null
+    val uri = java.net.URI(trimmed)
+    val validDestination = (uri.scheme == "zheton" && uri.host == "join") ||
+        (uri.scheme == "https" && (uri.path == "/join" || uri.path?.startsWith("/join/") == true))
+    if (!validDestination) return null
+
+    val fragment = uri.rawFragment ?: return null
+    if (fragment.isBlank()) return null
+    val params = fragment.split('&').mapNotNull { pair ->
+        val idx = pair.indexOf('=')
+        if (idx <= 0) null
+        else {
+            val k = java.net.URLDecoder.decode(pair.substring(0, idx), "UTF-8")
+            val v = java.net.URLDecoder.decode(pair.substring(idx + 1), "UTF-8")
+            k to v
+        }
+    }.toMap()
+
+    val base = params["url"]?.trimEnd('/') ?: return null
+    val hid = params["hid"] ?: return null
+    val code = params["pair"] ?: return null
+    val scope = params["scope"] ?: return null
+    val key = params["k"]?.let(::unb64Url) ?: return null
+
+    val baseUri = java.net.URI(base)
+    if (baseUri.scheme != "https" || baseUri.host.isNullOrBlank() || baseUri.userInfo != null) return null
+    if (!PAIRING_HID_REGEX.matches(hid)) return null
+    if (!PAIRING_CODE_REGEX.matches(code)) return null
+    if (scope != "family:$hid") return null
+    if (key.size != 32) return null
+
     PairingInvite(base, hid, code, scope, key)
 }.getOrNull()
 

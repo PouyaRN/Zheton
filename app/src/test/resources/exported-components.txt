@@ -1,0 +1,10 @@
+activity:.MainActivity
+activity:.QuickAddActivity
+receiver:.ChandTomanGlanceWidgetReceiver
+receiver:.LiquidGoldGlanceWidgetReceiver
+receiver:.MarketTickerWidgetReceiver
+receiver:.QuickAddGlanceWidgetReceiver
+receiver:.QuickCardsGlanceWidgetReceiver
+receiver:.SafeSpendGlanceWidgetReceiver
+receiver:.SingleTickerMiniWidgetReceiver
+service:.QuickAddTileService:android.permission.BIND_QUICK_SETTINGS_TILE

@@ -633,9 +633,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             if (foldedRial != balance.rial) {
                 android.util.Log.d(
                     "zheton",
-                    "ledger disagrees on ${balance.accountId} over the same messages: " +
-                        "fold=$foldedRial derived=${balance.rial} Rial (fold at ${folded.updatedAt}, " +
-                        "ledger at ${balance.at})",
+                    "ledger disagrees over the same messages (fold at ${folded.updatedAt}, ledger at ${balance.at})",
                 )
             }
         }
@@ -1591,7 +1589,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         notes: String,
         linkedTxnRef: String,
     ) {
-        android.util.Log.d("zheton", "saveObligation: provider=$provider, total=$totalRial, installments=$installmentCount, amount=$installmentRial")
+        android.util.Log.d("zheton", "saveObligation: installments=$installmentCount")
         val app = getApplication<Application>()
         viewModelScope.launch(Dispatchers.Default) {
             val durable = DurableDb.get(app)

@@ -6,9 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Release Tag (e.g. v1.0.0)'
+        description: 'Release Tag (e.g. v1.2.0)'
         required: true
-        default: 'v1.0.0'
+        default: 'v1.2.0'
 
 permissions:
   contents: write
@@ -19,6 +19,10 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -32,7 +36,7 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
 
-      - name: Recreate signing config
+      - name: Verify and recreate permanent signing config
         env:
           KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
           STORE_PASSWORD: ${{ secrets.KEYSTORE_STORE_PASSWORD }}
@@ -40,37 +44,30 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEYSTORE_KEY_PASSWORD }}
         run: |
           umask 077
-          if [ -n "$KEYSTORE_B64" ]; then
-            printf '%s' "$KEYSTORE_B64" | base64 -d > zheton-release.jks
-            cat > keystore.properties <<EOF
+          if [ -z "$KEYSTORE_B64" ] || [ -z "$STORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "::error::Permanent release signing secrets (KEYSTORE_B64, KEYSTORE_STORE_PASSWORD, KEYSTORE_KEY_ALIAS, KEYSTORE_KEY_PASSWORD) are required."
+            exit 1
+          fi
+          printf '%s' "$KEYSTORE_B64" | base64 -d > zheton-release.jks
+          cat > keystore.properties <<EOF
           storeFile=zheton-release.jks
           storePassword=$STORE_PASSWORD
           keyAlias=$KEY_ALIAS
           keyPassword=$KEY_PASSWORD
           EOF
-          else
-            keytool -genkeypair -noprompt \
-              -keystore zheton-release.jks -storepass zheton2026 -keypass zheton2026 \
-              -alias zheton -dname "CN=Zheton, OU=Mobile, O=Zheton, C=IR" -keyalg RSA -keysize 2048 -validity 10000
-            cat > keystore.properties <<EOF
-          storeFile=zheton-release.jks
-          storePassword=zheton2026
-          keyAlias=zheton
-          keyPassword=zheton2026
-          EOF
-          fi
 
       - name: Run unit tests and assemble release APK
         run: |
           chmod +x ./gradlew
           ./gradlew testDebugUnitTest assembleRelease \
+            -Pzheton.versionName=${RELEASE_TAG#v} \
             -Pmuchtoman.versionName=${RELEASE_TAG#v}
 
       - name: Remove signing material
         if: always()
         run: rm -f zheton-release.jks keystore.properties
 
-      - name: Prepare release artifacts
+      - name: Prepare release artifacts and SHA256SUMS
         run: |
           prev=$(git describe --tags --abbrev=0 "${RELEASE_TAG}^" 2>/dev/null || true)
           : > notes.md
@@ -84,21 +81,36 @@ jobs:
             echo >> notes.md
             echo "**Full changelog:** https://github.com/$GITHUB_REPOSITORY/compare/$prev...$RELEASE_TAG" >> notes.md
           fi
-          cat notes.md
 
           mv app/build/outputs/apk/release/app-release.apk \
              zheton-${RELEASE_TAG}.apk
           touch zheton-${RELEASE_TAG}-mapping.txt
           [ -f app/build/outputs/mapping/release/mapping.txt ] && cp app/build/outputs/mapping/release/mapping.txt zheton-${RELEASE_TAG}-mapping.txt || true
+          sha256sum "zheton-${RELEASE_TAG}.apk" > SHA256SUMS
+          {
+            echo
+            echo "### SHA-256 Checksum"
+            echo '```'
+            cat SHA256SUMS
+            echo '```'
+          } >> notes.md
+
+      - name: Attest APK build provenance
+        uses: actions/attest-build-provenance@c074443f1aee8d4aeeae555aebba3282517eb71b # v2.2.3
+        continue-on-error: true
+        with:
+          subject-path: zheton-${{ env.RELEASE_TAG }}.apk
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: release-artifacts
           path: |
             zheton-${{ env.RELEASE_TAG }}.apk
+            zheton-${{ env.RELEASE_TAG }}-mapping.txt
+            SHA256SUMS
             notes.md
-          if-no-files-found: warn
-          retention-days: 1
+          if-no-files-found: error
+          retention-days: 7
 
   release:
     needs: build
@@ -110,9 +122,16 @@ jobs:
         with:
           name: release-artifacts
       - run: |
-          gh release create "$RELEASE_TAG" "zheton-${RELEASE_TAG}.apk" \
+          gh release create "$RELEASE_TAG" \
+            "zheton-${RELEASE_TAG}.apk" \
+            "zheton-${RELEASE_TAG}-mapping.txt" \
+            "SHA256SUMS" \
             --notes-file notes.md --title "ژتون $RELEASE_TAG" \
             --repo "$GITHUB_REPOSITORY" || \
-          gh release upload "$RELEASE_TAG" "zheton-${RELEASE_TAG}.apk" --clobber --repo "$GITHUB_REPOSITORY"
+          gh release upload "$RELEASE_TAG" \
+            "zheton-${RELEASE_TAG}.apk" \
+            "zheton-${RELEASE_TAG}-mapping.txt" \
+            "SHA256SUMS" \
+            --clobber --repo "$GITHUB_REPOSITORY"
         env:
           GH_TOKEN: ${{ github.token }}

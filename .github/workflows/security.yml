@@ -1,0 +1,79 @@
+name: security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Run Gitleaks across full git history and working tree
+        run: |
+          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.24.0 \
+            detect --source /repo --log-opts="--all" --redact --no-banner -c /repo/.gitleaks.toml
+          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.24.0 \
+            detect --no-git --source /repo --redact --no-banner -c /repo/.gitleaks.toml
+
+  workflow-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Run actionlint
+        run: |
+          docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.7 -color
+
+  npm-audit:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dir: [pwa, worker, sync]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4
+        with:
+          node-version: "22"
+      - name: Audit production dependencies (${{ matrix.dir }})
+        working-directory: ${{ matrix.dir }}
+        run: npm ci && npm audit --omit=dev --audit-level=high
+
+  android-security-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
+      - name: Run Android security and hygiene tests
+        run: |
+          chmod +x ./gradlew
+          ./gradlew testDebugUnitTest \
+            --tests "com.doxigo.muchtoman.ManifestSecurityTest" \
+            --tests "com.doxigo.muchtoman.BackupRulesTest" \
+            --tests "com.doxigo.muchtoman.NoSensitiveLogTest" \
+            --tests "com.doxigo.muchtoman.DeepLinkValidationTest" \
+            --tests "com.doxigo.muchtoman.RepoHygieneTest" \
+            --tests "com.doxigo.muchtoman.LicenseNoticeTest"

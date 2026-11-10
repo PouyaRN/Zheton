@@ -86,6 +86,20 @@ suspend fun recordManualTransaction(
     id
 }
 
+private val VALID_QUICK_ADD_CATEGORY_ID = Regex("^cat_[a-z0-9_-]{1,48}$")
+
+/**
+ * Validates and sanitizes an optional category ID from an external Quick-Add intent.
+ * Rejects control characters, URLs, SQL/script strings, and anything outside `cat_[a-z0-9_-]{1,48}`.
+ */
+fun sanitizeQuickAddCategoryId(raw: String?): String? {
+    if (raw.isNullOrBlank()) return null
+    val trimmed = raw.trim()
+    if (trimmed.length > 64 || trimmed.any { it.isISOControl() }) return null
+    if (!VALID_QUICK_ADD_CATEGORY_ID.matches(trimmed)) return null
+    return trimmed
+}
+
 /**
  * Quick add from outside the app: the quick-settings tile, the Quick Add widget and the
  * `zheton://quick_add` link. The same full-screen entry the app opens ([QuickAddScreen]).
@@ -98,7 +112,7 @@ class QuickAddActivity : ComponentActivity() {
         val store = Store(applicationContext)
         // A widget shortcut can preselect a category (e.g. بنزین) so the tap-to-log path
         // is one fewer decision.
-        val presetCategoryId = intent?.getStringExtra(EXTRA_CATEGORY_ID)
+        val presetCategoryId = sanitizeQuickAddCategoryId(intent?.getStringExtra(EXTRA_CATEGORY_ID))
 
         setContent {
             MuchTomanTheme(mode = store.themeMode) {
