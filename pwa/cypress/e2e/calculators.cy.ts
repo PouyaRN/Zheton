@@ -3,16 +3,19 @@ describe('Calculators Modal Flow', () => {
     cy.visit('/', {
       onBeforeLoad(win) {
         win.localStorage.setItem(
-          'zheton_fintech_state_v2',
+          'zheton_state_v2',
           JSON.stringify({
             accounts: [],
             transactions: [],
             holdings: [],
             commitments: [],
-            monthlyBudgetToman: 25000000,
-            cycleStartDay: 1,
+            budgetCaps: [],
+            cycleConfig: {
+              anchorDay: 1,
+              targetMonthlyBudgetToman: 25000000,
+            },
             privacyMode: false,
-            onboardingCompleted: true,
+            hasSeenOnboarding: true,
           }),
         );
       },
@@ -22,4 +25,3 @@ describe('Calculators Modal Flow', () => {
     cy.get('svg[data-icon="calculate"]').should('be.visible');
   });
 });
-

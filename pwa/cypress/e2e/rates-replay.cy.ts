@@ -4,21 +4,16 @@ describe('Market Rates Anti-Replay Protection', () => {
     cy.visit('/', {
       onBeforeLoad(win) {
         win.localStorage.setItem(
-          'zheton_verified_market_v2',
+          'zheton:verified-rates:v1',
           JSON.stringify({
+            schema: 1,
+            kid: 'k1',
             updatedAt: futureTs,
             generatedAt: futureTs,
-            quotes: [
-              {
-                id: 'usd',
-                titleFa: 'دلار آزاد',
-                symbol: 'USD',
-                kind: 'FIAT',
-                unitFa: 'دلار',
-                priceToman: 91234,
-                change24hPct: 0,
-              },
-            ],
+            toman: {
+              usd: 91234,
+              gold18: 4850000,
+            },
           }),
         );
       },
@@ -26,7 +21,6 @@ describe('Market Rates Anti-Replay Protection', () => {
 
     cy.get('[data-testid="market-freshness-state"]', { timeout: 10000 })
       .should('have.attr', 'data-verified', 'true')
-      .and('have.attr', 'data-quotes-count', '1');
+      .and('have.attr', 'data-status-reason', 'replay');
   });
 });
-

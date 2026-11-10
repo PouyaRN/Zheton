@@ -55,11 +55,7 @@ jobs:
       - name: Audit production dependencies (${{ matrix.dir }})
         working-directory: ${{ matrix.dir }}
         run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
+          npm install --no-audit
           npm audit --omit=dev --audit-level=high
 
   android-security-tests:
@@ -83,4 +79,3 @@ jobs:
             --tests "com.doxigo.muchtoman.DeepLinkValidationTest" \
             --tests "com.doxigo.muchtoman.RepoHygieneTest" \
             --tests "com.doxigo.muchtoman.LicenseNoticeTest"
-

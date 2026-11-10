@@ -593,6 +593,7 @@ export default function App() {
           data-testid="market-freshness-state"
           data-freshness={marketState.freshness}
           data-verified={String(marketState.verified)}
+          data-status-reason={marketState.statusReason}
           data-quotes-count={String(quotes.length)}
           className="sr-only"
         />

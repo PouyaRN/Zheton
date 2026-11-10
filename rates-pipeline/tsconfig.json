@@ -11,9 +11,9 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "types": ["node"],
-    "typeRoots": ["../pwa/node_modules/@types"],
+    "typeRoots": ["./node_modules/@types", "../pwa/node_modules/@types", "../node_modules/@types"],
     "paths": {
-      "vitest": ["../pwa/node_modules/vitest/dist/index.d.ts"]
+      "vitest": ["./node_modules/vitest/dist/index.d.ts", "../pwa/node_modules/vitest/dist/index.d.ts", "../node_modules/vitest/dist/index.d.ts"]
     }
   },
   "include": ["src/**/*.ts", "test/**/*.ts"]
