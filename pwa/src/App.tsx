@@ -2836,7 +2836,7 @@ export default function App() {
                     متن پیامک بانک را وارد کنید یا یکی از نمونه‌های آماده را انتخاب نمایید:
                   </p>
                   <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
-                    {SAMPLE_BANK_SMS.map((s, idx) => (
+                    {SAMPLE_BANK_SMS.map((s: { label: string; text: string }, idx: number) => (
                       <button
                         key={idx}
                         type="button"

@@ -139,7 +139,12 @@ export function parseBankSms(rawText: string): ParsedBankSms | null {
   };
 }
 
-export const SAMPLE_BANK_SMS = [
+export interface BankSmsSample {
+  label: string;
+  text: string;
+}
+
+export const SAMPLE_BANK_SMS: BankSmsSample[] = [
   {
     label: 'بلو بانک (خرید اسنپ)',
     text: 'بلو بانک\nخرید از درگاه اسنپ\nمبلغ: ۱,۴۵۰,۰۰۰ ریال\nمانده: ۱۸۴,۵۵۰,۰۰۰ ریال\n۱۴۰۳/۰۸/۰۷',
