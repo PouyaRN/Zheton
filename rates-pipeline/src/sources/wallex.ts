@@ -1,4 +1,4 @@
-import { ParsedTomanCrypto, RESERVED_ASSET_IDS, parseFiniteNumber, parsePositiveNumber } from '../types.ts';
+import { type ParsedTomanCrypto, RESERVED_ASSET_IDS, parseFiniteNumber, parsePositiveNumber } from '../types.ts';
 
 /**
  * Pure parser for Wallex `/v1/markets` response.

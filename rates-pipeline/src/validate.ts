@@ -1,4 +1,4 @@
-import { PLAUSIBLE_USD_TOMAN, RatesPayload } from './types.ts';
+import { PLAUSIBLE_USD_TOMAN, type RatesPayload } from './types.ts';
 
 export interface ValidationResult {
   valid: boolean;

@@ -11,7 +11,7 @@ import { fetchFawazForex } from './sources/fawazahmed0.ts';
 import { mergeRatesSources } from './merge.ts';
 import { validateRatesPayload } from './validate.ts';
 import { signRatesBytes, verifyRatesBytes } from './sign.ts';
-import { RatesPayload, ReleaseInfo } from './types.ts';
+import type { RatesPayload, ReleaseInfo } from './types.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PIPELINE_ROOT = resolve(__dirname, '..');

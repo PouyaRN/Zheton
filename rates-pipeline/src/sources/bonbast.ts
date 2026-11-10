@@ -1,4 +1,4 @@
-import { ParsedFiatGold, parsePositiveNumber } from '../types.ts';
+import { type ParsedFiatGold, parsePositiveNumber } from '../types.ts';
 
 export const BONBAST_MAP: Record<string, string> = {
   usd: 'usd1',

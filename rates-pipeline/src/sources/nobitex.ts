@@ -1,4 +1,4 @@
-import { ParsedTomanCrypto, parsePositiveNumber } from '../types.ts';
+import { type ParsedTomanCrypto, parsePositiveNumber } from '../types.ts';
 
 /**
  * Pure parser for Nobitex `/v3/orderbook/USDTIRT`.

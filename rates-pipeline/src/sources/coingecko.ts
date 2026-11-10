@@ -1,8 +1,8 @@
 import {
-  Coin,
-  ParsedCoinGecko,
+  type Coin,
+  type ParsedCoinGecko,
   RESERVED_ASSET_IDS,
-  WalletOption,
+  type WalletOption,
   parseFiniteNumber,
   parsePositiveNumber,
 } from '../types.ts';

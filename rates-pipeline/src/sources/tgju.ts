@@ -1,4 +1,4 @@
-import { ParsedFiatGold, parseFiniteNumber, parsePositiveNumber } from '../types.ts';
+import { type ParsedFiatGold, parseFiniteNumber, parsePositiveNumber } from '../types.ts';
 
 /**
  * app asset id -> tgju indicator key in `call1.tgju.org/ajax.json` (`current` object).
