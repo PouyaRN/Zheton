@@ -98,7 +98,7 @@ jobs:
           } >> notes.md
 
       - name: Attest APK build provenance
-        uses: actions/attest-build-provenance@c074443f1aee8d4aeeae555aebba3282517eb71b # v2.2.3
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2
         continue-on-error: true
         with:
           subject-path: zheton-${{ env.RELEASE_TAG }}.apk
