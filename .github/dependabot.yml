@@ -4,20 +4,77 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      gradle-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "com.android.application"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "org.jetbrains.kotlin*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "androidx.compose:compose-bom"
+        update-types: ["version-update:semver-major"]
+
   - package-ecosystem: "npm"
     directory: "/pwa"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 3
+    groups:
+      pwa-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "tailwindcss"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitejs/plugin-react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+
   - package-ecosystem: "npm"
     directory: "/worker"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 2
+    groups:
+      worker-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
   - package-ecosystem: "npm"
     directory: "/sync"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 2
+    groups:
+      sync-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    ignore:
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
-
+    open-pull-requests-limit: 2
+    groups:
+      github-actions:
+        patterns:
+          - "*"
