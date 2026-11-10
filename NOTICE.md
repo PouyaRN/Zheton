@@ -20,3 +20,4 @@ This project is derived from **Andis / MuchToman** (`securityvisions/Andis`):
   - Expanded React 19 + Tailwind CSS Progressive Web App (`pwa/`) with 7 Iranian financial calculators and clean-slate onboarding
   - Bundled offline SVG / `VectorDrawable` icon system (replacing external icon fonts and platform-dependent emojis)
   - Signed static market rates pipeline (`rates-pipeline/`) with ECDSA P-256 verification
+

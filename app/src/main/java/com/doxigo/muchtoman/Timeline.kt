@@ -1824,7 +1824,12 @@ fun TransactionScreen(
                             modifier = Modifier.padding(Space.m),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text("⚡", fontSize = 22.sp)
+                            Icon(
+                                Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                modifier = Modifier.size(20.dp),
+                            )
                             Spacer(Modifier.width(Space.s))
                             Column {
                                 Text(
@@ -1857,7 +1862,7 @@ fun TransactionScreen(
                     ) {
                         Column(modifier = Modifier.padding(Space.m)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("⚖️", fontSize = 16.sp)
+                                Text("Au", fontSize = 12.sp, fontWeight = FontWeight.Black, color = Hero.gold)
                                 Spacer(Modifier.width(Space.s))
                                 Text(
                                     "ارزش دارایی جایگزین (هزینه فرصت)",
@@ -2547,7 +2552,7 @@ fun ManualTxnSheet(
             selectedCatId?.let { catId ->
                 val necessity = NecessityType.classifyCategory(catId)
                 Text(
-                    "طبقه‌بندی بودجه ۵۰/۳۰/۲۰: ${necessity.emoji} ${necessity.titleFa} (هدف: ${faNumber(necessity.targetPercent.toDouble())}٪)",
+                    "طبقه‌بندی بودجه ۵۰/۳۰/۲۰: ${necessity.titleFa} (هدف: ${faNumber(necessity.targetPercent.toDouble())}٪)",
                     fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(top = 2.dp, bottom = Space.xs),
@@ -2658,8 +2663,8 @@ internal fun FailedTxnWatchdogBanner(
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                        if (item.status == WatchdogStatus.OVERDUE) "⚠️ بیش از ۷۲ ساعت گذشته (نیاز به پیگیری)"
-                        else "⏳ ${bidi(item.hoursRemaining.toString())} ساعت تا بازگشت خودکار",
+                        if (item.status == WatchdogStatus.OVERDUE) "بیش از ۷۲ ساعت گذشته (نیاز به پیگیری)"
+                        else "${bidi(item.hoursRemaining.toString())} ساعت تا بازگشت خودکار",
                         fontSize = 11.sp,
                         color = if (item.status == WatchdogStatus.OVERDUE) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -2888,7 +2893,7 @@ internal fun DailyOutflowSparkCard(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                         Text(
-                            if (privacyMode) "•••••• تومان" else if (sel.toman > 0.0) "${faNumber(sel.toman)} تومان خرج" else "روز بدون خرج 🌿",
+                            if (privacyMode) "•••••• تومان" else if (sel.toman > 0.0) "${faNumber(sel.toman)} تومان خرج" else "روز بدون خرج",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (sel.toman > 0.0) MaterialTheme.colorScheme.error else incomeColor(),
@@ -2909,7 +2914,7 @@ internal fun DailyOutflowSparkCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 Text(
-                    "🌿 ${streak.motivationFa}",
+                    streak.motivationFa,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium,
                     color = incomeColor(),

@@ -54,7 +54,7 @@ android {
 
     val ratesUrl = providers.gradleProperty("zheton.ratesUrl")
         .orElse(providers.gradleProperty("muchtoman.ratesUrl"))
-        .getOrElse("https://rates.zheton.app/rates")
+        .getOrElse("https://pouyarn.github.io/Zheton/rates.json")
 
     val syncUrl = providers.gradleProperty("zheton.syncUrl")
         .orElse(providers.gradleProperty("muchtoman.syncUrl"))

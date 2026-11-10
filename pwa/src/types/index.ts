@@ -7,7 +7,7 @@ export interface AssetType {
   unitFa: string;
   dec?: number;
   en?: string;
-  emoji?: string;
+  icon?: string;
   iconUrl?: string;
 }
 

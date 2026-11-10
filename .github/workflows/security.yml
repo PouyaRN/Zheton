@@ -77,3 +77,4 @@ jobs:
             --tests "com.doxigo.muchtoman.DeepLinkValidationTest" \
             --tests "com.doxigo.muchtoman.RepoHygieneTest" \
             --tests "com.doxigo.muchtoman.LicenseNoticeTest"
+

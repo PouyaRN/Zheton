@@ -34,10 +34,10 @@ object SafeSpendEngine {
     }
 
     enum class PaceStatus(val labelFa: String, val shortLabelFa: String, val isWarning: Boolean) {
-        CONSERVATIVE("🟢 کنترل عالی (زیر سقف بودجه)", "🟢 کنترل عالی", false),
-        ON_TRACK("🟢 در محدوده امن بودجه", "🟢 در بودجه امن", false),
-        ELEVATED_VELOCITY("🟡 شتاب بالای خرج‌کرد", "🟡 شتاب بالا", true),
-        DEFICIT_RISK("🔴 خطر کسری قبل از حقوق", "🔴 خطر کسری", true),
+        CONSERVATIVE("کنترل عالی (زیر سقف بودجه)", "کنترل عالی", false),
+        ON_TRACK("در محدوده امن بودجه", "در بودجه امن", false),
+        ELEVATED_VELOCITY("شتاب بالای خرج‌کرد", "شتاب بالا", true),
+        DEFICIT_RISK("خطر کسری قبل از حقوق", "خطر کسری", true),
     }
 
     data class PacingDecision(

@@ -1,5 +1,7 @@
 package com.doxigo.muchtoman
 
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -13,6 +15,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -20,7 +23,7 @@ import androidx.compose.ui.unit.sp
 
 /**
  * Studio-grade branded badges for core Iranian financial & global crypto assets:
- * Tether (₮ USDT), US Dollar ($), Emami Coin (🪙), 18K Melted Gold (Au), Bitcoin (₿), Ethereum (Ξ).
+ * Tether (₮ USDT), US Dollar ($), Emami Coin (VectorDrawable), 18K Melted Gold (Au), Bitcoin (₿), Ethereum (Ξ).
  */
 @Composable
 fun SleekAssetBadge(
@@ -55,12 +58,13 @@ fun SleekAssetBadge(
             fontWeight = FontWeight.ExtraBold,
         )
         key.contains("coin") || key.contains("emami") || key.contains("bahar") || key.contains("rob") || key.contains("nim") -> BadgeConfig(
-            symbol = "🪙",
+            symbol = "Au",
             gradient = listOf(Color(0xFFEAB308), Color(0xFFCA8A04)),
             borderColor = Color(0xFFFEF08A).copy(alpha = 0.6f),
             textColor = Color.White,
             fontSizeRatio = 0.50f,
             fontWeight = FontWeight.Bold,
+            drawableRes = R.drawable.ic_asset_coin,
         )
         key.contains("btc") || key.contains("bitcoin") -> BadgeConfig(
             symbol = "₿",
@@ -113,14 +117,22 @@ fun SleekAssetBadge(
             .border(1.dp, badgeConfig.borderColor, CircleShape),
         contentAlignment = Alignment.Center,
     ) {
-        val fontSize = (size.value * badgeConfig.fontSizeRatio).sp
-        Text(
-            text = badgeConfig.symbol,
-            fontSize = fontSize,
-            fontWeight = badgeConfig.fontWeight,
-            color = badgeConfig.textColor,
-            maxLines = 1,
-        )
+        if (badgeConfig.drawableRes != null) {
+            Image(
+                painter = painterResource(badgeConfig.drawableRes),
+                contentDescription = null,
+                modifier = Modifier.size(size * 0.62f),
+            )
+        } else {
+            val fontSize = (size.value * badgeConfig.fontSizeRatio).sp
+            Text(
+                text = badgeConfig.symbol,
+                fontSize = fontSize,
+                fontWeight = badgeConfig.fontWeight,
+                color = badgeConfig.textColor,
+                maxLines = 1,
+            )
+        }
     }
 }
 
@@ -131,4 +143,5 @@ private data class BadgeConfig(
     val textColor: Color,
     val fontSizeRatio: Float,
     val fontWeight: FontWeight,
+    @DrawableRes val drawableRes: Int? = null,
 )

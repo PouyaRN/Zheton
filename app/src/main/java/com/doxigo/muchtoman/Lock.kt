@@ -300,7 +300,7 @@ fun SettingsScreen(
 
             SectionLabel("پیامک‌های بانک")
             SettingCard(
-                emoji = "✉️",
+                glyph = "SMS",
                 title = "خواندن پیامک‌های بانک",
                 subtitle = "با این گزینه، موجودی حساب‌ها از روی پیامک بانک به‌روز می‌شه.",
                 checked = smsEnabled && granted,
@@ -366,9 +366,7 @@ fun SettingsScreen(
                     banks.forEachIndexed { i, bank ->
                         val accounts = bankAccounts.filter { it.bank == bank }
                         SettingCard(
-                            // VS16 pinned: bare U+1F3DB defaults to the monochrome text
-                            // glyph on spec-following renderers, unlike the ✉️ card above.
-                            emoji = "🏛️",
+                            glyph = "BNK",
                             title = accounts.first().bankFa,
                             subtitle = "${faCompact(accounts.sumOf { it.balance })} تومان" +
                                 if (accounts.any { !it.trusted }) "  •  نیاز به بررسی" else "",
@@ -377,7 +375,7 @@ fun SettingsScreen(
                             shape = bandShape(i, banks.size),
                             divided = i < banks.size - 1,
                             // The bank's own mark, as in the accounts sheet. A row of identical
-                            // 🏛️ told her nothing the name beside it did not already say.
+                            // bank icons told her nothing the name beside it did not already say.
                             badge = { BankLogo(bank, size = 44.dp) },
                         )
                     }
@@ -413,7 +411,7 @@ fun SettingsScreen(
                                 .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text("🔄", fontSize = 18.sp)
+                            Text("↻", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                         }
                         Spacer(Modifier.width(Space.m))
                         Column(modifier = Modifier.weight(1f)) {
@@ -447,7 +445,7 @@ fun SettingsScreen(
             // siblings, not the same switch — she may want the app guarded but the number
             // glanceable on the home screen, or the other way round.
             SettingCard(
-                emoji = "🔒",
+                glyph = "PIN",
                 title = "قفل برنامه",
                 // Always what the setting does. When it is unavailable, the helper text below
                 // the band already carries the fix — and says where, which this line never did.
@@ -459,7 +457,7 @@ fun SettingsScreen(
                 divided = true,
             )
             SettingCard(
-                emoji = "🙈",
+                glyph = "•••",
                 title = "قفل ویجت",
                 subtitle = "مبلغ صفحهٔ اصلی رو با ٭٭٭ پنهان می‌کنه",
                 checked = widgetLock,
@@ -492,7 +490,7 @@ fun SettingsScreen(
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surfaceContainerHighest),
                     contentAlignment = Alignment.Center,
-                ) { Text("🏷️", fontSize = 20.sp) }
+                ) { Text("#", fontSize = 18.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary) }
                 Column(Modifier.padding(horizontal = Space.m).weight(1f)) {
                     Text(
                         "مدیریت دسته‌بندی‌ها",
@@ -616,7 +614,7 @@ fun SettingsScreen(
                 modifier = Modifier.padding(bottom = Space.s, start = Space.xs, end = Space.xs),
             )
             ToolRow(
-                emoji = "💾",
+                glyph = "BAK",
                 title = "پشتیبان‌گیری و بازیابی",
                 subtitle = "یک فایل رمزدار از داده‌هایت بگیر، یا از فایل برگردان",
                 onClick = { backupLauncher.launch(Intent(context, BackupActivity::class.java)) },
@@ -624,7 +622,7 @@ fun SettingsScreen(
                 divided = true,
             )
             ToolRow(
-                emoji = "🔔",
+                glyph = "ALR",
                 title = "یادآورها و سررسید",
                 subtitle = "قسط و چک نزدیک سررسید را روی گوشی یادآوری کن",
                 onClick = { context.startActivity(Intent(context, ReminderSettingsActivity::class.java)) },
@@ -632,7 +630,7 @@ fun SettingsScreen(
                 divided = true,
             )
             ToolRow(
-                emoji = "📄",
+                glyph = "PDF",
                 title = "گزارش PDF و Excel",
                 subtitle = "گزارش ماهانه یا خانوادگی برای خودت یا حسابدار",
                 onClick = { ReportExportActivity.launch(context) },
@@ -640,7 +638,7 @@ fun SettingsScreen(
                 divided = true,
             )
             ToolRow(
-                emoji = "📥",
+                glyph = "INB",
                 title = "پیامک‌های خوانده‌نشده",
                 subtitle = "همهٔ پیامک‌های گوشی را ببین و خودت انتخاب کن کدام تراکنش شود",
                 onClick = { context.startActivity(SmsPickerActivity.intent(context)) },
@@ -687,7 +685,7 @@ private fun faVersion(v: String): String =
  */
 @Composable
 private fun ToolRow(
-    emoji: String,
+    glyph: String,
     title: String,
     subtitle: String,
     onClick: () -> Unit,
@@ -713,7 +711,7 @@ private fun ToolRow(
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surfaceContainerHighest),
                 contentAlignment = Alignment.Center,
-            ) { Text(emoji, fontSize = 20.sp) }
+            ) { Text(glyph, fontSize = 12.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary) }
             Column(Modifier.padding(horizontal = Space.m).weight(1f)) {
                 Text(title, fontSize = 17.sp, fontWeight = FontWeight.Bold)
                 Text(
@@ -758,8 +756,8 @@ private fun SectionLabel(text: String) {
 
 private enum class ThemeFilterCategory(val fa: String) {
     ALL("همه"),
-    LIGHT("روشن ☀️"),
-    DARK("تیره 🌙"),
+    LIGHT("روشن"),
+    DARK("تیره"),
 }
 
 /** Interactive Theme Studio with live preview card, palette swatches, and category filtering. */
@@ -879,7 +877,7 @@ private fun ThemeLivePreviewCard(spec: ThemeVisualSpec) {
                             border = BorderStroke(1.dp, animAccent.copy(alpha = 0.35f)),
                         ) {
                             Text(
-                                text = if (spec.mode == ThemeMode.SYSTEM) "⚙️ خودکار" else if (spec.isDark) "🌙 تیره" else "☀️ روشن",
+                                text = if (spec.mode == ThemeMode.SYSTEM) "خودکار" else if (spec.isDark) "تیره" else "روشن",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = animAccent,
@@ -1123,10 +1121,10 @@ private fun ThemeSwatchCard(
     }
 }
 
-/** One switched setting: emoji, what it does, what it currently means, and the switch. */
+/** One switched setting: glyph, what it does, what it currently means, and the switch. */
 @Composable
 fun SettingCard(
-    emoji: String,
+    glyph: String,
     title: String,
     subtitle: String,
     checked: Boolean,
@@ -1135,7 +1133,7 @@ fun SettingCard(
     enabled: Boolean = true,
     shape: Shape = RoundedCornerShape(Radius.group),
     divided: Boolean = false,
-    /** Replaces the emoji plate where the row has a real mark of its own. */
+    /** Replaces the glyph plate where the row has a real mark of its own. */
     badge: (@Composable () -> Unit)? = null,
 ) {
     Box(modifier.fillMaxWidth().clip(shape).background(MaterialTheme.colorScheme.surface)) {
@@ -1164,7 +1162,7 @@ fun SettingCard(
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surfaceContainerHighest),
                     contentAlignment = Alignment.Center,
-                ) { Text(emoji, fontSize = 20.sp) }
+                ) { Text(glyph, fontSize = 12.sp, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary) }
             }
             Column(Modifier.padding(horizontal = Space.m).weight(1f)) {
                 Text(

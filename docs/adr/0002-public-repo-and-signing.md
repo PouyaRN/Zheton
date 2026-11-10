@@ -16,3 +16,4 @@
 3. **غیرفعال‌سازی کامل پشتیبان ابری (`allowBackup="false"`):** مقدار `android:allowBackup="false"` در `AndroidManifest.xml` اعمال شد و تمامی تگ‌های `<include>` از `backup_rules.xml` و `data_extraction_rules.xml` حذف شدند.
 
 </div>
+

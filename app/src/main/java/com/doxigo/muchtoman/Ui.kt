@@ -1962,7 +1962,11 @@ private fun AssetIcon(type: AssetType, size: Dp = 44.dp, network: String? = null
                         }
                     }
                 }
-                type.emoji != null -> Text(type.emoji, fontSize = (size.value * 0.52f).sp)
+                type.kind != Kind.CRYPTO -> Image(
+                    painter = painterResource(assetGlyph(type)),
+                    contentDescription = null,
+                    modifier = Modifier.size(size * 0.56f),
+                )
                 else -> letters()
             }
         }
@@ -2336,7 +2340,13 @@ private fun EmptyHint() {
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surfaceContainer),
             contentAlignment = Alignment.Center,
-        ) { Text("👛", fontSize = 40.sp) }
+        ) {
+            Image(
+                painter = painterResource(R.drawable.ic_asset_cash),
+                contentDescription = null,
+                modifier = Modifier.size(44.dp),
+            )
+        }
         Spacer(Modifier.height(Space.xl))
         Text(
             "هنوز چیزی اضافه نکردی",
@@ -2820,7 +2830,11 @@ internal fun BankLogo(bank: String, size: Dp = 32.dp) {
                     .padding(size / 8),
             )
         } else {
-            Text("💳", fontSize = (size.value / 2).sp)
+            Image(
+                painter = painterResource(R.drawable.ic_asset_bank),
+                contentDescription = null,
+                modifier = Modifier.size(size * 0.56f),
+            )
         }
     }
 }

@@ -567,7 +567,7 @@ private fun ExecutiveCashFlowCard(
                     .padding(horizontal = Space.m, vertical = Space.s),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("🔥", fontSize = 18.sp, modifier = Modifier.padding(end = Space.s))
+                Text("•", fontSize = 18.sp, fontWeight = FontWeight.Black, color = Hero.gold, modifier = Modifier.padding(end = Space.s))
                 Column(Modifier.weight(1f)) {
                     Text(
                         "سرعت خرج‌کرد روزانه",
@@ -597,7 +597,7 @@ private fun ExecutiveCashFlowCard(
                         .padding(horizontal = Space.m, vertical = Space.s),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(if (isAhead) "🛡️" else "⚠️", fontSize = 18.sp, modifier = Modifier.padding(end = Space.s))
+                    Text(if (isAhead) "▲" else "!", fontSize = 15.sp, fontWeight = FontWeight.Black, color = if (isAhead) Hero.mint else Hero.gold, modifier = Modifier.padding(end = Space.s))
                     Column(Modifier.weight(1f)) {
                         Text(
                             "سنجش قدرت خرید حقیقی پس از کسر تورم",
@@ -644,7 +644,7 @@ private fun IdleCashSweepCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text("💡", fontSize = 18.sp)
+                    Text("•", fontSize = 18.sp, fontWeight = FontWeight.Black, color = Hero.gold)
                     Text(
                         "هشدار انتقال نقدینگی مازاد (Sweep)",
                         fontSize = 15.sp,
@@ -1044,7 +1044,7 @@ fun OpportunityCostSimulatorCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("💡", fontSize = 18.sp, modifier = Modifier.padding(end = Space.s))
+                    Text("•", fontSize = 18.sp, fontWeight = FontWeight.Black, color = Hero.gold, modifier = Modifier.padding(end = Space.s))
                     Column {
                         Text(
                             "شبیه‌ساز معکوس هزینه فرصت",
@@ -1115,7 +1115,7 @@ fun OpportunityCostSimulatorCard(
                         .padding(Space.m),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("🥇 صندوق طلا", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Hero.gold)
+                        Text("صندوق طلا", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Hero.gold)
                     }
                     Spacer(Modifier.height(4.dp))
                     Text(
@@ -1143,7 +1143,7 @@ fun OpportunityCostSimulatorCard(
                         .padding(Space.m),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("💵 تتر (دلار)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Hero.mint)
+                        Text("تتر (دلار)", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Hero.mint)
                     }
                     Spacer(Modifier.height(4.dp))
                     Text(
@@ -1197,7 +1197,7 @@ private fun BankFeesCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("💳", fontSize = 18.sp, modifier = Modifier.padding(end = Space.s))
+                    Text("•", fontSize = 18.sp, fontWeight = FontWeight.Black, color = Hero.gold, modifier = Modifier.padding(end = Space.s))
                     Column {
                         Text(
                             "کارمزدها و اصطکاک بانکی",
@@ -1754,7 +1754,7 @@ fun FinancialDecisionEngineCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("🧭", fontSize = 16.sp)
+                    Text("•", fontSize = 16.sp, fontWeight = FontWeight.Black, color = Hero.gold)
                     Spacer(Modifier.width(Space.s))
                     Text(
                         "دست‌فرمان خرج و تاب‌آوری",
@@ -1932,7 +1932,7 @@ fun FinancialDecisionEngineCard(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        if (variance.isSignificantIncrease) "⚠️" else if (variance.isSignificantDecrease) "🎯" else "💡",
+                        if (variance.isSignificantIncrease) "▲" else if (variance.isSignificantDecrease) "▼" else "•",
                         fontSize = 14.sp,
                         modifier = Modifier.padding(end = Space.s),
                     )

@@ -10,6 +10,13 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('/modam.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
 @layer base {
   html,
   body {
@@ -22,7 +29,7 @@
 
   body {
     overscroll-behavior: none;
-    font-family: 'Vazirmatn', 'Modam', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Modam', 'Vazirmatn', Tahoma, -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -34,16 +41,6 @@
   .pt-safe {
     padding-top: env(safe-area-inset-top, 16px);
   }
-}
-
-.material-symbols-outlined {
-  font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
-  user-select: none;
-}
-
-.material-symbols-filled {
-  font-variation-settings: 'FILL' 1, 'wght' 600, 'GRAD' 0, 'opsz' 24;
-  user-select: none;
 }
 
 .num-tabular {

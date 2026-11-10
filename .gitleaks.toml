@@ -30,3 +30,4 @@ paths = [
   '''package-lock\.json''',
   '''docs/security/scan-reports/.*''',
 ]
+

@@ -266,7 +266,7 @@ private fun PrivacyNote() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Space.s),
     ) {
-        Text("🔒", fontSize = 14.sp)
+        Text("•", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Hero.gold)
         Text(
             text = SMS_PICKER_PRIVACY_LINE,
             fontSize = 12.sp,
@@ -722,7 +722,7 @@ private fun PermissionCard(onRequest: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Text("📩", fontSize = 40.sp)
+        Text("SMS", fontSize = 24.sp, fontWeight = FontWeight.Black, color = Hero.gold)
         Spacer(Modifier.height(Space.m))
         Text(
             text = "برای دیدن پیامک‌های بانکی، اجازهٔ خواندن پیامک لازم است.",

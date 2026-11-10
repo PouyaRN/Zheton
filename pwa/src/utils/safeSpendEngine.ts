@@ -77,20 +77,20 @@ export function computePacing(
     : null;
 
   let paceStatusKey: PaceStatusKey = 'ON_TRACK';
-  let labelFa = '🟢 در محدوده امن بودجه';
+  let labelFa = 'در محدوده امن بودجه';
   let isWarning = false;
 
   if (discretionaryBuffer <= 0 || (daysUntilExhaustion < remainingDays && daysUntilExhaustion <= 5)) {
     paceStatusKey = 'DEFICIT_RISK';
-    labelFa = '🔴 خطر کسری قبل از حقوق';
+    labelFa = 'خطر کسری قبل از حقوق';
     isWarning = true;
   } else if (velocityIndex > 1.25) {
     paceStatusKey = 'ELEVATED_VELOCITY';
-    labelFa = '🟡 شتاب بالای خرج‌کرد';
+    labelFa = 'شتاب بالای خرج‌کرد';
     isWarning = true;
   } else if (velocityIndex < 0.85) {
     paceStatusKey = 'CONSERVATIVE';
-    labelFa = '🟢 کنترل عالی (زیر سقف بودجه)';
+    labelFa = 'کنترل عالی (زیر سقف بودجه)';
     isWarning = false;
   }
 

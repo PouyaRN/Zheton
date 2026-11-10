@@ -1,1 +1,4 @@
-graphify-out/graph.json merge=graphify
+rates-pipeline/fixtures/rates.golden.json text eol=lf
+rates-pipeline/fixtures/rates.golden.json.sig text eol=lf
+pwa/public/rates.json text eol=lf
+pwa/public/rates.json.sig text eol=lf

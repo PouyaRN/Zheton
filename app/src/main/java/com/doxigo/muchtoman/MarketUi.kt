@@ -532,7 +532,7 @@ fun MarketAndAssetsScreen(
                                         .background(Hero.gold.copy(alpha = 0.2f)),
                                     contentAlignment = Alignment.Center,
                                 ) {
-                                    Text("⚡", fontSize = 12.sp)
+                                    Text("Au", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Hero.gold)
                                 }
                                 Spacer(Modifier.width(Space.s))
                                 Text(
@@ -1479,7 +1479,7 @@ fun GoldCoinBubbleGauge(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("🪙", fontSize = 16.sp)
+                    Text("Au", fontSize = 12.sp, fontWeight = FontWeight.Black, color = Hero.gold)
                     Spacer(Modifier.width(Space.s))
                     Text(
                         "حباب‌سنج گرافیکی انواع سکه طلا",
@@ -1698,7 +1698,7 @@ fun PortfolioOverviewCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("شاخص مقاومت در برابر تورم", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text("حفاظت فعال با دارایی‌های امن 🛡️", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Hero.mint)
+                Text("حفاظت فعال با دارایی‌های امن", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Hero.mint)
             }
         }
     }

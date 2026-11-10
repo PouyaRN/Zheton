@@ -1,6 +1,7 @@
 package com.doxigo.muchtoman
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -230,7 +231,13 @@ internal fun EmptyReport() {
                 .clip(RoundedCornerShape(Radius.pill))
                 .background(MaterialTheme.colorScheme.surfaceContainer),
             contentAlignment = Alignment.Center,
-        ) { Text("📈", fontSize = 40.sp) }
+        ) {
+            Image(
+                painter = androidx.compose.ui.res.painterResource(R.drawable.ic_asset_stock),
+                contentDescription = null,
+                modifier = Modifier.size(44.dp),
+            )
+        }
         Spacer(Modifier.height(Space.xl))
         Text("هنوز نموداری نیست", fontSize = 22.sp, fontWeight = FontWeight.ExtraBold)
         Spacer(Modifier.height(Space.s))

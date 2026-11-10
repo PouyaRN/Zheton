@@ -584,12 +584,12 @@ enum class AssetClass(val titleFa: String, val riskLevelFa: String) {
 
     val fa: String get() = titleFa
     val icon: String get() = when (this) {
-        GOLD_ETF -> "📊"
-        MELTED_GOLD_18K -> "🥇"
-        GOLD_COIN_BAHAR -> "🪙"
-        USDT_STABLECOIN -> "💵"
-        REAL_ESTATE_FUND -> "🏢"
-        PHYSICAL_PROPERTY -> "🏠"
+        GOLD_ETF -> "ETF"
+        MELTED_GOLD_18K -> "Au"
+        GOLD_COIN_BAHAR -> "Au"
+        USDT_STABLECOIN -> "USD"
+        REAL_ESTATE_FUND -> "RE"
+        PHYSICAL_PROPERTY -> "RE"
     }
 }
 
@@ -657,11 +657,11 @@ object PurchasingOptimizationEngine {
         val score = (hedgedRatio * 100.0).toInt().coerceIn(0, 100)
 
         val levelFa = when {
-            score >= 80 -> "سپر دفاعی مستحکم 🛡️"
-            score >= 60 -> "پوشش مناسب و پایدار ⚖️"
-            score >= 40 -> "پوشش متوسط — نیازمند تقویت ⚠️"
-            score >= 20 -> "در معرض افت جدی ارزش 🔻"
-            else -> "هشدار ریزش قدرت خرید 🚨"
+            score >= 80 -> "سپر دفاعی مستحکم"
+            score >= 60 -> "پوشش مناسب و پایدار"
+            score >= 40 -> "پوشش متوسط — نیازمند تقویت"
+            score >= 20 -> "در معرض افت جدی ارزش"
+            else -> "هشدار ریزش قدرت خرید"
         }
 
         val dailyInflationRate = Math.pow(1.0 + annualInflationRate, 1.0 / 365.0) - 1.0
@@ -1113,10 +1113,10 @@ object MarketFluctuationEngine {
  * - WANT: 30% target (discretionary: dining, entertainment, shopping, travel)
  * - SAVINGS: 20% target (wealth defense: savings, investments, debt principal)
  */
-enum class NecessityType(val titleFa: String, val targetPercent: Int, val emoji: String) {
-    NEED("نیازهای اساسی (۵۰٪)", 50, "🏠"),
-    WANT("خواسته‌ها و علایق (۳۰٪)", 30, "☕"),
-    SAVINGS("پس‌انداز و سرمایه‌گذاری (۲۰٪)", 20, "📈");
+enum class NecessityType(val titleFa: String, val targetPercent: Int, val badgeCode: String) {
+    NEED("نیازهای اساسی (۵۰٪)", 50, "۵۰٪"),
+    WANT("خواسته‌ها و علایق (۳۰٪)", 30, "۳۰٪"),
+    SAVINGS("پس‌انداز و سرمایه‌گذاری (۲۰٪)", 20, "۲۰٪");
 
     companion object {
         fun classifyCategory(categoryId: String?): NecessityType {

@@ -30,7 +30,11 @@ import {
   SAMPLE_BANK_SMS,
   parseBankSms,
 } from './utils/smsParser';
-import { DEFAULT_MARKET_QUOTES, simulateMarketTick } from './services/marketService';
+import {
+  fetchVerifiedMarketState,
+  getInitialMarketState,
+  VerifiedMarketState,
+} from './services/marketService';
 import {
   getDemoState,
   loadPersistedState,
@@ -38,6 +42,7 @@ import {
 } from './services/storageService';
 import { CalculatorsModal } from './components/CalculatorsModal';
 import { OnboardingModal } from './components/OnboardingModal';
+import { Icon } from './components/Icon';
 
 type TabKey = 'DASHBOARD' | 'ANALYTICS' | 'COMMITMENTS' | 'GOALS';
 
@@ -55,7 +60,8 @@ const INITIAL_SAVINGS_GOALS: SavingsGoal[] = [];
 
 export default function App() {
   const [state, setState] = useState(() => loadPersistedState());
-  const [quotes, setQuotes] = useState<MarketQuote[]>(DEFAULT_MARKET_QUOTES);
+  const [marketState, setMarketState] = useState<VerifiedMarketState>(() => getInitialMarketState());
+  const quotes = marketState.quotes;
   const [activeTab, setActiveTab] = useState<TabKey>('DASHBOARD');
   const [dayOffset, setDayOffset] = useState(0);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -171,10 +177,17 @@ export default function App() {
   }, [state]);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setQuotes((prev) => simulateMarketTick(prev));
-    }, 9000);
-    return () => clearInterval(timer);
+    let active = true;
+    const refreshRates = async () => {
+      const next = await fetchVerifiedMarketState();
+      if (active) setMarketState(next);
+    };
+    refreshRates();
+    const timer = setInterval(refreshRates, 15 * 60 * 1000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
   }, []);
 
   const showToast = (msg: string) => {
@@ -489,7 +502,7 @@ export default function App() {
       {toastMessage && (
         <div className="fixed top-20 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">
           <div className="bg-primary text-on-primary px-4 py-2.5 rounded-full shadow-[0_8px_24px_rgba(9,13,21,0.22)] flex items-center gap-2 text-[12px] font-bold animate-bounce">
-            <span className="material-symbols-outlined text-[16px] text-emerald-400">check_circle</span>
+            <Icon name="check_circle" size={16} className="text-emerald-400" />
             <span>{toastMessage}</span>
           </div>
         </div>
@@ -509,7 +522,7 @@ export default function App() {
                 className="w-6 h-6 flex items-center justify-center rounded-full text-gray-500 hover:text-black hover:bg-gray-100 transition-colors"
                 type="button"
               >
-                <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+                <Icon name="chevron_right" size={18} />
               </button>
               <button
                 onClick={() => setDayOffset(0)}
@@ -524,7 +537,7 @@ export default function App() {
                 className="w-6 h-6 flex items-center justify-center rounded-full text-gray-500 hover:text-black hover:bg-gray-100 transition-colors"
                 type="button"
               >
-                <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+                <Icon name="chevron_left" size={18} />
               </button>
             </div>
           ) : (
@@ -553,9 +566,7 @@ export default function App() {
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               )}
               <span>{activeTab === 'DASHBOARD' ? 'دستیار هوشمند' : 'هوشمند'}</span>
-              <span className="material-symbols-outlined text-[16px] text-secondary-container">
-                auto_awesome
-              </span>
+              <Icon name="auto_awesome" size={16} className="text-secondary-container" />
             </button>
 
             <button
@@ -567,7 +578,7 @@ export default function App() {
               className="relative w-9 h-9 rounded-full bg-surface-container-lowest border border-gray-200/60 flex items-center justify-center text-on-surface shadow-[0_4px_20px_-2px_rgba(31,35,43,0.04)] active:scale-95 transition-all"
               type="button"
             >
-              <span className="material-symbols-outlined text-[20px]">notifications</span>
+              <Icon name="notifications" size={20} />
               <span className="absolute top-1.5 left-1.5 w-2 h-2 bg-on-tertiary-container rounded-full ring-2 ring-surface-container-lowest" />
             </button>
           </div>
@@ -578,6 +589,34 @@ export default function App() {
           MAIN SCROLLABLE CONTENT
          ===================================================================== */}
       <main className="flex flex-col relative w-full pt-20 pb-32 px-4 max-w-md mx-auto min-h-screen">
+        <div
+          data-testid="market-freshness-state"
+          data-freshness={marketState.freshness}
+          data-verified={String(marketState.verified)}
+          data-quotes-count={String(quotes.length)}
+          className="sr-only"
+        />
+        {marketState.freshness !== 'fresh' && (
+          <div
+            data-testid="market-status-banner"
+            data-freshness={marketState.freshness}
+            role="status"
+            className={`mb-3 flex items-center gap-2 rounded-2xl border px-3.5 py-2.5 text-[12px] font-bold ${
+              marketState.freshness === 'stale'
+                ? 'border-amber-200 bg-amber-50 text-amber-800'
+                : 'border-rose-200 bg-rose-50 text-rose-800'
+            }`}
+          >
+            <Icon name="warning" size={16} />
+            <span>
+              {marketState.freshness === 'stale'
+                ? 'نرخ‌های بازار قدیمی هستند (بیش از ۴۸ ساعت از آخرین بروزرسانی گذشته است).'
+                : marketState.freshness === 'expired'
+                ? 'نرخ‌های بازار منقضی شده‌اند (بیش از ۷ روز). ارزش دارایی‌ها تقریبی است.'
+                : 'امضای دیجیتال نرخ‌های بازار تایید نشد؛ نمایش نرخ‌ها متوقف شده است.'}
+            </span>
+          </div>
+        )}
         {/* ===================================================================
             TAB 1: DASHBOARD (داشبورد مالی — _4/code.html)
            =================================================================== */}
@@ -591,16 +630,14 @@ export default function App() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-900 font-bold">
-                      <span className="material-symbols-outlined text-[18px]">
-                        account_balance_wallet
-                      </span>
+                      <Icon name="account_balance_wallet" size={18} />
                     </div>
                     <span className="text-[13px] font-semibold text-gray-500">
                       موجودی کل تجمیعی
                     </span>
                   </div>
                   <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100/80">
-                    <span className="material-symbols-outlined text-[14px]">trending_up</span>
+                    <Icon name="trending_up" size={14} />
                     <span className="text-[12px] font-bold dir-ltr">+۸.۴٪</span>
                     <span className="text-[10px] text-emerald-600 font-medium">ماهانه</span>
                   </div>
@@ -622,9 +659,7 @@ export default function App() {
                     className="w-8 h-8 rounded-full bg-gray-50 hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors flex items-center justify-center"
                     type="button"
                   >
-                    <span className="material-symbols-outlined text-[18px]">
-                      {state.privacyMode ? 'visibility_off' : 'visibility'}
-                    </span>
+                    <Icon name={state.privacyMode ? 'visibility_off' : 'visibility'} size={18} />
                   </button>
                 </div>
 
@@ -653,7 +688,7 @@ export default function App() {
                     className="flex flex-col items-center justify-center gap-1.5 py-2.5 px-1 rounded-2xl bg-gray-900 hover:bg-black text-white active:scale-95 transition-all shadow-xs"
                     type="button"
                   >
-                    <span className="material-symbols-outlined text-[20px]">add</span>
+                    <Icon name="add" size={20} />
                     <span className="text-[11px] font-bold">واریز</span>
                   </button>
 
@@ -662,7 +697,7 @@ export default function App() {
                     className="flex flex-col items-center justify-center gap-1.5 py-2.5 px-1 rounded-2xl bg-gray-100 hover:bg-gray-200/70 text-gray-900 active:scale-95 transition-all"
                     type="button"
                   >
-                    <span className="material-symbols-outlined text-[20px]">edit_note</span>
+                    <Icon name="edit_note" size={20} />
                     <span className="text-[11px] font-bold">ثبت تراکنش</span>
                   </button>
 
@@ -671,7 +706,7 @@ export default function App() {
                     className="flex flex-col items-center justify-center gap-1.5 py-2.5 px-1 rounded-2xl bg-gray-100 hover:bg-gray-200/70 text-gray-900 active:scale-95 transition-all"
                     type="button"
                   >
-                    <span className="material-symbols-outlined text-[20px]">send_money</span>
+                    <Icon name="send_money" size={20} />
                     <span className="text-[11px] font-bold">انتقال</span>
                   </button>
 
@@ -680,7 +715,7 @@ export default function App() {
                     className="flex flex-col items-center justify-center gap-1.5 py-2.5 px-1 rounded-2xl bg-gray-100 hover:bg-gray-200/70 text-gray-900 active:scale-95 transition-all"
                     type="button"
                   >
-                    <span className="material-symbols-outlined text-[20px]">document_scanner</span>
+                    <Icon name="document_scanner" size={20} />
                     <span className="text-[11px] font-bold">اسکن قبض</span>
                   </button>
                 </div>
@@ -697,7 +732,7 @@ export default function App() {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[12px] font-bold text-gray-500">بودجه ماه جاری</span>
                   <span className="w-6 h-6 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center text-[11px]">
-                    <span className="material-symbols-outlined text-[14px]">pie_chart</span>
+                    <Icon name="pie_chart" size={14} />
                   </span>
                 </div>
                 <div className="flex items-center gap-3 my-1">
@@ -745,7 +780,7 @@ export default function App() {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[12px] font-bold text-gray-500">اقساط و چک‌ها</span>
                   <span className="w-6 h-6 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center text-[11px]">
-                    <span className="material-symbols-outlined text-[14px]">receipt_long</span>
+                    <Icon name="receipt_long" size={14} />
                   </span>
                 </div>
                 <div className="my-1">
@@ -758,9 +793,7 @@ export default function App() {
                 </div>
                 <div className="mt-2 pt-2 border-t border-gray-50">
                   <div className="inline-flex items-center gap-1 bg-amber-50 px-2 py-0.5 rounded-full text-[10px] font-bold text-amber-800">
-                    <span className="material-symbols-outlined text-[12px] text-amber-600">
-                      alarm
-                    </span>
+                    <Icon name="alarm" size={12} className="text-amber-600" />
                     <span>
                       {urgentCommitment
                         ? `سررسید: ${urgentCommitment.title}`
@@ -776,7 +809,7 @@ export default function App() {
               <div className="flex items-start justify-between gap-3 mb-2.5">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-[16px]">psychology</span>
+                    <Icon name="psychology" size={16} />
                   </div>
                   <span className="text-[13px] font-extrabold text-gray-900">
                     پیشنهاد هوشمند سرمایه‌بان
@@ -799,7 +832,7 @@ export default function App() {
                 className="w-full py-2.5 px-4 rounded-full bg-gray-900 hover:bg-black text-white text-[12px] font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
                 type="button"
               >
-                <span className="material-symbols-outlined text-[16px]">tune</span>
+                <Icon name="tune" size={16} />
                 <span>تنظیم خودکار بودجه هفتگی</span>
               </button>
             </section>
@@ -816,7 +849,7 @@ export default function App() {
                   className="flex items-center gap-1 text-[11px] font-bold text-secondary hover:underline"
                   type="button"
                 >
-                  <span className="material-symbols-outlined text-[13px]">schedule</span>
+                  <Icon name="schedule" size={13} />
                   <span>۱۴:۳۵ • همه نرخ‌ها</span>
                 </button>
               </div>
@@ -913,7 +946,7 @@ export default function App() {
               <div className="rounded-3xl bg-white border border-gray-100 p-2 shadow-[0_4px_20px_rgb(0,0,0,0.03)] flex flex-col divide-y divide-gray-50">
                 {state.transactions.length === 0 ? (
                   <div className="flex flex-col items-center justify-center p-6 text-center text-gray-400 gap-2">
-                    <span className="material-symbols-outlined text-[32px] text-gray-300">receipt_long</span>
+                    <Icon name="receipt_long" size={32} className="text-gray-300" />
                     <span className="text-[13px] font-bold text-gray-700">هنوز تراکنشی ثبت نشده است</span>
                     <span className="text-[11px] text-gray-400">با دریافت پیامک‌های بانکی یا دکمه «واریز» / «ثبت تراکنش» تراکنش جدید ثبت کنید.</span>
                   </div>
@@ -944,7 +977,7 @@ export default function App() {
                         <div
                           className={`w-10 h-10 rounded-full ${iconStyle} flex items-center justify-center flex-shrink-0`}
                         >
-                          <span className="material-symbols-outlined text-[20px]">{iconName}</span>
+                          <Icon name={iconName} size={20} />
                         </div>
                         <div className="flex flex-col min-w-0">
                           <span className="text-[13px] font-bold text-gray-900 truncate">
@@ -1014,7 +1047,7 @@ export default function App() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <span className="w-8 h-8 rounded-full bg-secondary-fixed flex items-center justify-center text-on-secondary-fixed">
-                    <span className="material-symbols-outlined text-[18px]">query_stats</span>
+                    <Icon name="query_stats" size={18} />
                   </span>
                   <div>
                     <span className="block text-label-sm text-on-surface-variant">وضعیت تراز</span>
@@ -1024,7 +1057,7 @@ export default function App() {
                   </div>
                 </div>
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-low text-label-sm text-secondary-container font-semibold">
-                  <span className="material-symbols-outlined text-[14px]">bolt</span>
+                  <Icon name="bolt" size={14} />
                   به‌روز شد
                 </span>
               </div>
@@ -1036,7 +1069,7 @@ export default function App() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-label-sm text-on-surface-variant">مجموع مخارج</span>
                     <span className="w-6 h-6 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-container">
-                      <span className="material-symbols-outlined text-[14px]">arrow_outward</span>
+                      <Icon name="arrow_outward" size={14} />
                     </span>
                   </div>
                   <div>
@@ -1049,7 +1082,7 @@ export default function App() {
                       <span className="text-label-sm text-on-surface-variant">تومان</span>
                     </div>
                     <div className="inline-flex items-center gap-1 mt-1 text-on-tertiary-container text-label-sm">
-                      <span className="material-symbols-outlined text-[14px]">trending_down</span>
+                      <Icon name="trending_down" size={14} />
                       <span>۱۲٪ کمتر از دوره پیش</span>
                     </div>
                   </div>
@@ -1060,7 +1093,7 @@ export default function App() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-label-sm text-on-surface-variant">دریافتی ناخالص</span>
                     <span className="w-6 h-6 rounded-full bg-secondary-fixed flex items-center justify-center text-secondary">
-                      <span className="material-symbols-outlined text-[14px]">south_west</span>
+                      <Icon name="south_west" size={14} />
                     </span>
                   </div>
                   <div>
@@ -1073,7 +1106,7 @@ export default function App() {
                       <span className="text-label-sm text-on-surface-variant">تومان</span>
                     </div>
                     <div className="inline-flex items-center gap-1 mt-1 text-secondary text-label-sm">
-                      <span className="material-symbols-outlined text-[14px]">verified</span>
+                      <Icon name="verified" size={14} />
                       <span>۲ واریزی موفق</span>
                     </div>
                   </div>
@@ -1133,7 +1166,7 @@ export default function App() {
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="flex items-center gap-2.5">
                   <div className="w-9 h-9 rounded-2xl bg-secondary-fixed flex items-center justify-center text-secondary">
-                    <span className="material-symbols-outlined text-[20px]">psychology</span>
+                    <Icon name="psychology" size={20} />
                   </div>
                   <div>
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary-fixed/50 text-secondary text-label-sm font-bold">
@@ -1162,7 +1195,7 @@ export default function App() {
                   className="flex-1 py-2.5 px-4 rounded-full bg-primary-container text-on-primary text-label-md font-semibold flex items-center justify-center gap-1.5 shadow-[0_4px_14px_rgba(31,35,43,0.15)] active:scale-95 transition-all"
                   type="button"
                 >
-                  <span className="material-symbols-outlined text-[16px]">tune</span>
+                  <Icon name="tune" size={16} />
                   <span>فعال‌سازی سقف بودجه</span>
                 </button>
                 <button
@@ -1171,7 +1204,7 @@ export default function App() {
                   className="py-2.5 px-3.5 rounded-full bg-surface-container-low text-on-surface text-label-md flex items-center justify-center hover:bg-surface-container transition-all"
                   type="button"
                 >
-                  <span className="material-symbols-outlined text-[18px]">more_horiz</span>
+                  <Icon name="more_horiz" size={18} />
                 </button>
               </div>
             </section>
@@ -1191,7 +1224,7 @@ export default function App() {
                   type="button"
                 >
                   <span>گزارش کامل</span>
-                  <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+                  <Icon name="chevron_left" size={16} />
                 </button>
               </div>
 
@@ -1328,7 +1361,7 @@ export default function App() {
                       <span
                         className={`w-8 h-8 rounded-full ${cat.iconClass} flex items-center justify-center`}
                       >
-                        <span className="material-symbols-outlined text-[16px]">{cat.icon}</span>
+                        <Icon name={cat.icon} size={16} />
                       </span>
                       <div>
                         <span className="block text-body-sm text-on-surface font-bold">
@@ -1373,7 +1406,7 @@ export default function App() {
                 className="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface hover:bg-surface-container active:scale-95 transition-all shrink-0"
                 type="button"
               >
-                <span className="material-symbols-outlined text-[20px]">sync</span>
+                <Icon name="sync" size={20} />
               </button>
             </section>
 
@@ -1394,7 +1427,7 @@ export default function App() {
                   className="w-8 h-8 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface"
                   type="button"
                 >
-                  <span className="material-symbols-outlined text-[18px]">filter_list</span>
+                  <Icon name="filter_list" size={18} />
                 </button>
               </div>
 
@@ -1447,7 +1480,7 @@ export default function App() {
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface">
-                          <span className="material-symbols-outlined text-[20px]">{item.icon}</span>
+                          <Icon name={item.icon} size={20} />
                         </div>
                         <div>
                           <span className="block text-body-sm text-on-surface font-bold">
@@ -1484,9 +1517,7 @@ export default function App() {
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <div className="w-9 h-9 rounded-full bg-surface-container-lowest flex items-center justify-center shrink-0 shadow-sm text-error">
-                    <span className="material-symbols-outlined material-symbols-filled text-[20px]">
-                      notifications_active
-                    </span>
+                    <Icon name="notifications_active" size={20} />
                   </div>
                   <div className="flex flex-col min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
@@ -1532,9 +1563,7 @@ export default function App() {
                   </div>
                 </div>
                 <div className="w-11 h-11 rounded-full bg-surface-container-low flex items-center justify-center text-secondary">
-                  <span className="material-symbols-outlined text-[24px]">
-                    account_balance_wallet
-                  </span>
+                  <Icon name="account_balance_wallet" size={24} />
                 </div>
               </div>
 
@@ -1627,7 +1656,7 @@ export default function App() {
                   if (filtered.length === 0) {
                     return (
                       <div className="flex flex-col items-center justify-center p-8 bg-surface-container-lowest rounded-lg text-center gap-3">
-                        <span className="material-symbols-outlined text-[36px] text-outline">description</span>
+                        <Icon name="description" size={36} className="text-outline" />
                         <h3 className="text-body-lg text-on-surface font-bold">هیچ تعهد یا قسطی یافت نشد</h3>
                         <p className="text-body-sm text-outline max-w-xs">
                           تعهدات و اقساط بانکی شما پس از دریافت پیامک‌های بانکی یا با ثبت دستی در این قسمت نمایش می‌یابند.
@@ -1655,9 +1684,7 @@ export default function App() {
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-primary shrink-0">
-                              <span className="material-symbols-outlined text-[22px]">
-                                {c.kind === 'CHECK' ? 'check_circle' : 'real_estate_agent'}
-                              </span>
+                              <Icon name={c.kind === 'CHECK' ? 'check_circle' : 'real_estate_agent'} size={22} />
                             </div>
                             <div className="flex flex-col">
                               <h2 className="text-body-lg text-on-surface">{c.title}</h2>
@@ -1716,7 +1743,7 @@ export default function App() {
               <section className="flex flex-col gap-3">
                 {state.accounts.length === 0 ? (
                   <div className="flex flex-col items-center justify-center p-8 bg-surface-container-lowest rounded-lg text-center gap-3">
-                    <span className="material-symbols-outlined text-[36px] text-outline">credit_card</span>
+                    <Icon name="credit_card" size={36} className="text-outline" />
                     <h3 className="text-body-lg text-on-surface font-bold">هیچ کارت بانکی ثبت نشده است</h3>
                     <p className="text-body-sm text-outline max-w-xs">
                       کارت‌های بانکی به صورت خودکار از پیامک‌های واریز/برداشت استخراج شده یا می‌توانید به صورت دستی کارت خود را اضافه کنید.
@@ -1755,7 +1782,7 @@ export default function App() {
                         className="px-3 py-1 rounded-full bg-primary text-on-primary text-label-sm"
                         type="button"
                       >
-                        {copiedId === `pan_${acc.id}` ? 'کپی شد ✓' : 'کپی کارت'}
+                        {copiedId === `pan_${acc.id}` ? 'کپی شد' : 'کپی کارت'}
                       </button>
                     </div>
 
@@ -1789,7 +1816,7 @@ export default function App() {
             {/* Smart Alert Settings Pod */}
             <section className="bg-surface-container-lowest p-5 rounded-lg shadow-[0_4px_20px_-2px_rgba(31,35,43,0.04)] flex flex-col gap-3.5">
               <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[20px] text-secondary">tune</span>
+                <Icon name="tune" size={20} className="text-secondary" />
                 <h3 className="text-body-lg text-on-surface">
                   تنظیمات یادآور و هشدارهای هوشمند
                 </h3>
@@ -1855,7 +1882,7 @@ export default function App() {
                 className="w-full h-14 rounded-full bg-primary text-on-primary flex items-center justify-center gap-2 shadow-[0_8px_24px_-4px_rgba(9,13,21,0.28)] active:scale-[0.98] transition-all"
                 type="button"
               >
-                <span className="material-symbols-outlined text-[22px]">add_circle</span>
+                <Icon name="add_circle" size={22} />
                 <span className="text-body-lg">ثبت قسط یا چک جدید</span>
               </button>
             </section>
@@ -1872,16 +1899,14 @@ export default function App() {
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <span className="w-8 h-8 rounded-full bg-secondary-fixed flex items-center justify-center text-secondary">
-                    <span className="material-symbols-outlined text-[18px]">
-                      account_balance_wallet
-                    </span>
+                    <Icon name="account_balance_wallet" size={18} />
                   </span>
                   <span className="text-label-md text-on-surface-variant">
                     کل موجودی پس‌انداز و رشد
                   </span>
                 </div>
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-low text-secondary text-label-sm">
-                  <span className="material-symbols-outlined text-[14px]">trending_up</span>
+                  <Icon name="trending_up" size={14} />
                   <span>+۲۸.۴٪ بازدهی</span>
                 </span>
               </div>
@@ -1960,7 +1985,7 @@ export default function App() {
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 rounded-full bg-tertiary-fixed flex items-center justify-center text-tertiary shadow-sm">
-                    <span className="material-symbols-outlined text-[24px]">savings</span>
+                    <Icon name="savings" size={24} />
                   </div>
                   <div>
                     <div className="flex items-center gap-1.5">
@@ -1989,7 +2014,7 @@ export default function App() {
                       roundupActive ? '-translate-x-5' : 'translate-x-0'
                     }`}
                   >
-                    <span className="material-symbols-outlined text-[13px]">done</span>
+                    <Icon name="done" size={13} />
                   </span>
                 </button>
               </div>
@@ -1997,9 +2022,7 @@ export default function App() {
               {/* Highlight Pod */}
               <div className="mt-4 pt-3.5 bg-surface-container-low rounded-xl p-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-secondary text-[20px]">
-                    magic_button
-                  </span>
+                  <Icon name="magic_button" size={20} className="text-secondary" />
                   <span className="text-label-md text-on-surface">پس‌انداز نامحسوس این ماه:</span>
                 </div>
                 <div className="flex items-baseline gap-1">
@@ -2058,7 +2081,7 @@ export default function App() {
 
                 {savingsGoals.length === 0 ? (
                   <div className="flex flex-col items-center justify-center p-8 bg-surface-container-lowest rounded-lg text-center gap-3">
-                    <span className="material-symbols-outlined text-[36px] text-outline">flag</span>
+                    <Icon name="flag" size={36} className="text-outline" />
                     <h3 className="text-body-lg text-on-surface font-bold">هنوز هدف پس‌اندازی تعریف نشده است</h3>
                     <p className="text-body-sm text-outline max-w-xs">
                       برای پس‌انداز خرید خودرو، مسکن، سفر یا صندوق اضطراری، هدف مالی خود را مشخص کنید تا مسیر پیشرفت آن تحلیل شود.
@@ -2133,7 +2156,7 @@ export default function App() {
                             className="shrink-0 px-3.5 py-2 bg-primary text-on-primary rounded-full text-label-md flex items-center gap-1 active:scale-95 transition-all"
                             type="button"
                           >
-                            <span className="material-symbols-outlined text-[16px]">add</span>
+                            <Icon name="add" size={16} />
                             <span>واریز</span>
                           </button>
                         </div>
@@ -2157,7 +2180,7 @@ export default function App() {
                               </div>
                             ) : (
                               <div className="w-12 h-12 rounded-xl bg-secondary-fixed flex items-center justify-center text-secondary shrink-0">
-                                <span className="material-symbols-outlined text-[22px]">flag</span>
+                                <Icon name="flag" size={22} />
                               </div>
                             )}
                             <div className="min-w-0">
@@ -2180,7 +2203,7 @@ export default function App() {
                         </div>
                         <div className="flex items-center justify-between text-on-surface-variant text-label-sm pt-0.5">
                           <span className="flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[14px]">timelapse</span>
+                            <Icon name="timelapse" size={14} />
                             <span>{goal.etaLabel}</span>
                           </span>
                           <button
@@ -2211,7 +2234,7 @@ export default function App() {
                 </div>
                 {state.holdings.length === 0 ? (
                   <div className="flex flex-col items-center justify-center p-8 bg-surface-container-lowest rounded-lg text-center gap-3">
-                    <span className="material-symbols-outlined text-[36px] text-outline">diamond</span>
+                    <Icon name="diamond" size={36} className="text-outline" />
                     <h3 className="text-body-lg text-on-surface font-bold">سبد دارایی خالی است</h3>
                     <p className="text-body-sm text-outline max-w-xs">
                       می‌توانید دارایی‌های طلا، سکه، تتر یا صندوق‌های سهامی خود را اضافه کنید تا ارزش روز آن‌ها به صورت زنده محاسبه شود.
@@ -2235,7 +2258,7 @@ export default function App() {
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-surface-container-low flex items-center justify-center text-primary">
-                          <span className="material-symbols-outlined text-[20px]">diamond</span>
+                          <Icon name="diamond" size={20} />
                         </div>
                         <div>
                           <h4 className="text-body-lg text-primary">
@@ -2268,9 +2291,7 @@ export default function App() {
             <section className="bg-surface-container-lowest rounded-lg p-5 shadow-[0_4px_20px_-2px_rgba(31,35,43,0.04)] space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-secondary text-[22px]">
-                    calculate
-                  </span>
+                  <Icon name="calculate" size={22} className="text-secondary" />
                   <h3 className="text-headline-sm text-primary">شبیه‌ساز هوشمند پس‌انداز</h3>
                 </div>
                 <span className="text-label-sm text-outline">برآورد گرداول</span>
@@ -2317,7 +2338,7 @@ export default function App() {
               {/* AI Projection Capsule */}
               <div className="bg-surface-container-low rounded-xl p-3.5 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-secondary-fixed flex items-center justify-center text-on-secondary-fixed-variant shrink-0">
-                  <span className="material-symbols-outlined text-[20px]">auto_awesome</span>
+                  <Icon name="auto_awesome" size={20} />
                 </div>
                 <div className="min-w-0">
                   <div className="text-label-md text-primary">تخمین هوش مصنوعی:</div>
@@ -2336,7 +2357,7 @@ export default function App() {
                 className="w-full py-4 rounded-full bg-primary hover:bg-primary-container text-on-primary text-body-lg flex items-center justify-center gap-2 shadow-[0_6px_16px_-4px_rgba(31,35,43,0.18)] active:scale-95 transition-all"
                 type="button"
               >
-                <span className="material-symbols-outlined text-[22px]">flag</span>
+                <Icon name="flag" size={22} />
                 <span>تعریف هدف جدید پس‌انداز</span>
               </button>
             </section>
@@ -2360,13 +2381,7 @@ export default function App() {
             }`}
             type="button"
           >
-            <span
-              className={`material-symbols-outlined text-[24px] ${
-                activeTab === 'DASHBOARD' ? 'material-symbols-filled' : ''
-              }`}
-            >
-              grid_view
-            </span>
+            <Icon name="grid_view" size={24} />
           </button>
 
           {/* Tab 2: تحلیل مخارج */}
@@ -2380,13 +2395,7 @@ export default function App() {
             }`}
             type="button"
           >
-            <span
-              className={`material-symbols-outlined text-[24px] ${
-                activeTab === 'ANALYTICS' ? 'material-symbols-filled' : ''
-              }`}
-            >
-              insights
-            </span>
+            <Icon name="insights" size={24} />
           </button>
 
           {/* Center Floating Black Action Button (+) */}
@@ -2396,7 +2405,7 @@ export default function App() {
             className="w-12 h-12 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-[0_6px_16px_-4px_rgba(31,35,43,0.28)] hover:scale-105 active:scale-95 transition-transform"
             type="button"
           >
-            <span className="material-symbols-outlined text-[26px]">add</span>
+            <Icon name="add" size={26} />
           </button>
 
           {/* Tab 3: اقساط و چک */}
@@ -2410,13 +2419,7 @@ export default function App() {
             }`}
             type="button"
           >
-            <span
-              className={`material-symbols-outlined text-[24px] ${
-                activeTab === 'COMMITMENTS' ? 'material-symbols-filled' : ''
-              }`}
-            >
-              receipt_long
-            </span>
+            <Icon name="receipt_long" size={24} />
           </button>
 
           {/* Tab 4: پس‌انداز و اهداف */}
@@ -2430,13 +2433,7 @@ export default function App() {
             }`}
             type="button"
           >
-            <span
-              className={`material-symbols-outlined text-[24px] ${
-                activeTab === 'GOALS' ? 'material-symbols-filled' : ''
-              }`}
-            >
-              savings
-            </span>
+            <Icon name="savings" size={24} />
           </button>
         </nav>
       </div>
@@ -2450,7 +2447,7 @@ export default function App() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="w-9 h-9 rounded-full bg-secondary-fixed text-secondary flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[20px]">verified_user</span>
+                  <Icon name="verified_user" size={20} />
                 </span>
                 <div>
                   <h3 className="text-body-lg text-primary">{selectedChequeModal.title}</h3>
@@ -2462,7 +2459,7 @@ export default function App() {
                 className="w-8 h-8 rounded-full bg-surface-container-low flex items-center justify-center"
                 type="button"
               >
-                <span className="material-symbols-outlined text-[18px]">close</span>
+                <Icon name="close" size={18} />
               </button>
             </div>
             <div className="p-4 rounded-2xl bg-surface-container-low space-y-2 text-xs">
@@ -2503,7 +2500,7 @@ export default function App() {
             <div className="flex items-center justify-between px-5 py-4 bg-white border-b border-gray-100">
               <div className="flex items-center gap-2">
                 <span className="w-9 h-9 rounded-full bg-surface-container-low flex items-center justify-center text-primary">
-                  <span className="material-symbols-outlined text-[20px]">credit_card</span>
+                  <Icon name="credit_card" size={20} />
                 </span>
                 <div>
                   <h3 className="text-body-lg text-primary">کارت‌ها و شماره شبا</h3>
@@ -2515,7 +2512,7 @@ export default function App() {
                 className="w-9 h-9 rounded-full bg-surface-container-low flex items-center justify-center"
                 type="button"
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <Icon name="close" size={20} />
               </button>
             </div>
 
@@ -2588,7 +2585,15 @@ export default function App() {
           <div className="w-full max-w-md bg-[#f8f9fc] rounded-t-[32px] sm:rounded-[32px] max-h-[88vh] flex flex-col overflow-hidden shadow-2xl">
             <div className="flex items-center justify-between px-5 py-4 bg-white border-b border-gray-100">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span
+                  className={`w-2.5 h-2.5 rounded-full ${
+                    marketState.freshness === 'fresh' && marketState.verified
+                      ? 'bg-emerald-500 animate-pulse'
+                      : marketState.freshness === 'stale'
+                      ? 'bg-amber-500'
+                      : 'bg-rose-500'
+                  }`}
+                />
                 <h3 className="text-body-lg text-primary">نبض لحظه‌ای بازار طلا، ارز و رمزارز</h3>
               </div>
               <button
@@ -2596,9 +2601,29 @@ export default function App() {
                 className="w-9 h-9 rounded-full bg-surface-container-low flex items-center justify-center"
                 type="button"
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <Icon name="close" size={20} />
               </button>
             </div>
+
+            {(marketState.freshness !== 'fresh' ||
+              marketState.statusReason === 'tampered' ||
+              marketState.statusReason === 'replay') && (
+              <div
+                data-testid="market-status-banner"
+                className="mx-4 mt-3 px-3.5 py-2 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold flex items-center gap-2"
+              >
+                <Icon name="warning" size={16} />
+                <span>
+                  {marketState.statusReason === 'tampered'
+                    ? 'امضای دیجیتال نرخ‌ها نامعتبر است؛ آخرین نرخ معتبر نمایش داده می‌شود.'
+                    : marketState.statusReason === 'replay'
+                    ? 'پاسخ قدیمی‌تر از کش فعلی رد شد (محافظت در برابر تکرار).'
+                    : marketState.freshness === 'expired'
+                    ? 'نرخ‌های ذخیره شده بیش از ۷ روز قدمت دارند و منقضی شده‌اند.'
+                    : 'نرخ‌ها قدیمی‌تر از ۴۸ ساعت هستند (حالت آفلاین).'}
+                </span>
+              </div>
+            )}
 
             <div className="flex gap-2 overflow-x-auto no-scrollbar px-4 py-3">
               {[
@@ -2669,7 +2694,7 @@ export default function App() {
                 className="w-9 h-9 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface"
                 type="button"
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <Icon name="close" size={20} />
               </button>
             </div>
 
@@ -2759,7 +2784,7 @@ export default function App() {
                       >
                         {CATEGORIES.map((c) => (
                           <option key={c.nameFa} value={c.nameFa}>
-                            {c.emoji} {c.nameFa}
+                            {c.nameFa}
                           </option>
                         ))}
                       </select>
@@ -3085,7 +3110,7 @@ export default function App() {
                     {cardPan.length >= 6 && (
                       <span className="text-[11px] text-secondary mt-1 block font-bold">
                         {detectBankByPan(cardPan)?.fa ?? 'بانک عضو شتاب'}{' '}
-                        {cardPan.length === 16 && isValidLuhn(cardPan) ? '• Luhn معتبر ✓' : ''}
+                        {cardPan.length === 16 && isValidLuhn(cardPan) ? '• Luhn معتبر' : ''}
                       </span>
                     )}
                   </div>
@@ -3103,7 +3128,7 @@ export default function App() {
                     />
                     {cardSheba.length > 4 && isValidSheba(cardSheba) && (
                       <span className="text-[10px] text-emerald-600 mt-0.5 block font-bold">
-                        ✓ شبا استاندارد ISO-7064
+                        شبا استاندارد ISO-7064
                       </span>
                     )}
                   </div>

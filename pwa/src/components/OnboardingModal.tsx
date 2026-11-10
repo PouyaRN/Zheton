@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Icon } from './Icon';
 
 interface OnboardingModalProps {
   isOpen: boolean;
@@ -79,9 +80,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
         {/* Slide Visual Icon */}
         <div className="flex flex-col items-center text-center my-3">
           <div className="w-20 h-20 rounded-3xl bg-gray-50 border border-gray-100 flex items-center justify-center text-gray-900 shadow-inner mb-4">
-            <span className="material-symbols-outlined text-[40px] text-gray-900">
-              {current.icon}
-            </span>
+            <Icon name={current.icon} size={40} className="text-gray-900" />
           </div>
           <span
             className={`text-[11px] font-bold px-3 py-1 rounded-full border mb-2.5 ${current.badgeColor}`}
@@ -106,7 +105,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
               type="button"
             >
               <span>مرحله بعد</span>
-              <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+              <Icon name="arrow_back" size={18} />
             </button>
           ) : (
             <button
@@ -114,7 +113,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
               className="w-full py-3.5 px-4 rounded-2xl bg-gray-950 hover:bg-black text-white text-[13px] font-extrabold flex items-center justify-center gap-2 active:scale-[0.98] transition-all shadow-md"
               type="button"
             >
-              <span className="material-symbols-outlined text-[18px]">check_circle</span>
+              <Icon name="check_circle" size={18} />
               <span>شروع استفاده از ژتون</span>
             </button>
           )}

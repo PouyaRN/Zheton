@@ -9,6 +9,10 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.KeyFactory
+import java.security.Signature
+import java.security.spec.X509EncodedKeySpec
+import java.util.Base64
 
 @Serializable
 data class WalletOption(
@@ -117,6 +121,14 @@ data class Rates(
     val toman: Map<String, Double> = emptyMap(),
     val coins: List<Coin> = emptyList(),
     val latest: Release? = null,
+    val schema: Int = 1,
+    val kid: String = "k1",
+    val generatedAt: Long = 0L,
+    val usd: Map<String, Double> = emptyMap(),
+    val change24h: Map<String, Double> = emptyMap(),
+    val sparklines: Map<String, List<Double>> = emptyMap(),
+    val sources: Map<String, String> = emptyMap(),
+    val stale: Map<String, Boolean> = emptyMap(),
 )
 
 @Serializable
@@ -273,7 +285,93 @@ private const val MAX_CONTRACT_LENGTH = 128
 private const val MAX_RELEASE_NOTES = 6
 private const val MAX_RELEASE_NOTE_LENGTH = 120
 private const val MAX_FUTURE_CLOCK_SKEW_MS = 5 * 60_000L
-private const val OFFICIAL_RATES_ORIGIN = "https://rates.zheton.app"
+private const val OFFICIAL_RATES_ORIGIN = "https://pouyarn.github.io"
+private const val LEGACY_RATES_ORIGIN = "https://rates.zheton.app"
+
+enum class RatesFreshness {
+    FRESH,
+    STALE_WARNING,
+    EXPIRED,
+}
+
+fun evaluateRatesFreshness(updatedAtMs: Long, nowMs: Long = System.currentTimeMillis()): RatesFreshness {
+    if (updatedAtMs <= 0L) return RatesFreshness.EXPIRED
+    val normalizedMs = if (updatedAtMs in 1_000_000_000L..9_999_999_999L) updatedAtMs * 1000L else updatedAtMs
+    val ageMs = nowMs - normalizedMs
+    return when {
+        ageMs > 7L * 24 * 60 * 60_000L -> RatesFreshness.EXPIRED
+        ageMs > 48L * 60 * 60_000L -> RatesFreshness.STALE_WARNING
+        else -> RatesFreshness.FRESH
+    }
+}
+
+fun isRatesReplaySafe(incomingUpdatedAt: Long, cachedUpdatedAt: Long): Boolean {
+    if (cachedUpdatedAt <= 0L) return incomingUpdatedAt > 0L
+    val incMs = if (incomingUpdatedAt in 1_000_000_000L..9_999_999_999L) incomingUpdatedAt * 1000L else incomingUpdatedAt
+    val curMs = if (cachedUpdatedAt in 1_000_000_000L..9_999_999_999L) cachedUpdatedAt * 1000L else cachedUpdatedAt
+    return incMs >= curMs
+}
+
+object RatesSignatureVerifier {
+    val PUBLIC_KEYS: Map<String, String> = mapOf(
+        "k1" to """
+            -----BEGIN PUBLIC KEY-----
+            MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAETeIQBB0xyE5BXFEOn8lysuSUfW5w
+            VRbI2TWbIDFYp1G38SS6aYVjhAIX4gmcuYwG+Nx+5LpgwPi2r0hyzxqq0w==
+            -----END PUBLIC KEY-----
+        """.trimIndent()
+    )
+
+    /**
+     * Converts a 64-byte IEEE-P1363 (r||s) ECDSA P-256 signature into ASN.1 DER format
+     * so standard Java/Android `SHA256withECDSA` can verify it across all API levels (24+).
+     */
+    fun p1363ToDer(p1363: ByteArray): ByteArray {
+        require(p1363.size == 64) { "Expected 64-byte IEEE-P1363 signature, got ${p1363.size}" }
+        fun encodeInt(slice: ByteArray): ByteArray {
+            var i = 0
+            while (i < slice.size - 1 && slice[i] == 0.toByte()) {
+                i++
+            }
+            val trimmed = slice.copyOfRange(i, slice.size)
+            return if ((trimmed[0].toInt() and 0x80) != 0) {
+                byteArrayOf(0x02, (trimmed.size + 1).toByte(), 0x00) + trimmed
+            } else {
+                byteArrayOf(0x02, trimmed.size.toByte()) + trimmed
+            }
+        }
+        val rDer = encodeInt(p1363.copyOfRange(0, 32))
+        val sDer = encodeInt(p1363.copyOfRange(32, 64))
+        val seqLen = rDer.size + sDer.size
+        return byteArrayOf(0x30, seqLen.toByte()) + rDer + sDer
+    }
+
+    fun verify(
+        payloadBytes: ByteArray,
+        signatureBase64: String,
+        kid: String = "k1",
+        keyRing: Map<String, String> = PUBLIC_KEYS,
+    ): Boolean {
+        return runCatching {
+            val pem = keyRing[kid]?.trim() ?: return false
+            val b64Body = pem
+                .replace("-----BEGIN PUBLIC KEY-----", "")
+                .replace("-----END PUBLIC KEY-----", "")
+                .replace(Regex("\\s+"), "")
+            val pubKeyBytes = Base64.getDecoder().decode(b64Body)
+            val keySpec = X509EncodedKeySpec(pubKeyBytes)
+            val publicKey = KeyFactory.getInstance("EC").generatePublic(keySpec)
+
+            val rawSig = Base64.getDecoder().decode(signatureBase64.trim())
+            val derSig = if (rawSig.size == 64) p1363ToDer(rawSig) else rawSig
+
+            val verifier = Signature.getInstance("SHA256withECDSA")
+            verifier.initVerify(publicKey)
+            verifier.update(payloadBytes)
+            verifier.verify(derSig)
+        }.getOrDefault(false)
+    }
+}
 
 private val EVM_ADDRESS = Regex("^0x[0-9a-fA-F]{40}$")
 private val BASE58_KEY = Regex("^[1-9A-HJ-NP-Za-km-z]{32,44}$")
@@ -328,7 +426,10 @@ private fun trustedCoinIcon(value: String, ratesUrl: String): String {
         val icon = URL(value)
         val configured = URL(ratesUrl)
         val official = URL(OFFICIAL_RATES_ORIGIN)
-        val trustedOrigin = icon.origin() == configured.origin() || icon.origin() == official.origin()
+        val legacy = URL(LEGACY_RATES_ORIGIN)
+        val trustedOrigin = icon.origin() == configured.origin() ||
+            icon.origin() == official.origin() ||
+            icon.origin() == legacy.origin()
         if (
             !trustedOrigin ||
             icon.path != "/coin-icon" ||
@@ -379,7 +480,8 @@ private fun trustedApk(value: String, ratesUrl: String): String {
     return runCatching {
         val apk = URL(value)
         val trustedOrigin = apk.origin() == URL(ratesUrl).origin() ||
-            apk.origin() == URL(OFFICIAL_RATES_ORIGIN).origin()
+            apk.origin() == URL(OFFICIAL_RATES_ORIGIN).origin() ||
+            apk.origin() == URL(LEGACY_RATES_ORIGIN).origin()
         if (
             !trustedOrigin ||
             !apk.protocol.equals("https", ignoreCase = true) ||
@@ -466,8 +568,14 @@ internal fun sanitizeRates(
         )
     }
 
+    val normalizedUpdatedAt = if (raw.updatedAt in 1_000_000_000L..9_999_999_999L && now > 100_000_000_000L) {
+        raw.updatedAt * 1000L
+    } else {
+        raw.updatedAt
+    }
+
     return raw.copy(
-        updatedAt = raw.updatedAt.takeIf { it in 1..(now + MAX_FUTURE_CLOCK_SKEW_MS) } ?: 0L,
+        updatedAt = normalizedUpdatedAt.takeIf { it in 1..(now + MAX_FUTURE_CLOCK_SKEW_MS) } ?: 0L,
         toman = toman,
         coins = coins,
         latest = trustedRelease(raw.latest, ratesUrl),
@@ -738,7 +846,7 @@ fun mergeRates(fresh: Rates, cached: Rates): Rates = fresh.copy(
     latest = fresh.latest ?: cached.latest,
 )
 
-suspend fun fetchRates(url: String): Result<Rates> = withContext(Dispatchers.IO) {
+suspend fun fetchRates(url: String, previousUpdatedAt: Long = 0L): Result<Rates> = withContext(Dispatchers.IO) {
     runCatching {
         val conn = (URL(url).openConnection() as HttpURLConnection).apply {
             connectTimeout = 10_000
@@ -756,9 +864,36 @@ suspend fun fetchRates(url: String): Result<Rates> = withContext(Dispatchers.IO)
                 error("HTTP $code")
             }
             val body = conn.inputStream.use { it.readUtf8Limited(MAX_RATES_RESPONSE_BYTES) }
-            val parsed = sanitizeRates(JSON.decodeFromString<Rates>(body), url)
+            val bodyBytes = body.toByteArray(Charsets.UTF_8)
+            val decoded = JSON.decodeFromString<Rates>(body)
+
+            // Verify detached ECDSA P-256 signature (.sig) for signed feeds
+            val sigUrl = if (url.endsWith(".json")) "$url.sig" else "$url.sig"
+            val sigConn = (URL(sigUrl).openConnection() as HttpURLConnection).apply {
+                connectTimeout = 8_000
+                readTimeout = 8_000
+                requestMethod = "GET"
+                setRequestProperty("Connection", "close")
+            }
+            try {
+                val sigCode = sigConn.responseCode
+                if (sigCode !in 200..299) {
+                    error("Missing or unreachable rates signature (HTTP $sigCode)")
+                }
+                val sigText = sigConn.inputStream.use { it.readUtf8Limited(4096) }.trim()
+                if (!RatesSignatureVerifier.verify(bodyBytes, sigText, decoded.kid)) {
+                    error("Rates ECDSA P-256 signature verification failed")
+                }
+            } finally {
+                sigConn.disconnect()
+            }
+
+            val parsed = sanitizeRates(decoded, url)
             if (parsed.toman.isEmpty()) error("empty rates")
             if (parsed.updatedAt <= 0L) error("invalid rates timestamp")
+            if (!isRatesReplaySafe(parsed.updatedAt, previousUpdatedAt)) {
+                error("rates replay rejected: incoming ${parsed.updatedAt} < cached $previousUpdatedAt")
+            }
             // updatedAt is when the Worker last pulled real prices, not when we asked — that
             // is the number worth showing, since a cached response is still old prices.
             parsed

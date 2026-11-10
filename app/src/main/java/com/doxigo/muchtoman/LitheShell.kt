@@ -1130,7 +1130,7 @@ private fun DashboardSplitBentoRow(
                             .background(Color(0xFFEA5C3C).copy(alpha = 0.12f)),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text("📅", fontSize = 16.sp)
+                        Text("•", fontSize = 16.sp, fontWeight = FontWeight.Black, color = Hero.gold)
                     }
                     Surface(
                         shape = RoundedCornerShape(999.dp),
@@ -1193,7 +1193,7 @@ private fun DashboardSmartInsightBanner(
                 modifier = Modifier.size(40.dp),
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text("✦", color = Color.White, fontWeight = FontWeight.Black, fontSize = 16.sp)
+                    Text("•", color = Color.White, fontWeight = FontWeight.Black, fontSize = 16.sp)
                 }
             }
             Column(modifier = Modifier.weight(1f)) {
@@ -1419,7 +1419,7 @@ private fun DashboardRecentTransactionsCard(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    Text("🧾", fontSize = 24.sp)
+                    Text("TX", fontSize = 14.sp, fontWeight = FontWeight.Black, color = Hero.gold)
                     Text(
                         text = "هنوز تراکنشی ثبت نشده است",
                         style = MaterialTheme.typography.bodySmall,
@@ -1597,7 +1597,7 @@ private fun AnalyticsCashflowHeroCard(
                 ) {
                     Text(
                         text = when {
-                            netToman > 0L -> "✓ تراز مثبت (+${faCompact(netToman)})"
+                            netToman > 0L -> "تراز مثبت (+${faCompact(netToman)})"
                             netToman < 0L -> "↘ تراز منفی (-${faCompact(kotlin.math.abs(netToman))})"
                             else -> "تراز صفر (۰ تومان)"
                         },
@@ -1783,7 +1783,7 @@ private fun AnalyticsBehavioralInsightCard(
                 modifier = Modifier.size(38.dp),
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text("💡", fontSize = 16.sp)
+                    Text("•", fontSize = 16.sp, fontWeight = FontWeight.Black, color = Hero.gold)
                 }
             }
             Column(modifier = Modifier.weight(1f)) {
@@ -1814,7 +1814,7 @@ private fun AnalyticsBehavioralInsightCard(
                     color = if (smartCapEnabled) Color(0xFF10B981) else t.card,
                 ) {
                     Text(
-                        text = if (smartCapEnabled) "✓ سقف بودجه هوشمند فعال است" else "فعالسازی سقف بودجه هوشمند ←",
+                        text = if (smartCapEnabled) "سقف بودجه هوشمند فعال است" else "فعالسازی سقف بودجه هوشمند ←",
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
@@ -2061,7 +2061,7 @@ private fun AnalyticsSmsSyncBanner(onOpenSmsScanner: () -> Unit) {
                         .background(Color(0xFF10B981).copy(alpha = 0.12f)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("📩", fontSize = 18.sp)
+                    Text("SMS", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Hero.gold)
                 }
                 Column {
                     Text(
@@ -2185,7 +2185,7 @@ private fun AnalyticsMajorTransactionsCard(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    Text("🔍", fontSize = 24.sp)
+                    Text("؟", fontSize = 22.sp, fontWeight = FontWeight.Black, color = Hero.gold)
                     Text(
                         text = "تراکنشی در این دوره یافت نشد",
                         style = MaterialTheme.typography.bodySmall,
@@ -2456,7 +2456,7 @@ private fun CommitmentsStreamList(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        Text("📋", fontSize = 28.sp)
+                        Text("≡", fontSize = 24.sp, fontWeight = FontWeight.Black, color = Hero.gold)
                         Text(
                             text = if (filter == "loans") "هیچ وام فعالی ثبت نشده است" else if (filter == "cheques") "هیچ چک صیادی ثبت نشده است" else "هیچ قسط، وام یا چکی ثبت نشده است",
                             style = MaterialTheme.typography.bodyMedium,
@@ -2542,7 +2542,7 @@ private fun CommitmentsStreamList(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
-                            Text("💳", fontSize = 24.sp)
+                            Text("BNK", fontSize = 12.sp, fontWeight = FontWeight.Black, color = Hero.gold)
                             Text("هنوز کارتی ثبت نشده است", style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = t.ink)
                             Text("کارت‌ها به صورت خودکار از پیامک‌های بانکی استخراج یا از بخش مدیریت حساب‌ها اضافه می‌شوند.", style = MaterialTheme.typography.labelSmall, color = t.muted, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                         }
@@ -2902,7 +2902,7 @@ private fun GoalsMicroSavingsPod(
                             .background(Color(0xFF10B981).copy(alpha = 0.14f)),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Text("🪙", fontSize = 18.sp)
+                        Text("Au", fontSize = 13.sp, fontWeight = FontWeight.Black, color = Hero.gold)
                     }
                     Column {
                         Text(
@@ -3312,7 +3312,7 @@ private fun LitheFloatingDock(
             // Tab 3: اقساط
             LitheDockTabItem(
                 tab = LitheTab.COMMITMENTS,
-                symbol = "🗓",
+                symbol = "•",
                 selected = activeTab == LitheTab.COMMITMENTS,
                 onClick = { onSelectTab(LitheTab.COMMITMENTS) },
             )
@@ -3574,7 +3574,7 @@ private fun LitheTransferCardsSheet(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        Text("💳", fontSize = 28.sp)
+                        Text("BNK", fontSize = 14.sp, fontWeight = FontWeight.Black, color = Hero.gold)
                         Text("هیچ حسابی ثبت نشده است", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = t.ink)
                         Text("شماره کارت و شبای شما پس از دریافت پیامک‌های بانکی یا با افزودن دستی در اینجا قرار می‌گیرد.", style = MaterialTheme.typography.labelSmall, color = t.muted, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                     }

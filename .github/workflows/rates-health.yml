@@ -1,0 +1,49 @@
+name: rates-health
+
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-live-feed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4
+        with:
+          node-version: "22"
+
+      - name: Verify live rates.json signature and freshness
+        run: |
+          node -e '
+            const fs = require("fs");
+            const crypto = require("crypto");
+            (async () => {
+              const pub = fs.readFileSync("rates-pipeline/keys/rates.pub.pem", "utf8");
+              const [rRes, sRes] = await Promise.all([
+                fetch("https://pouyarn.github.io/Zheton/rates.json"),
+                fetch("https://pouyarn.github.io/Zheton/rates.json.sig")
+              ]);
+              if (!rRes.ok) throw new Error("rates.json HTTP " + rRes.status);
+              if (!sRes.ok) throw new Error("rates.json.sig HTTP " + sRes.status);
+              const bytes = Buffer.from(await rRes.arrayBuffer());
+              const sigB64 = (await sRes.text()).trim();
+              const sig = Buffer.from(sigB64, "base64");
+              const ok = crypto.verify("sha256", bytes, { key: pub, dsaEncoding: "ieee-p1363" }, sig);
+              if (!ok) throw new Error("ECDSA P-256 signature verification FAILED on live rates.json");
+              const data = JSON.parse(bytes.toString("utf8"));
+              const genMs = data.generatedAt < 10000000000 ? data.generatedAt * 1000 : data.generatedAt;
+              const ageHours = (Date.now() - genMs) / 3600000;
+              console.log("Live rates.json verified OK. USD:", data.toman.usd, "Gold18:", data.toman.gold18, "Age(h):", ageHours.toFixed(2));
+              if (ageHours > 24) throw new Error("Live rates.json is stale (>24h)");
+            })().catch(e => { console.error(e); process.exit(1); });
+          '

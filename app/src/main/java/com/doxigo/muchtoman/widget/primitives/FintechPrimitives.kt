@@ -67,12 +67,12 @@ fun QuickActionsDock(
         )
         QuickActionButton(
             label = "کارت‌ها",
-            iconText = "💳",
+            iconText = "≡",
             onClick = onCards
         )
         QuickActionButton(
             label = "تحلیل",
-            iconText = "📊",
+            iconText = "↗",
             onClick = onAnalytics
         )
     }
@@ -161,7 +161,7 @@ fun PotsProgress(
     targetAmount: String,
     progress: Float,
     modifier: Modifier = Modifier,
-    iconEmoji: String = "🎯",
+    iconGlyph: String = "◉",
     tintColor: Color = ZhetonTheme.colors.accentLime,
     onClick: (() -> Unit)? = null,
 ) {
@@ -179,7 +179,7 @@ fun PotsProgress(
                         .background(tintColor.copy(alpha = 0.18f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(iconEmoji, fontSize = 16.sp)
+                    Text(iconGlyph, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = tintColor)
                 }
                 Spacer(Modifier.width(10.dp))
                 Column {
@@ -259,8 +259,10 @@ fun TransactionFeedItem(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = if (isExpense) "🛍️" else "💳",
-                    fontSize = 16.sp
+                    text = if (isExpense) "↙" else "↗",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isExpense) ZhetonTheme.colors.textPrimary else ZhetonTheme.colors.emerald
                 )
             }
             Spacer(Modifier.width(12.dp))

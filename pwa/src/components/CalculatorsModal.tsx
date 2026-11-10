@@ -11,6 +11,7 @@ import {
 } from '../tools/calculators';
 import { formatToman, toFaDigits } from '../utils/format';
 import { MarketQuote } from '../types';
+import { Icon } from './Icon';
 
 interface CalculatorsModalProps {
   isOpen: boolean;
@@ -103,7 +104,7 @@ export const CalculatorsModal: React.FC<CalculatorsModalProps> = ({ isOpen, onCl
         <div className="flex items-center justify-between px-5 py-4 bg-white border-b border-gray-100">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-full bg-secondary-fixed flex items-center justify-center text-secondary">
-              <span className="material-symbols-outlined text-[20px]">auto_awesome</span>
+              <Icon name="auto_awesome" size={20} />
             </div>
             <div>
               <h2 className="text-[15px] font-extrabold text-on-surface">دستیار و ماشین‌حساب هوشمند</h2>
@@ -114,7 +115,7 @@ export const CalculatorsModal: React.FC<CalculatorsModalProps> = ({ isOpen, onCl
             onClick={onClose}
             className="w-9 h-9 rounded-full bg-surface-container-low hover:bg-surface-container flex items-center justify-center text-on-surface transition active:scale-95"
           >
-            <span className="material-symbols-outlined text-[20px]">close</span>
+            <Icon name="close" size={20} />
           </button>
         </div>
 
@@ -132,7 +133,7 @@ export const CalculatorsModal: React.FC<CalculatorsModalProps> = ({ isOpen, onCl
                     : 'bg-white text-on-surface-variant shadow-xs hover:text-on-surface'
                 }`}
               >
-                <span className="material-symbols-outlined text-[16px]">{t.icon}</span>
+                <Icon name={t.icon} size={16} />
                 <span>{t.title}</span>
               </button>
             );

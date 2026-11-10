@@ -1,19 +1,4 @@
-/**
- * Live rates, read through the sync Worker's same-origin `/rates` proxy.
- *
- * The PWA is served by `muchtoman-sync` (`sync/src/index.ts`), which forwards `/rates` to the
- * rates Worker. So the page asks its own origin, no CORS, and the rate data never needs a
- * second hostname. The shape is the Worker's:
- *
- *   { updatedAt: number, toman: { gold18: number, coin_emami: number, ... } }
- *
- * All values are Toman. Names, coins and sources are ignored: the calculators only need the
- * handful of keys in `CoinPreset.rateKey` and `gold18`.
- *
- * Offline behaviour: the last successful snapshot is kept in `localStorage`, and every tool
- * also accepts a manual price, so a calculator still works when `/rates` is down or the device
- * is offline. Nothing here is sent anywhere and there is no analytics.
- */
+import { normalizeTimestampMs, verifyRatesSignature } from '../services/marketService';
 
 export interface RateSnapshot {
   updatedAt: number;
@@ -26,11 +11,7 @@ export const GOLD_18_RATE_KEY = 'gold18';
 const CACHE_KEY = 'rates:last-good:v1';
 
 /**
- * Validates the Worker payload and keeps only usable prices.
- *
- * Assumptions: a usable price is a finite number greater than zero; strings are refused rather
- * than coerced, because a rate is published as JSON numbers; a payload with no usable price is
- * not a snapshot (`null`), so a stale but real cache is never overwritten by an empty answer.
+ * Validates the payload and keeps only usable prices.
  */
 export function parseRatesPayload(payload: unknown): RateSnapshot | null {
   if (payload == null || typeof payload !== 'object' || Array.isArray(payload)) return null;
@@ -44,11 +25,13 @@ export function parseRatesPayload(payload: unknown): RateSnapshot | null {
   }
   if (Object.keys(toman).length === 0) return null;
 
+  const rawUpdated =
+    typeof record.updatedAt === 'number' && Number.isFinite(record.updatedAt)
+      ? normalizeTimestampMs(record.updatedAt)
+      : 0;
+
   return {
-    updatedAt:
-      typeof record.updatedAt === 'number' && Number.isFinite(record.updatedAt)
-        ? record.updatedAt
-        : 0,
+    updatedAt: rawUpdated,
     toman,
   };
 }
@@ -63,7 +46,6 @@ function storage(): Storage | null {
   try {
     return typeof localStorage === 'undefined' ? null : localStorage;
   } catch {
-    // Access can throw in a locked-down browser; a calculator without a cache still works.
     return null;
   }
 }
@@ -90,27 +72,45 @@ function rememberRates(rates: RateSnapshot): void {
 }
 
 /**
- * Fetches a fresh snapshot from the same origin. Returns null on any failure — network, HTTP
- * status, timeout, malformed JSON — and leaves the cache untouched in that case.
+ * Fetches a fresh signed snapshot (`rates.json` + `rates.json.sig`) and verifies its ECDSA P-256 signature.
  */
 export async function fetchRates(): Promise<RateSnapshot | null> {
-  try {
-    const res = await fetch('/rates', {
-      headers: { accept: 'application/json' },
-      signal: AbortSignal.timeout(6_000),
-    });
-    if (!res.ok) return null;
-    const snapshot = parseRatesPayload(await res.json());
-    if (snapshot) rememberRates(snapshot);
-    return snapshot;
-  } catch {
-    return null;
+  const urls = ['/Zheton/rates.json', '/rates.json', './rates.json'];
+  for (const url of urls) {
+    try {
+      const [res, sigRes] = await Promise.all([
+        fetch(url, {
+          headers: { accept: 'application/json' },
+          signal: AbortSignal.timeout(6_000),
+        }),
+        fetch(`${url}.sig`, {
+          headers: { accept: 'text/plain' },
+          signal: AbortSignal.timeout(6_000),
+        }),
+      ]);
+      if (!res.ok || !sigRes.ok) continue;
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      const sigB64 = (await sigRes.text()).trim();
+      const text = new TextDecoder('utf-8').decode(bytes);
+      const json = JSON.parse(text) as Record<string, unknown>;
+      const kid = typeof json.kid === 'string' ? json.kid : 'k1';
+      const valid = await verifyRatesSignature(bytes, sigB64, kid);
+      if (!valid) continue;
+
+      const snapshot = parseRatesPayload(json);
+      if (snapshot) {
+        rememberRates(snapshot);
+        return snapshot;
+      }
+    } catch {
+      continue;
+    }
   }
+  return null;
 }
 
 /**
- * A short Persian label for when the snapshot was taken. The date formatter is `fa-IR`, so a
- * Persian calendar date; a missing timestamp says so instead of showing 1970.
+ * A short Persian label for when the snapshot was taken.
  */
 export function ratesUpdatedLabel(rates: RateSnapshot): string {
   if (rates.updatedAt <= 0) return 'زمان نامشخص';
@@ -118,7 +118,7 @@ export function ratesUpdatedLabel(rates: RateSnapshot): string {
     return new Intl.DateTimeFormat('fa-IR', {
       dateStyle: 'short',
       timeStyle: 'short',
-    }).format(new Date(rates.updatedAt));
+    }).format(new Date(normalizeTimestampMs(rates.updatedAt)));
   } catch {
     return 'زمان نامشخص';
   }

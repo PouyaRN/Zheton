@@ -94,7 +94,7 @@ internal fun CompactFinancialHealthBanner(
                         .background(Hero.gold.copy(alpha = 0.18f)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("🛡️", fontSize = 16.sp)
+                    Text("▲", fontSize = 14.sp, fontWeight = FontWeight.Black, color = Hero.mint)
                 }
                 Column {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -373,7 +373,7 @@ internal fun HomeFinancialExecutiveDeck(
                 .padding(horizontal = Space.m, vertical = Space.s),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("🛡️", fontSize = 18.sp, modifier = Modifier.padding(end = Space.s))
+            Text("▲", fontSize = 15.sp, fontWeight = FontWeight.Black, color = Hero.mint, modifier = Modifier.padding(end = Space.s))
             Column(Modifier.weight(1f)) {
                 Text(
                     advice.headlineFa,
@@ -489,7 +489,7 @@ internal fun CashBurnAndRunwayCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                "🔥",
+                "▲",
                 fontSize = 24.sp,
                 modifier = Modifier.padding(end = Space.m),
             )
@@ -528,7 +528,7 @@ internal fun CashBurnAndRunwayCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                "🛡️",
+                "●",
                 fontSize = 24.sp,
                 modifier = Modifier.padding(end = Space.m),
             )
@@ -757,11 +757,11 @@ internal fun GoldBubbleSheet(
 
                     val guidance = when {
                         bubble.bubblePercent > 20.0 ->
-                            "⚠️ حباب این مسکوک بسیار بالاست! خرید در این سطح ریسک تخلیه شدید حباب دارد. صندوق‌های طلای بورس (مانند عیار، کهربا، طلا) با حباب زیر ۲٪ گزینه بسیار امن‌تری برای حفظ قدرت خرید هستند."
+                            "حباب این مسکوک بسیار بالاست! خرید در این سطح ریسک تخلیه شدید حباب دارد. صندوق‌های طلای بورس (مانند عیار، کهربا، طلا) با حباب زیر ۲٪ گزینه بسیار امن‌تری برای حفظ قدرت خرید هستند."
                         bubble.bubblePercent > 10.0 ->
                             "ℹ️ حباب در حد متوسط است. برای مبالغ بالا، شمش و طلای آب‌شده یا صندوق‌های طلا بازدهی مطمئن‌تری دارند."
                         else ->
-                            "✅ حباب سکه در محدوده منطقی است و بخش عمده قیمت ناشی از طلای خالص موجود در آن می‌باشد."
+                            "حباب سکه در محدوده منطقی است و بخش عمده قیمت ناشی از طلای خالص موجود در آن می‌باشد."
                     }
                     Text(
                         text = guidance,
@@ -966,7 +966,7 @@ internal fun WishlistSheet(
                     .padding(Space.m),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("🎉", fontSize = 22.sp, modifier = Modifier.padding(end = Space.s))
+                    Text("•", fontSize = 20.sp, fontWeight = FontWeight.Black, color = Hero.mint, modifier = Modifier.padding(end = Space.s))
                     Column {
                         Text(
                             "صرفه‌جویی با منصرف شدن از خریدهای هیجانی:",
@@ -1040,7 +1040,7 @@ internal fun WishlistSheet(
                             )
                             if (candidateDays >= 0.1) {
                                 Text(
-                                    "⚡ اثر بر بودجه: مصرف ${faDecimal(candidateDays, 1)} روز از خرج روزانه امن",
+                                    "اثر بر بودجه: مصرف ${faDecimal(candidateDays, 1)} روز از خرج روزانه امن",
                                     fontSize = 11.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -1124,7 +1124,7 @@ internal fun WishlistSheet(
                             if (daysBurned >= 0.1) {
                                 Spacer(Modifier.height(2.dp))
                                 Text(
-                                    "⚡ فشار بر بودجه: بلعیدن ${faDecimal(daysBurned, 1)} روز از خرج روزانه امن",
+                                    "فشار بر بودجه: بلعیدن ${faDecimal(daysBurned, 1)} روز از خرج روزانه امن",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Medium,
                                     color = MaterialTheme.colorScheme.tertiary,
@@ -1134,7 +1134,7 @@ internal fun WishlistSheet(
                             Spacer(Modifier.height(Space.xs))
 
                             Text(
-                                if (elapsed) "✅ ۴۸ ساعت تفکر تمام شد — اگر هنوز می‌خواهید، بخرید!"
+                                if (elapsed) "۴۸ ساعت تفکر تمام شد — اگر هنوز می‌خواهید، بخرید!"
                                 else "⏳ ${bidi(remaining.toString())} ساعت تا تصمیم نهایی مانده است",
                                 fontSize = 11.sp,
                                 color = if (elapsed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
@@ -1153,7 +1153,7 @@ internal fun WishlistSheet(
                                     },
                                     modifier = Modifier.weight(1f),
                                 ) {
-                                    Text("منصرف شدم 🎉 (صرفه‌جویی)", fontSize = 11.sp)
+                                    Text("منصرف شدم (صرفه‌جویی)", fontSize = 11.sp)
                                 }
                                 Button(
                                     onClick = {
@@ -1225,7 +1225,7 @@ internal fun WealthDefenseAdvisorCard(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(Space.xs),
             ) {
-                Text("🛡️", fontSize = 16.sp)
+                Text("▲", fontSize = 14.sp, fontWeight = FontWeight.Black, color = Hero.mint)
                 Text(
                     "دستیار ضد تورم و خرید بهینه",
                     fontWeight = FontWeight.Bold,
@@ -1341,7 +1341,7 @@ internal fun WealthDefenseAdvisorCard(
                         .padding(Space.xs),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("⚠️", fontSize = 12.sp, modifier = Modifier.padding(end = 4.dp))
+                    Text("!", fontSize = 12.sp, fontWeight = FontWeight.Black, color = Hero.gold, modifier = Modifier.padding(end = 4.dp))
                     Text(
                         warn,
                         fontSize = 10.sp,
@@ -1364,7 +1364,7 @@ internal fun WealthDefenseAdvisorCard(
                     .padding(Space.xs),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("🏢", fontSize = 12.sp, modifier = Modifier.padding(end = 4.dp))
+                Text("•", fontSize = 12.sp, fontWeight = FontWeight.Black, color = Hero.gold, modifier = Modifier.padding(end = 4.dp))
                 Text(
                     reContext,
                     fontSize = 10.sp,

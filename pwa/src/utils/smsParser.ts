@@ -11,26 +11,26 @@ export interface ParsedBankSms {
   necessity: NecessityTag;
 }
 
-export const CATEGORIES: { nameFa: string; emoji: string; defaultNecessity: NecessityTag }[] = [
-  { nameFa: 'خواربار', emoji: '🛒', defaultNecessity: 'NEED' },
-  { nameFa: 'رستوران و کافه', emoji: '☕', defaultNecessity: 'WANT' },
-  { nameFa: 'حمل و نقل', emoji: '🚕', defaultNecessity: 'NEED' },
-  { nameFa: 'قبض‌ها', emoji: '🧾', defaultNecessity: 'NEED' },
-  { nameFa: 'سلامت', emoji: '💊', defaultNecessity: 'NEED' },
-  { nameFa: 'خرید', emoji: '🛍️', defaultNecessity: 'WANT' },
-  { nameFa: 'پس‌انداز و سرمایه', emoji: '🪙', defaultNecessity: 'SAVINGS' },
-  { nameFa: 'انتقال وجه', emoji: '💸', defaultNecessity: 'NEED' },
-  { nameFa: 'خانه و کاشانه', emoji: '🏠', defaultNecessity: 'NEED' },
-  { nameFa: 'اشتراک و اینترنت', emoji: '🌐', defaultNecessity: 'WANT' },
-  { nameFa: 'بنزین و سوخت', emoji: '⛽', defaultNecessity: 'NEED' },
-  { nameFa: 'مد و پوشاک', emoji: '👕', defaultNecessity: 'WANT' },
-  { nameFa: 'سرگرمی و فرهنگ', emoji: '🎬', defaultNecessity: 'WANT' },
-  { nameFa: 'درآمد و حقوق', emoji: '💰', defaultNecessity: 'SAVINGS' },
+export const CATEGORIES: { nameFa: string; icon: string; defaultNecessity: NecessityTag }[] = [
+  { nameFa: 'خواربار', icon: 'shopping_cart', defaultNecessity: 'NEED' },
+  { nameFa: 'رستوران و کافه', icon: 'local_cafe', defaultNecessity: 'WANT' },
+  { nameFa: 'حمل و نقل', icon: 'directions_car', defaultNecessity: 'NEED' },
+  { nameFa: 'قبض‌ها', icon: 'receipt_long', defaultNecessity: 'NEED' },
+  { nameFa: 'سلامت', icon: 'medical_services', defaultNecessity: 'NEED' },
+  { nameFa: 'خرید', icon: 'shopping_bag', defaultNecessity: 'WANT' },
+  { nameFa: 'پس‌انداز و سرمایه', icon: 'toll', defaultNecessity: 'SAVINGS' },
+  { nameFa: 'انتقال وجه', icon: 'send_money', defaultNecessity: 'NEED' },
+  { nameFa: 'خانه و کاشانه', icon: 'home', defaultNecessity: 'NEED' },
+  { nameFa: 'اشتراک و اینترنت', icon: 'language', defaultNecessity: 'WANT' },
+  { nameFa: 'بنزین و سوخت', icon: 'local_gas_station', defaultNecessity: 'NEED' },
+  { nameFa: 'مد و پوشاک', icon: 'checkroom', defaultNecessity: 'WANT' },
+  { nameFa: 'سرگرمی و فرهنگ', icon: 'movie', defaultNecessity: 'WANT' },
+  { nameFa: 'درآمد و حقوق', icon: 'payments', defaultNecessity: 'SAVINGS' },
 ];
 
-export function getCategoryEmoji(categoryFa: string): string {
+export function getCategoryIcon(categoryFa: string): string {
   const found = CATEGORIES.find((c) => c.nameFa === categoryFa);
-  return found ? found.emoji : '📌';
+  return found ? found.icon : 'push_pin';
 }
 
 export function parseBankSms(rawText: string): ParsedBankSms | null {

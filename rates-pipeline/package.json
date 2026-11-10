@@ -1,0 +1,12 @@
+{
+  "name": "zheton-rates-pipeline",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "node ../pwa/node_modules/typescript/bin/tsc --noEmit",
+    "test": "node ../pwa/node_modules/vitest/vitest.mjs run",
+    "build-rates": "node --experimental-strip-types src/build.ts"
+  }
+}
+

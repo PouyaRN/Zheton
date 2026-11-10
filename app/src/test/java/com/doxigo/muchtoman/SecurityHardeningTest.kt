@@ -303,3 +303,4 @@ class LicenseNoticeTest {
         assertTrue(".gitleaks.toml must exist", gitleaks.exists() && gitleaks.length() > 50)
     }
 }
+

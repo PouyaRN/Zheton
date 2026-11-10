@@ -18,8 +18,7 @@ const val TOMAN_ID = "toman"
  * @param unitFa  what one of it is called ("دلار", "گرم", "عدد")
  * @param dec     how many decimals are meaningful when showing the held amount
  * @param en      the latin name it is also known by; searched, never shown
- * @param emoji   used when there is no real logo to show
- * @param iconUrl a real logo, for coins where an emoji would just be a wrong picture
+ * @param iconUrl a real logo, for coins where a generic glyph would just be a wrong picture
  */
 data class AssetType(
     val id: String,
@@ -28,7 +27,6 @@ data class AssetType(
     val unitFa: String,
     val dec: Int = 0,
     val en: String = "",
-    val emoji: String? = null,
     val iconUrl: String? = null,
     val wallets: List<WalletOption> = emptyList(),
 )
@@ -45,7 +43,7 @@ private fun Int.faDigits() = toString().map { "۰۱۲۳۴۵۶۷۸۹"[it - '0'] }
  * and so falls hardest on the smallest — a ۱۰۰ سوت piece goes for roughly a quarter more
  * than the gold in it, a ۱۵۰۰ سوت one for a few per cent.
  */
-private val LEGACY_PARSIAN: List<AssetType> = (1..15).map { step ->
+internal val LEGACY_PARSIAN: List<AssetType> = (1..15).map { step ->
     val soot = step * 100
     AssetType(
         id = "parsian_$soot",
@@ -54,43 +52,42 @@ private val LEGACY_PARSIAN: List<AssetType> = (1..15).map { step ->
         unitFa = "عدد",
         // Also written by its weight everywhere they are sold, so "0.400" has to find it.
         en = "Parsian Gold Coin ${soot / 1000}.${(soot % 1000).toString().padStart(3, '0')}g",
-        emoji = "🪙",
     )
 }
 
 // The fixed half of the catalogue: things bonbast/tgju price. Crypto is not here — it comes
 // from the Worker, so the picker offers every coin rather than the three someone guessed at.
 val STATIC_CATALOG: List<AssetType> = listOf(
-    // Not "پول نقد و بانک" any more, and not a 🏦 either: once bank balances arrive from her
+    // Not "پول نقد و بانک" any more, and not a bank icon either: once bank balances arrive from her
     // messages as their own row, a row also claiming "بانک" is two names for two different
     // things. This one is the Toman she counts herself.
-    AssetType(TOMAN_ID, "پول نقد", Kind.CASH, "تومان", en = "Toman Cash", emoji = "💰"),
+    AssetType(TOMAN_ID, "پول نقد", Kind.CASH, "تومان", en = "Toman Cash"),
 
     // dec = 2: bank balances have cents, and a held 100.50 must round-trip through the
     // edit field without silently becoming 100.
-    AssetType("usd", "دلار آمریکا", Kind.FIAT, "دلار", dec = 2, en = "US Dollar", emoji = "💵"),
-    AssetType("eur", "یورو", Kind.FIAT, "یورو", dec = 2, en = "Euro", emoji = "💶"),
-    AssetType("gbp", "پوند انگلیس", Kind.FIAT, "پوند", dec = 2, en = "British Pound", emoji = "💷"),
-    AssetType("nok", "کرون نروژ", Kind.FIAT, "کرون", dec = 2, en = "Norwegian Krone", emoji = "🇳🇴"),
-    AssetType("try", "لیر ترکیه", Kind.FIAT, "لیر", dec = 2, en = "Turkish Lira", emoji = "🇹🇷"),
-    AssetType("aed", "درهم امارات", Kind.FIAT, "درهم", dec = 2, en = "UAE Dirham", emoji = "🇦🇪"),
-    AssetType("cad", "دلار کانادا", Kind.FIAT, "دلار", dec = 2, en = "Canadian Dollar", emoji = "🇨🇦"),
+    AssetType("usd", "دلار آمریکا", Kind.FIAT, "دلار", dec = 2, en = "US Dollar"),
+    AssetType("eur", "یورو", Kind.FIAT, "یورو", dec = 2, en = "Euro"),
+    AssetType("gbp", "پوند انگلیس", Kind.FIAT, "پوند", dec = 2, en = "British Pound"),
+    AssetType("nok", "کرون نروژ", Kind.FIAT, "کرون", dec = 2, en = "Norwegian Krone"),
+    AssetType("try", "لیر ترکیه", Kind.FIAT, "لیر", dec = 2, en = "Turkish Lira"),
+    AssetType("aed", "درهم امارات", Kind.FIAT, "درهم", dec = 2, en = "UAE Dirham"),
+    AssetType("cad", "دلار کانادا", Kind.FIAT, "دلار", dec = 2, en = "Canadian Dollar"),
 
-    AssetType("gold18", "طلای ۱۸ عیار", Kind.GOLD, "گرم", dec = 3, en = "18k Gold", emoji = "🟡"),
+    AssetType("gold18", "طلای ۱۸ عیار", Kind.GOLD, "گرم", dec = 3, en = "18k Gold"),
     // Her generation prices gold in مثقال, not grams; bonbast quotes it directly.
-    AssetType("gold_mesghal", "مثقال طلا", Kind.GOLD, "مثقال", dec = 2, en = "Mesghal Gold", emoji = "🟡"),
+    AssetType("gold_mesghal", "مثقال طلا", Kind.GOLD, "مثقال", dec = 2, en = "Mesghal Gold"),
 
     // Both purities the Tehran market quotes, by the gram. Only tgju prices silver at all,
     // so these are the two rows with a single source behind them — which costs nothing that
     // is not already handled: no rate means left out of the total and named, never zero.
-    AssetType("silver_999", "نقره ۹۹۹", Kind.SILVER, "گرم", dec = 3, en = "999 Silver", emoji = "⚪"),
-    AssetType("silver_925", "نقره ۹۲۵", Kind.SILVER, "گرم", dec = 3, en = "925 Sterling Silver", emoji = "⚪"),
+    AssetType("silver_999", "نقره ۹۹۹", Kind.SILVER, "گرم", dec = 3, en = "999 Silver"),
+    AssetType("silver_925", "نقره ۹۲۵", Kind.SILVER, "گرم", dec = 3, en = "925 Sterling Silver"),
 
-    AssetType("coin_emami", "سکه امامی", Kind.COIN, "عدد", en = "Emami Gold Coin", emoji = "🪙"),
-    AssetType("coin_bahar", "سکه بهار آزادی", Kind.COIN, "عدد", en = "Bahar Azadi Gold Coin", emoji = "🪙"),
-    AssetType("coin_nim", "نیم‌سکه", Kind.COIN, "عدد", en = "Nim Half Gold Coin", emoji = "🪙"),
-    AssetType("coin_rob", "ربع‌سکه", Kind.COIN, "عدد", en = "Rob Quarter Gold Coin", emoji = "🪙"),
-    AssetType("coin_gerami", "سکه گرمی", Kind.COIN, "عدد", en = "Gerami Gram Gold Coin", emoji = "🪙"),
+    AssetType("coin_emami", "سکه امامی", Kind.COIN, "عدد", en = "Emami Gold Coin"),
+    AssetType("coin_bahar", "سکه بهار آزادی", Kind.COIN, "عدد", en = "Bahar Azadi Gold Coin"),
+    AssetType("coin_nim", "نیم‌سکه", Kind.COIN, "عدد", en = "Nim Half Gold Coin"),
+    AssetType("coin_rob", "ربع‌سکه", Kind.COIN, "عدد", en = "Rob Quarter Gold Coin"),
+    AssetType("coin_gerami", "سکه گرمی", Kind.COIN, "عدد", en = "Gerami Gram Gold Coin"),
 
     // Counted in سوت — a thousand to the gram — rather than as fifteen separate coins, which
     // is what it used to be and what made the سکه section unreadable. She adds up the سوت she
@@ -100,7 +97,7 @@ val STATIC_CATALOG: List<AssetType> = listOf(
     // for more per سوت than this row prices them at. The rate is the ۱ گرم coin's, the size
     // the market quotes as a reference; a shelf of ۱۰۰ سوت pieces is worth somewhat more than
     // this says, and the manual rate override is the way to say so.
-    AssetType("parsian", "سکه پارسیان", Kind.COIN, "سوت", en = "Parsian Gold Coin", emoji = "🪙"),
+    AssetType("parsian", "سکه پارسیان", Kind.COIN, "سوت", en = "Parsian Gold Coin"),
 )
 
 /**
@@ -109,7 +106,7 @@ val STATIC_CATALOG: List<AssetType> = listOf(
  * offers a row whose amount is not hers to type.
  */
 val BANK_TYPE = AssetType(
-    BANK_ID, "حساب‌های بانکی", Kind.CASH, "تومان", en = "Bank Accounts", emoji = "💳",
+    BANK_ID, "حساب‌های بانکی", Kind.CASH, "تومان", en = "Bank Accounts",
 )
 
 private val STATIC_BY_ID = (STATIC_CATALOG + BANK_TYPE + LEGACY_PARSIAN).associateBy { it.id }
@@ -140,7 +137,6 @@ fun Stock.toAssetType() = AssetType(
     unitFa = "سهم",
     dec = 0,
     en = name,
-    emoji = "📈",
 )
 
 /** The full picker list: fixed assets, then everything the network knows how to price. */

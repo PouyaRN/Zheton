@@ -8,6 +8,8 @@
     "lint": "node ./node_modules/typescript/bin/tsc --noEmit",
     "typecheck": "node ./node_modules/typescript/bin/tsc --noEmit",
     "test": "node ./node_modules/vitest/vitest.mjs run",
+    "preview": "node ./node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 4173 --strictPort",
+    "e2e": "npx cypress run --browser electron",
     "check": "npm run typecheck && npm run test && node ./node_modules/vite/bin/vite.js build"
   },
   "dependencies": {
@@ -23,6 +25,7 @@
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "cypress": "^13.17.0",
     "postcss": "^8.5.1",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.6.2",

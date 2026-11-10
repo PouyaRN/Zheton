@@ -1,0 +1,63 @@
+name: rates-live
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4
+        with:
+          node-version: "22"
+
+      - name: Install PWA dependencies and build static site
+        working-directory: pwa
+        run: |
+          npm install
+          npm run build
+
+      - name: Test rates-pipeline
+        working-directory: rates-pipeline
+        run: |
+          npm run typecheck
+          npm test
+
+      - name: Fetch, validate, sign, and emit live rates into PWA dist
+        working-directory: rates-pipeline
+        env:
+          RATES_SIGNING_KEY: ${{ secrets.RATES_SIGNING_KEY }}
+        run: |
+          node --experimental-strip-types src/build.ts --out-dir ../pwa/dist --daily
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
+        with:
+          path: pwa/dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
+

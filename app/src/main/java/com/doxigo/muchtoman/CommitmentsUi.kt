@@ -400,7 +400,7 @@ private fun CommitmentItemRow(
                         )
                     }
                     Text(
-                        if (item.isSettled) "تسویه شده ✓"
+                        if (item.isSettled) "تسویه شده"
                         else if (reliefToman > 0L) "سود از تورم: -${faNumber(reliefToman.toDouble())} تومان"
                         else "بدون تخفیف تورمی",
                         fontSize = 11.sp,

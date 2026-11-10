@@ -8,3 +8,4 @@ receiver:.QuickCardsGlanceWidgetReceiver
 receiver:.SafeSpendGlanceWidgetReceiver
 receiver:.SingleTickerMiniWidgetReceiver
 service:.QuickAddTileService:android.permission.BIND_QUICK_SETTINGS_TILE
+

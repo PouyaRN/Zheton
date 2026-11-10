@@ -50,3 +50,4 @@ Zheton incorporates open-source components and public market data under the lice
 - **React & React DOM** — MIT License
 - **Vite & Vitest** — MIT License
 - **Zod** — MIT License
+
