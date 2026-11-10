@@ -22,6 +22,8 @@ describe('Calculators Modal Flow', () => {
     });
 
     cy.get('button[aria-label="دستیار هوشمند گرداول"]').click();
-    cy.get('svg[data-icon="calculate"]').should('be.visible');
+    cy.contains('دستیار و ماشین‌حساب هوشمند').should('be.visible');
+    cy.get('svg[data-icon="toll"]').should('be.visible');
+    cy.get('svg[data-icon="calculate"]').should('exist');
   });
 });
