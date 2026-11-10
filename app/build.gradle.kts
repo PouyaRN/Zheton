@@ -28,10 +28,10 @@ android {
         targetSdk = 36
         versionCode = providers.gradleProperty("zheton.versionCode").orNull?.toInt()
             ?: providers.gradleProperty("muchtoman.versionCode").orNull?.toInt()
-            ?: 2_000_001_000
+            ?: 2_000_001_200
         versionName = providers.gradleProperty("zheton.versionName").orNull
             ?: providers.gradleProperty("muchtoman.versionName").orNull
-            ?: "1.0.5"
+            ?: "1.2.0"
         buildConfigField("boolean", "LITE", "false")
     }
 
