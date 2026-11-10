@@ -10,3 +10,4 @@ describe('PWA Offline Icon Resilience', () => {
     });
   });
 });
+

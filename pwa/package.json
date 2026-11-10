@@ -3,14 +3,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node ./node_modules/vite/bin/vite.js --host 0.0.0.0 --port 3000",
-    "build": "node ./node_modules/typescript/bin/tsc --noEmit && node ./node_modules/vite/bin/vite.js build",
-    "lint": "node ./node_modules/typescript/bin/tsc --noEmit",
-    "typecheck": "node ./node_modules/typescript/bin/tsc --noEmit",
-    "test": "node ./node_modules/vitest/vitest.mjs run",
-    "preview": "node ./node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 4173 --strictPort",
-    "e2e": "npx cypress run --browser electron",
-    "check": "npm run typecheck && npm run test && node ./node_modules/vite/bin/vite.js build"
+    "dev": "vite --host 0.0.0.0 --port 3000",
+    "build": "tsc --noEmit && vite build",
+    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "preview": "vite preview --host 127.0.0.1 --port 4173 --strictPort",
+    "e2e": "cypress run --browser electron",
+    "check": "npm run typecheck && npm run test && vite build"
   },
   "dependencies": {
     "clsx": "^2.1.1",

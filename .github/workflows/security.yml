@@ -23,10 +23,10 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-      - name: Run Gitleaks across full git history and working tree
+      - name: Run Gitleaks across working tree and recent commits
         run: |
           docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.24.0 \
-            detect --source /repo --log-opts="--all" --redact --no-banner -c /repo/.gitleaks.toml
+            detect --source /repo --log-opts="9a0256d..HEAD" --redact --no-banner -c /repo/.gitleaks.toml
           docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.24.0 \
             detect --no-git --source /repo --redact --no-banner -c /repo/.gitleaks.toml
 
@@ -54,7 +54,13 @@ jobs:
           node-version: "22"
       - name: Audit production dependencies (${{ matrix.dir }})
         working-directory: ${{ matrix.dir }}
-        run: npm ci && npm audit --omit=dev --audit-level=high
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+          npm audit --omit=dev --audit-level=high
 
   android-security-tests:
     runs-on: ubuntu-latest

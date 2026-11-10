@@ -8,3 +8,4 @@ describe('Content Security Policy Enforcement', () => {
       .and('include', "default-src 'self'");
   });
 });
+

@@ -36,3 +36,4 @@ fun assetGlyphById(id: String, kind: Kind = Kind.CRYPTO): Int = when (id.lowerca
         }
     }
 }
+

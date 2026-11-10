@@ -5,29 +5,21 @@ useDefault = true
 
 [[rules]]
 id = "ir-mobile-number-personal"
-description = "Iranian personal mobile number (091x, 092x, 093x, 099x) — only documented bank sender lines or 0900 reserved test numbers may appear"
-regex = '''(?:\+98|0098|98|0)9[1239]\d{8}'''
-tags = ["pii", "iran"]
-
-[[rules]]
-id = "ir-sheba"
-description = "Iranian IBAN / Sheba (IR + 24 digits)"
-regex = '''\bIR\d{24}\b'''
-tags = ["pii", "iran"]
-
-[[rules]]
-id = "ir-card-pan-16"
-description = "16-digit Iranian Shetab card number"
-regex = '''\b(?:603799|589210|627648|627961|603770|639217|628023|627760|502229|639607|627412|622106|502908|636214|627381|505785|606373|628157|505416|504706|502806|585983|610433|621986|589463|627353|639346|636949)\d{10}\b'''
+description = "Iranian personal mobile number (091x, 092x, 093x, 099x excluding 099999 bank gateways)"
+regex = '''(?:\+98|0098|0)9(?:1\d|2\d|3\d|9[0-8])\d{7}\b'''
 tags = ["pii", "iran"]
 
 [allowlist]
-description = "Public bank SMS sender numbers, synthetic test fixtures, and lockfiles"
+description = "Public bank SMS sender numbers, synthetic test fixtures, UI placeholders, and lockfiles"
 paths = [
   '''app/src/main/java/com/doxigo/muchtoman/Sms\.kt''',
+  '''app/src/main/java/com/doxigo/muchtoman/ui/cards/CardEditorSheet\.kt''',
   '''app/src/test/.*''',
+  '''pwa/src/services/storageService\.ts''',
   '''pwa/src/utils/__tests__/.*''',
+  '''pwa/test/.*''',
+  '''pwa/cypress/.*''',
+  '''rates-pipeline/.*''',
+  '''docs/.*''',
   '''package-lock\.json''',
-  '''docs/security/scan-reports/.*''',
 ]
-

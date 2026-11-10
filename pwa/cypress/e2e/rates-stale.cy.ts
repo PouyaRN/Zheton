@@ -7,3 +7,4 @@ describe('Stale & Unverified Market Rates Banner', () => {
     cy.get('[data-testid="market-status-banner"]', { timeout: 10000 }).should('be.visible');
   });
 });
+

@@ -5,3 +5,4 @@ describe('RTL & Accessibility Contracts', () => {
     cy.get('svg[data-icon]').first().should('have.attr', 'aria-hidden', 'true');
   });
 });
+

@@ -11,3 +11,4 @@ describe('PWA Offline SVG Icons', () => {
     cy.get('.material-symbols-outlined, .material-symbols-filled').should('have.length', 0);
   });
 });
+

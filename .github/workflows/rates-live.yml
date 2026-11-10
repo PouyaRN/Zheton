@@ -42,6 +42,7 @@ jobs:
       - name: Test rates-pipeline
         working-directory: rates-pipeline
         run: |
+          npm install
           npm run typecheck
           npm test
 

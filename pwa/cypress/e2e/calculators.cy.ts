@@ -22,3 +22,4 @@ describe('Calculators Modal Flow', () => {
     cy.get('svg[data-icon="calculate"]').should('be.visible');
   });
 });
+

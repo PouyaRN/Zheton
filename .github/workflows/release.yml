@@ -60,8 +60,8 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew testDebugUnitTest assembleRelease \
-            -Pzheton.versionName=${RELEASE_TAG#v} \
-            -Pmuchtoman.versionName=${RELEASE_TAG#v}
+            -Pzheton.versionName="${RELEASE_TAG#v}" \
+            -Pmuchtoman.versionName="${RELEASE_TAG#v}"
 
       - name: Remove signing material
         if: always()
@@ -83,9 +83,11 @@ jobs:
           fi
 
           mv app/build/outputs/apk/release/app-release.apk \
-             zheton-${RELEASE_TAG}.apk
-          touch zheton-${RELEASE_TAG}-mapping.txt
-          [ -f app/build/outputs/mapping/release/mapping.txt ] && cp app/build/outputs/mapping/release/mapping.txt zheton-${RELEASE_TAG}-mapping.txt || true
+             "zheton-${RELEASE_TAG}.apk"
+          touch "zheton-${RELEASE_TAG}-mapping.txt"
+          if [ -f app/build/outputs/mapping/release/mapping.txt ]; then
+            cp app/build/outputs/mapping/release/mapping.txt "zheton-${RELEASE_TAG}-mapping.txt"
+          fi
           sha256sum "zheton-${RELEASE_TAG}.apk" > SHA256SUMS
           {
             echo

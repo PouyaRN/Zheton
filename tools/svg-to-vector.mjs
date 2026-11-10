@@ -172,3 +172,4 @@ for (const [filename, xml] of Object.entries(VECTORS)) {
   writeFileSync(join(DRAWABLE_DIR, filename), xml, 'utf8');
 }
 console.log(`Generated ${Object.keys(VECTORS).length} VectorDrawable XML files in ${DRAWABLE_DIR}`);
+

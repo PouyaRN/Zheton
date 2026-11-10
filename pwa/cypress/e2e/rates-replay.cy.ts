@@ -29,3 +29,4 @@ describe('Market Rates Anti-Replay Protection', () => {
       .and('have.attr', 'data-quotes-count', '1');
   });
 });
+

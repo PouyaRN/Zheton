@@ -6,3 +6,4 @@ describe('Onboarding Modal Flow', () => {
     cy.get('svg[data-icon]').should('have.length.greaterThan', 3);
   });
 });
+

@@ -24,3 +24,4 @@ describe('Tampered Market Rates Rejection', () => {
     cy.get('[data-testid="market-status-banner"]').should('be.visible');
   });
 });
+

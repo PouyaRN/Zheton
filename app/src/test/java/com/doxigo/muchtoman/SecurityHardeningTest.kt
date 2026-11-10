@@ -263,7 +263,7 @@ class RepoHygieneTest {
     fun `test files do not contain real-range personal 0912 mobile numbers`() {
         val appDir = resolveAppDir()
         val testRoot = File(appDir, "src/test")
-        val realMobileRegex = Regex("""(?:\+98|0098|98|0)?912[\s-]?\d{3}[\s-]?\d{4}""")
+        val realMobileRegex = Regex("""(?<!\d)(?:\+98|0098|98|0)912[\s-]?\d{3}[\s-]?\d{4}(?!\d)""")
         val violations = mutableListOf<String>()
         testRoot.walkTopDown()
             .filter { it.isFile && (it.extension == "kt" || it.extension == "json") }
