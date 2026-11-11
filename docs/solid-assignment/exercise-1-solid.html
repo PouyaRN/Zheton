@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تمرین اول: ساختار کلاس‌ها و تحلیل اصول ۵‌گانه SOLID — پروژه «ژتون» (Zheton)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        @page {
+            size: A4 portrait;
+            margin: 14mm 16mm 14mm 16mm;
+        }
+        body {
+            direction: rtl;
+            text-align: right;
+            font-family: 'IRANYekanX', 'IRANYekanXVF', 'Vazirmatn', Tahoma, sans-serif;
+            font-size: 8.8pt;
+            line-height: 1.55;
+            color: #222222;
+            background: #ffffff;
+            margin: 0;
+            padding: 0;
+        }
+        .page {
+            page-break-after: always;
+            position: relative;
+            height: 268mm;
+            max-height: 268mm;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .page:last-child {
+            page-break-after: avoid;
+        }
+        .page-content {
+            flex: 1;
+        }
+        .page-footer {
+            height: 14px;
+            font-size: 9.5pt;
+            font-weight: bold;
+            color: #333333;
+            font-family: 'IRANYekanX', Tahoma, sans-serif;
+            text-align: left;
+            direction: ltr;
+        }
+        .banner {
+            background-color: #1C3553;
+            color: #ffffff;
+            border-radius: 4px;
+            padding: 12px 18px;
+            text-align: center;
+            margin-bottom: 11px;
+        }
+        .banner h1 {
+            margin: 0 0 4px 0;
+            font-size: 13pt;
+            font-weight: bold;
+            color: #ffffff;
+        }
+        .banner h2 {
+            margin: 0 0 5px 0;
+            font-size: 9.5pt;
+            font-weight: normal;
+            color: #E2E8F0;
+        }
+        .banner .meta {
+            margin: 0;
+            font-size: 8pt;
+            color: #CBD5E1;
+        }
+        h1.section-title {
+            color: #1C3553;
+            font-size: 10.8pt;
+            font-weight: bold;
+            margin: 10px 0 5px 0;
+            border-bottom: 1.5pt solid #1C3553;
+            padding-bottom: 3px;
+        }
+        h2.subsection-title {
+            color: #1C3553;
+            font-size: 9.3pt;
+            font-weight: bold;
+            margin: 7px 0 4px 0;
+        }
+        p {
+            margin: 0 0 5px 0;
+            text-align: justify;
+            font-size: 8.5pt;
+        }
+        .en-font, [dir="ltr"] {
+            direction: ltr;
+            text-align: left;
+            display: inline-block;
+            font-family: Consolas, 'Segoe UI', Tahoma, sans-serif;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 5px 0 9px 0;
+            direction: rtl;
+        }
+        th {
+            background-color: #F8FAFC;
+            color: #1C3553;
+            font-weight: bold;
+            font-size: 8.5pt;
+            padding: 5px 7px;
+            border-top: 1.5pt solid #1C3553;
+            border-bottom: 1pt solid #1C3553;
+            text-align: right;
+        }
+        td {
+            padding: 4.5px 7px;
+            font-size: 7.8pt;
+            line-height: 1.4;
+            border-bottom: 0.5pt solid #E2E8F0;
+            vertical-align: top;
+            text-align: right;
+        }
+        tr:nth-child(even) td {
+            background-color: #FBFBFB;
+        }
+        table.spec-table td.key {
+            font-weight: bold;
+            width: 24%;
+            color: #1C3553;
+        }
+        .code-token {
+            font-family: Consolas, monospace;
+            font-size: 7.5pt;
+            color: #0f2942;
+            background: #f1f5f9;
+            padding: 1px 3px;
+            border-radius: 2px;
+            direction: ltr;
+            unicode-bidi: isolate;
+            font-weight: 600;
+        }
+        .item-list {
+            margin: 0;
+            padding-right: 11px;
+        }
+        .item-list li {
+            margin-bottom: 1.5px;
+        }
+        .code-box {
+            background: #0F172A;
+            color: #F8FAFC;
+            border-radius: 3px;
+            padding: 6px 8px;
+            font-family: Consolas, monospace;
+            font-size: 7.3pt;
+            direction: ltr;
+            text-align: left;
+            line-height: 1.35;
+            overflow-x: auto;
+        }
+        .code-header {
+            font-size: 7.8pt;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+        .text-bad { color: #dc2626; }
+        .text-good { color: #16a34a; }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 7px;
+            margin: 4px 0 7px 0;
+        }
+        .summary-box {
+            background-color: #F8FAFC;
+            border: 0.5pt solid #CBD5E1;
+            border-right: 3pt solid #1C3553;
+            border-radius: 3px;
+            padding: 5px 9px;
+            font-size: 7.8pt;
+            margin-top: 5px;
+            line-height: 1.45;
+        }
+    </style>
+</head>
+<body dir="rtl">
+
+    <!-- ==================== PAGE 1 ==================== -->
+    <div class="page">
+        <div class="page-content">
+            <div class="banner">
+                <h1>تمرین اول: ساختار کلاس‌ها و تحلیل اصول ۵‌گانه SOLID</h1>
+                <h2>بررسی ساختار کلاس‌ها و نحوه تقسیم مسئولیت‌ها در پروژه «ژتون» (Zheton)</h2>
+                <p class="meta">تهیه و تدوین: پویا رئیس‌نسب (Pouya RaisiNasab) &nbsp;|&nbsp; درس آزمایشگاه مهندسی نرم‌افزار &nbsp;|&nbsp; مخزن رسمی گیت‌هاب: <span class="en-font" dir="ltr">github.com/PouyaRN/Zheton</span></p>
+            </div>
+
+            <h1 class="section-title">۱. مشخصات نرم‌افزار فعلی ژتون و تاریخچه تغییرات و تکامل معماری</h1>
+            <p>این تمرین بر اساس آخرین نسخه فعال نرم‌افزار <strong>«ژتون» (<span class="en-font" dir="ltr">Zheton</span>)</strong> پیاده‌سازی شده است. ژتون یک دستیار هوشمند مالی، دیده‌بان قدرت خرید و بودجه‌بندی اول‌محلی (<span class="en-font" dir="ltr">Local-First</span>) برای اندروید است که بر روی گیت‌هاب توسعه داده می‌شود. مشخصات فنی و تغییرات اعمال‌شده نسبت به نسخه‌های اولیه به شرح زیر است:</p>
+
+            <table class="spec-table">
+                <thead>
+                    <tr>
+                        <th style="width: 24%;">مشخصه سیستم</th>
+                        <th>شرح مشخصات و تغییرات نرم‌افزار در کدبیس فعال ژتون</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="key">نام و مخزن گیت‌هاب</td>
+                        <td><strong>ژتون (<span class="en-font" dir="ltr">Zheton</span>)</strong> — آدرس رسمی ریپازیتوری: <span class="en-font" dir="ltr">github.com/PouyaRN/Zheton</span> (منشعب از هسته Andis)</td>
+                    </tr>
+                    <tr>
+                        <td class="key">تغییرات ساختاری و معماری</td>
+                        <td>ادغام صفحات پراکنده در ۴ تب منسجم طبق <span class="en-font" dir="ltr">ADR 0007</span> (داشبورد، بازار و طلا، حساب‌ها و تعهدات، دفترکل و تحلیل ۵۰/۳۰/۲۰)؛ پیاده‌سازی سیستم طراحی اختصاصی <span class="en-font" dir="ltr">Lithe Vitality</span> بدون هرگونه داده ماک.</td>
+                    </tr>
+                    <tr>
+                        <td class="key">موتورهای محاسباتی جدید</td>
+                        <td>افزودن موتور خرج امن روزانه (<span class="code-token">SafeSpendEngine</span>) با اوزان پایان هفته ایران (پنج‌شنبه ۱٫۴۰ و جمعه ۱٫۲۵)، دیده‌بان افت ارزش تورمی ریال راکد، و رادار حباب سکه و صندوق‌های طلا.</td>
+                    </tr>
+                    <tr>
+                        <td class="key">تکامل لایه داده و دیتابیس</td>
+                        <td>تفکیک پایگاه‌داده به دو فایل مجزا: <span class="code-token">durable.db</span> (ذخیره قطعی پیامک‌ها و قواعد کاربر) و <span class="code-token">derived.db</span> (محاسبات تجدیدپذیر دفترکل جهت امکان ارتقای پارسر بدون ریسک پاک شدن داده‌ها).</td>
+                    </tr>
+                    <tr>
+                        <td class="key">پشته فنی و بیلد پروژه</td>
+                        <td>کاتلین (<span class="en-font" dir="ltr">Kotlin 2.0</span>)، رابط کاربری اعلانی <span class="en-font" dir="ltr">Jetpack Compose</span>، پایگاه‌داده <span class="en-font" dir="ltr">Room 2.7</span>، و انتشار خودکار APK با پایپ‌لاین <span class="en-font" dir="ltr">GitHub Actions</span>.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h1 class="section-title">۲. ساختار کلاس‌های اصلی سیستم (پاسخ سوال‌های ۱، ۲ و ۳)</h1>
+            <p>از میان کلاس‌های پیاده‌سازی‌شده در هسته نرم‌افزار ژتون، ۵ کلاس بنیادین زیر تحلیل شده‌اند (کلاس‌های ۱ و ۲ در این صفحه و کلاس‌های ۳ تا ۵ در صفحه بعد):</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 19%;">نام کلاس و نقش</th>
+                        <th style="width: 27%;">مسئولیت در معماری (SRP)</th>
+                        <th style="width: 27%;">ویژگی‌های کلیدی (Attributes)</th>
+                        <th style="width: 27%;">عملیات و متدها (Methods)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <strong style="color: #1C3553;">BankAccount</strong>
+                            <br><span style="color: #64748b; font-size: 7.5pt;">(Domain Entity)</span>
+                        </td>
+                        <td>
+                            نگهداری و کپسوله‌سازی اطلاعات کارت بانکی، شماره شبا، تراز مانده، اعتبارسنجی کارت با الگوریتم Luhn و تشخیص حساب‌های راکد و بدون تراکنش.
+                        </td>
+                        <td>
+                            <ul class="item-list">
+                                <li><span class="code-token">bank: Bank</span> (بانک عضو شتاب)</li>
+                                <li><span class="code-token">mask: String</span> (۴ رقم انتهای کارت)</li>
+                                <li><span class="code-token">balance: Double</span> (مانده به تومان)</li>
+                                <li><span class="code-token">fullPan: String</span> (شماره ۱۶ رقمی کارت)</li>
+                                <li><span class="code-token">sheba: String</span> (شناسه ۲۴ رقمی IR)</li>
+                                <li><span class="code-token">anchored: Boolean</span> (تأیید با پیامک)</li>
+                            </ul>
+                        </td>
+                        <td>
+                            <ul class="item-list">
+                                <li><span class="code-token">isDormant(ms): Boolean</span> (حساب راکد >۴۵ روز)</li>
+                                <li><span class="code-token">trusted(): Boolean</span> (تأیید قطعیت مانده)</li>
+                                <li><span class="code-token">validateLuhn(): Boolean</span> (صحت‌سنجی ساختار کارت)</li>
+                                <li><span class="code-token">bankFa(): String</span> (نام فارسی رسمی بانک)</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <strong style="color: #1C3553;">BankSms</strong>
+                            <br><span style="color: #64748b; font-size: 7.5pt;">(Value Object)</span>
+                        </td>
+                        <td>
+                            مدل‌سازی پیامک بانکی، تفکیک جهت واریز/برداشت، مبلغ، مانده جدید و کارمزد با ایمنی نوع داده جهت جلوگیری از پردازش مستقیم متن خام پیامک.
+                        </td>
+                        <td>
+                            <ul class="item-list">
+                                <li><span class="code-token">bank: Bank</span> (بانک صادرکننده پیامک)</li>
+                                <li><span class="code-token">sender: String</span> (سرشماره فرستنده)</li>
+                                <li><span class="code-token">amountRial: Long?</span> (مبلغ به ریال)</li>
+                                <li><span class="code-token">balanceRial: Long?</span> (مانده جدید)</li>
+                                <li><span class="code-token">feeRial: Long?</span> (کارمزد کسرشده)</li>
+                                <li><span class="code-token">delta: Double?</span> (میزان تغییر با علامت)</li>
+                            </ul>
+                        </td>
+                        <td>
+                            <ul class="item-list">
+                                <li><span class="code-token">empty(): Boolean</span> (فیلتر پیامک غیرمالی)</li>
+                                <li><span class="code-token">isDeposit(): Boolean</span> (تشخیص واریز یا برداشت)</li>
+                                <li><span class="code-token">toDerivedTxn(): Txn</span> (تبدیل به ردیف دیتابیس)</li>
+                                <li><span class="code-token">cleanMerchant(): String</span> (پیرایش نام پذیرنده)</li>
+                            </ul>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="page-footer">1</div>
+    </div>
+
+    <!-- ==================== PAGE 2 ==================== -->
+    <div class="page">
+        <div class="page-content">
+            <h1 class="section-title" style="margin-top: 0;">۲. ادامه ساختار کلاس‌های اصلی سیستم (کلاس‌های ۳ تا ۵)</h1>
+            <p>سه کلاس بعدی که تکمیل‌کننده موتور محاسبات اقتصادی، مدیریت تعهدات مالی و هماهنگی تراکنش‌های دیتابیس در ژتون هستند:</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 19%;">نام کلاس و نقش</th>
+                        <th style="width: 27%;">مسئولیت در معماری (SRP)</th>
+                        <th style="width: 27%;">ویژگی‌های کلیدی (Attributes)</th>
+                        <th style="width: 27%;">عملیات و متدها (Methods)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <strong style="color: #1C3553;">Commitment</strong>
+                            <br><span style="color: #64748b; font-size: 7.5pt;">(Liability Entity)</span>
+                        </td>
+                        <td>
+                            رهگیری اقساط بانکی، چک صیادی و طرح‌های خرید قسطی (<span class="en-font" dir="ltr">BNPL</span>) و محاسبه فرسایش تورمی ارزش اقساط آینده کاربر.
+                        </td>
+                        <td>
+                            <ul class="item-list">
+                                <li><span class="code-token">id: String</span> (شناسه یکتای تعهد مالی)</li>
+                                <li><span class="code-token">title: String</span> (عنوان بدهی یا قسط)</li>
+                                <li><span class="code-token">kind: CommitmentKind</span> (وام، چک، BNPL)</li>
+                                <li><span class="code-token">remainingRial: Long</span> (مانده بدهی)</li>
+                                <li><span class="code-token">installmentCount: Int</span> (کل اقساط)</li>
+                                <li><span class="code-token">nextDueTimestamp: Long</span> (سررسید)</li>
+                            </ul>
+                        </td>
+                        <td>
+                            <ul class="item-list">
+                                <li><span class="code-token">progressPercent(): Float</span> (درصد تسویه‌شده)</li>
+                                <li><span class="code-token">discountedPV(m): Long</span> (تنزیل تورمی قسط)</li>
+                                <li><span class="code-token">inflationRelief(): Long</span> (ارزش کاهش‌یافته)</li>
+                                <li><span class="code-token">nextDueDays(): Int</span> (روز مانده تا سررسید)</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <strong style="color: #1C3553;">SafeSpendEngine</strong>
+                            <br><span style="color: #64748b; font-size: 7.5pt;">(Domain Service)</span>
+                        </td>
+                        <td>
+                            موتور محاسباتی خالص ریاضی برای تعیین خرج امن روزانه، اعمال ضرایب الگوی آخر هفته در ایران و پیش‌بینی روز دقیق اتمام بودجه.
+                        </td>
+                        <td>
+                            <ul class="item-list">
+                                <li><span class="code-token">WEEKEND_WEIGHT = 1.40</span> (پنج‌شنبه)</li>
+                                <li><span class="code-token">FRIDAY_WEIGHT = 1.25</span> (جمعه)</li>
+                                <li><span class="code-token">BASE_WEIGHT = 1.00</span> (شنبه تا سه‌شنبه)</li>
+                                <li><span class="code-token">MIN_BUFFER_RATIO = 0.10</span> (ذخیره)</li>
+                            </ul>
+                        </td>
+                        <td>
+                            <ul class="item-list">
+                                <li><span class="code-token">calculatePacing(...): Decision</span> (محاسبه خرج)</li>
+                                <li><span class="code-token">dayOfWeekWeight(d): Double</span> (ضریب تقویم)</li>
+                                <li><span class="code-token">iranianDayOfWeek(t): Int</span> (شاخص روز ایران)</li>
+                                <li><span class="code-token">projectExhaustionDay(...): Int?</span> (روز اتمام)</li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <strong style="color: #1C3553;">LedgerEngine</strong>
+                            <br><span style="color: #64748b; font-size: 7.5pt;">(App Orchestrator)</span>
+                        </td>
+                        <td>
+                            مدیریت و هماهنگی پایگاه‌داده، تضمین قفل‌های همزمانی، بازسازی مجدد دفترکل از روی پیامک‌ها و ثبت قواعد دسته‌بندی خودکار.
+                        </td>
+                        <td>
+                            <ul class="item-list">
+                                <li><span class="code-token">durable: DurableDb</span> (دیتابیس ماندگار)</li>
+                                <li><span class="code-token">derived: DerivedDb</span> (دیتابیس تجدیدپذیر)</li>
+                                <li><span class="code-token">mutex: Mutex</span> (قفل ایزولاسیون تراکنش‌ها)</li>
+                                <li><span class="code-token">extraBankNumbers: Provider</span> (انتزاع)</li>
+                            </ul>
+                        </td>
+                        <td>
+                            <ul class="item-list">
+                                <li><span class="code-token">withLedgerLock(block): T</span> (اجرای امن در IO)</li>
+                                <li><span class="code-token">rederive(numbers): Int</span> (بازسازی کل دفترکل)</li>
+                                <li><span class="code-token">categorise(entry, catId, always)</span> (قاعده دسته)</li>
+                                <li><span class="code-token">loadSession(): Session</span> (سشن جاری کاربر)</li>
+                            </ul>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h1 class="section-title">۳. تحلیل اصول SOLID رعایت‌شده در معماری پروژه ژتون (پاسخ سوال ۴)</h1>
+            <p>در طراحی ساختار کلاس‌ها و معماری داده‌های پروژه، اصول زیر از اصول پنج‌گانه شیءگرایی پیاده‌سازی و رعایت شده‌اند:</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">اصل شیءگرا (SOLID)</th>
+                        <th style="width: 45%;">نحوه پیاده‌سازی و شواهد در کدبیس ژتون</th>
+                        <th style="width: 30%;">دستاورد معماری در پروژه</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="key">اصل تک‌مسئولیتی<br><span class="en-font" dir="ltr">(Single Responsibility - SRP)</span></td>
+                        <td>کلاس <span class="code-token">SafeSpendEngine</span> منحصراً محاسبات مالی بودجه را انجام می‌دهد و هیچ کدی از <span class="en-font" dir="ltr">UI</span> یا دیتابیس ندارد. همچنین پایگاه‌داده به دو فایل مجزا شکسته شده: <span class="code-token">DurableDb</span> فقط داده‌های قطعی کاربر را نگه می‌دارد و <span class="code-token">DerivedDb</span> فقط محاسبات تجدیدپذیر دفترکل را میزبانی می‌کند.</td>
+                        <td>جداسازی کامل منطق کسب‌وکار از جزئیات ذخیره‌سازی و ارتقای تست‌پذیری</td>
+                    </tr>
+                    <tr>
+                        <td class="key">اصل تفکیک رابط‌ها<br><span class="en-font" dir="ltr">(Interface Segregation - ISP)</span></td>
+                        <td>در لایه دیتابیس <span class="en-font" dir="ltr">Room</span>، به جای ایجاد یک اینترفیس بزرگ و غول‌پیکر (<span class="en-font" dir="ltr">Fat DAO</span>)، اینترفیس‌ها به بخش‌های مجزا و تک‌منظوره تفکیک شده‌اند: <span class="code-token">SmsSourceDao</span> (پیامک‌ها)، <span class="code-token">CategoryDao</span> (دسته‌ها)، <span class="code-token">RuleDao</span> (قوانین) و <span class="code-token">InstallmentDao</span> (اقساط).</td>
+                        <td>کاهش وابستگی کلاینت‌ها و عدم اجبار به متدهای نامربوط</td>
+                    </tr>
+                    <tr>
+                        <td class="key">اصل وارونگی وابستگی<br><span class="en-font" dir="ltr">(Dependency Inversion - DIP)</span></td>
+                        <td>کلاس‌های سطح بالا مانند <span class="code-token">LedgerEngine</span> وابستگی‌های خود را مستقیماً از کلاس‌های سخت‌کد شده دریافت نمی‌کنند، بلکه از طریق سازنده (<span class="en-font" dir="ltr">Constructor</span>) و اینترفیس‌های تابعی انتزاعی مثل <span class="code-token">extraBankNumbersProvider</span> تغذیه می‌شوند.</td>
+                        <td>امکان اجرای تست‌های واحد ایزوله بدون نیاز به شبیه‌ساز اندروید</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="page-footer">2</div>
+    </div>
+
+    <!-- ==================== PAGE 3 ==================== -->
+    <div class="page">
+        <div class="page-content">
+            <h1 class="section-title" style="margin-top: 0;">۴. شناسایی نقض اصل SOLID و راهکار بازآرایی (پاسخ سوال ۵)</h1>
+            <h2 class="subsection-title">۴-۱. تحلیل فنی نقض اصل باز/بسته (Open/Closed Principle - OCP)</h2>
+            <p><strong>محل دقیق در پروژه:</strong> تابع <span class="code-token">parseBankSms</span> در فایل <span class="code-token">Sms.kt</span>.<br>
+            <strong>شرح مسئله:</strong> در کدهای فعلی پروژه، برای پشتیبانی از فرمت‌های اختصاصی پیامک در هر بانک (مثلاً واریزهای گروهی در بانک سپه یا برچسب نوع تراکنش در بانک تجارت)، شرط‌های زنجیره‌ای متوالی به صورت هاردکد درون بدنه تابع اصلی نوشته شده است:</p>
+
+            <div class="grid-2">
+                <div>
+                    <div class="code-header text-bad">کد فعلی در Sms.kt (نقض صریح OCP):</div>
+                    <div class="code-box">
+fun parseBankSms(sender: String, body: String): BankSms? {
+    val bank = bankOf(sender) ?: return null
+    var deposit = IN_WORDS.any { body.contains(it) }
+    var withdrawal = OUT_WORDS.any { body.contains(it) }
+
+    // نقض OCP: با افزودن هر بانک جدید، این تابع اصلی دستکاری می‌شود
+    if (bank == Bank.SEPAH && body.contains("واریز گروهی")) {
+        deposit = true; withdrawal = false
+    }
+    if (bank == Bank.TEJARAT) {
+        val type = body.substringAfter("نوع تراکنش:")
+        if (type.contains("واریز")) deposit = true
+    }
+    return BankSms(bank, sender, ...)
+}</div>
+                </div>
+
+                <div>
+                    <div class="code-header text-good">کد بازآرایی‌شده با الگوی Strategy (رعایت OCP):</div>
+                    <div class="code-box">
+// ۱. تعریف اینترفیس استراتژی انتزاعی
+interface BankSmsStrategy {
+    fun canHandle(bank: Bank): Boolean
+    fun parseCustom(body: String, base: BankSms): BankSms
+}
+
+// ۲. توسعه رفتار بدون دستکاری موتور اصلی
+class SepahStrategy : BankSmsStrategy { ... }
+class TejaratStrategy : BankSmsStrategy { ... }
+
+// ۳. موتور اصلی نسبت به تغییر بسته و به توسعه باز است
+class BankSmsParser(private val strategies: List<BankSmsStrategy>) {
+    fun parse(sender: String, body: String): BankSms? {
+        val bank = bankOf(sender) ?: return null
+        val base = parseCommon(bank, sender, body)
+        val strategy = strategies.firstOrNull { it.canHandle(bank) }
+        return strategy?.parseCustom(body, base) ?: base
+    }
+}</div>
+                </div>
+            </div>
+
+            <h2 class="subsection-title">۴-۲. دستاورد معماری بازآرایی (Refactoring)</h2>
+            <p>طبق اصل <span class="en-font" dir="ltr">OCP</span>، نرم‌افزار باید برای «توسعه» باز و برای «تغییر» بسته باشد. در کد اولیه، با اضافه شدن هر بانک جدید به شبکه شتاب کشور، برنامه‌نویس باید فایل اصلی پارسر را باز کرده و بدنه آن را تغییر می‌داد که ریسک ایجاد رگرسیون برای سایر بانک‌ها را بالا می‌برد. با پیاده‌سازی الگوی طراحی استراتژی (<span class="en-font" dir="ltr">Strategy Pattern</span>)، افزودن یک بانک جدید صرفاً با تعریف یک کلاس مستقل انجام شده و کلاس مرکزی هرگز دستکاری نمی‌شود.</p>
+
+            <h1 class="section-title">۵. خلاصه و دستاوردهای مهندسی سیستم ژتون</h1>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 25%;">معیار ارزیابی</th>
+                        <th>شرح سازوکار پیاده‌سازی و نتیجه در نرم‌افزار ژتون</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="key">تفکیک دامنه‌محور (DDD)</td>
+                        <td>مستقل‌سازی کامل هسته محاسبات خرج امن (<span class="code-token">SafeSpendEngine</span>) و موجودیت‌های مالی از فریم‌ورک‌های سیستم‌عامل اندروید.</td>
+                    </tr>
+                    <tr>
+                        <td class="key">پایداری تراکنش‌ها</td>
+                        <td>استفاده از قفل‌های همزمانی (<span class="en-font" dir="ltr">Mutex</span>) در <span class="code-token">LedgerEngine</span> جهت حذف امکان تداخل پردازش پیامک‌های پس‌زمینه با ورودی‌های دستی کاربر.</td>
+                    </tr>
+                    <tr>
+                        <td class="key">انعطاف‌پذیری و نگهداری‌پذیری</td>
+                        <td>کپسوله‌سازی منطق پیامک بانک‌ها در قالب استراتژی‌های مجزا، تضمین‌کننده مقیاس‌پذیری نرم‌افزار در برابر تغییرات شبکه شتاب است.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="summary-box">
+                <strong>نتیجه‌گیری پایانی:</strong> در پروژه ژتون (<span class="en-font" dir="ltr">github.com/PouyaRN/Zheton</span>)، طراحی کلاس‌ها با رعایت تعادل میان سادگی و تفکیک وظایف انجام گرفته است. اصول تک‌مسئولیتی، تفکیک رابط‌ها و وارونگی وابستگی در ساختار جاری رعایت شده و با اصلاح تابع پارسر از طریق الگوی استراتژی، اصل باز/بسته نیز به صورت استاندارد در کل سیستم محقق می‌گردد.
+            </div>
+        </div>
+        <div class="page-footer">3</div>
+    </div>
+
+</body>
+</html>

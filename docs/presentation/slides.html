@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>ژتون — ارائهٔ آزمایشگاه مهندسی نرم‌افزار</title>
+<style>
+@page { size: 1280px 720px; margin: 0; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #0b1020; font-family: 'IRANYekanX', 'Vazirmatn', Tahoma, sans-serif; color: #e8ecf6; }
+.slide { width: 1280px; height: 720px; padding: 56px 72px; position: relative; overflow: hidden;
+  background: radial-gradient(circle at 15% 10%, #1d2a55 0, #0b1020 60%); display: none; margin: 0 auto; }
+.slide.active { display: block; }
+@media print { .slide { display: block !important; page-break-after: always; } .nav { display: none; } }
+h1 { font-size: 64px; margin: 0 0 12px; color: #ffd166; }
+h2 { font-size: 40px; margin: 0 0 28px; color: #ffd166; border-bottom: 3px solid #ffd16655; padding-bottom: 10px; }
+p, li { font-size: 25px; line-height: 1.75; }
+ul { padding-right: 28px; margin: 0; }
+.en { direction: ltr; unicode-bidi: isolate; font-family: Consolas, monospace; color: #8bd3ff; font-size: .9em; }
+.sub { font-size: 28px; color: #b8c2dd; }
+.grid { display: grid; gap: 18px; }
+.g2 { grid-template-columns: 1fr 1fr; } .g3 { grid-template-columns: repeat(3,1fr); } .g4 { grid-template-columns: repeat(4,1fr); }
+.card { background: #ffffff0d; border: 1px solid #ffffff1f; border-radius: 16px; padding: 18px 22px; }
+.card b { color: #ffd166; font-size: 24px; display: block; margin-bottom: 6px; }
+.card p, .card li { font-size: 20px; line-height: 1.6; margin: 0; }
+.flow { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; margin: 18px 0; }
+.box { background: #1f3a6b; border: 2px solid #4f8cff; border-radius: 12px; padding: 14px 18px; font-size: 21px; text-align: center; min-width: 140px; }
+.box.y { background: #4a3b10; border-color: #ffd166; } .box.g { background: #123d2c; border-color: #3ddc84; }
+.arrow { font-size: 30px; color: #ffd166; }
+.shots { display: flex; gap: 18px; justify-content: center; }
+.shots img { height: 430px; border-radius: 18px; border: 2px solid #ffffff30; }
+table { width: 100%; border-collapse: collapse; font-size: 20px; }
+td, th { border-bottom: 1px solid #ffffff22; padding: 9px 10px; text-align: right; }
+th { color: #ffd166; }
+.foot { position: absolute; bottom: 20px; left: 72px; font-size: 16px; color: #7f8bab; }
+.big { font-size: 80px; color: #3ddc84; font-weight: bold; }
+.nav { position: fixed; bottom: 12px; right: 50%; transform: translateX(50%); color: #7f8bab; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<section class="slide">
+  <div style="margin-top:120px">
+    <h1>ژتون <span class="en" style="font-size:36px">(Zheton)</span></h1>
+    <p class="sub">دستیار هوشمند مالی و دیده‌بان قدرت خرید برای کاربران ایرانی</p>
+    <p>اپلیکیشن اندرویدی · معماری اول‌محلی <span class="en">(Local-First)</span> · متن‌باز</p>
+    <p class="sub" style="margin-top:60px">درس آزمایشگاه مهندسی نرم‌افزار · ارائه‌دهنده: ……………</p>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>مسئله: چرا ژتون؟</h2>
+  <div class="grid g2">
+    <div class="card"><b>📉 تورم بالا</b><p>پول نقدِ راکد هر روز ارزش خود را از دست می‌دهد، اما کاربر این «خونریزی» را نمی‌بیند.</p></div>
+    <div class="card"><b>📩 پیامک‌های پراکنده</b><p>تراکنش‌ها در پیامک بانک‌های مختلف گم می‌شوند؛ تصویر یکپارچه‌ای از مخارج وجود ندارد.</p></div>
+    <div class="card"><b>🧾 تعهدات بومی</b><p>اقساط اسنپ‌پی و دیجی‌پی، وام و چک صیادی در اپ‌های خارجی پشتیبانی نمی‌شوند.</p></div>
+    <div class="card"><b>🔒 حریم خصوصی</b><p>اغلب اپ‌های مالی شماره موبایل و داده‌ها را روی سرور خودشان نگه می‌دارند.</p></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>راه‌حل و ارزش پیشنهادی</h2>
+  <ul>
+    <li>همهٔ داده‌ها <b>فقط روی گوشی</b> می‌ماند؛ بدون ثبت‌نام، بدون شماره موبایل و بدون ردیاب تبلیغاتی.</li>
+    <li>خواندن خودکار پیامک بانکی و تبدیل آن به دفتر تراکنش.</li>
+    <li>جواب یک سؤال ساده: «امروز چقدر می‌توانم خرج کنم؟» (<span class="en">SafeSpendEngine</span>)</li>
+    <li>نمایش ارزش دارایی به تومان و به <b>گرم طلا</b>، همراه نرخ لحظه‌ای بازار.</li>
+    <li>جعبه‌ابزار محاسبات اقتصادی بومی: حباب سکه، سود تورمیِ قسط، تحلیل ۵۰/۳۰/۲۰.</li>
+  </ul>
+</section>
+
+<section class="slide">
+  <h2>فیچرها: معماری چهار تب</h2>
+  <div class="grid g4">
+    <div class="card"><b>🏠 داشبورد</b><ul><li>موجودی نقد و ارزش خالص</li><li>خرج امن روزانه</li><li>سپر ضد تورم</li><li>پارسر پیامک</li></ul></div>
+    <div class="card"><b>📈 بازار</b><ul><li>تیکر طلا، سکه، ارز، تتر</li><li>رادار حباب سکه</li><li>سبد دارایی</li><li>هشدار قیمت</li></ul></div>
+    <div class="card"><b>💳 حساب‌ها</b><ul><li>کارت‌ها با تشخیص بانک (<span class="en">BIN</span>)</li><li>اعتبارسنجی <span class="en">Luhn</span> و شبا</li><li>اقساط، <span class="en">BNPL</span>، چک صیادی</li></ul></div>
+    <div class="card"><b>📊 دفتر و تحلیل</b><ul><li>جستجو و فیلتر تراکنش</li><li>تحلیل ۵۰/۳۰/۲۰</li><li>اهداف پس‌انداز</li><li>خروجی اکسل/CSV</li></ul></div>
+  </div>
+  <p style="font-size:21px;margin-top:20px">قابلیت‌های جانبی: پشتیبان‌گیری رمزشده، یادآور، ویجت صفحهٔ اصلی، قفل بیومتریک، حالت حریم خصوصی، تقویم شمسی.</p>
+</section>
+
+<section class="slide">
+  <h2>نمایی از اپلیکیشن</h2>
+  <div class="shots">
+    <img src="../screenshots/zheton_01_onboarding.png" alt="">
+    <img src="../screenshots/zheton_02_dashboard.png" alt="">
+    <img src="../screenshots/zheton_03_analytics.png" alt="">
+    <img src="../screenshots/zheton_04_commitments.png" alt="">
+    <img src="../screenshots/zheton_07_hobab_sekke.png" alt="">
+  </div>
+</section>
+
+<section class="slide">
+  <h2>نقشهٔ منطقی: جریان داده</h2>
+  <div class="flow">
+    <div class="box">📩 پیامک بانک<br><small>یا ورود دستی</small></div><span class="arrow">←</span>
+    <div class="box y"><span class="en">SmsParser</span><br><small>مبلغ، نوع، مانده، بانک</small></div><span class="arrow">←</span>
+    <div class="box y">تطبیق و پاک‌سازی<br><small>انتقال خودی، استرداد</small></div><span class="arrow">←</span>
+    <div class="box g">🗄️ <span class="en">Room</span><br><small>پایگاه‌دادهٔ محلی</small></div>
+  </div>
+  <div class="flow">
+    <div class="box">🌐 نرخ‌های بازار<br><small><span class="en">rates-pipeline</span></small></div><span class="arrow">←</span>
+    <div class="box y">موتورهای دامنه<br><small>خرج امن، تورم، بدهی، پرتفوی</small></div><span class="arrow">←</span>
+    <div class="box g">📱 رابط کاربری <span class="en">Compose</span><br><small>چهار تب + ویجت + هشدار</small></div>
+  </div>
+  <p style="text-align:center;font-size:21px">تنها دادهٔ دریافتی از اینترنت، <b>نرخ عمومی بازار</b> است؛ هیچ دادهٔ شخصی‌ای از گوشی خارج نمی‌شود.</p>
+</section>
+
+<section class="slide">
+  <h2>معماری فنی</h2>
+  <div class="grid g2">
+    <div>
+      <div class="box" style="margin-bottom:10px">لایهٔ نمایش — <span class="en">Jetpack Compose · Material3 · ViewModel</span></div>
+      <div class="box y" style="margin-bottom:10px">لایهٔ دامنه — <span class="en">domain/</span> موتورها و قواعد کسب‌وکار (Kotlin خالص، تست‌پذیر)</div>
+      <div class="box g" style="margin-bottom:10px">لایهٔ داده — <span class="en">Room · kotlinx.serialization</span></div>
+      <div class="box">پس‌زمینه — <span class="en">WorkManager · Glance Widgets · Biometric</span></div>
+    </div>
+    <div class="card"><b>زیرسیستم‌های کنار اپ</b>
+      <ul>
+        <li><span class="en">rates-pipeline</span>: جمع‌آوری و امضای نرخ‌ها</li>
+        <li><span class="en">worker</span>: سرویس نرخ روی <span class="en">Cloudflare Workers</span></li>
+        <li><span class="en">sync</span>: همگام‌سازی اختیاری</li>
+        <li><span class="en">pwa</span>: نسخهٔ وب با <span class="en">React + Vite</span></li>
+        <li>ماژول‌های فیچر: <span class="en">backup, export, pricealerts, reminders, smspicker, shetab</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>مدل دامنه و زبان مشترک (DDD)</h2>
+  <p>فایل <span class="en">CONTEXT.md</span> یک <b>واژه‌نامهٔ دامنه</b> است که هر مفهوم مالی را دقیق تعریف می‌کند تا کد، طراحی و مستندات یک زبان داشته باشند:</p>
+  <div class="grid g3">
+    <div class="card"><b>موجودی نقد عملیاتی</b><p><span class="en">Liquid Balance</span>: پول قابل خرج، جدا از سپرده و دارایی.</p></div>
+    <div class="card"><b>نقدینگی راکد</b><p><span class="en">Idle Cash</span>: مازاد بر خرج ۳۰ روزه که در برابر تورم آسیب‌پذیر است.</p></div>
+    <div class="card"><b>چرخهٔ مالی</b><p><span class="en">Financial Cycle</span>: ماه شمسی یا از روز حقوق.</p></div>
+    <div class="card"><b>انتقال خودی</b><p>برداشت و واریز هم‌مبلغ بین حساب‌های خود در کمتر از ۲ دقیقه.</p></div>
+    <div class="card"><b>تعهد مالی</b><p>قسط، <span class="en">BNPL</span> یا چک صیادی با سررسید شمسی.</p></div>
+    <div class="card"><b>برچسب ضرورت</b><p>نیاز / خواسته / پس‌انداز برای قاعدهٔ ۵۰/۳۰/۲۰.</p></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>روند تولید نرم‌افزار</h2>
+  <div class="flow">
+    <div class="box">۱. شناخت مسئله<br><small>پژوهش <span class="en">docs/research</span></small></div><span class="arrow">←</span>
+    <div class="box">۲. مدل دامنه<br><small><span class="en">CONTEXT.md</span></small></div><span class="arrow">←</span>
+    <div class="box">۳. طراحی UI<br><small><span class="en">DESIGN.md</span>، Canvas</small></div><span class="arrow">←</span>
+    <div class="box y">۴. تصمیم معماری<br><small>۱۰ سند <span class="en">ADR</span></small></div>
+  </div>
+  <div class="flow">
+    <div class="box y">۵. پیاده‌سازی تدریجی<br><small>۲۹۰ کامیت</small></div><span class="arrow">←</span>
+    <div class="box g">۶. تست و اسکن<br><small>CI روی هر Push</small></div><span class="arrow">←</span>
+    <div class="box g">۷. انتشار<br><small>APK امضاشده روی Tag</small></div><span class="arrow">←</span>
+    <div class="box">۸. بازخورد<br><small><span class="en">CHANGELOG</span></small></div>
+  </div>
+  <p style="text-align:center;font-size:22px">مدل فرایند: <b>تکراری و افزایشی (Iterative/Incremental)</b> با چرخه‌های کوتاه — شروع پروژه: تیر/مرداد ۱۴۰۵ (<span class="en">2026-07-27</span>)</p>
+</section>
+
+<section class="slide">
+  <h2>تصمیم‌های کلیدی معماری (ADR)</h2>
+  <table>
+    <tr><th>ADR</th><th>تصمیم</th><th>دلیل</th></tr>
+    <tr><td>0001</td><td>منابع نرخ بازار و سلسله‌مراتب داشبورد</td><td>دادهٔ قابل‌اعتماد و صفحهٔ خلوت</td></tr>
+    <tr><td>0002</td><td>موتور بدهی و BNPL + مخزن عمومی و امضای APK</td><td>پشتیبانی تعهدات بومی؛ متن‌باز امن</td></tr>
+    <tr><td>0003</td><td>آیکون‌های SVG آفلاین؛ معیار طلا برای پرتفوی</td><td>عملکرد بدون اینترنت؛ سنجش واقعی در تورم</td></tr>
+    <tr><td>0004</td><td>اطلاعات کارت روی حساب بانکی</td><td>یک منبع حقیقت برای موجودی</td></tr>
+    <tr><td>0005</td><td>ارتقای درجا و ویجت‌های Glance</td><td>به‌روزرسانی بدون از دست رفتن داده</td></tr>
+    <tr><td>0007</td><td>ادغام در چهار تب و حذف شلوغی</td><td>سادگی و تمرکز کاربر</td></tr>
+  </table>
+</section>
+
+<section class="slide">
+  <h2>ابزارها و فناوری‌ها</h2>
+  <table>
+    <tr><th>حوزه</th><th>ابزار</th></tr>
+    <tr><td>زبان و رابط کاربری</td><td><span class="en">Kotlin 2.2 · Jetpack Compose · Material3</span></td></tr>
+    <tr><td>داده و پس‌زمینه</td><td><span class="en">Room 2.7 · WorkManager · Glance · Biometric · Coil · ZXing</span></td></tr>
+    <tr><td>ساخت</td><td><span class="en">Gradle (Kotlin DSL) · AGP 9 · KSP · Version Catalog</span></td></tr>
+    <tr><td>محیط توسعه</td><td><span class="en">Android Studio · VS Code · Git / GitHub</span></td></tr>
+    <tr><td>CI/CD</td><td><span class="en">GitHub Actions: check · release · rates-daily/live/health</span></td></tr>
+    <tr><td>امنیت</td><td><span class="en">CodeQL · Gitleaks · security scan</span></td></tr>
+    <tr><td>سرویس و وب</td><td><span class="en">Cloudflare Workers (wrangler) · TypeScript · React · Vite · Vitest · Cypress</span></td></tr>
+    <tr><td>تست</td><td><span class="en">JUnit 4</span> (حدود ۷۰ کلاس تست واحد)</td></tr>
+    <tr><td>هوش مصنوعی</td><td>دستیار کدنویسی با قواعد <span class="en">AGENTS.md</span></td></tr>
+  </table>
+</section>
+
+<section class="slide">
+  <h2>تضمین کیفیت و CI/CD</h2>
+  <div class="flow">
+    <div class="box">Push / PR</div><span class="arrow">←</span>
+    <div class="box y">Build + Unit Tests<br><small><span class="en">check.yml</span></small></div><span class="arrow">←</span>
+    <div class="box y">تحلیل امنیتی<br><small><span class="en">CodeQL · Gitleaks</span></small></div><span class="arrow">←</span>
+    <div class="box g">Tag نسخه</div><span class="arrow">←</span>
+    <div class="box g">APK امضاشده<br><small><span class="en">GitHub Releases</span></small></div>
+  </div>
+  <div class="grid g3" style="margin-top:24px">
+    <div class="card"><b>تست واحد</b><p>موتورهای دامنه Kotlin خالص‌اند؛ بنابراین بدون دستگاه تست می‌شوند (پارسر پیامک، Luhn، شبا، خرج امن).</p></div>
+    <div class="card"><b>امنیت</b><p>نبود CVV2 در ذخیره‌سازی، پشتیبان رمزشده، اسکن نشت کلید و گزارش‌های <span class="en">docs/security</span>.</p></div>
+    <div class="card"><b>پایش داده</b><p>جریان‌های زمان‌بندی‌شده سلامت و تازگی نرخ‌های بازار را کنترل می‌کنند.</p></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h2>چالش‌ها، درس‌ها و آینده</h2>
+  <div class="grid g2">
+    <div class="card"><b>چالش‌ها</b><ul>
+      <li>تنوع قالب پیامک بانک‌های ایرانی</li>
+      <li>تقویم شمسی و چرخهٔ مالیِ متصل به روز حقوق</li>
+      <li>چیدمان RTL در کنار شماره کارت و شبای LTR</li>
+      <li>دسترسی پایدار به نرخ بازار</li></ul></div>
+    <div class="card"><b>درس‌ها و کارهای آینده</b><ul>
+      <li>ADR از بازنویسی‌های بی‌دلیل جلوگیری کرد</li>
+      <li>واژه‌نامهٔ دامنه ابهام‌ها را کم کرد</li>
+      <li>آینده: سقف دسته‌ها بر اساس چرخهٔ مالی</li>
+      <li>آینده: گسترش نسخهٔ وب و همگام‌سازی</li></ul></div>
+  </div>
+</section>
+
+<section class="slide">
+  <div style="text-align:center;margin-top:170px">
+    <div class="big">دمو + پرسش و پاسخ</div>
+    <p class="sub">github.com/PouyaRN/Zheton</p>
+    <p class="sub">سپاس از توجه شما 🙏</p>
+  </div>
+</section>
+
+<div class="nav">← / → یا Space برای جابه‌جایی · <span id="n"></span></div>
+<script>
+const s=[...document.querySelectorAll('.slide')];let i=0;
+s.forEach((el,k)=>{const f=document.createElement('div');f.className='foot';f.textContent=(k+1)+' / '+s.length+' · ژتون';el.appendChild(f);});
+function show(){s.forEach((e,k)=>e.classList.toggle('active',k===i));document.getElementById('n').textContent=(i+1)+'/'+s.length;}
+document.addEventListener('keydown',e=>{if(['ArrowLeft',' ','PageDown'].includes(e.key))i=Math.min(i+1,s.length-1);if(['ArrowRight','PageUp','Backspace'].includes(e.key))i=Math.max(i-1,0);show();});
+document.addEventListener('click',()=>{i=Math.min(i+1,s.length-1);show();});
+show();
+</script>
+</body>
+</html>
