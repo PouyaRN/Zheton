@@ -61,6 +61,7 @@ const INITIAL_SAVINGS_GOALS: SavingsGoal[] = [];
 export default function App() {
   const [state, setState] = useState(() => loadPersistedState());
   const [marketState, setMarketState] = useState<VerifiedMarketState>(() => getInitialMarketState());
+  const [isRefreshingRates, setIsRefreshingRates] = useState(false);
   const quotes = marketState.quotes;
   const [activeTab, setActiveTab] = useState<TabKey>('DASHBOARD');
   const [dayOffset, setDayOffset] = useState(0);
@@ -175,6 +176,17 @@ export default function App() {
   useEffect(() => {
     savePersistedState(state);
   }, [state]);
+
+  const handleRefreshRates = async () => {
+    if (isRefreshingRates) return;
+    setIsRefreshingRates(true);
+    try {
+      const next = await fetchVerifiedMarketState();
+      setMarketState(next);
+    } finally {
+      setIsRefreshingRates(false);
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -602,20 +614,42 @@ export default function App() {
             data-testid="market-status-banner"
             data-freshness={marketState.freshness}
             role="status"
-            className={`mb-3 flex items-center gap-2 rounded-2xl border px-3.5 py-2.5 text-[12px] font-bold ${
+            className={`mb-3 flex items-center justify-between gap-2 rounded-2xl border px-3.5 py-2.5 text-[12px] font-bold ${
               marketState.freshness === 'stale'
                 ? 'border-amber-200 bg-amber-50 text-amber-800'
                 : 'border-rose-200 bg-rose-50 text-rose-800'
             }`}
           >
-            <Icon name="warning" size={16} />
-            <span>
-              {marketState.freshness === 'stale'
-                ? 'نرخ‌های بازار قدیمی هستند (بیش از ۴۸ ساعت از آخرین بروزرسانی گذشته است).'
-                : marketState.freshness === 'expired'
-                ? 'نرخ‌های بازار منقضی شده‌اند (بیش از ۷ روز). ارزش دارایی‌ها تقریبی است.'
-                : 'امضای دیجیتال نرخ‌های بازار تایید نشد؛ نمایش نرخ‌ها متوقف شده است.'}
-            </span>
+            <div className="flex items-center gap-2 min-w-0">
+              <Icon name="warning" size={16} />
+              <span>
+                {marketState.freshness === 'stale'
+                  ? 'نرخ‌های بازار قدیمی هستند (بیش از ۴۸ ساعت از آخرین بروزرسانی گذشته است).'
+                  : marketState.freshness === 'expired'
+                  ? 'نرخ‌های بازار منقضی شده‌اند (بیش از ۷ روز). ارزش دارایی‌ها تقریبی است.'
+                  : 'امضای دیجیتال نرخ‌های بازار تایید نشد؛ نمایش نرخ‌ها متوقف شده است.'}
+              </span>
+            </div>
+            {(marketState.freshness === 'stale' || marketState.freshness === 'expired') && (
+              <button
+                type="button"
+                data-testid="market-retry-button"
+                onClick={handleRefreshRates}
+                disabled={isRefreshingRates}
+                className={`shrink-0 inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-bold transition-colors disabled:opacity-50 ${
+                  marketState.freshness === 'stale'
+                    ? 'border-amber-300 bg-amber-100/80 text-amber-900 hover:bg-amber-200/70'
+                    : 'border-rose-300 bg-rose-100/80 text-rose-900 hover:bg-rose-200/70'
+                }`}
+              >
+                <Icon
+                  name="sync"
+                  size={13}
+                  className={isRefreshingRates ? 'animate-spin' : ''}
+                />
+                <span>تلاش مجدد</span>
+              </button>
+            )}
           </div>
         )}
         {/* ===================================================================
@@ -2370,71 +2404,79 @@ export default function App() {
           FLOATING GORDOL CAPSULE BOTTOM NAVIGATION BAR
          ===================================================================== */}
       <div className="fixed bottom-5 inset-x-0 z-40 px-4 pointer-events-none pb-safe">
-        <nav className="pointer-events-auto max-w-[360px] mx-auto h-[64px] bg-white/95 backdrop-blur-2xl rounded-full border border-gray-200/80 shadow-[0_12px_32px_-6px_rgba(31,35,43,0.1)] px-3 flex items-center justify-between">
+        <nav className="pointer-events-auto w-full max-w-[380px] mx-auto h-[76px] bg-white/95 backdrop-blur-2xl rounded-full border border-gray-200/80 shadow-[0_12px_32px_-6px_rgba(31,35,43,0.1)] px-2.5 flex items-center justify-between gap-1">
           {/* Tab 1: داشبورد */}
           <button
             onClick={() => setActiveTab('DASHBOARD')}
             title="داشبورد مالی"
-            className={`flex flex-col items-center justify-center w-12 h-12 rounded-full transition-all ${
+            aria-label="داشبورد مالی"
+            className={`flex-1 flex flex-col items-center justify-center gap-1.5 h-[62px] rounded-full px-1 transition-all ${
               activeTab === 'DASHBOARD'
-                ? 'text-primary font-bold bg-surface-container-low/80'
-                : 'text-outline hover:text-primary'
+                ? 'text-primary font-extrabold bg-surface-container-low/80'
+                : 'text-outline font-semibold hover:text-primary'
             }`}
             type="button"
           >
-            <Icon name="grid_view" size={24} />
+            <Icon name="grid_view" size={32} />
+            <span className="text-[11.5px] leading-none whitespace-nowrap">داشبورد</span>
           </button>
 
           {/* Tab 2: تحلیل مخارج */}
           <button
             onClick={() => setActiveTab('ANALYTICS')}
             title="تحلیل مخارج"
-            className={`flex flex-col items-center justify-center w-12 h-12 rounded-full transition-all ${
+            aria-label="تحلیل مخارج"
+            className={`flex-1 flex flex-col items-center justify-center gap-1.5 h-[62px] rounded-full px-1 transition-all ${
               activeTab === 'ANALYTICS'
-                ? 'text-primary font-bold bg-surface-container-low/80'
-                : 'text-outline hover:text-primary'
+                ? 'text-primary font-extrabold bg-surface-container-low/80'
+                : 'text-outline font-semibold hover:text-primary'
             }`}
             type="button"
           >
-            <Icon name="insights" size={24} />
+            <Icon name="insights" size={32} />
+            <span className="text-[11.5px] leading-none whitespace-nowrap">تحلیل</span>
           </button>
 
           {/* Center Floating Black Action Button (+) */}
           <button
             onClick={() => openQuickAdd('TXN', 'DEBIT')}
             aria-label="تراکنش جدید"
-            className="w-12 h-12 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-[0_6px_16px_-4px_rgba(31,35,43,0.28)] hover:scale-105 active:scale-95 transition-transform"
+            className="w-14 h-14 shrink-0 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-[0_6px_16px_-4px_rgba(31,35,43,0.28)] hover:scale-105 active:scale-95 transition-transform"
             type="button"
           >
-            <Icon name="add" size={26} />
+            <Icon name="add" size={34} />
           </button>
 
           {/* Tab 3: اقساط و چک */}
           <button
             onClick={() => setActiveTab('COMMITMENTS')}
             title="اقساط و چک"
-            className={`flex flex-col items-center justify-center w-12 h-12 rounded-full transition-all ${
+            aria-label="اقساط و چک"
+            className={`flex-1 flex flex-col items-center justify-center gap-1.5 h-[62px] rounded-full px-1 transition-all ${
               activeTab === 'COMMITMENTS'
-                ? 'text-primary font-bold bg-surface-container-low/80'
-                : 'text-outline hover:text-primary'
+                ? 'text-primary font-extrabold bg-surface-container-low/80'
+                : 'text-outline font-semibold hover:text-primary'
             }`}
             type="button"
           >
-            <Icon name="receipt_long" size={24} />
+            <Icon name="receipt_long" size={32} />
+            <span className="text-[11.5px] leading-none whitespace-nowrap">اقساط</span>
           </button>
 
           {/* Tab 4: پس‌انداز و اهداف */}
           <button
             onClick={() => setActiveTab('GOALS')}
             title="پس‌انداز و اهداف"
-            className={`flex flex-col items-center justify-center w-12 h-12 rounded-full transition-all ${
+            aria-label="پس‌انداز و اهداف"
+            className={`flex-1 flex flex-col items-center justify-center gap-1.5 h-[62px] rounded-full px-1 transition-all ${
               activeTab === 'GOALS'
-                ? 'text-primary font-bold bg-surface-container-low/80'
-                : 'text-outline hover:text-primary'
+                ? 'text-primary font-extrabold bg-surface-container-low/80'
+                : 'text-outline font-semibold hover:text-primary'
             }`}
             type="button"
           >
-            <Icon name="savings" size={24} />
+            <Icon name="savings" size={32} />
+            <span className="text-[11.5px] leading-none whitespace-nowrap">اهداف</span>
           </button>
         </nav>
       </div>
@@ -2611,18 +2653,36 @@ export default function App() {
               marketState.statusReason === 'replay') && (
               <div
                 data-testid="market-status-banner"
-                className="mx-4 mt-3 px-3.5 py-2 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold flex items-center gap-2"
+                className="mx-4 mt-3 px-3.5 py-2 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-bold flex items-center justify-between gap-2"
               >
-                <Icon name="warning" size={16} />
-                <span>
-                  {marketState.statusReason === 'tampered'
-                    ? 'امضای دیجیتال نرخ‌ها نامعتبر است؛ آخرین نرخ معتبر نمایش داده می‌شود.'
-                    : marketState.statusReason === 'replay'
-                    ? 'پاسخ قدیمی‌تر از کش فعلی رد شد (محافظت در برابر تکرار).'
-                    : marketState.freshness === 'expired'
-                    ? 'نرخ‌های ذخیره شده بیش از ۷ روز قدمت دارند و منقضی شده‌اند.'
-                    : 'نرخ‌ها قدیمی‌تر از ۴۸ ساعت هستند (حالت آفلاین).'}
-                </span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <Icon name="warning" size={16} />
+                  <span>
+                    {marketState.statusReason === 'tampered'
+                      ? 'امضای دیجیتال نرخ‌ها نامعتبر است؛ آخرین نرخ معتبر نمایش داده می‌شود.'
+                      : marketState.statusReason === 'replay'
+                      ? 'پاسخ قدیمی‌تر از کش فعلی رد شد (محافظت در برابر تکرار).'
+                      : marketState.freshness === 'expired'
+                      ? 'نرخ‌های ذخیره شده بیش از ۷ روز قدمت دارند و منقضی شده‌اند.'
+                      : 'نرخ‌ها قدیمی‌تر از ۴۸ ساعت هستند (حالت آفلاین).'}
+                  </span>
+                </div>
+                {(marketState.freshness === 'stale' || marketState.freshness === 'expired') && (
+                  <button
+                    type="button"
+                    data-testid="market-drawer-retry-button"
+                    onClick={handleRefreshRates}
+                    disabled={isRefreshingRates}
+                    className="shrink-0 inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-100/80 px-2.5 py-1 text-[11px] font-bold text-amber-900 hover:bg-amber-200/70 transition-colors disabled:opacity-50"
+                  >
+                    <Icon
+                      name="sync"
+                      size={13}
+                      className={isRefreshingRates ? 'animate-spin' : ''}
+                    />
+                    <span>تلاش مجدد</span>
+                  </button>
+                )}
               </div>
             )}
 

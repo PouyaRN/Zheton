@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -176,6 +177,7 @@ fun CanvasNavBar(
                 )
                 Row(
                     Modifier
+                        .defaultMinSize(minWidth = 48.dp, minHeight = 52.dp)
                         .height(52.dp)
                         .clip(pill)
                         .background(fill)
@@ -189,14 +191,15 @@ fun CanvasNavBar(
                             contentDescription = tab.fa
                             this.selected = active
                         }
-                        .padding(horizontal = if (active) 18.dp else 15.dp),
+                        .padding(horizontal = if (active) 15.dp else 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center,
                 ) {
                     CanvasGlyph(
                         paths = tab.glyph,
                         tint = tint,
-                        size = if (active) 20.dp else 22.dp,
-                        stroke = if (active) 2f else tab.idleStroke,
+                        size = if (active) 24.dp else 26.dp,
+                        stroke = if (active) 2.2f else tab.idleStroke,
                     )
                     AnimatedVisibility(
                         visible = active,
@@ -204,7 +207,7 @@ fun CanvasNavBar(
                         exit = fadeOut(tween(Motion.fast)) + shrinkHorizontally(tween(Motion.fast, easing = Motion.exit)),
                     ) {
                         Row {
-                            Spacer(Modifier.width(7.dp))
+                            Spacer(Modifier.width(6.dp))
                             Text(
                                 tab.fa,
                                 fontFamily = Modam,
@@ -231,7 +234,7 @@ private val Tab.glyph: List<String>
         Tab.REPORTS -> listOf("M6 19V11M12 19V5M18 19v-6")
     }
 
-private val Tab.idleStroke: Float get() = if (this == Tab.REPORTS) 1.9f else 1.8f
+private val Tab.idleStroke: Float get() = if (this == Tab.REPORTS) 2.1f else 2.0f
 
 /**
  * A stroked icon drawn from SVG path data on a 24-unit box, round caps and joins — the way every
