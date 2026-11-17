@@ -10,7 +10,7 @@ class PolChannelSmsTest {
     fun `detects Pol instant transfer channel without false positives on similar words`() {
         val polSms = parseBankSms(
             sender = "0999 998 7641",
-            body = "انتقال پل به مبلغ 12,000,000 ریال انجام شد\nمانده: 50,000,000 ریال",
+            body = "انتقال از طریق پل به مبلغ 12,000,000 ریال انجام شد\nمانده: 50,000,000 ریال",
             at = 1_760_000_000_000L,
         )
         assertNotNull(polSms)

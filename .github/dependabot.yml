@@ -23,6 +23,8 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: "androidx.core*"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "io.coil-kt.coil3*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: "gradle-wrapper"
 
   - package-ecosystem: "npm"

@@ -12,7 +12,7 @@ describe('Extended Bank SMS Parser (Paya, Satna, Pol, Refunds, Fees)', () => {
     expect(satna?.transferRail).toBe('SATNA');
     expect(satna?.amountToman).toBe(60_000_000);
 
-    const pol = parseBankSms('بلو بانک\nانتقال پل موفق\nمبلغ: ۴,۵۰۰,۰۰۰ ریال\nمانده: ۱۹,۰۰۰,۰۰۰ ریال');
+    const pol = parseBankSms('بلو بانک\nانتقال از طریق پل موفق\nمبلغ: ۴,۵۰۰,۰۰۰ ریال\nمانده: ۱۹,۰۰۰,۰۰۰ ریال');
     expect(pol?.transferRail).toBe('POL');
     expect(pol?.merchant).toBe('انتقال پل');
 

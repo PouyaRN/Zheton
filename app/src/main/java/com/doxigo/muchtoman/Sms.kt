@@ -609,7 +609,7 @@ private fun instrumentOf(mask: String): Instrument = when {
  * beat the "انتقال" it usually appears beside, or every transfer reads as a generic one.
  */
 private val POL_PATTERN = Regex(
-    "سامانه\\s+پل|انتقال\\s+پل|(?<![\\p{L}0-9۰-۹٠-٩])پل(?![\\p{L}0-9۰-۹٠-٩])",
+    "سامانه\\s+پل|پرداخت\\s+لحظه\\s*ای\\s+پل|انتقال\\s+(?:با|از\\s+طریق)\\s+پل|تراکنش\\s+پل",
 )
 
 private fun channelOf(text: String): Channel = when {

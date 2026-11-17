@@ -125,7 +125,7 @@ export function parseBankSms(rawText: string): ParsedBankSms | null {
     transferRail = 'SATNA';
   } else if (/پایا|paya/i.test(text)) {
     transferRail = 'PAYA';
-  } else if (/(?:سامانه\s+پل|انتقال\s+پل|(?<![\p{L}\d])پل(?![\p{L}\d]))/u.test(text)) {
+  } else if (/(?:سامانه\s+پل|پرداخت\s+لحظه‌?\s*ای\s+پل|انتقال\s+(?:با|از\s+طریق)\s+پل|تراکنش\s+پل)/.test(text)) {
     transferRail = 'POL';
   } else if (/کارت\s*به\s*کارت/.test(text)) {
     transferRail = 'CARD';
