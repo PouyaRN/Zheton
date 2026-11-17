@@ -12,7 +12,6 @@ import java.net.URL
 import java.security.KeyFactory
 import java.security.Signature
 import java.security.spec.X509EncodedKeySpec
-import java.util.Base64
 
 @Serializable
 data class WalletOption(
@@ -346,6 +345,31 @@ object RatesSignatureVerifier {
         return byteArrayOf(0x30, seqLen.toByte()) + rDer + sDer
     }
 
+    /** Pure-Kotlin RFC 4648 Base64 decoder (works identically on Android API 24+ and JVM tests). */
+    private fun decodeBase64(input: String): ByteArray {
+        val clean = input.replace(Regex("\\s+"), "")
+        if (clean.isEmpty()) return ByteArray(0)
+        val table = IntArray(128) { -1 }
+        val alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+        for (i in alphabet.indices) table[alphabet[i].code] = i
+        val out = ArrayList<Byte>((clean.length * 3) / 4)
+        var acc = 0
+        var bits = 0
+        for (ch in clean) {
+            if (ch == '=') break
+            val code = ch.code
+            val val6 = if (code < 128) table[code] else -1
+            require(val6 >= 0) { "Invalid Base64 character" }
+            acc = (acc shl 6) or val6
+            bits += 6
+            if (bits >= 8) {
+                bits -= 8
+                out.add(((acc ushr bits) and 0xFF).toByte())
+            }
+        }
+        return out.toByteArray()
+    }
+
     fun verify(
         payloadBytes: ByteArray,
         signatureBase64: String,
@@ -357,12 +381,11 @@ object RatesSignatureVerifier {
             val b64Body = pem
                 .replace("-----BEGIN PUBLIC KEY-----", "")
                 .replace("-----END PUBLIC KEY-----", "")
-                .replace(Regex("\\s+"), "")
-            val pubKeyBytes = Base64.getDecoder().decode(b64Body)
+            val pubKeyBytes = decodeBase64(b64Body)
             val keySpec = X509EncodedKeySpec(pubKeyBytes)
             val publicKey = KeyFactory.getInstance("EC").generatePublic(keySpec)
 
-            val rawSig = Base64.getDecoder().decode(signatureBase64.trim())
+            val rawSig = decodeBase64(signatureBase64)
             val derSig = if (rawSig.size == 64) p1363ToDer(rawSig) else rawSig
 
             val verifier = Signature.getInstance("SHA256withECDSA")

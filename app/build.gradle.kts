@@ -90,6 +90,8 @@ android {
         lintConfig = file("lint.xml")
         abortOnError = true
         checkReleaseBuilds = false
+        textReport = true
+        textOutput = file("build/reports/lint-results-debug.txt")
     }
 }
 

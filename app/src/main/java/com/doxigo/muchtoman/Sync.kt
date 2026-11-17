@@ -64,12 +64,26 @@ data class SyncSession(
 private fun b64(bytes: ByteArray): String = Base64.encodeToString(bytes, Base64.NO_WRAP)
 private fun unb64(value: String): ByteArray = Base64.decode(value, Base64.NO_WRAP)
 
+private const val URL_B64_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+
 fun b64Url(bytes: ByteArray): String {
     val androidEncoded = runCatching {
         Base64.encodeToString(bytes, Base64.NO_WRAP or Base64.URL_SAFE or Base64.NO_PADDING)
     }.getOrNull()
     if (!androidEncoded.isNullOrEmpty()) return androidEncoded
-    return java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(bytes)
+    val sb = StringBuilder(((bytes.size * 4) + 2) / 3)
+    var i = 0
+    while (i < bytes.size) {
+        val b0 = bytes[i].toInt() and 0xFF
+        val b1 = if (i + 1 < bytes.size) bytes[i + 1].toInt() and 0xFF else -1
+        val b2 = if (i + 2 < bytes.size) bytes[i + 2].toInt() and 0xFF else -1
+        sb.append(URL_B64_ALPHABET[b0 ushr 2])
+        sb.append(URL_B64_ALPHABET[((b0 and 0x03) shl 4) or (if (b1 >= 0) (b1 ushr 4) else 0)])
+        if (b1 >= 0) sb.append(URL_B64_ALPHABET[((b1 and 0x0F) shl 2) or (if (b2 >= 0) (b2 ushr 6) else 0)])
+        if (b2 >= 0) sb.append(URL_B64_ALPHABET[b2 and 0x3F])
+        i += 3
+    }
+    return sb.toString()
 }
 
 private fun unb64Url(value: String): ByteArray {
@@ -78,7 +92,20 @@ private fun unb64Url(value: String): ByteArray {
         Base64.decode(value, Base64.NO_WRAP or Base64.URL_SAFE or Base64.NO_PADDING)
     }.getOrNull()
     if (androidDecoded != null && androidDecoded.isNotEmpty()) return androidDecoded
-    return java.util.Base64.getUrlDecoder().decode(value)
+    val out = ArrayList<Byte>((value.length * 3) / 4)
+    var acc = 0
+    var bits = 0
+    for (ch in value) {
+        val idx = URL_B64_ALPHABET.indexOf(ch)
+        if (idx < 0) error("invalid base64url")
+        acc = (acc shl 6) or idx
+        bits += 6
+        if (bits >= 8) {
+            bits -= 8
+            out.add(((acc ushr bits) and 0xFF).toByte())
+        }
+    }
+    return out.toByteArray()
 }
 
 fun newScopeKey(): ByteArray = ByteArray(32).also { SYNC_RANDOM.nextBytes(it) }
