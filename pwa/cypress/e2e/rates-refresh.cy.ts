@@ -10,7 +10,24 @@ describe('Market Rates Manual Refresh Flow', () => {
       }
     }).as('ratesReq');
 
-    cy.visit('/');
+    cy.visit('/', {
+      onBeforeLoad(win) {
+        win.localStorage.setItem(
+          'zheton_state_v2',
+          JSON.stringify({
+            accounts: [],
+            transactions: [],
+            holdings: [],
+            commitments: [],
+            budgetCaps: [],
+            cycleConfig: { anchorDay: 1, targetMonthlyBudgetToman: 0 },
+            privacyMode: false,
+            hasSeenOnboarding: true,
+            themeMode: 'light',
+          }),
+        );
+      },
+    });
     cy.wait('@ratesReq');
     cy.get('[data-testid="market-retry-button"]', { timeout: 10000 }).should('be.visible');
 
