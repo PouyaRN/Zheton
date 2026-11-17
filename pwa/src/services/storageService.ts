@@ -19,11 +19,13 @@ export interface AppPersistedState {
   cycleConfig: FinancialCycleConfig;
   privacyMode: boolean;
   hasSeenOnboarding: boolean;
+  themeMode?: 'light' | 'dark';
 }
 
 export const INITIAL_STATE: AppPersistedState = {
   privacyMode: false,
   hasSeenOnboarding: false,
+  themeMode: 'light',
   cycleConfig: {
     anchorDay: 1,
     targetMonthlyBudgetToman: 0,

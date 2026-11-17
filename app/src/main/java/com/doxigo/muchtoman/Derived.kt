@@ -635,6 +635,7 @@ suspend fun ledgerView(
     derived: DerivedDb,
     durable: DurableDb,
     limit: Int = 300,
+    cycle: CycleSpec = CycleSpec(),
 ): LedgerView {
     // Fetch the full store for reports/goals; cap for the timeline.
     val all = ledgerEntries(derived, durable, limit = Int.MAX_VALUE)
@@ -652,7 +653,7 @@ suspend fun ledgerView(
         .toMap()
     val today = tehranDay(System.currentTimeMillis())
     // Goals read from the full store, not the capped window.
-    val goals = durable.goals().active().map { goalProgress(it, all.entries, today, all.categories) }
+    val goals = durable.goals().active().map { goalProgress(it, all.entries, today, all.categories, cycle) }
     return LedgerView(
         entries = capped.entries,
         allEntries = all.entries,

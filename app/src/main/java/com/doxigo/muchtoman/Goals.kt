@@ -98,15 +98,23 @@ data class GoalProgress(
  * out of both. A cap counts what has been spent in its category (and all children) this Jalali
  * month, reading the whole stored ledger.
  */
-fun goalProgress(goal: Goal, entries: List<LedgerEntry>, today: Long, categories: List<Category> = emptyList()): GoalProgress {
+fun goalProgress(
+    goal: Goal,
+    entries: List<LedgerEntry>,
+    today: Long,
+    categories: List<Category> = emptyList(),
+    spec: CycleSpec = CycleSpec(),
+): GoalProgress {
     val rows = spendable(entries)
+    val win = cycleWindow(today, spec)
     val current = when (goal.kind) {
         GoalKind.CAP -> {
-            val from = jalaliMonthStart(today)
+            val from = win.startDay
+            val end = win.endDay
             val matching = when {
                 // Merchant scope: count all spending at this merchant identity.
                 goal.scopeMerchantNorm != null ->
-                    rows.filter { it.txn.day >= from && it.txn.merchantNorm == goal.scopeMerchantNorm }
+                    rows.filter { it.txn.day >= from && it.txn.day < end && it.txn.merchantNorm == goal.scopeMerchantNorm }
                 // Category scope: count the category AND all descendants recursively.
                 goal.categoryId != null -> {
                     fun descendants(parentId: String): List<String> {
@@ -114,7 +122,7 @@ fun goalProgress(goal: Goal, entries: List<LedgerEntry>, today: Long, categories
                         return kids + kids.flatMap { descendants(it) }
                     }
                     val catIds = setOf(goal.categoryId) + descendants(goal.categoryId)
-                    rows.filter { it.txn.day >= from && it.categoryId in catIds }
+                    rows.filter { it.txn.day >= from && it.txn.day < end && it.categoryId in catIds }
                 }
                 // No scope: count nothing (graceful degradation).
                 else -> emptyList()
@@ -131,13 +139,12 @@ fun goalProgress(goal: Goal, entries: List<LedgerEntry>, today: Long, categories
     // Pace estimate: at the current daily rate, which Jalali day will the cap be exceeded?
     // Only shown once usage passes ~80% of the cap.
     val paceDay = if (goal.kind == GoalKind.CAP && goal.targetRial > 0 && share >= 0.8f && current > 0) {
-        val from = jalaliMonthStart(today)
-        val dayOfMonth = jalaliOf(today).day
-        val dailyRate = current.toDouble() / dayOfMonth.coerceAtLeast(1)
+        val elapsedDays = (today - win.startDay + 1L).coerceAtLeast(1L)
+        val dailyRate = current.toDouble() / elapsedDays
         if (dailyRate > 0) {
             val daysToCap = ((goal.targetRial - current).toDouble() / dailyRate).toInt()
-            val estimatedDay = dayOfMonth + daysToCap
-            if (estimatedDay in 1..31) estimatedDay else null
+            val estimatedEpochDay = today + daysToCap
+            if (estimatedEpochDay < win.endDay) jalaliOf(estimatedEpochDay).day else null
         } else null
     } else null
 
@@ -149,10 +156,7 @@ fun goalProgress(goal: Goal, entries: List<LedgerEntry>, today: Long, categories
         share = share,
         done = if (goal.kind == GoalKind.CAP) current <= goal.targetRial else current >= goal.targetRial,
         daysLeft = when {
-            goal.kind == GoalKind.CAP -> {
-                val j = jalaliOf(today)
-                (jalaliMonthLength(j.year, j.month) - j.day).coerceAtLeast(0)
-            }
+            goal.kind == GoalKind.CAP -> (win.endDay - 1L - today).toInt().coerceAtLeast(0)
             goal.endsOn != null -> (goal.endsOn - today).toInt().coerceAtLeast(0)
             else -> null
         },

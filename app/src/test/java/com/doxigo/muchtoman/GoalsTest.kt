@@ -173,4 +173,26 @@ class GoalsTest {
         assertEquals(0, p.daysLeft)
         assertTrue(p.done)
     }
+
+    @Test
+    fun `cap follows payday-anchored CycleSpec window for spend, daysLeft, and paceDay`() {
+        // Anchored cycle starting on the 25th: Mordad 25 .. Shahrivar 24
+        val spec = CycleSpec(CycleMode.ANCHOR, 25)
+        val mordad20 = jalaliDay(1404, 5, 20)
+        val mordad26 = jalaliDay(1404, 5, 26)
+        val shahrivar2 = jalaliDay(1404, 6, 2)
+        val rows = listOf(
+            // Prior cycle spend on Mordad 20 must NOT count in the Mordad 25..Shahrivar 24 cycle
+            entry(mordad20, -40_000_000, categoryId = "cat_dining"),
+            entry(mordad26, -20_000_000, categoryId = "cat_dining"),
+            entry(shahrivar2, -65_000_000, categoryId = "cat_dining"),
+        )
+        val g = goal(100_000_000, GoalKind.CAP, "cat_dining")
+        val p = goalProgress(g, rows, shahrivar2, spec = spec)
+        assertEquals(85_000_000L, p.currentRial)
+        assertEquals(0.85f, p.share, 0.001f)
+        // End of cycle is Shahrivar 24 (exclusive end Shahrivar 25 -> 24 - 2 = 22 days left)
+        assertEquals(22, p.daysLeft)
+        assertNotNull(p.paceDay)
+    }
 }

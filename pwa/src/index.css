@@ -25,6 +25,13 @@
     padding: 0;
     background-color: #f8f9fc;
     color: #191c1e;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  html.dark,
+  html.dark body {
+    background-color: #070a0f;
+    color: #f1f5f9;
   }
 
   body {
@@ -41,6 +48,69 @@
   .pt-safe {
     padding-top: env(safe-area-inset-top, 16px);
   }
+}
+
+/* Neobank Dark Mode surface & contrast system (WCAG AA compliant) */
+html.dark .bg-background,
+html.dark .bg-\[\#f8f9fc\] {
+  background-color: #070a0f !important;
+}
+
+html.dark .bg-background\/85 {
+  background-color: rgba(7, 10, 15, 0.88) !important;
+}
+
+html.dark .bg-white,
+html.dark .bg-surface-container-lowest {
+  background-color: #0f1622 !important;
+}
+
+html.dark .bg-white\/95 {
+  background-color: rgba(15, 22, 34, 0.94) !important;
+}
+
+html.dark .bg-gray-50,
+html.dark .bg-gray-100,
+html.dark .bg-surface-container-low {
+  background-color: #162030 !important;
+}
+
+html.dark .bg-surface-container,
+html.dark .bg-gray-200 {
+  background-color: #1c283b !important;
+}
+
+html.dark .text-gray-950,
+html.dark .text-gray-900,
+html.dark .text-on-surface,
+html.dark .text-primary {
+  color: #f1f5f9 !important;
+}
+
+html.dark .text-gray-700,
+html.dark .text-gray-600,
+html.dark .text-on-surface-variant {
+  color: #cbd5e1 !important;
+}
+
+html.dark .text-gray-500,
+html.dark .text-gray-400,
+html.dark .text-outline {
+  color: #94a3b8 !important;
+}
+
+html.dark .border-gray-100,
+html.dark .border-gray-200,
+html.dark .border-gray-200\/80,
+html.dark .border-gray-200\/60,
+html.dark .border-white {
+  border-color: #1e293b !important;
+}
+
+html.dark input,
+html.dark select,
+html.dark textarea {
+  color: #f1f5f9 !important;
 }
 
 .num-tabular {

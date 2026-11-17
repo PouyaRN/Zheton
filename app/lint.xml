@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!-- Non-English single-locale Persian app and pre-existing visual/res hygiene rules -->
+    <issue id="MissingTranslation" severity="ignore" />
+    <issue id="ExtraTranslation" severity="ignore" />
+    <issue id="UnusedResources" severity="ignore" />
+    <issue id="VectorPath" severity="ignore" />
+    <issue id="VectorRaster" severity="ignore" />
+    <issue id="MonochromeLauncherIcon" severity="ignore" />
+    <issue id="GradleDependency" severity="ignore" />
+    <issue id="NewerVersionAvailable" severity="ignore" />
+    <issue id="ObsoleteSdkInt" severity="ignore" />
+    <issue id="Aligned16KB" severity="ignore" />
+    <issue id="RtlHardcoded" severity="warning" />
+    <issue id="RtlSymmetry" severity="warning" />
+    <issue id="UseKtx" severity="warning" />
+    <issue id="AutoboxingStateCreation" severity="warning" />
+</lint>

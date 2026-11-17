@@ -10,11 +10,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "types": ["node"],
-    "typeRoots": ["./node_modules/@types", "../pwa/node_modules/@types", "../node_modules/@types"],
-    "paths": {
-      "vitest": ["./node_modules/vitest/dist/index.d.ts", "../pwa/node_modules/vitest/dist/index.d.ts", "../node_modules/vitest/dist/index.d.ts"]
-    }
+    "types": ["node"]
   },
   "include": ["src/**/*.ts", "test/**/*.ts"]
 }

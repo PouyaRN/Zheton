@@ -10,5 +10,9 @@
     "test": "npm run test --workspace=pwa",
     "typecheck": "npm run typecheck --workspace=pwa",
     "start": "npx serve -s pwa/dist -l 8080"
+  },
+  "overrides": {
+    "source-map-js": "^1.2.2",
+    "undici": "^7.30.1"
   }
 }

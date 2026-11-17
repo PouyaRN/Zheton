@@ -1,11 +1,16 @@
 import { toAsciiDigits } from './format';
 import { NecessityTag, TxnDirection } from '../types';
 
+export type TransferRail = 'PAYA' | 'SATNA' | 'POL' | 'CARD';
+
 export interface ParsedBankSms {
   bankNameFa: string;
   direction: TxnDirection;
   amountToman: number;
   balanceToman: number | null;
+  feeToman?: number | null;
+  transferRail?: TransferRail;
+  isRefund?: boolean;
   merchant: string;
   categoryFa: string;
   necessity: NecessityTag;
@@ -55,14 +60,33 @@ export function parseBankSms(rawText: string): ParsedBankSms | null {
   else if (/رسالت|resalat/i.test(text)) bankNameFa = 'بانک رسالت';
   else if (/مسکن|maskan/i.test(text)) bankNameFa = 'بانک مسکن';
 
+  // Refunds take priority over generic debit keywords
+  const isRefund = /(?:استرداد|برگشت\s*وجه|عودت\s*وجه|لغو\s*خرید|برگشت\s*خرید)/.test(text);
+
   // Direction
   let direction: TxnDirection = 'DEBIT';
-  if (/واریز|افزایش|بستانکار|\+/i.test(text) && !/برداشت|کاهش|خرید/i.test(text)) {
+  if (isRefund || (/واریز|افزایش|بستانکار|\+/i.test(text) && !/برداشت|کاهش|خرید/i.test(text))) {
     direction = 'CREDIT';
   }
 
+  // Extract explicit fee first so we never mistake fee for the main transaction amount
+  let feeToman: number | null = null;
+  let cleanedForAmount = text;
+  const feeMatch = text.match(/(?:کارمزد|هزینه\s*پیامک)\s*[:\s]*(\d{1,3}(?:,\d{3})+|\d{3,12})\s*(ریال|تومان)?/);
+  if (feeMatch) {
+    const rawFee = Number(feeMatch[1].replace(/,/g, ''));
+    const feeRial = feeMatch[2] === 'تومان' ? rawFee * 10 : rawFee;
+    feeToman = Math.round(feeRial / 10);
+    if (feeMatch.index != null) {
+      cleanedForAmount =
+        text.slice(0, feeMatch.index) +
+        ' '.repeat(feeMatch[0].length) +
+        text.slice(feeMatch.index + feeMatch[0].length);
+    }
+  }
+
   // Extract numbers with commas
-  const numberMatches = [...text.matchAll(/(\d{1,3}(?:,\d{3})+|\d{5,15})\s*(ریال|تومان)?/g)];
+  const numberMatches = [...cleanedForAmount.matchAll(/(\d{1,3}(?:,\d{3})+|\d{5,15})\s*(ریال|تومان)?/g)];
   if (numberMatches.length === 0) return null;
 
   let amountRial = 0;
@@ -87,16 +111,46 @@ export function parseBankSms(rawText: string): ParsedBankSms | null {
   }
 
   if (amountRial === 0 && numberMatches.length > 0) {
-    amountRial = Number(numberMatches[0][1].replace(/,/g, ''));
+    const firstUnit = numberMatches[0][2];
+    const firstVal = Number(numberMatches[0][1].replace(/,/g, ''));
+    amountRial = firstUnit === 'تومان' ? firstVal * 10 : firstVal;
   }
 
   const amountToman = Math.round(amountRial / 10);
   const balanceToman = balanceRial !== null ? Math.round(balanceRial / 10) : null;
 
+  // Detect transfer rail (PAYA / SATNA / POL / CARD) with strict word boundaries for پل
+  let transferRail: TransferRail | undefined;
+  if (/ساتنا|satna/i.test(text)) {
+    transferRail = 'SATNA';
+  } else if (/پایا|paya/i.test(text)) {
+    transferRail = 'PAYA';
+  } else if (/(?:سامانه\s+پل|انتقال\s+پل|(?<![\p{L}\d])پل(?![\p{L}\d]))/u.test(text)) {
+    transferRail = 'POL';
+  } else if (/کارت\s*به\s*کارت/.test(text)) {
+    transferRail = 'CARD';
+  }
+
   // Guess merchant & category
-  let merchant = direction === 'CREDIT' ? 'واریز بانکی' : 'خرید کارتی';
-  let categoryFa = direction === 'CREDIT' ? 'درآمد و حقوق' : 'خرید';
-  let necessity: NecessityTag = direction === 'CREDIT' ? 'SAVINGS' : 'WANT';
+  let merchant = isRefund
+    ? 'استرداد وجه خرید'
+    : transferRail === 'SATNA'
+      ? 'انتقال ساتنا'
+      : transferRail === 'PAYA'
+        ? 'انتقال پایا'
+        : transferRail === 'POL'
+          ? 'انتقال پل'
+          : direction === 'CREDIT'
+            ? 'واریز بانکی'
+            : 'خرید کارتی';
+  let categoryFa = isRefund
+    ? 'خرید'
+    : transferRail
+      ? 'انتقال وجه'
+      : direction === 'CREDIT'
+        ? 'درآمد و حقوق'
+        : 'خرید';
+  let necessity: NecessityTag = isRefund ? 'WANT' : transferRail ? 'NEED' : direction === 'CREDIT' ? 'SAVINGS' : 'WANT';
 
   if (/اسنپ|snapp|تپسی|tapsi/i.test(text)) {
     merchant = 'اسنپ / تپسی';
@@ -133,6 +187,9 @@ export function parseBankSms(rawText: string): ParsedBankSms | null {
     direction,
     amountToman,
     balanceToman,
+    feeToman,
+    transferRail,
+    isRefund,
     merchant,
     categoryFa,
     necessity,

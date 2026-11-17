@@ -7,7 +7,7 @@
  * checks that the two copies agree.
  */
 
-export const SITE_ORIGIN = 'https://sync.muchtoman.com';
+export const SITE_ORIGIN = 'https://pouyarn.github.io/Zheton';
 export const TOOLS_PATH = '/tools/';
 
 export interface ToolMeta {

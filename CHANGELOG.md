@@ -4,7 +4,32 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased] - 1.1.0
+## [1.3.0] - 2026-11-18
+
+### Added
+
+- Cycle-aware `GoalKind.CAP` caps and `startsOn` in Android (`Goals.kt`, `Derived.kt`, `MainActivity.kt`) and `cycleWindow.ts` in PWA so monthly budgets align with payday anchors.
+- Neobank Dark Mode with WCAG AA contrast and persistent theme toggle in the PWA (`index.css`, `tailwind.config.js`, `App.tsx`).
+- Portable AES-256-GCM + PBKDF2 (600k iterations, AAD header, SHA-256) encrypted offline `.zheton` backup/restore in PWA (`backupService.ts`, `BackupModal.tsx`).
+- Extended bank SMS parser support for `POL` instant transfer rail (`Channel.POL`), `PAYA`/`SATNA`, explicit fee separation, and purchase refunds (`Sms.kt`, `smsParser.ts`).
+- Automated Android Lint gate (`app/lint.xml`, `./gradlew lintDebug`) and R8 minification/resource shrinking (`isMinifyEnabled = true`, `isShrinkResources = true`) with hardened ProGuard keep rules.
+- Modularized `UiBankLogos.kt`, `MarketDrawer.tsx`, and `BackupModal.tsx`, plus 3 new Vitest files and 3 new Cypress E2E specs (`rates-refresh`, `theme-toggle`, `backup-export-import`).
+
+### Changed
+
+- Updated `SITE_ORIGIN`, `canonical`, `robots.txt`, and `sitemap.xml` URLs to `https://pouyarn.github.io/Zheton`.
+- Patched Node dependencies (`vite` 7.3.8, `vitest` 4.1.12, `undici` 7.30.1, `sharp` 0.35.5, `source-map-js` 1.2.2) across workspace lockfiles to eliminate Dependabot security advisories.
+- Bumped `kotlin` to `2.2.21`, `kotlinx-serialization-json` to `1.8.1`, and `zxing-core` to `3.5.4`.
+
+## [1.2.0] - 2026-11-10
+
+### Added
+
+- Offline SVG icon system (`iconMap.ts`, 14 Android `VectorDrawable`s) with zero external font CDNs and zero Unicode emojis.
+- Cryptographically signed live market rates pipeline (`rates-pipeline/`) using ECDSA P-256 (`SHA-256` IEEE-P1363) verified by both Android (`RatesSignatureVerifier`) and PWA (`WebCrypto`).
+- Headless Electron Cypress E2E test suite (11 specs) and Android security hardening tests (`SecurityHardeningTest.kt`).
+
+## [1.1.0] - 2026-10-30
 
 ### Added
 
@@ -89,9 +114,11 @@ All notable changes to this project are documented here. The format follows
 
 Initial release.
 
-[Unreleased]: https://github.com/securityvisions/Andis/compare/v1.0.4...HEAD
-[1.0.4]: https://github.com/securityvisions/Andis/compare/v1.0.3...v1.0.4
-[1.0.3]: https://github.com/securityvisions/Andis/compare/v1.0.2...v1.0.3
-[1.0.2]: https://github.com/securityvisions/Andis/compare/v1.0.1...v1.0.2
-[1.0.1]: https://github.com/securityvisions/Andis/compare/v1.0.0...v1.0.1
-[1.0.0]: https://github.com/securityvisions/Andis/releases/tag/v1.0.0
+[1.3.0]: https://github.com/PouyaRN/Zheton/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/PouyaRN/Zheton/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/PouyaRN/Zheton/compare/v1.0.4...v1.1.0
+[1.0.4]: https://github.com/PouyaRN/Zheton/compare/v1.0.3...v1.0.4
+[1.0.3]: https://github.com/PouyaRN/Zheton/compare/v1.0.2...v1.0.3
+[1.0.2]: https://github.com/PouyaRN/Zheton/compare/v1.0.1...v1.0.2
+[1.0.1]: https://github.com/PouyaRN/Zheton/compare/v1.0.0...v1.0.1
+[1.0.0]: https://github.com/PouyaRN/Zheton/releases/tag/v1.0.0

@@ -28,10 +28,10 @@ android {
         targetSdk = 36
         versionCode = providers.gradleProperty("zheton.versionCode").orNull?.toInt()
             ?: providers.gradleProperty("muchtoman.versionCode").orNull?.toInt()
-            ?: 2_000_001_200
+            ?: 2_000_001_300
         versionName = providers.gradleProperty("zheton.versionName").orNull
             ?: providers.gradleProperty("muchtoman.versionName").orNull
-            ?: "1.2.0"
+            ?: "1.3.0"
         buildConfigField("boolean", "LITE", "false")
     }
 
@@ -70,8 +70,8 @@ android {
             buildConfigField("String", "RATES_URL", "\"$ratesUrl\"")
             buildConfigField("String", "SYNC_URL", "\"$syncUrl\"")
             if (keystoreProps != null) signingConfig = signingConfigs.getByName("release")
-            isMinifyEnabled = false
-            isShrinkResources = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
@@ -87,7 +87,8 @@ android {
     }
 
     lint {
-        abortOnError = false
+        lintConfig = file("lint.xml")
+        abortOnError = true
         checkReleaseBuilds = false
     }
 }

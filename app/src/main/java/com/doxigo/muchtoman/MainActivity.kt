@@ -527,6 +527,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
     fun setCycleMode(mode: CycleMode) {
         store.cycleMode = mode
         _state.update { it.copy(cycleMode = mode) }
+        refreshLedgerForCycle()
     }
 
     /** The Jalali day each payday-anchored cycle starts on (1..31, capped at month length). */
@@ -534,6 +535,19 @@ class AppVm(app: Application) : AndroidViewModel(app) {
         val clamped = day.coerceIn(1, 31)
         store.cycleAnchorDay = clamped
         _state.update { it.copy(cycleAnchorDay = clamped) }
+        refreshLedgerForCycle()
+    }
+
+    private fun currentCycleSpec(): CycleSpec = CycleSpec(store.cycleMode, store.cycleAnchorDay)
+
+    private fun refreshLedgerForCycle() {
+        val app = getApplication<Application>()
+        viewModelScope.launch(Dispatchers.Default) {
+            runCatching {
+                val view = ledgerView(DerivedDb.get(app), DurableDb.get(app), limit = ledgerLimit(), cycle = currentCycleSpec())
+                _state.update { it.copy(ledger = view) }
+            }.onFailure { android.util.Log.d("zheton", "refreshLedgerForCycle failed: $it") }
+        }
     }
 
     /**
@@ -615,7 +629,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             android.util.Log.d("zheton", "ledger: +$added messages, $rows transactions")
         }
 
-        _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
+        _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit(), cycle = currentCycleSpec())) }
 
         // Load obligations, payments and reservations so the home screen cards appear on
         // cold start, not only after a family-sync session or an explicit user action.
@@ -654,7 +668,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             val durable = DurableDb.get(app)
             val derived = DerivedDb.get(app)
             _state.update { it.copy(filterWide = wide) }
-            _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
+            _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit(), cycle = currentCycleSpec())) }
         }
     }
 
@@ -676,7 +690,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 val app = getApplication<Application>()
                 val durable = DurableDb.get(app)
                 val derived = DerivedDb.get(app)
-                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit(), cycle = currentCycleSpec())) }
                 requestFamilySync(silent = true)
             }.onFailure { android.util.Log.d("zheton", "categorise failed: $it") }
         }
@@ -696,7 +710,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 val app = getApplication<Application>()
                 val durable = DurableDb.get(app)
                 val derived = DerivedDb.get(app)
-                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit(), cycle = currentCycleSpec())) }
             }.onFailure { android.util.Log.d("zheton", "pin merchant alias failed: $it") }
         }
     }
@@ -715,7 +729,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 ledgerEngine.bulkCategorise(entries, categoryId)
                 val durable = DurableDb.get(app)
                 val derived = DerivedDb.get(app)
-                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit(), cycle = currentCycleSpec())) }
                 recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
             }.onFailure { android.util.Log.d("zheton", "bulk categorise failed: $it") }
@@ -735,7 +749,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 ledgerEngine.bulkSaveNote(entries, note)
                 val durable = DurableDb.get(app)
                 val derived = DerivedDb.get(app)
-                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit(), cycle = currentCycleSpec())) }
                 recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
             }.onFailure { android.util.Log.d("zheton", "bulk save note failed: $it") }
@@ -755,7 +769,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 ledgerEngine.bulkPinMerchant(entries, displayName)
                 val durable = DurableDb.get(app)
                 val derived = DerivedDb.get(app)
-                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit(), cycle = currentCycleSpec())) }
                 recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
             }.onFailure { android.util.Log.d("zheton", "bulk pin merchant failed: $it") }
@@ -793,7 +807,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                         familyRef = entry.txn.familyRef.ifBlank { "" },
                     )
                 )
-                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit(), cycle = currentCycleSpec())) }
                 recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
             }.onFailure { android.util.Log.d("zheton", "hide transaction failed: $it") }
@@ -831,7 +845,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     )
                 )
                 derive(durable, derived, extraLookup(store.extraBankNumbers))
-                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit(), cycle = currentCycleSpec())) }
                 recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
             }.onFailure { android.util.Log.d("zheton", "direction change failed: $it") }
@@ -858,7 +872,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     )
                 }
                 derive(durable, derived, extraLookup(store.extraBankNumbers))
-                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit(), cycle = currentCycleSpec())) }
                 requestFamilySync(silent = true)
             }.onFailure { android.util.Log.d("zheton", "unpin category failed: $it") }
         }
@@ -917,7 +931,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                     )
                 }
                 derive(durable, derived, extraLookup(store.extraBankNumbers))
-                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit(), cycle = currentCycleSpec())) }
                 recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
             }.onFailure { android.util.Log.d("zheton", "toggle transfer failed: $it") }
@@ -1052,7 +1066,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             }
             derive(durable, derived, extraLookup(store.extraBankNumbers))
             _state.update {
-                it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit()), pendingUndo = null)
+                it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit(), cycle = currentCycleSpec()), pendingUndo = null)
             }
             recomputeAccountBalancesFromLedger()
             requestFamilySync(silent = true)
@@ -1075,7 +1089,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 recordManualTransaction(app, amountRial, isExpense, categoryId, merchant, note, epochMillis, accountId)
                 val durable = DurableDb.get(app)
                 val derived = DerivedDb.get(app)
-                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit(), cycle = currentCycleSpec())) }
                 // A row on one of her bank accounts moves that account's balance too.
                 if (accountId != MANUAL_ACCOUNT_ID) recomputeAccountBalancesFromLedger()
                 requestFamilySync(silent = true)
@@ -1180,7 +1194,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 durable.rules().deleteForCategory(categoryId, now)
                 durable.categories().archive(categoryId, now)
                 derive(durable, derived, extraLookup(store.extraBankNumbers))
-                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit(), cycle = currentCycleSpec())) }
                 requestFamilySync(silent = true)
             }.onFailure { android.util.Log.d("zheton", "deleteCategory failed: $it") }
         }
@@ -1446,12 +1460,12 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                         categoryId = categoryId,
                         scopeMerchantNorm = scopeMerchantNorm,
                         period = period,
-                        startsOn = jalaliMonthStart(tehranDay(now)),
+                        startsOn = cycleStartOfDay(tehranDay(now), currentCycleSpec()),
                         createdAt = now,
                         updatedAt = now,
                     )
                 )
-                _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable, limit = ledgerLimit())) }
+                _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable, limit = ledgerLimit(), cycle = currentCycleSpec())) }
             }.onFailure { android.util.Log.d("zheton", "addGoal failed: $it") }
         }
     }
@@ -1462,7 +1476,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
             val durable = DurableDb.get(app)
             runCatching {
                 durable.goals().delete(id, System.currentTimeMillis())
-                _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable, limit = ledgerLimit())) }
+                _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable, limit = ledgerLimit(), cycle = currentCycleSpec())) }
             }.onFailure { android.util.Log.d("zheton", "deleteGoal failed: $it") }
         }
     }
@@ -1511,7 +1525,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                         else it.ledger.notes + (entry.txn.ref to note),
                     ))
                 }
-                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit())) }
+                _state.update { it.copy(ledger = ledgerView(derived, durable, limit = ledgerLimit(), cycle = currentCycleSpec())) }
             }.onFailure { android.util.Log.d("zheton", "saveNote failed: $it") }
         }
     }
@@ -1537,7 +1551,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                         updatedAt = now,
                     )
                 )
-                _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable, limit = ledgerLimit())) }
+                _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable, limit = ledgerLimit(), cycle = currentCycleSpec())) }
             }.onFailure { android.util.Log.d("zheton", "addCategory failed: $it") }
         }
     }
@@ -1554,7 +1568,7 @@ class AppVm(app: Application) : AndroidViewModel(app) {
                 durable.categories().put(
                     existing.copy(nameFa = newNameFa.trim().take(30), updatedAt = now)
                 )
-                _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable, limit = ledgerLimit())) }
+                _state.update { it.copy(ledger = ledgerView(DerivedDb.get(app), durable, limit = ledgerLimit(), cycle = currentCycleSpec())) }
             }.onFailure { android.util.Log.d("zheton", "editCategory failed: $it") }
         }
     }

@@ -545,7 +545,7 @@ fun parseBankSms(
 // that holds because everyone remembered.
 
 /** How the money moved, as far as the message says. */
-enum class Channel { UNKNOWN, POS, ATM, PAYA, SATNA, CARD, TRANSFER, FEE, BILL }
+enum class Channel { UNKNOWN, POS, ATM, PAYA, SATNA, POL, CARD, TRANSFER, FEE, BILL }
 
 /** What the message named the account by. Both collapse into one [BankSms.mask] string. */
 enum class Instrument { UNKNOWN, CARD, ACCOUNT }
@@ -608,12 +608,17 @@ private fun instrumentOf(mask: String): Instrument = when {
  * The channel, most specific first. "پایانه فروش" must beat "خرید", and "کارت به کارت" must
  * beat the "انتقال" it usually appears beside, or every transfer reads as a generic one.
  */
+private val POL_PATTERN = Regex(
+    "سامانه\\s+پل|انتقال\\s+پل|(?<![\\p{L}0-9۰-۹٠-٩])پل(?![\\p{L}0-9۰-۹٠-٩])",
+)
+
 private fun channelOf(text: String): Channel = when {
     text.contains("خودپرداز") || text.contains("atm") -> Channel.ATM
     text.contains("پایانه فروش") || text.contains("پایانه") -> Channel.POS
     text.contains("کارت به کارت") -> Channel.CARD
     text.contains("ساتنا") -> Channel.SATNA
     text.contains("پایا") -> Channel.PAYA
+    POL_PATTERN.containsMatchIn(text) -> Channel.POL
     text.contains("قبض") -> Channel.BILL
     text.contains("خرید") -> Channel.POS
     text.contains("انتقال") -> Channel.TRANSFER
